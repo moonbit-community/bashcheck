@@ -1,0 +1,5 @@
+import {
+  "moonbit-community/bashcheck/parser" @parser,
+}
+
+supported_targets = "+native"

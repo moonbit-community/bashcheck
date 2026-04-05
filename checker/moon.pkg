@@ -1,0 +1,12 @@
+import {
+  "moonbit-community/bashcheck/parser" @parser,
+  "moonbit-community/bashcheck/semantics" @semantics,
+  "moonbit-community/bashcheck/checks" @checks,
+  "moonbit-community/bashcheck/fixer" @fixer,
+}
+
+import {
+  "moonbitlang/core/debug",
+} for "test"
+
+supported_targets = "+native"

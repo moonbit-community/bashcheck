@@ -1,0 +1,50 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/bashcheck/fixer"
+
+import {
+  "moonbit-community/bashcheck/parser",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn apply_fix(Fix, String) -> String?
+
+pub fn detect_overlap(Replacement, Replacement) -> Bool
+
+pub fn map_positions(Fix, (@parser.Position) -> @parser.Position) -> Fix
+
+pub fn merge_fixes(Array[Fix]) -> Fix?
+
+pub fn realign_columns_for_tabs(Fix, String) -> Fix
+
+// Errors
+
+// Types and methods
+pub struct Fix {
+  replacements : Array[Replacement]
+} derive(Eq, @debug.Debug)
+pub fn Fix::from_replacements(Array[Replacement]) -> Self
+pub fn Fix::new() -> Self
+
+pub enum InsertionPoint {
+  InsertBefore
+  InsertAfter
+} derive(Eq, @debug.Debug)
+pub fn InsertionPoint::after() -> Self
+pub fn InsertionPoint::before() -> Self
+
+pub struct Replacement {
+  filename : String
+  start : @parser.Position
+  end : @parser.Position
+  text : String
+  precedence : Int
+  insertion_point : InsertionPoint
+} derive(Eq, @debug.Debug)
+pub fn Replacement::new(String, @parser.Position, @parser.Position, String, Int, InsertionPoint) -> Self
+pub fn Replacement::with_text(Self, String) -> Self
+
+// Type aliases
+
+// Traits
+

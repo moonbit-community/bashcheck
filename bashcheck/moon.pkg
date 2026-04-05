@@ -1,0 +1,18 @@
+import {
+  "moonbit-community/bashcheck/checker" @checker,
+  "moonbit-community/bashcheck/driver" @driver,
+  "moonbit-community/bashcheck/formatter" @formatter,
+  "moonbit-community/bashcheck/semantics" @semantics,
+  "moonbitlang/async",
+  "moonbitlang/core/env" @env,
+}
+
+import {
+  "moonbitlang/core/debug",
+} for "test"
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

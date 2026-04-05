@@ -1,0 +1,89 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/bashcheck/checker"
+
+import {
+  "moonbit-community/bashcheck/checks",
+  "moonbit-community/bashcheck/fixer",
+  "moonbit-community/bashcheck/parser",
+  "moonbit-community/bashcheck/semantics",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn check_script(String, spec? : CheckSpec) -> CheckResult
+
+pub fn filter_diagnostics(Array[PositionedDiagnostic], CheckSpec) -> Array[PositionedDiagnostic]
+
+pub fn list_optional_checks_text() -> String
+
+pub fn parse_diagnostic_severity(String) -> DiagnosticSeverity?
+
+pub fn sort_diagnostics(Array[PositionedDiagnostic]) -> Array[PositionedDiagnostic]
+
+pub fn supported_checks() -> Array[@checks.CheckDescription]
+
+pub fn supported_optional_checks() -> Array[String]
+
+// Errors
+
+// Types and methods
+pub struct CheckResult {
+  filename : String
+  source : String
+  diagnostics : Array[PositionedDiagnostic]
+} derive(Eq, @debug.Debug)
+
+pub struct CheckSpec {
+  filename : String?
+  check_sourced : Bool
+  ignore_rc : Bool
+  shell_override : @semantics.ShellDialect?
+  fallback_shell : @semantics.ShellDialect?
+  execution_mode : @semantics.ExecutionMode
+  min_severity : DiagnosticSeverity
+  include_codes : Array[Int]
+  exclude_codes : Array[Int]
+  optional_checks : Array[String]
+  extended_analysis : Bool
+  extended_analysis_forced : Bool
+  external_sources : Bool
+  source_paths : Array[String]
+  source_files : Array[(String, String)]
+  config_path_override : String?
+  config_files : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+pub fn CheckSpec::add_source_path(Self, String) -> Self
+pub fn CheckSpec::default() -> Self
+pub fn CheckSpec::with_check_sourced(Self, Bool) -> Self
+pub fn CheckSpec::with_config_files(Self, Array[(String, String)]) -> Self
+pub fn CheckSpec::with_config_path_override(Self, String?) -> Self
+pub fn CheckSpec::with_exclude_codes(Self, Array[Int]) -> Self
+pub fn CheckSpec::with_extended_analysis(Self, Bool) -> Self
+pub fn CheckSpec::with_external_sources(Self, Bool) -> Self
+pub fn CheckSpec::with_filename(Self, String?) -> Self
+pub fn CheckSpec::with_ignore_rc(Self, Bool) -> Self
+pub fn CheckSpec::with_include_codes(Self, Array[Int]) -> Self
+pub fn CheckSpec::with_min_severity(Self, DiagnosticSeverity) -> Self
+pub fn CheckSpec::with_optional_checks(Self, Array[String]) -> Self
+pub fn CheckSpec::with_shell_override(Self, @semantics.ShellDialect?) -> Self
+
+pub enum DiagnosticSeverity {
+  Error
+  Warning
+  Info
+  Style
+} derive(Eq, Show, @debug.Debug)
+
+pub struct PositionedDiagnostic {
+  filename : String
+  span : @parser.Span
+  severity : DiagnosticSeverity
+  code : Int?
+  message : String
+  fix : @fixer.Fix?
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

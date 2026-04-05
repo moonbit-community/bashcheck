@@ -1,0 +1,69 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/bashcheck/checks"
+
+import {
+  "moonbit-community/bashcheck/fixer",
+  "moonbit-community/bashcheck/parser",
+  "moonbit-community/bashcheck/semantics",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn check_script(@parser.Script, options? : CheckOptions) -> Array[CheckDiagnostic]
+
+pub fn run_checks_with_shell(@parser.Script, @semantics.ShellDialect, Bool, Array[String]) -> Array[CheckDiagnostic]
+
+pub fn supported_checks() -> Array[CheckDescription]
+
+pub fn supported_optional_check_infos() -> Array[OptionalCheckInfo]
+
+pub fn supported_optional_checks() -> Array[String]
+
+pub fn supports_optional_check_name(String) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct CheckDescription {
+  code : Int
+  severity : CheckSeverity
+  category : String
+  summary : String
+} derive(Eq, @debug.Debug)
+
+pub struct CheckDiagnostic {
+  span : @parser.Span
+  severity : CheckSeverity
+  code : Int
+  message : String
+  fix : @fixer.Fix?
+} derive(Eq, @debug.Debug)
+
+pub struct CheckOptions {
+  shell_override : @semantics.ShellDialect?
+  filename : String?
+  extended_analysis : Bool
+  optional_checks : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn CheckOptions::default() -> Self
+pub fn CheckOptions::with_extended_analysis(Self, Bool) -> Self
+pub fn CheckOptions::with_optional_checks(Self, Array[String]) -> Self
+
+pub enum CheckSeverity {
+  Error
+  Warning
+  Info
+  Style
+} derive(Eq, Show, @debug.Debug)
+
+pub struct OptionalCheckInfo {
+  name : String
+  desc : String
+  example : String
+  fix : String
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

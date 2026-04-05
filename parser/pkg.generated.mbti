@@ -1,0 +1,445 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/bashcheck/parser"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn merge_script_annotations(Script, Array[Annotation]) -> Script
+
+pub fn parse_arithmetic_expr(String) -> ArithmeticExpr
+
+pub fn parse_config_report(String) -> ConfigParseReport
+
+pub fn parse_script(String) -> Result[Script, ParseError]
+
+pub fn parse_script_report(String) -> ParseReport
+
+pub fn parse_script_with_options(String, ParseOptions) -> ParseReport
+
+pub fn parse_text_as_word(String) -> Word
+
+// Errors
+pub suberror ParseError {
+  UnexpectedEnd(pos~ : Position, context~ : String)
+  UnexpectedToken(pos~ : Position, found~ : String, expected~ : String)
+  Message(pos~ : Position, message~ : String)
+} derive(Eq)
+pub impl Show for ParseError
+
+// Types and methods
+pub struct AndOrList {
+  span : Span
+  head : Pipeline
+  tail : Array[(AndOrOperator, Pipeline)]
+} derive(Eq, @debug.Debug)
+
+pub enum AndOrOperator {
+  AndIf
+  OrIf
+} derive(Eq, @debug.Debug)
+
+pub enum Annotation {
+  Disable(String)
+  Enable(String)
+  Shell(String)
+  Source(String)
+  SourcePath(String)
+  ExternalSources(Bool)
+  ExtendedAnalysis(Bool)
+} derive(Eq, @debug.Debug)
+
+pub struct ArithmeticCommand {
+  raw : String
+  expr : ArithmeticExpr
+} derive(Eq, @debug.Debug)
+
+pub struct ArithmeticExpr {
+  raw : String
+  tokens : Array[ArithmeticToken]
+} derive(Eq, @debug.Debug)
+
+pub struct ArithmeticForClause {
+  init : ArithmeticExpr
+  condition : ArithmeticExpr
+  step : ArithmeticExpr
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub enum ArithmeticToken {
+  Literal(String)
+  Operator(String)
+  Variable(String, Array[ArrayIndex])
+  Expansion(Word)
+  Group(ArithmeticExpr)
+} derive(Eq, @debug.Debug)
+
+pub struct ArrayElement {
+  indexes : Array[ArrayIndex]
+  append : Bool
+  value : AssignmentValue
+} derive(Eq, @debug.Debug)
+
+pub struct ArrayIndex {
+  raw : String
+  parts : Array[WordPart]
+  arithmetic : ArithmeticExpr?
+} derive(Eq, @debug.Debug)
+
+pub struct Assignment {
+  span : Span
+  name : String
+  indexes : Array[ArrayIndex]
+  append : Bool
+  value : AssignmentValue
+} derive(Eq, @debug.Debug)
+
+pub enum AssignmentValue {
+  Empty
+  Word(Word)
+  ArrayLiteral(Array[ArrayElement])
+} derive(Eq, @debug.Debug)
+
+pub struct BatsTestClause {
+  name : String
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub struct BraceExpansion {
+  raw : String
+  elements : Array[Word]
+} derive(Eq, @debug.Debug)
+
+pub struct CaseClause {
+  word : Word
+  items : Array[CaseItem]
+} derive(Eq, @debug.Debug)
+
+pub struct CaseItem {
+  patterns : Array[Word]
+  body : Script
+  separator : CaseSeparator
+} derive(Eq, @debug.Debug)
+
+pub enum CaseSeparator {
+  Break
+  FallThrough
+  Continue
+} derive(Eq, @debug.Debug)
+
+pub struct CoProcClause {
+  name : Word?
+  body : Command
+} derive(Eq, @debug.Debug)
+
+pub struct Command {
+  span : Span
+  kind : CommandKind
+  redirects : Array[Redirection]
+} derive(Eq, @debug.Debug)
+
+pub enum CommandKind {
+  Simple(SimpleCommand)
+  Source(SourceCommand)
+  Time(TimeClause)
+  Subshell(Script)
+  BraceGroup(Script)
+  If(IfClause)
+  While(LoopClause)
+  Until(LoopClause)
+  ForIn(ForClause)
+  ForArithmetic(ArithmeticForClause)
+  Select(SelectClause)
+  Case(CaseClause)
+  Condition(ConditionCommand)
+  Arithmetic(ArithmeticCommand)
+  Function(FunctionDef)
+  CoProc(CoProcClause)
+  BatsTest(BatsTestClause)
+} derive(Eq, @debug.Debug)
+
+pub struct ConditionCommand {
+  kind : ConditionKind
+  raw : String
+  expr : ConditionExpr
+} derive(Eq, @debug.Debug)
+
+pub enum ConditionExpr {
+  Empty
+  Word(Word)
+  Unary(String, Word)
+  Binary(String, Word, Word)
+  Group(ConditionExpr)
+  Not(ConditionExpr)
+  And(ConditionExpr, ConditionExpr)
+  Or(ConditionExpr, ConditionExpr)
+} derive(Eq, @debug.Debug)
+
+pub enum ConditionKind {
+  SingleBracket
+  DoubleBracket
+} derive(Eq, @debug.Debug)
+
+pub struct ConfigParseReport {
+  annotations : Array[Annotation]
+  diagnostics : Array[Diagnostic]
+} derive(Eq, @debug.Debug)
+
+pub struct Diagnostic {
+  span : Span
+  severity : DiagnosticSeverity
+  code : Int?
+  message : String
+} derive(Eq, @debug.Debug)
+
+pub enum DiagnosticSeverity {
+  Error
+  Warning
+  Info
+} derive(Eq, @debug.Debug)
+
+pub struct ExtGlobPattern {
+  raw : String
+  operator : String
+  alternatives : Array[Word]
+} derive(Eq, @debug.Debug)
+
+pub struct ForClause {
+  name : String
+  values : Array[Word]
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub struct FunctionDef {
+  name : String
+  uses_keyword : Bool
+  has_parentheses : Bool
+  body : Command
+} derive(Eq, @debug.Debug)
+
+pub struct HereDoc {
+  delimiter : String
+  quoted : Bool
+  strip_tabs : Bool
+  body : String
+  parts : Array[WordPart]?
+} derive(Eq, @debug.Debug)
+
+pub struct IfArm {
+  condition : Script
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub struct IfClause {
+  arms : Array[IfArm]
+  else_body : Script?
+} derive(Eq, @debug.Debug)
+
+pub struct ListItem {
+  span : Span
+  annotations : Array[Annotation]
+  and_or : AndOrList
+  terminator : Terminator?
+} derive(Eq, @debug.Debug)
+
+pub struct LoopClause {
+  condition : Script
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub enum ParameterCaseMode {
+  UpperFirst
+  UpperAll
+  LowerFirst
+  LowerAll
+  ToggleFirst
+  ToggleAll
+} derive(Eq, @debug.Debug)
+
+pub struct ParameterExpansion {
+  raw : String
+  length_prefix : Bool
+  indirect : Bool
+  name : String?
+  index : ArrayIndex?
+  operator : ParameterOperator?
+} derive(Eq, @debug.Debug)
+
+pub enum ParameterNamesMode {
+  Star
+  At
+} derive(Eq, @debug.Debug)
+
+pub enum ParameterOperator {
+  Slice(String, String?)
+  DefaultValue(String)
+  AssignDefault(String)
+  ErrorValue(String)
+  AlternateValue(String)
+  Names(ParameterNamesMode)
+  RemoveShortestPrefix(String)
+  RemoveLongestPrefix(String)
+  RemoveShortestSuffix(String)
+  RemoveLongestSuffix(String)
+  Replace(ParameterReplaceMode, String, String?)
+  Transform(String)
+  CaseModify(ParameterCaseMode, String?)
+  Raw(String)
+} derive(Eq, @debug.Debug)
+
+pub enum ParameterReplaceMode {
+  First
+  All
+  Prefix
+  Suffix
+} derive(Eq, @debug.Debug)
+
+pub struct ParseOptions {
+  sourced : Bool
+  allow_inline_external_sources : Bool
+  external_sources : Bool
+  follow_sources : Bool
+  current_path : String?
+  source_paths : Array[String]
+  source_files : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+pub fn ParseOptions::default() -> Self
+pub fn ParseOptions::new(Bool, Bool, Bool, Bool, String?, Array[String], Array[(String, String)]) -> Self
+
+pub struct ParseReport {
+  script : Script?
+  diagnostics : Array[Diagnostic]
+} derive(Eq, @debug.Debug)
+
+pub enum PipeOperator {
+  Pipe
+  PipeAndStderr
+} derive(Eq, @debug.Debug)
+
+pub struct Pipeline {
+  span : Span
+  segments : Array[PipelineSegment]
+  operators : Array[PipeOperator]
+} derive(Eq, @debug.Debug)
+
+pub struct PipelineSegment {
+  span : Span
+  bangs : Int
+  command : Command
+} derive(Eq, @debug.Debug)
+
+pub struct Position {
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn Position::new(Int, Int, Int) -> Self
+
+pub struct Redirection {
+  span : Span
+  source : RedirectionSource?
+  op : RedirectionOperator
+  target : RedirectionTarget
+} derive(Eq, @debug.Debug)
+
+pub enum RedirectionOperator {
+  Read
+  Write
+  Append
+  ReadWrite
+  Clobber
+  HereDoc
+  HereDocStrip
+  HereString
+  DupInput
+  DupOutput
+} derive(Eq, @debug.Debug)
+
+pub enum RedirectionSource {
+  Fd(Int)
+  Named(String)
+  All
+} derive(Eq, @debug.Debug)
+
+pub enum RedirectionTarget {
+  Word(Word)
+  HereDoc(HereDoc)
+} derive(Eq, @debug.Debug)
+
+pub struct Script {
+  span : Span
+  has_bom : Bool
+  shebang : String?
+  annotations : Array[Annotation]
+  items : Array[ListItem]
+} derive(Eq, @debug.Debug)
+pub fn Script::dump(Self) -> String
+
+pub struct SelectClause {
+  name : String
+  values : Array[Word]
+  body : Script
+} derive(Eq, @debug.Debug)
+
+pub struct SimpleCommand {
+  assignments : Array[Assignment]
+  words : Array[Word]
+} derive(Eq, @debug.Debug)
+
+pub struct SourceCommand {
+  assignments : Array[Assignment]
+  keyword : String
+  options : Array[Word]
+  path : Word
+  args : Array[Word]
+  resolved_path : String?
+  included : Script?
+} derive(Eq, @debug.Debug)
+
+pub struct Span {
+  start : Position
+  end : Position
+} derive(Eq, @debug.Debug)
+pub fn Span::new(Position, Position) -> Self
+
+pub enum Terminator {
+  Sequential
+  Background
+} derive(Eq, @debug.Debug)
+
+pub struct TimeClause {
+  flags : Array[Word]
+  body : Pipeline
+} derive(Eq, @debug.Debug)
+
+pub struct Word {
+  span : Span
+  source : String
+  parts : Array[WordPart]
+} derive(Eq, @debug.Debug)
+
+pub enum WordPart {
+  Literal(String)
+  SingleQuoted(String)
+  DoubleQuoted(Array[WordPart])
+  DollarDoubleQuoted(Array[WordPart])
+  DollarSingleQuoted(String)
+  Parameter(String)
+  SpecialParameter(String)
+  BracedParameter(ParameterExpansion)
+  BraceCommandSubstitution(Bool, Script)
+  CommandSubstitution(Script)
+  BackQuoted(Script)
+  ArithmeticExpansion(ArithmeticExpr)
+  DollarBracket(ArithmeticExpr)
+  ExtGlob(ExtGlobPattern)
+  ProcessSubstitution(String, Script)
+  BraceExpansion(BraceExpansion)
+  Glob(String)
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,221 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/bashcheck/cfg"
+
+import {
+  "moonbit-community/bashcheck/parser",
+  "moonbit-community/bashcheck/semantics",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/set",
+}
+
+// Values
+pub fn analyze_control_flow(CFG) -> CfgAnalysis
+
+pub fn ast_children_of(CFG, CfgAstId) -> Array[CfgAstId]
+
+pub fn ast_enclosing_span_of(CFG, CfgAstId) -> @parser.Span?
+
+pub fn ast_ids(CFG) -> Array[CfgAstId]
+
+pub fn ast_parent_of(CFG, CfgAstId) -> CfgAstId?
+
+pub fn ast_ref_of(CFG, CfgAstId) -> @semantics.NodeRef?
+
+pub fn ast_span_of(CFG, CfgAstId) -> @parser.Span?
+
+pub fn build_cfg(@parser.Script, CfgParameters) -> CFG
+
+pub fn command_is_reachable(CfgAnalysis, CfgAstId) -> Bool
+
+pub fn compute_post_dominators(CFG) -> Array[Array[CfgNodeId]]
+
+pub fn does_post_dominate(CfgAnalysis, CfgAstId, CfgAstId) -> Bool
+
+pub fn edges(CFG) -> Array[CfgEdge]
+
+pub fn id_to_nodes(CFG, CfgAstId) -> Array[CfgNodeId]
+
+pub fn id_to_range(CFG, CfgAstId) -> (CfgNodeId, CfgNodeId)?
+
+pub fn incoming_state_of_ast(CfgAnalysis, CfgAstId) -> ProgramState?
+
+pub fn incoming_state_of_node(CfgAnalysis, CfgNodeId) -> ProgramState?
+
+pub fn node_kind_of(CFG, CfgAstId) -> @semantics.NodeKind?
+
+pub fn node_of(CFG, CfgNodeId) -> CfgNode?
+
+pub fn outgoing_state_of_ast(CfgAnalysis, CfgAstId) -> ProgramState?
+
+pub fn outgoing_state_of_node(CfgAnalysis, CfgNodeId) -> ProgramState?
+
+pub fn post_dominates(CFG, CfgAstId, CfgAstId) -> Bool
+
+pub fn root_ast_id(CFG) -> CfgAstId
+
+pub fn variable_may_be_array(ProgramState, String) -> Bool
+
+pub fn variable_may_be_assigned_integer(ProgramState, String) -> Bool
+
+pub fn variable_may_be_declared_integer(ProgramState, String) -> Bool
+
+pub fn variable_may_be_unset(ProgramState, String) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct CFG {
+  // private fields
+} derive(Eq, @debug.Debug)
+
+pub struct CfgAnalysis {
+  // private fields
+} derive(Eq)
+
+pub struct CfgAstId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn CfgAstId::to_int(Self) -> Int
+
+pub struct CfgEdge {
+  from : CfgNodeId
+  to : CfgNodeId
+  kind : CfgEdgeKind
+} derive(Eq, @debug.Debug)
+
+pub enum CfgEdgeKind {
+  Flow
+  FalseFlow
+  Exit
+} derive(Eq, @debug.Debug)
+
+pub enum CfgEffect {
+  SetProps(CfgScope?, String, Array[CfgVariableProp])
+  UnsetProps(CfgScope?, String, Array[CfgVariableProp])
+  ReadVariable(String)
+  WriteVariable(String, CfgValue)
+  WriteGlobal(String, CfgValue)
+  WriteLocal(String, CfgValue)
+  WritePrefix(String, CfgValue)
+  DefineFunction(String, CfgAstId, CfgNodeId, CfgNodeId)
+  Undefine(String)
+  UndefineVariable(String)
+  UndefineFunction(String)
+  UndefineNameref(String)
+  HintArray(String)
+  HintDefined(String)
+} derive(Eq, @debug.Debug)
+
+pub struct CfgNode {
+  id : CfgNodeId
+  kind : CfgNodeKind
+} derive(Eq, @debug.Debug)
+
+pub struct CfgNodeId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn CfgNodeId::to_int(Self) -> Int
+
+pub enum CfgNodeKind {
+  Structural
+  EntryPoint(String)
+  DropPrefixAssignments
+  ApplyEffects(Array[CfgTaggedEffect])
+  ExecuteCommand(String?)
+  ExecuteSubshell(String, CfgNodeId, CfgNodeId)
+  SetExitCode(CfgAstId)
+  ImpliedExit
+  ResolvedExit
+  UnresolvedExit
+  Unreachable
+  SetBackgroundPid(CfgAstId)
+} derive(Eq, @debug.Debug)
+
+pub struct CfgParameters {
+  lastpipe : Bool
+  pipefail : Bool
+} derive(Eq, @debug.Debug)
+pub fn CfgParameters::new(Bool, Bool) -> Self
+
+pub enum CfgScope {
+  Global
+  Local
+  Prefix
+} derive(Eq, @debug.Debug)
+
+pub enum CfgStringPart {
+  Literal(String)
+  Variable(String)
+  Integer
+  Unknown
+} derive(Eq, @debug.Debug)
+
+pub struct CfgTaggedEffect {
+  ast_id : CfgAstId
+  effect : CfgEffect
+} derive(Eq, @debug.Debug)
+
+pub(all) enum CfgValue {
+  Uninitialized
+  Array
+  String
+  Integer
+  Computed(CfgAstId, Array[CfgStringPart])
+} derive(Eq, @debug.Debug)
+
+pub enum CfgVariableProp {
+  Export
+  Array
+  Associative
+  Integer
+} derive(Eq, @debug.Debug)
+
+pub enum NumericalStatus {
+  Unknown
+  Empty
+  Maybe
+  Definitely
+} derive(Compare, Eq, @debug.Debug)
+
+pub struct ProgramState {
+  variables_in_scope : Map[String, VariableState]
+  exit_codes : @set.Set[CfgAstId]
+  state_is_reachable : Bool
+} derive(Eq)
+
+pub enum SpaceStatus {
+  Empty
+  Clean
+  Dirty
+} derive(Compare, Eq, @debug.Debug)
+
+pub enum VariableKind {
+  Unset
+  String
+  Array
+  Integer
+} derive(Eq, Hash, @debug.Debug)
+
+pub struct VariablePropertySet {
+  exported : Bool
+  array_ : Bool
+  associative : Bool
+  integer : Bool
+} derive(Eq, Hash, @debug.Debug)
+
+pub struct VariableState {
+  variable_value : VariableValue
+  variable_properties : @set.Set[VariablePropertySet]
+} derive(Eq)
+
+pub struct VariableValue {
+  literal_value : String?
+  possible_kinds : @set.Set[VariableKind]
+  space_status : SpaceStatus
+  numerical_status : NumericalStatus
+} derive(Eq)
+
+// Type aliases
+
+// Traits
+
