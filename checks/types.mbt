@@ -66,6 +66,8 @@ priv struct OptionalCheckRegistration {
 }
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the default options for running AST-level checks.
 pub fn CheckOptions::default() -> CheckOptions {
   {

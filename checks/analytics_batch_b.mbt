@@ -8,6 +8,7 @@ fn append_analytics_batch_b_descriptions(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn analytics_batch_b_descriptions() -> Array[CheckDescription] {
   [
     {

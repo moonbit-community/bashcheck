@@ -272,6 +272,7 @@ priv struct AstCollector {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn AstCollector::new() -> AstCollector {
   { entries: [] }
 }

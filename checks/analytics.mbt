@@ -157,6 +157,7 @@ fn analytics_suite() -> CheckSuiteRegistration {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
   [
     {

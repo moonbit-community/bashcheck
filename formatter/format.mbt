@@ -18,6 +18,8 @@ pub struct FormatOptions {
 } derive(Eq, Debug)
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the default formatting options.
 pub fn FormatOptions::default() -> FormatOptions {
   { wiki_link_count: 3, enable_color: false }
@@ -41,6 +43,8 @@ pub fn FormatOptions::with_enable_color(
   { ..self, enable_color, }
 }
 
+///|
+// CHECK THIS: THUNK
 ///|
 /// Returns the default output format used by the CLI.
 pub fn OutputFormat::default() -> OutputFormat {

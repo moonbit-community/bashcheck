@@ -6,11 +6,15 @@ pub enum InsertionPoint {
 } derive(Eq, Debug)
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the insertion-point value that places text before the range start.
 pub fn InsertionPoint::before() -> InsertionPoint {
   InsertionPoint::InsertBefore
 }
 
+///|
+// CHECK THIS: THUNK
 ///|
 /// Returns the insertion-point value that places text after the range end.
 pub fn InsertionPoint::after() -> InsertionPoint {
@@ -53,6 +57,8 @@ pub struct Fix {
   replacements : Array[Replacement]
 } derive(Eq, Debug)
 
+///|
+// CHECK THIS: THUNK
 ///|
 /// Creates an empty fix.
 pub fn Fix::new() -> Fix {

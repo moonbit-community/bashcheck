@@ -771,6 +771,7 @@ fn check_argument_comparison_spacing(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn argument_comparison_command_names() -> Array[String] {
   ["alias", "declare", "export", "let", "local", "readonly", "typeset"]
 }

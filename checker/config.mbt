@@ -47,6 +47,8 @@ fn load_config_from_path(
 }
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the neutral config object used when no rc file applies.
 fn empty_loaded_config() -> LoadedConfig {
   { annotations: [], diagnostics: [] }

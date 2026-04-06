@@ -366,6 +366,7 @@ priv struct IndexBuilder {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn IndexBuilder::new() -> IndexBuilder {
   { nodes: [], stack: [] }
 }

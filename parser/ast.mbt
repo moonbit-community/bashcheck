@@ -69,6 +69,8 @@ pub struct ConfigParseReport {
 } derive(Eq, Debug)
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the default parser options.
 pub fn ParseOptions::default() -> ParseOptions {
   {

@@ -1344,11 +1344,13 @@ fn shell_support_literal_prefix(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn shell_support_set_short_options() -> Array[String] {
   ["a", "b", "C", "e", "f", "h", "m", "n", "u", "v", "x", "o"]
 }
 
 ///|
+// CHECK THIS: THUNK
 fn shell_support_set_long_options() -> Array[String] {
   [
     "allexport", "errexit", "ignoreeof", "monitor", "noclobber", "noexec", "noglob",
@@ -1497,6 +1499,7 @@ fn shell_support_is_bash_variable(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn shell_support_bash_variables() -> Array[String] {
   [
     "OSTYPE", "MACHTYPE", "HOSTTYPE", "HOSTNAME", "DIRSTACK", "EUID", "UID", "SHLVL",
@@ -1509,6 +1512,7 @@ fn shell_support_bash_variables() -> Array[String] {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn shell_support_bash_dynamic_variables() -> Array[String] {
   [
     "BASH_MONOSECONDS", "EPOCHREALTIME", "EPOCHSECONDS", "RANDOM", "SECONDS", "SRANDOM",
@@ -1516,6 +1520,7 @@ fn shell_support_bash_dynamic_variables() -> Array[String] {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn unsupported_shell_support_commands() -> Array[String] {
   [
     "caller", "builtin", "complete", "compgen", "declare", "dirs", "disown", "enable",

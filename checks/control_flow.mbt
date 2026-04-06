@@ -1,4 +1,5 @@
 ///|
+// CHECK THIS: THUNK
 fn control_flow_descriptions() -> Array[CheckDescription] {
   [
     {

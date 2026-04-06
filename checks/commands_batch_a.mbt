@@ -352,6 +352,7 @@ fn check_find_exec_single_argument(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn find_exec_operators() -> Array[String] {
   ["-exec", "-execdir", "-ok", "-okdir"]
 }
@@ -583,6 +584,7 @@ fn expr_should_warn_antiquated(arguments : Array[@parser.Word]) -> Bool {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn expr_antiquated_exceptions() -> Array[String] {
   [":", "<", ">", "<=", ">=", "match", "length", "substr", "index"]
 }
@@ -1307,6 +1309,7 @@ fn check_sudo_arguments(
 }
 
 ///|
+// CHECK THIS: THUNK
 fn sudo_builtin_names() -> Array[String] {
   [
     "cd", "command", "declare", "eval", "exec", "exit", "export", "hash", "history",

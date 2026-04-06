@@ -62,6 +62,7 @@ fn commands_suite() -> CheckSuiteRegistration {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn commands_optional_registrations() -> Array[OptionalCheckRegistration] {
   [
     {

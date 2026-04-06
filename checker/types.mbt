@@ -34,6 +34,8 @@ pub struct CheckSpec {
 } derive(Eq, Debug)
 
 ///|
+// CHECK THIS: THUNK
+///|
 /// Returns the default checker configuration.
 ///
 /// The default spec performs extended analysis, loads rc files, reports all

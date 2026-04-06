@@ -1,14 +1,17 @@
 ///|
+// CHECK THIS: THUNK
 fn status_ok() -> String {
   "ok"
 }
 
 ///|
+// CHECK THIS: THUNK
 fn status_warning() -> String {
   "warning"
 }
 
 ///|
+// CHECK THIS: THUNK
 fn status_not_ok() -> String {
   "not_ok"
 }

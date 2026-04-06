@@ -1736,6 +1736,7 @@ fn classify_shebang_shell(shell : String) -> ShebangShellStatus {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn initial_position() -> Position {
   { offset: 0, line: 1, column: 1 }
 }

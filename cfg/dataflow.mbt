@@ -122,6 +122,7 @@ fn[A : Hash + Eq] union_set(lhs : Set[A], rhs : Set[A]) -> Set[A] {
 }
 
 ///|
+// CHECK THIS: THUNK
 fn empty_property_set() -> VariablePropertySet {
   { exported: false, array_: false, associative: false, integer: false }
 }
