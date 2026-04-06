@@ -7731,7 +7731,13 @@ fn Parser::read_until_single_quote(
 
 ///|
 fn string_starts_with_linefeed(text : String) -> Bool {
-  text.has_prefix("\n") || text.has_prefix("\r\n")
+  text.has_prefix("\n") ||
+  text.has_prefix(
+    (
+      $|\{'\r'}
+      $|
+    ),
+  )
 }
 
 ///|

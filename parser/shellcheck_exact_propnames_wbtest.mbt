@@ -100,7 +100,14 @@ test "shellcheck exact function definition prop names" {
 
   let warning_cases : Array[(String, String)] = [
     ("prop_readFunctionDefinition4", "foo(a, b) { true; }"),
-    ("prop_readFunctionDefinition11", "function foo{\ntrue\n}"),
+    (
+      "prop_readFunctionDefinition11",
+      (
+        #|function foo{
+        #|true
+        #|}
+      ),
+    ),
   ]
   for case_ in warning_cases {
     assert_command_status(case_.0, case_.1, status_warning())
@@ -135,9 +142,30 @@ test "shellcheck exact brace group prop names" {
 ///|
 test "shellcheck exact bats prop names" {
   let ok_cases : Array[(String, String)] = [
-    ("prop_readBatsTest1", "@test 'can parse' {\n  true\n}"),
-    ("prop_readBatsTest2", "@test random text !(@*$Y&! {\n  true\n}"),
-    ("prop_readBatsTest3", "@test foo { bar { baz {\n  true\n}"),
+    (
+      "prop_readBatsTest1",
+      (
+        #|@test 'can parse' {
+        #|  true
+        #|}
+      ),
+    ),
+    (
+      "prop_readBatsTest2",
+      (
+        #|@test random text !(@*$Y&! {
+        #|  true
+        #|}
+      ),
+    ),
+    (
+      "prop_readBatsTest3",
+      (
+        #|@test foo { bar { baz {
+        #|  true
+        #|}
+      ),
+    ),
   ]
   for case_ in ok_cases {
     assert_bats_test_status(case_.0, case_.1, status_ok())
@@ -145,7 +173,12 @@ test "shellcheck exact bats prop names" {
 
   assert_bats_test_status(
     "prop_readBatsTest4",
-    "@test foo \n{\n true\n}",
+    (
+      #|@test foo 
+      #|{
+      #| true
+      #|}
+    ),
     status_not_ok(),
   )
 }

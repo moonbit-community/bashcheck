@@ -26,7 +26,14 @@ fn parse_shell_with_options(
 
 ///|
 test "shell dialect selection respects override annotation shebang and filename" {
-  let annotated = parse_shell_ok("#!/bin/sh\n# shellcheck shell=ksh\ntrue\n")
+  let annotated = parse_shell_ok(
+    (
+      #|#!/bin/sh
+      #|# shellcheck shell=ksh
+      #|true
+      #|
+    ),
+  )
   assert_eq(@semantics.determine_shell(annotated), @semantics.ShellDialect::Ksh)
   assert_eq(
     @semantics.determine_shell(
@@ -36,7 +43,12 @@ test "shell dialect selection respects override annotation shebang and filename"
     @semantics.ShellDialect::Dash,
   )
 
-  let plain = parse_shell_ok("true\n")
+  let plain = parse_shell_ok(
+    (
+      #|true
+      #|
+    ),
+  )
   assert_eq(
     @semantics.determine_shell(plain, filename="hooks/pre-commit.envrc"),
     @semantics.ShellDialect::Bash,
@@ -46,8 +58,19 @@ test "shell dialect selection respects override annotation shebang and filename"
 
 ///|
 test "unknown-shell warning suppression follows shellcheck entry semantics" {
-  let plain = parse_shell_ok("true\n")
-  let annotated = parse_shell_ok("# shellcheck shell=dash\ntrue\n")
+  let plain = parse_shell_ok(
+    (
+      #|true
+      #|
+    ),
+  )
+  let annotated = parse_shell_ok(
+    (
+      #|# shellcheck shell=dash
+      #|true
+      #|
+    ),
+  )
 
   assert_true(
     !@semantics.suppresses_unknown_shell_warning(plain, None, None, None),
@@ -134,7 +157,13 @@ test "shell dialect helpers parse shebangs annotations and filenames" {
   )
   assert_eq(@semantics.shell_from_shebang("#!/bin/unknownsh"), None)
 
-  let annotated = parse_shell_ok("# shellcheck shell=\"busybox ash\"\ntrue\n")
+  let annotated = parse_shell_ok(
+    (
+      #|# shellcheck shell="busybox ash"
+      #|true
+      #|
+    ),
+  )
   assert_eq(
     @semantics.shell_from_annotation(annotated.annotations),
     Some(@semantics.ShellDialect::BusyboxSh),
@@ -162,7 +191,12 @@ test "shell dialect helpers parse shebangs annotations and filenames" {
 ///|
 test "shell option queries detect set and shopt toggles" {
   let enabled = parse_shell_ok(
-    "#!/usr/bin/env bash -e\nset -eo pipefail\nshopt -s lastpipe inherit_errexit execfail\n",
+    (
+      #|#!/usr/bin/env bash -e
+      #|set -eo pipefail
+      #|shopt -s lastpipe inherit_errexit execfail
+      #|
+    ),
   )
   assert_true(@semantics.has_set_e(enabled))
   assert_true(@semantics.has_pipefail(enabled))
@@ -173,7 +207,12 @@ test "shell option queries detect set and shopt toggles" {
   assert_true(@semantics.has_execfail(enabled, @semantics.ShellDialect::Bash))
 
   let disabled = parse_shell_ok(
-    "set +e\nset -o nounset\nshopt -u lastpipe execfail inherit_errexit\n",
+    (
+      #|set +e
+      #|set -o nounset
+      #|shopt -u lastpipe execfail inherit_errexit
+      #|
+    ),
   )
   assert_true(!@semantics.has_set_e(disabled))
   assert_true(!@semantics.has_pipefail(disabled))
@@ -183,48 +222,92 @@ test "shell option queries detect set and shopt toggles" {
   )
   assert_true(!@semantics.has_execfail(disabled, @semantics.ShellDialect::Bash))
 
-  let reordered = parse_shell_ok("set -oe pipefail\n")
+  let reordered = parse_shell_ok(
+    (
+      #|set -oe pipefail
+      #|
+    ),
+  )
   assert_true(@semantics.has_set_e(reordered))
   assert_true(@semantics.has_pipefail(reordered))
 }
 
 ///|
 test "shell option queries detect set -e through env split-string shebangs" {
-  let split_string = parse_shell_ok("#!/usr/bin/env -S 'X=FOO bash -e'\ntrue\n")
+  let split_string = parse_shell_ok(
+    (
+      #|#!/usr/bin/env -S 'X=FOO bash -e'
+      #|true
+      #|
+    ),
+  )
   assert_true(@semantics.has_set_e(split_string))
 
   let split_equals = parse_shell_ok(
-    "#!/usr/bin/env --split-string='X=FOO bash -e'\ntrue\n",
+    (
+      #|#!/usr/bin/env --split-string='X=FOO bash -e'
+      #|true
+      #|
+    ),
   )
   assert_true(@semantics.has_set_e(split_equals))
 
   let split_equals_empty = parse_shell_ok(
-    "#!/usr/bin/env --split-string= X=FOO bash -e\ntrue\n",
+    (
+      #|#!/usr/bin/env --split-string= X=FOO bash -e
+      #|true
+      #|
+    ),
   )
   assert_true(@semantics.has_set_e(split_equals_empty))
 
-  let no_flag = parse_shell_ok("#!/usr/bin/env -S 'X=FOO bash -u'\ntrue\n")
+  let no_flag = parse_shell_ok(
+    (
+      #|#!/usr/bin/env -S 'X=FOO bash -u'
+      #|true
+      #|
+    ),
+  )
   assert_true(!@semantics.has_set_e(no_flag))
 }
 
 ///|
 test "shebang option queries stop at shell end-of-options and operands" {
-  let end_of_options = parse_shell_ok("#!/usr/bin/env -S bash -- -e\ntrue\n")
+  let end_of_options = parse_shell_ok(
+    (
+      #|#!/usr/bin/env -S bash -- -e
+      #|true
+      #|
+    ),
+  )
   assert_true(!@semantics.has_set_e(end_of_options))
 
   let shell_operand = parse_shell_ok(
-    "#!/usr/bin/env -S bash script.sh -e\ntrue\n",
+    (
+      #|#!/usr/bin/env -S bash script.sh -e
+      #|true
+      #|
+    ),
   )
   assert_true(!@semantics.has_set_e(shell_operand))
 
-  let command_string = parse_shell_ok("#!/usr/bin/env -S bash -c true -e\n")
+  let command_string = parse_shell_ok(
+    (
+      #|#!/usr/bin/env -S bash -c true -e
+      #|
+    ),
+  )
   assert_true(!@semantics.has_set_e(command_string))
 }
 
 ///|
 test "shell option queries detect shebang long options for set and shopt" {
   let script = parse_shell_ok(
-    "#!/usr/bin/env -S bash -o pipefail -O lastpipe -O inherit_errexit -O execfail\ntrue\n",
+    (
+      #|#!/usr/bin/env -S bash -o pipefail -O lastpipe -O inherit_errexit -O execfail
+      #|true
+      #|
+    ),
   )
   assert_true(@semantics.has_pipefail(script))
   assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
@@ -237,7 +320,12 @@ test "shell option queries detect shebang long options for set and shopt" {
 ///|
 test "shell option queries treat quoted builtin flags as real options" {
   let script = parse_shell_ok(
-    "set \"-e\"\nset \"-o\" pipefail\nshopt \"-s\" lastpipe inherit_errexit execfail\n",
+    (
+      #|set "-e"
+      #|set "-o" pipefail
+      #|shopt "-s" lastpipe inherit_errexit execfail
+      #|
+    ),
   )
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
@@ -251,7 +339,12 @@ test "shell option queries treat quoted builtin flags as real options" {
 ///|
 test "shell option queries stop parsing after positional operands" {
   let script = parse_shell_ok(
-    "set foo -e\nset foo -o pipefail\nshopt lastpipe -s inherit_errexit execfail\n",
+    (
+      #|set foo -e
+      #|set foo -o pipefail
+      #|shopt lastpipe -s inherit_errexit execfail
+      #|
+    ),
   )
   assert_true(!@semantics.has_set_e(script))
   assert_true(!@semantics.has_pipefail(script))
@@ -265,7 +358,12 @@ test "shell option queries stop parsing after positional operands" {
 ///|
 test "shell option queries ignore deferred and isolated scopes" {
   let scoped = parse_shell_ok(
-    "f() { set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail; }\n(set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail)\nprintf '%s\\n' \"$(set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail)\"\n",
+    (
+      #|f() { set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail; }
+      #|(set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail)
+      #|printf '%s\n' "$(set -e; set -o pipefail; shopt -s lastpipe inherit_errexit execfail)"
+      #|
+    ),
   )
   assert_true(!@semantics.has_set_e(scoped))
   assert_true(!@semantics.has_pipefail(scoped))
@@ -279,7 +377,10 @@ test "shell option queries ignore deferred and isolated scopes" {
 ///|
 test "shell option queries keep current-shell compound commands" {
   let current_shell = parse_shell_ok(
-    "{ set -e; set -o pipefail; shopt -s -- lastpipe inherit_errexit execfail; }\n",
+    (
+      #|{ set -e; set -o pipefail; shopt -s -- lastpipe inherit_errexit execfail; }
+      #|
+    ),
   )
   assert_true(@semantics.has_set_e(current_shell))
   assert_true(@semantics.has_pipefail(current_shell))
@@ -305,11 +406,23 @@ test "shell option queries include sourced files in current-shell state" {
     [],
     [
       (
-        "lib.sh", "set -e\nset -o pipefail\nshopt -s lastpipe inherit_errexit execfail\n",
+        "lib.sh",
+        (
+          #|set -e
+          #|set -o pipefail
+          #|shopt -s lastpipe inherit_errexit execfail
+          #|
+        ),
       ),
     ],
   )
-  let script = parse_shell_with_options(". lib.sh\n", options)
+  let script = parse_shell_with_options(
+    (
+      #|. lib.sh
+      #|
+    ),
+    options,
+  )
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
   assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
@@ -321,13 +434,23 @@ test "shell option queries include sourced files in current-shell state" {
 
 ///|
 test "shopt double dash stops option parsing before operands" {
-  let script = parse_shell_ok("shopt -- -s lastpipe\n")
+  let script = parse_shell_ok(
+    (
+      #|shopt -- -s lastpipe
+      #|
+    ),
+  )
   assert_true(!@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
 }
 
 ///|
 test "shell option defaults follow shell dialect semantics" {
-  let script = parse_shell_ok("true\n")
+  let script = parse_shell_ok(
+    (
+      #|true
+      #|
+    ),
+  )
   assert_true(!@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
   assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Ksh))
   assert_true(

@@ -2,7 +2,10 @@
 test "phase 2 entry semantics align for SC2148" {
   assert_diagnostics_match(
     "SC2148",
-    "echo hello\n",
+    (
+      #|echo hello
+      #|
+    ),
     [
       shellcheck_error(
         2148, 1, 1, "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive.",
@@ -13,14 +16,20 @@ test "phase 2 entry semantics align for SC2148" {
 
   assert_diagnostics_match(
     "SC2148 filename suffix suppresses unknown shell for bash",
-    "echo hello\n",
+    (
+      #|echo hello
+      #|
+    ),
     [],
     spec=@checker.CheckSpec::default().with_filename(Some("script.bash")),
   )
 
   assert_diagnostics_match(
     "SC2148 envrc still warns while keeping bash semantics",
-    "echo hello\n",
+    (
+      #|echo hello
+      #|
+    ),
     [
       shellcheck_error(
         2148, 1, 1, "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive.",
@@ -34,22 +43,43 @@ test "phase 2 entry semantics align for SC2148" {
 test "phase 3 analytics alignment closes SC2000 and SC2087 gaps" {
   assert_diagnostics_match(
     "SC2000",
-    "# shellcheck disable=SC2154\necho \"$foo\" | wc -c\n",
+    (
+      #|# shellcheck disable=SC2154
+      #|echo "$foo" | wc -c
+      #|
+    ),
     [shellcheck_style(2000, 2, 1, "See if you can use ${#variable} instead.")],
   )
 
-  assert_diagnostics_match("SC2087", "ssh host <<EOF2\necho $HOME\nEOF2\n", [
-    shellcheck_warning(
-      2087, 1, 12, "Quote 'EOF2' to make here document expansions happen on the server side rather than on the client.",
+  assert_diagnostics_match(
+    "SC2087",
+    (
+      #|ssh host <<EOF2
+      #|echo $HOME
+      #|EOF2
+      #|
     ),
-  ])
+    [
+      shellcheck_warning(
+        2087, 1, 12, "Quote 'EOF2' to make here document expansions happen on the server side rather than on the client.",
+      ),
+    ],
+  )
 }
 
 ///|
 test "phase 4 command alignment closes command-specialized gaps" {
   assert_diagnostics_match(
     "SC2174/SC2029/SC2114/SC2318",
-    "#!/bin/bash\n# shellcheck disable=SC2154,SC2086,SC2034,SC2329\nmkdir -p -m 0755 a/b\nssh host \"echo $PS1\"\nrm -rf /home\nq() { local x=1 y=$x; }\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086,SC2034,SC2329
+      #|mkdir -p -m 0755 a/b
+      #|ssh host "echo $PS1"
+      #|rm -rf /home
+      #|q() { local x=1 y=$x; }
+      #|
+    ),
     [
       shellcheck_warning(
         2174, 3, 10, "When used with -p, -m only applies to the deepest directory.",
@@ -66,7 +96,11 @@ test "phase 4 command alignment closes command-specialized gaps" {
 
   assert_diagnostics_match(
     "SC2176",
-    "#!/bin/sh\ntime -p foo | bar\n",
+    (
+      #|#!/bin/sh
+      #|time -p foo | bar
+      #|
+    ),
     [
       shellcheck_warning(
         2176, 2, 1, "'time' is undefined for pipelines. time single stage or bash -c instead.",
@@ -79,7 +113,12 @@ test "phase 4 command alignment closes command-specialized gaps" {
 
   assert_diagnostics_match(
     "SC2168",
-    "#!/bin/bash\n# shellcheck disable=SC2034\nlocal foo=3\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|local foo=3
+      #|
+    ),
     [shellcheck_error(2168, 3, 1, "'local' is only valid in functions.")],
   )
 }

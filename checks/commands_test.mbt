@@ -1,15 +1,28 @@
 ///|
 test "command checks flag read without r and allow explicit raw reads" {
-  let plain = check_source("read foo\n")
+  let plain = check_source(
+    (
+      #|read foo
+      #|
+    ),
+  )
   assert_true(has_code(plain, 2162))
 
-  let with_r = check_source("read -r foo\n")
+  let with_r = check_source(
+    (
+      #|read -r foo
+      #|
+    ),
+  )
   assert_true(!has_code(with_r, 2162))
 }
 
 ///|
 test "command checks attach fixes for read without r" {
-  let source = "builtin read foo\nread<file\n"
+  let source =
+    #|builtin read foo
+    #|read<file
+    #|
   let diagnostics = check_source(source)
   let read_diagnostics = diagnostics.filter(fn(diagnostic) {
     diagnostic.code == 2162
@@ -20,7 +33,13 @@ test "command checks attach fixes for read without r" {
     Some(fix) =>
       assert_eq(
         @fixer.apply_fix(fix, source),
-        Some("builtin read -r foo\nread<file\n"),
+        Some(
+          (
+            #|builtin read -r foo
+            #|read<file
+            #|
+          ),
+        ),
       )
     None => checks_fail("expected SC2162 fix on wrapped read")
   }
@@ -29,7 +48,13 @@ test "command checks attach fixes for read without r" {
     Some(fix) =>
       assert_eq(
         @fixer.apply_fix(fix, source),
-        Some("builtin read foo\nread -r<file\n"),
+        Some(
+          (
+            #|builtin read foo
+            #|read -r<file
+            #|
+          ),
+        ),
       )
     None => checks_fail("expected SC2162 fix on redirected read")
   }
@@ -37,20 +62,35 @@ test "command checks attach fixes for read without r" {
 
 ///|
 test "command checks allow poll-style read invocations" {
-  let diagnostics = check_source("read -u 3 -t 0\n")
+  let diagnostics = check_source(
+    (
+      #|read -u 3 -t 0
+      #|
+    ),
+  )
   assert_true(!has_code(diagnostics, 2162))
 }
 
 ///|
 test "command checks keep parsing read options after delimiter arguments" {
-  let diagnostics = check_source("read -d '' -r foo\n")
+  let diagnostics = check_source(
+    (
+      #|read -d '' -r foo
+      #|
+    ),
+  )
   assert_true(!has_code(diagnostics, 2162))
 }
 
 ///|
 test "command checks flag useless echo substitutions" {
   let diagnostics = check_source(
-    "echo $(date)\necho `date`\necho \"$(date)\"\n",
+    (
+      #|echo $(date)
+      #|echo `date`
+      #|echo "$(date)"
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2005), 3)
@@ -63,7 +103,11 @@ test "command checks flag useless echo substitutions" {
 ///|
 test "command checks avoid false positives for non-trivial echo substitutions" {
   let diagnostics = check_source(
-    "echo \"The time is $(date)\"\necho \"$(<file)\"\n",
+    (
+      #|echo "The time is $(date)"
+      #|echo "$(<file)"
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2005))
@@ -71,7 +115,13 @@ test "command checks avoid false positives for non-trivial echo substitutions" {
 
 ///|
 test "command checks flag find invocations without an explicit path" {
-  let diagnostics = check_source("find -type f\nfind\n")
+  let diagnostics = check_source(
+    (
+      #|find -type f
+      #|find
+      #|
+    ),
+  )
 
   assert_eq(count_code(diagnostics, 2185), 2)
   assert_eq(
@@ -83,7 +133,13 @@ test "command checks flag find invocations without an explicit path" {
 ///|
 test "command checks allow find invocations with explicit paths or help" {
   let diagnostics = check_source(
-    "find . -type f\nfind -H -L \"$path\" -print\nfind --help\nfind -D exec .\n",
+    (
+      #|find . -type f
+      #|find -H -L "$path" -print
+      #|find --help
+      #|find -D exec .
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2185))
@@ -91,7 +147,13 @@ test "command checks allow find invocations with explicit paths or help" {
 
 ///|
 test "command checks flag deprecated grep variants" {
-  let diagnostics = check_source("egrep '.+'\n/usr/bin/fgrep '*' files\n")
+  let diagnostics = check_source(
+    (
+      #|egrep '.+'
+      #|/usr/bin/fgrep '*' files
+      #|
+    ),
+  )
 
   assert_true(has_code(diagnostics, 2196))
   assert_true(has_code(diagnostics, 2197))
@@ -107,27 +169,55 @@ test "command checks flag deprecated grep variants" {
 
 ///|
 test "command checks allow modern grep forms" {
-  let diagnostics = check_source("grep -E '.+'\ngrep -F '*' files\n")
+  let diagnostics = check_source(
+    (
+      #|grep -E '.+'
+      #|grep -F '*' files
+      #|
+    ),
+  )
   assert_true(!has_code(diagnostics, 2196))
   assert_true(!has_code(diagnostics, 2197))
 }
 
 ///|
 test "command checks flag shell time flags unless command time is explicit" {
-  let bash_diagnostics = check_source("time -f '%E' sleep 1\n")
+  let bash_diagnostics = check_source(
+    (
+      #|time -f '%E' sleep 1
+      #|
+    ),
+  )
   assert_true(has_code(bash_diagnostics, 2023))
 
-  let direct = check_source("command time -f '%E' sleep 1\n")
+  let direct = check_source(
+    (
+      #|command time -f '%E' sleep 1
+      #|
+    ),
+  )
   assert_true(!has_code(direct, 2023))
 
-  let dash = check_source("#!/bin/dash\ntime -f '%E' sleep 1\n")
+  let dash = check_source(
+    (
+      #|#!/bin/dash
+      #|time -f '%E' sleep 1
+      #|
+    ),
+  )
   assert_true(!has_code(dash, 2023))
 }
 
 ///|
 test "command checks flag sudo redirects that sudo does not affect" {
   let diagnostics = check_source(
-    "sudo echo 3 > /proc/file\nsudo cmd < input\nsudo cmd >> file\nsudo cmd &> file\n",
+    (
+      #|sudo echo 3 > /proc/file
+      #|sudo cmd < input
+      #|sudo cmd >> file
+      #|sudo cmd &> file
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2024), 4)
@@ -136,7 +226,12 @@ test "command checks flag sudo redirects that sudo does not affect" {
 ///|
 test "command checks allow stderr-only and dev-null sudo redirects" {
   let diagnostics = check_source(
-    "sudo cmd 2>&1\nsudo cmd 2> log\nsudo cmd > /dev/null 2>&1\n",
+    (
+      #|sudo cmd 2>&1
+      #|sudo cmd 2> log
+      #|sudo cmd > /dev/null 2>&1
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2024))
@@ -144,7 +239,13 @@ test "command checks allow stderr-only and dev-null sudo redirects" {
 
 ///|
 test "command checks flag deprecated tempfile utility" {
-  let diagnostics = check_source("tempfile\n/usr/bin/tempfile\n")
+  let diagnostics = check_source(
+    (
+      #|tempfile
+      #|/usr/bin/tempfile
+      #|
+    ),
+  )
   assert_eq(count_code(diagnostics, 2186), 2)
   assert_eq(
     first_code(diagnostics, 2186).message,
@@ -154,7 +255,13 @@ test "command checks flag deprecated tempfile utility" {
 
 ///|
 test "command optional checks flag deprecated which" {
-  let script = parse_checks_ok("which bash\n/usr/bin/which awk\n")
+  let script = parse_checks_ok(
+    (
+      #|which bash
+      #|/usr/bin/which awk
+      #|
+    ),
+  )
   let diagnostics = check_script(
     script,
     options=CheckOptions::default().with_optional_checks(["deprecate-which"]),
@@ -169,7 +276,12 @@ test "command optional checks flag deprecated which" {
 
 ///|
 test "command optional checks allow modern command -v lookups" {
-  let script = parse_checks_ok("command -v bash\n")
+  let script = parse_checks_ok(
+    (
+      #|command -v bash
+      #|
+    ),
+  )
   let diagnostics = check_script(
     script,
     options=CheckOptions::default().with_optional_checks(["deprecate-which"]),
@@ -180,7 +292,13 @@ test "command optional checks allow modern command -v lookups" {
 ///|
 test "command checks flag tr globs ranges duplicate sets and bracket classes" {
   let diagnostics = check_source(
-    "tr [a-f] [A-F]\ntr 'a-z' 'A-Z'\ntr foo bar\ntr '[a-z]' '[A-Z]'\n",
+    (
+      #|tr [a-f] [A-F]
+      #|tr 'a-z' 'A-Z'
+      #|tr foo bar
+      #|tr '[a-z]' '[A-Z]'
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2060), 2)
@@ -193,7 +311,14 @@ test "command checks flag tr globs ranges duplicate sets and bracket classes" {
 ///|
 test "command checks avoid false positives for sensible tr usage" {
   let diagnostics = check_source(
-    "tr -d '[:lower:]'\ntr aeiou _____\ntr --squeeze-repeats rl lr\ntr abc '[d*]'\ntr '[=e=]' 'e'\n",
+    (
+      #|tr -d '[:lower:]'
+      #|tr aeiou _____
+      #|tr --squeeze-repeats rl lr
+      #|tr abc '[d*]'
+      #|tr '[=e=]' 'e'
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2060))
@@ -206,7 +331,14 @@ test "command checks avoid false positives for sensible tr usage" {
 ///|
 test "command checks flag the Phase 4 find family" {
   let diagnostics = check_source(
-    "find / -name *.php\nfind . -exec 'cat {} | wc -l' \\;\nfind . -exec sh -c 'echo {}' \\;\nfind . -name '*.wav' -o -name '*.au' -exec rm {} +\nfind . -exec echo {} > file \\;\n",
+    (
+      #|find / -name *.php
+      #|find . -exec 'cat {} | wc -l' \;
+      #|find . -exec sh -c 'echo {}' \;
+      #|find . -name '*.wav' -o -name '*.au' -exec rm {} +
+      #|find . -exec echo {} > file \;
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2061))
@@ -219,7 +351,14 @@ test "command checks flag the Phase 4 find family" {
 ///|
 test "command checks avoid false positives for safe find patterns" {
   let diagnostics = check_source(
-    "find * -name '*.php'\nfind . -exec wc -l {} \\;\nfind . -ok sh -c 'rm \"$@\"' _ {} \\;\nfind . -name '*.wav' -o \\( -name '*.au' -exec rm {} + \\)\nfind . -exec echo {} \\; > file\n",
+    (
+      #|find * -name '*.php'
+      #|find . -exec wc -l {} \;
+      #|find . -ok sh -c 'rm "$@"' _ {} \;
+      #|find . -name '*.wav' -o \( -name '*.au' -exec rm {} + \)
+      #|find . -exec echo {} \; > file
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2061))
@@ -232,7 +371,14 @@ test "command checks avoid false positives for safe find patterns" {
 ///|
 test "command checks flag expr pitfalls and modern replacements" {
   let diagnostics = check_source(
-    "expr 3 + 2\nexpr match foo bar\nexpr foo : fo*\nexpr 1 * 2\nexpr 5 -3\n",
+    (
+      #|expr 3 + 2
+      #|expr match foo bar
+      #|expr foo : fo*
+      #|expr 1 * 2
+      #|expr 5 -3
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2003))
@@ -245,7 +391,12 @@ test "command checks flag expr pitfalls and modern replacements" {
 ///|
 test "command checks allow expr forms that may intentionally split or expand" {
   let diagnostics = check_source(
-    "expr \"$@\"\nexpr 5 $rest\nexpr foo \\< regex\n",
+    (
+      #|expr "$@"
+      #|expr 5 $rest
+      #|expr foo \< regex
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2305))
@@ -256,7 +407,13 @@ test "command checks allow expr forms that may intentionally split or expand" {
 ///|
 test "command checks flag grep glob confusion and regex wildcard pitfalls" {
   let diagnostics = check_source(
-    "grep *.mp3 file\ngrep '*foo*' file\ngrep 'cow*test' file\ngrep -- 'Foo*' file\n",
+    (
+      #|grep *.mp3 file
+      #|grep '*foo*' file
+      #|grep 'cow*test' file
+      #|grep -- 'Foo*' file
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2062))
@@ -267,7 +424,14 @@ test "command checks flag grep glob confusion and regex wildcard pitfalls" {
 ///|
 test "command checks allow grep regexes and fixed string modes" {
   let diagnostics = check_source(
-    "grep foo *.mp3\ngrep '[0-9]*' file\ngrep '^aa*' file\ngrep -F 'Foo*' file\ngrep --include=*.png foo\n",
+    (
+      #|grep foo *.mp3
+      #|grep '[0-9]*' file
+      #|grep '^aa*' file
+      #|grep -F 'Foo*' file
+      #|grep --include=*.png foo
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2062))
@@ -277,7 +441,12 @@ test "command checks allow grep regexes and fixed string modes" {
 ///|
 test "command checks flag trap quotes that expand too early" {
   let diagnostics = check_source(
-    "trap \"echo $num\" INT\ntrap \"echo `ls`\" INT\ntrap 'echo $num' INT\n",
+    (
+      #|trap "echo $num" INT
+      #|trap "echo `ls`" INT
+      #|trap 'echo $num' INT
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2064), 2)
@@ -286,7 +455,15 @@ test "command checks flag trap quotes that expand too early" {
 ///|
 test "command checks validate return and exit status arguments" {
   let diagnostics = check_source(
-    "return -1\nreturn 1 2\nreturn $var\nexit 1000\nexit 1 2\nexit $((a|b))\n",
+    (
+      #|return -1
+      #|return 1 2
+      #|return $var
+      #|exit 1000
+      #|exit 1 2
+      #|exit $((a|b))
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2151))
@@ -300,7 +477,13 @@ test "command checks validate return and exit status arguments" {
 ///|
 test "command checks validate printf format usage and argument counts" {
   let diagnostics = check_source(
-    "printf foo bar\nprintf '%s %s' 1\nprintf \"$fmt\" foo\nprintf '%(%s)T'\n",
+    (
+      #|printf foo bar
+      #|printf '%s %s' 1
+      #|printf "$fmt" foo
+      #|printf '%(%s)T'
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2182))
@@ -312,7 +495,13 @@ test "command checks validate printf format usage and argument counts" {
 ///|
 test "command checks allow valid printf arity and special forms" {
   let diagnostics = check_source(
-    "printf '%s %s' 1 2\nprintf '%s %s' \"$@\"\nprintf -v out '%s' 1\nprintf '%(%s)T' -1\n",
+    (
+      #|printf '%s %s' 1 2
+      #|printf '%s %s' "$@"
+      #|printf -v out '%s' 1
+      #|printf '%(%s)T' -1
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2182))
@@ -322,7 +511,16 @@ test "command checks allow valid printf arity and special forms" {
 ///|
 test "command checks flag source args sudo builtins and read expansions" {
   let diagnostics = check_source(
-    "#!/bin/sh\n. script arg\nsudo cd /root\nsudo export x=3\nread $var\nread -a \"$arr\"\nread arr[val]\n",
+    (
+      #|#!/bin/sh
+      #|. script arg
+      #|sudo cd /root
+      #|sudo export x=3
+      #|read $var
+      #|read -a "$arr"
+      #|read arr[val]
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2240))
@@ -334,7 +532,17 @@ test "command checks flag source args sudo builtins and read expansions" {
 ///|
 test "command checks avoid false positives for source sudo and read option arguments" {
   let diagnostics = check_source(
-    "#!/bin/bash\n. script arg\nsudo -n -u export ls\nsudo docker export foo\nread -p \"$var\"\nread -rd \"$delim\" name\nread ${var?}\nread $1\n",
+    (
+      #|#!/bin/bash
+      #|. script arg
+      #|sudo -n -u export ls
+      #|sudo docker export foo
+      #|read -p "$var"
+      #|read -rd "$delim" name
+      #|read ${var?}
+      #|read $1
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2240))
@@ -346,7 +554,12 @@ test "command checks avoid false positives for source sudo and read option argum
 ///|
 test "command checks flag alias pitfalls from phase 5" {
   let diagnostics = check_source(
-    "alias a='cp $1 /a'\nalias a=\"echo \\${@}\"\nalias foo=\"echo $PWD\"\n",
+    (
+      #|alias a='cp $1 /a'
+      #|alias a="echo \${@}"
+      #|alias foo="echo $PWD"
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2142), 2)
@@ -364,7 +577,13 @@ test "command checks flag alias pitfalls from phase 5" {
 ///|
 test "command checks avoid false positives for harmless alias forms" {
   let diagnostics = check_source(
-    "alias $1='foo'\nalias -p\nalias foo='echo {1..10}'\nalias foo='echo $PWD'\n",
+    (
+      #|alias $1='foo'
+      #|alias -p
+      #|alias foo='echo {1..10}'
+      #|alias foo='echo $PWD'
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2142))
@@ -374,7 +593,11 @@ test "command checks avoid false positives for harmless alias forms" {
 ///|
 test "command checks validate while getopts case coverage" {
   let diagnostics = check_source(
-    "while getopts 'a:b' x; do case $x in a) foo;; esac; done\nwhile getopts 'a:' x; do case $x in a) foo;; b) bar;; esac; done\n",
+    (
+      #|while getopts 'a:b' x; do case $x in a) foo;; esac; done
+      #|while getopts 'a:' x; do case $x in a) foo;; b) bar;; esac; done
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2213))
@@ -393,7 +616,15 @@ test "command checks validate while getopts case coverage" {
 ///|
 test "command checks avoid false positives for valid while getopts patterns" {
   let diagnostics = check_source(
-    "while getopts 'a:b' x; do case $x in a) foo;; b) bar;; *) :;; esac; done\nwhile getopts 'a:123' x; do case $x in a) foo;; [0-9]) bar;; esac; done\nwhile getopts 'a:' x; do case $x in a) foo;; \\?) bar;; *) baz;; esac; done\nwhile getopts 'a:b' x; do case $y in a) foo;; esac; done\nwhile getopts 'a:b' x; do case x$x in xa) foo;; xb) foo;; esac; done\nwhile getopts 'a:b' x; do x=a; case $x in a) foo;; esac; done\n",
+    (
+      #|while getopts 'a:b' x; do case $x in a) foo;; b) bar;; *) :;; esac; done
+      #|while getopts 'a:123' x; do case $x in a) foo;; [0-9]) bar;; esac; done
+      #|while getopts 'a:' x; do case $x in a) foo;; \?) bar;; *) baz;; esac; done
+      #|while getopts 'a:b' x; do case $y in a) foo;; esac; done
+      #|while getopts 'a:b' x; do case x$x in xa) foo;; xb) foo;; esac; done
+      #|while getopts 'a:b' x; do x=a; case $x in a) foo;; esac; done
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2213))
@@ -404,7 +635,19 @@ test "command checks avoid false positives for valid while getopts patterns" {
 ///|
 test "command checks flag phase 5 command option and argument shape issues" {
   let diagnostics = check_source(
-    "#!/bin/bash\nlet a=1\nmv 'foo bar'\ncp 'foo bar'\nln 'foo bar'\nchmod -r 0755 dir\nxargs -i{} echo {}\nalias x =0\nlet x = 0\nexport a +=b\n",
+    (
+      #|#!/bin/bash
+      #|let a=1
+      #|mv 'foo bar'
+      #|cp 'foo bar'
+      #|ln 'foo bar'
+      #|chmod -r 0755 dir
+      #|xargs -i{} echo {}
+      #|alias x =0
+      #|let x = 0
+      #|export a +=b
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2219))
@@ -419,7 +662,31 @@ test "command checks flag phase 5 command option and argument shape issues" {
 ///|
 test "command checks avoid false positives for phase 5 option parsing" {
   let diagnostics = check_source(
-    "#!/bin/sh\nlet a=1\nmv foo bar\nmv \"$@\"\nmv -t foo bar\nmv --target-directory=foo bar\nmv --target-direc=foo bar\nmv --version\nmv \"${!var}\"\ncp foo bar\ncp -t dest foo\nln foo bar\nln -t dest foo\nchmod -R 0755 dir\nchmod a-r dir\nxargs -I{} echo {}\nxargs sed -i -e foo\nxargs -x sed -i foo\nalias x=0\nexport a+=b\neval \"$*\"\neval \"${args[*]@Q}\"\n",
+    (
+      #|#!/bin/sh
+      #|let a=1
+      #|mv foo bar
+      #|mv "$@"
+      #|mv -t foo bar
+      #|mv --target-directory=foo bar
+      #|mv --target-direc=foo bar
+      #|mv --version
+      #|mv "${!var}"
+      #|cp foo bar
+      #|cp -t dest foo
+      #|ln foo bar
+      #|ln -t dest foo
+      #|chmod -R 0755 dir
+      #|chmod a-r dir
+      #|xargs -I{} echo {}
+      #|xargs sed -i -e foo
+      #|xargs -x sed -i foo
+      #|alias x=0
+      #|export a+=b
+      #|eval "$*"
+      #|eval "${args[*]@Q}"
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2219))
@@ -436,7 +703,12 @@ test "command checks avoid false positives for phase 5 option parsing" {
 ///|
 test "command checks flag eval array pitfalls" {
   let diagnostics = check_source(
-    "eval $@\neval \"${args[@]}\"\neval \"${args[@]@Q}\"\n",
+    (
+      #|eval $@
+      #|eval "${args[@]}"
+      #|eval "${args[@]@Q}"
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2294), 2)
@@ -450,7 +722,22 @@ test "command checks flag eval array pitfalls" {
 ///|
 test "command checks flag phase 4 command-specialized families" {
   let diagnostics = check_source(
-    "#!/bin/bash\n# shellcheck disable=SC2154,SC2086,SC2034,SC2329\nmkdir -p -m 0755 a/b\nsu foo\nssh host \"echo $PS1\"\nset foo 42\nexport $foo\nunset foo[1]\nrm -rf /home\nrm -r $1/$2\necho foo         bar\nq() { local readonly var=1; }\nq2() { local x=1 y=$x; }\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086,SC2034,SC2329
+      #|mkdir -p -m 0755 a/b
+      #|su foo
+      #|ssh host "echo $PS1"
+      #|set foo 42
+      #|export $foo
+      #|unset foo[1]
+      #|rm -rf /home
+      #|rm -r $1/$2
+      #|echo foo         bar
+      #|q() { local readonly var=1; }
+      #|q2() { local x=1 y=$x; }
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2174))
@@ -468,10 +755,27 @@ test "command checks flag phase 4 command-specialized families" {
 
 ///|
 test "command checks flag timed command and local scope edge cases" {
-  let piped = check_source("#!/bin/sh\ntime -p foo | bar\n")
-  let compound = check_source("#!/bin/dash\ntime ( foo; bar; )\n")
+  let piped = check_source(
+    (
+      #|#!/bin/sh
+      #|time -p foo | bar
+      #|
+    ),
+  )
+  let compound = check_source(
+    (
+      #|#!/bin/dash
+      #|time ( foo; bar; )
+      #|
+    ),
+  )
   let local_top_level = check_source(
-    "#!/bin/bash\n# shellcheck disable=SC2034\nlocal foo=3\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|local foo=3
+      #|
+    ),
   )
 
   assert_true(has_code(piped, 2176))
@@ -482,10 +786,40 @@ test "command checks flag timed command and local scope edge cases" {
 ///|
 test "command checks avoid false positives for phase 4 command-specialized families" {
   let diagnostics = check_source(
-    "#!/bin/bash\n# shellcheck disable=SC2034\nmkdir -p a/b\nmkdir -m 0755 a/b\nmkdir -p -m 0755 singlelevel\necho rm | su foo\nsu root < script\nssh host \"ls foo\"\nset -- if=/dev/null\nexport foo\nunset foo\nrm -r /home/${USER:?}/*\necho foo  bar\nf() { local foo=3; }\nq() { local var=1; }\nq2() { local x=1; local y=$x; }\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|mkdir -p a/b
+      #|mkdir -m 0755 a/b
+      #|mkdir -p -m 0755 singlelevel
+      #|echo rm | su foo
+      #|su root < script
+      #|ssh host "ls foo"
+      #|set -- if=/dev/null
+      #|export foo
+      #|unset foo
+      #|rm -r /home/${USER:?}/*
+      #|echo foo  bar
+      #|f() { local foo=3; }
+      #|q() { local var=1; }
+      #|q2() { local x=1; local y=$x; }
+      #|
+    ),
   )
-  let timed = check_source("#!/bin/sh\ntime sleep 1\n")
-  let timed_compound = check_source("#!/bin/dash\ntime foo\n")
+  let timed = check_source(
+    (
+      #|#!/bin/sh
+      #|time sleep 1
+      #|
+    ),
+  )
+  let timed_compound = check_source(
+    (
+      #|#!/bin/dash
+      #|time foo
+      #|
+    ),
+  )
 
   assert_true(!has_code(diagnostics, 2174))
   assert_true(!has_code(diagnostics, 2117))

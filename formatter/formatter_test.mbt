@@ -58,7 +58,12 @@ fn check_ok(
 ///|
 test "formatter renders supported output formats" {
   let result = check_ok(
-    "echo before\necho `foo`\necho after\n",
+    (
+      #|echo before
+      #|echo `foo`
+      #|echo after
+      #|
+    ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
   let results = [result]
@@ -101,7 +106,12 @@ test "formatter renders supported output formats" {
 
 ///|
 test "formatter colorizes tty and diff output when enabled" {
-  let result = @checker.check_script("echo `foo`\n")
+  let result = @checker.check_script(
+    (
+      #|echo `foo`
+      #|
+    ),
+  )
   let results = [result]
   let options = FormatOptions::default()
     .with_wiki_link_count(0)
@@ -125,7 +135,13 @@ test "formatter parses named formats" {
 ///|
 test "formatter orders wiki footer like shellcheck severity buckets" {
   let result = check_ok(
-    "#!/bin/bash\n# shellcheck disable=SC2034\necho `foo`\nread foo\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|echo `foo`
+      #|read foo
+      #|
+    ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
   let tty = render_results(
@@ -143,7 +159,10 @@ test "formatter orders wiki footer like shellcheck severity buckets" {
 ///|
 test "formatter diff marks missing trailing newline" {
   let result = check_ok(
-    "#!/bin/bash\necho `foo`",
+    (
+      #|#!/bin/bash
+      #|echo `foo`
+    ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
   let diff = render_results([result], named_format("diff"))
@@ -155,7 +174,12 @@ test "formatter diff marks missing trailing newline" {
 ///|
 test "formatter json fix replacements match shellcheck field shape" {
   let result = check_ok(
-    "#!/bin/bash\necho `foo`\nread foo\n",
+    (
+      #|#!/bin/bash
+      #|echo `foo`
+      #|read foo
+      #|
+    ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
   let json1 = render_results([result], named_format("json1"))

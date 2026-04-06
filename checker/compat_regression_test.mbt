@@ -165,7 +165,13 @@ fn assert_no_compat_case_with_spec(
 test "compat regression covers analytics core diagnostics" {
   assert_compat_case(
     "analytics-core",
-    "#!/bin/bash\n# shellcheck disable=SC2086\necho `foo`\nprintf \"%s\\n\" $* $@\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2086
+      #|echo `foo`
+      #|printf "%s\n" $* $@
+      #|
+    ),
     [
       compat_warning(2046, 3, 6, 11, "Quote this to prevent word splitting."),
       compat_style(
@@ -185,7 +191,17 @@ test "compat regression covers analytics core diagnostics" {
 
   assert_compat_case(
     "analytics-for-in",
-    "#!/bin/bash\n# shellcheck disable=SC2034,SC2035\nfor f in 'ls'; do :; done\nfor f in a,b; do :; done\nfor f in ls; do :; done\nfor f in \"$(ls)\"; do :; done\nfor f in $(find . -name '*.mp3'); do :; done\nfor f in $(ls *.mp3); do :; done\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2035
+      #|for f in 'ls'; do :; done
+      #|for f in a,b; do :; done
+      #|for f in ls; do :; done
+      #|for f in "$(ls)"; do :; done
+      #|for f in $(find . -name '*.mp3'); do :; done
+      #|for f in $(ls *.mp3); do :; done
+      #|
+    ),
     [
       compat_warning(
         2041, 3, 10, 14, "This is a literal string. To run as a command, use $(..) instead of '..' . ",
@@ -213,7 +229,12 @@ test "compat regression covers analytics core diagnostics" {
 test "compat regression covers optional analytics diagnostics" {
   assert_compat_case_with_optional_checks(
     "optional-analytics",
-    "#!/bin/bash\ncat foo | grep bar\ncase $1 in a) true ;; esac\n",
+    (
+      #|#!/bin/bash
+      #|cat foo | grep bar
+      #|case $1 in a) true ;; esac
+      #|
+    ),
     [
       compat_style(
         2002, 2, 5, 8, "Useless cat. Consider 'cmd < file | ..' or 'cmd file | ..' instead.",
@@ -230,7 +251,18 @@ test "compat regression covers optional analytics diagnostics" {
 test "compat regression covers phase 7 optional analytics diagnostics" {
   assert_compat_case_with_optional_checks(
     "optional-analytics-phase-7",
-    "#!/bin/bash\nsafe=hello\nname=hello\nvar=hello\necho $safe\n[ \"$name\" ]\n[ ! -z \"$var\" ]\nprintf '%s' prefix=$var\n[ -x foo ]\n",
+    (
+      #|#!/bin/bash
+      #|safe=hello
+      #|name=hello
+      #|var=hello
+      #|echo $safe
+      #|[ "$name" ]
+      #|[ ! -z "$var" ]
+      #|printf '%s' prefix=$var
+      #|[ -x foo ]
+      #|
+    ),
     [
       compat_style(
         2248, 5, 6, 11, "Prefer double quoting even when variables don't contain special characters.",
@@ -266,7 +298,14 @@ test "compat regression covers phase 7 optional analytics diagnostics" {
 test "compat regression covers phase 7 set-e and masked-return diagnostics" {
   assert_compat_case_with_optional_checks(
     "optional-analytics-phase-7-set-e",
-    "#!/bin/bash\nset -e\nf(){ false; }\nresult=$(f)\nfalse | true\n",
+    (
+      #|#!/bin/bash
+      #|set -e
+      #|f(){ false; }
+      #|result=$(f)
+      #|false | true
+      #|
+    ),
     [
       compat_info(
         2311, 4, 10, 11, "Bash implicitly disabled set -e for this function invocation because it's inside a command substitution. Add set -e; before it or enable inherit_errexit.",
@@ -283,7 +322,19 @@ test "compat regression covers phase 7 set-e and masked-return diagnostics" {
 test "compat regression covers analytics assignment and loop diagnostics" {
   assert_compat_case(
     "analytics-batch-a-assignments",
-    "#!/bin/bash\n# shellcheck disable=SC2154\nfoo=bar | grep x\nout=ls -l\nprefix=hello printf '%s\\n' \"$prefix\"\nsame=\"$same\"\narr=( $var $(cmd) )\nfor file in $dir/*.txt; do :; done\n( -e file )\n( 1 -gt 2 )\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|foo=bar | grep x
+      #|out=ls -l
+      #|prefix=hello printf '%s\n' "$prefix"
+      #|same="$same"
+      #|arr=( $var $(cmd) )
+      #|for file in $dir/*.txt; do :; done
+      #|( -e file )
+      #|( 1 -gt 2 )
+      #|
+    ),
     [
       compat_warning(
         2036, 3, 1, 8, "If you wanted to assign the output of the pipeline, use a=$(b | c) .",
@@ -323,7 +374,14 @@ test "compat regression covers analytics assignment and loop diagnostics" {
 test "compat regression covers analytics condition diagnostics" {
   assert_compat_case(
     "analytics-batch-a-conditions",
-    "#!/bin/bash\n# shellcheck disable=SC2154\n[ foo -a -f bar ]\n[ -z 3 -o a = b ]\n[[ $foo =~ 'cow|bar' ]]\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|[ foo -a -f bar ]
+      #|[ -z 3 -o a = b ]
+      #|[[ $foo =~ 'cow|bar' ]]
+      #|
+    ),
     [
       compat_warning(
         2166, 3, 1, 18, "Prefer [ p ] && [ q ] as [ p -a q ] is not well defined.",
@@ -342,7 +400,15 @@ test "compat regression covers analytics condition diagnostics" {
 test "compat regression covers analytics batch b condition diagnostics" {
   assert_compat_case(
     "analytics-batch-b-conditions",
-    "#!/bin/bash\n# shellcheck disable=SC2154\n[[ $cow == $bar ]]\n[ $cow = *foo* ]\n[[ $foo =~ *foo* ]]\nif [ ]; then :; fi\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|[[ $cow == $bar ]]
+      #|[ $cow = *foo* ]
+      #|[[ $foo =~ *foo* ]]
+      #|if [ ]; then :; fi
+      #|
+    ),
     [
       compat_warning(
         2053, 3, 12, 16, "Quote the right-hand side of == in [[ ]] to prevent glob matching.",
@@ -361,7 +427,11 @@ test "compat regression covers analytics batch b condition diagnostics" {
 
   assert_compat_case(
     "analytics-batch-b-busybox",
-    "#!/bin/busybox sh\n[[ x == *foo* ]]\n",
+    (
+      #|#!/bin/busybox sh
+      #|[[ x == *foo* ]]
+      #|
+    ),
     [
       compat_error(
         2330, 2, 9, 14, "BusyBox [[ .. ]] does not support glob matching. Use a case statement.",
@@ -374,7 +444,18 @@ test "compat regression covers analytics batch b condition diagnostics" {
 test "compat regression covers analytics batch b command diagnostics" {
   assert_compat_case(
     "analytics-batch-b-commands",
-    "./ file\ni=i + 1\nn=2\ni=n*2\nfoo*\n-e file\n''\n/\nfoo,\n",
+    (
+      #|./ file
+      #|i=i + 1
+      #|n=2
+      #|i=n*2
+      #|foo*
+      #|-e file
+      #|''
+      #|/
+      #|foo,
+      #|
+    ),
     [
       compat_error(
         2083, 1, 1, 3, "Don't add spaces after the slash in './file'.",
@@ -417,7 +498,14 @@ test "compat regression covers analytics batch b command diagnostics" {
 test "compat regression covers analytics batch b redirection diagnostics" {
   assert_compat_case(
     "analytics-batch-b-redirections",
-    "test 3 > 1\n/usr/bin/test value > file\nfoo 1>2\nls > rm\nout=$(foo > log)\n",
+    (
+      #|test 3 > 1
+      #|/usr/bin/test value > file
+      #|foo 1>2
+      #|ls > rm
+      #|out=$(foo > log)
+      #|
+    ),
     [
       {
         severity: "error",
@@ -454,7 +542,22 @@ test "compat regression covers analytics batch b redirection diagnostics" {
 test "compat regression covers analytics batch c diagnostics" {
   assert_compat_case(
     "analytics-batch-c",
-    "#!/bin/bash\n# shellcheck disable=SC2154\necho \"$foo\" | wc -c\nssh host <<EOF2\necho $HOME\nEOF2\nf\nf() { true; }\nx(){ return 1; }\nx\n[ $? -eq 1 ] || [ $? -eq 2 ]\necho \"$?\"\necho \"$?\"\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|echo "$foo" | wc -c
+      #|ssh host <<EOF2
+      #|echo $HOME
+      #|EOF2
+      #|f
+      #|f() { true; }
+      #|x(){ return 1; }
+      #|x
+      #|[ $? -eq 1 ] || [ $? -eq 2 ]
+      #|echo "$?"
+      #|echo "$?"
+      #|
+    ),
     [
       compat_style(2000, 3, 1, 20, "See if you can use ${#variable} instead."),
       compat_warning(
@@ -477,7 +580,21 @@ test "compat regression covers analytics batch c diagnostics" {
 test "compat regression covers command diagnostics" {
   assert_compat_case_with_optional_checks(
     "commands",
-    "#!/bin/bash\n# shellcheck disable=SC2034\ntime -f '%E' sleep 1\nsudo cat < input\nsudo cat > output\nsudo cat >> output\nfind -type f\nread foo\ntempfile\negrep '.+'\nfgrep '*' files\nwhich bash\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|time -f '%E' sleep 1
+      #|sudo cat < input
+      #|sudo cat > output
+      #|sudo cat >> output
+      #|find -type f
+      #|read foo
+      #|tempfile
+      #|egrep '.+'
+      #|fgrep '*' files
+      #|which bash
+      #|
+    ),
     [
       compat_info(
         2023, 3, 1, 5, "The shell may override 'time' as seen in man time(1). Use 'command time ..' for that one.",
@@ -516,7 +633,17 @@ test "compat regression covers command diagnostics" {
 test "compat regression covers control-flow diagnostics" {
   assert_compat_case(
     "control-flow",
-    "#!/bin/bash\n# shellcheck disable=SC2034,SC2086\necho $foo\narr=(a)\narr=foo\narr+=bar\nexit 0\necho never\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2086
+      #|echo $foo
+      #|arr=(a)
+      #|arr=foo
+      #|arr+=bar
+      #|exit 0
+      #|echo never
+      #|
+    ),
     [
       compat_warning(2154, 3, 6, 10, "foo is referenced but not assigned."),
       compat_warning(
@@ -536,7 +663,24 @@ test "compat regression covers control-flow diagnostics" {
 test "compat regression covers shell-support word diagnostics" {
   assert_compat_case(
     "shell-support-words",
-    "#!/bin/sh\n# shellcheck disable=SC2007,SC2034,SC2086,SC2068\nx=value\nprefix=foo\necho @(foo)\necho $\"msg\"\necho $[1 + 1]\necho {a,b}\necho ${!x}\necho ${x[1]}\necho ${!x[@]}\necho ${!prefix*}\necho ${x:0:3}\necho ${x^^}\necho ${x/st/xt}\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2007,SC2034,SC2086,SC2068
+      #|x=value
+      #|prefix=foo
+      #|echo @(foo)
+      #|echo $"msg"
+      #|echo $[1 + 1]
+      #|echo {a,b}
+      #|echo ${!x}
+      #|echo ${x[1]}
+      #|echo ${!x[@]}
+      #|echo ${!prefix*}
+      #|echo ${x:0:3}
+      #|echo ${x^^}
+      #|echo ${x/st/xt}
+      #|
+    ),
     [
       compat_warning(3002, 5, 6, 12, "In POSIX sh, extglob is undefined."),
       compat_warning(3004, 6, 6, 12, "In POSIX sh, $\"..\" is undefined."),
@@ -581,7 +725,22 @@ test "compat regression covers shell-support word diagnostics" {
 test "compat regression covers shell-support command diagnostics" {
   assert_compat_case(
     "shell-support-commands",
-    "#!/bin/sh\n# shellcheck disable=SC1091,SC2034,SC2078,SC3018,SC2154\ncat < <(echo x)\nfor ((i=0; i<1; i++)); do :; done\n((1))\nselect x in a; do break; done\n[[ x ]]\ncat <<< hi\nx+=y\narr=(a b)\ncat > *.txt\ncoproc foo { echo hi; }\nsource lib.sh\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC1091,SC2034,SC2078,SC3018,SC2154
+      #|cat < <(echo x)
+      #|for ((i=0; i<1; i++)); do :; done
+      #|((1))
+      #|select x in a; do break; done
+      #|[[ x ]]
+      #|cat <<< hi
+      #|x+=y
+      #|arr=(a b)
+      #|cat > *.txt
+      #|coproc foo { echo hi; }
+      #|source lib.sh
+      #|
+    ),
     [
       compat_warning(
         3001, 3, 7, 16, "In POSIX sh, process substitution is undefined.",
@@ -610,16 +769,45 @@ test "compat regression covers shell-support command diagnostics" {
 
 ///|
 test "compat regression covers dash shell-support severity" {
-  assert_compat_case("dash-shell-support", "#!/bin/dash\n((1))\n", [
-    compat_error(3006, 2, 1, 6, "In dash, standalone ((..)) is not supported."),
-  ])
+  assert_compat_case(
+    "dash-shell-support",
+    (
+      #|#!/bin/dash
+      #|((1))
+      #|
+    ),
+    [
+      compat_error(
+        3006, 2, 1, 6, "In dash, standalone ((..)) is not supported.",
+      ),
+    ],
+  )
 }
 
 ///|
 test "compat regression covers shell-support operator and arithmetic diagnostics" {
   assert_compat_case(
     "shell-support-operators-and-arithmetic",
-    "#!/bin/sh\n# shellcheck disable=SC2068\ntest x \\< y\n[ x == y ]\ntest foo =~ bar\ntest -v var\ntest -a file\ntest -o errexit\ntest -R ref\ntest -N file\ntest -k /tmp\ntest -G file\ntest -O file\necho $((i++))\necho $((2**3))\necho $((16#FF))\necho ${@%foo}\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2068
+      #|test x \< y
+      #|[ x == y ]
+      #|test foo =~ bar
+      #|test -v var
+      #|test -a file
+      #|test -o errexit
+      #|test -R ref
+      #|test -N file
+      #|test -k /tmp
+      #|test -G file
+      #|test -O file
+      #|echo $((i++))
+      #|echo $((2**3))
+      #|echo $((16#FF))
+      #|echo ${@%foo}
+      #|
+    ),
     [
       compat_warning(
         3012, 3, 8, 10, "In POSIX sh, lexicographical < is undefined.",
@@ -664,7 +852,23 @@ test "compat regression covers shell-support operator and arithmetic diagnostics
 test "compat regression covers shell-support redirect and wrapped command diagnostics" {
   assert_compat_case(
     "shell-support-redirects-and-wrappers",
-    "#!/bin/sh\n# shellcheck disable=SC2046,SC2006,SC2182\nfoo &> /dev/null\ncmd >& file\nexec {fd}>&2\necho foo 42>/dev/null\ncat < /dev/tcp/host/123\necho *[^0-9]*\nfoo-bar() { true; }\necho $(<file)\necho `<file`\ntrap foo ERR SIGINT sigterm\nprintf '%q' \"$1\"\ncommand source lib.sh\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2046,SC2006,SC2182
+      #|foo &> /dev/null
+      #|cmd >& file
+      #|exec {fd}>&2
+      #|echo foo 42>/dev/null
+      #|cat < /dev/tcp/host/123
+      #|echo *[^0-9]*
+      #|foo-bar() { true; }
+      #|echo $(<file)
+      #|echo `<file`
+      #|trap foo ERR SIGINT sigterm
+      #|printf '%q' "$1"
+      #|command source lib.sh
+      #|
+    ),
     [
       compat_warning(3020, 3, 5, 7, "In POSIX sh, &> is undefined."),
       compat_warning(
@@ -715,7 +919,23 @@ test "compat regression covers shell-support redirect and wrapped command diagno
 test "compat regression covers shell-support builtin flag diagnostics" {
   assert_compat_case(
     "shell-support-builtin-flags",
-    "#!/bin/sh\n# shellcheck disable=SC2162\nread -a foo\nprintf -v out %s foo\nexport -f foo\nreadonly -a bar\nhash -l\ncd -P -e .\ntype -a ls\nulimit -x unlimited\nset -o emacs\nset --bad\nexec -c env\necho -ne foo\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2162
+      #|read -a foo
+      #|printf -v out %s foo
+      #|export -f foo
+      #|readonly -a bar
+      #|hash -l
+      #|cd -P -e .
+      #|type -a ls
+      #|ulimit -x unlimited
+      #|set -o emacs
+      #|set --bad
+      #|exec -c env
+      #|echo -ne foo
+      #|
+    ),
     [
       compat_warning(3045, 3, 7, 8, "In POSIX sh, read -a is undefined."),
       compat_warning(3045, 4, 9, 10, "In POSIX sh, printf -v is undefined."),
@@ -742,7 +962,17 @@ test "compat regression covers shell-support builtin flag diagnostics" {
 test "compat regression covers commands batch a core diagnostics" {
   assert_compat_case(
     "commands-batch-a-core",
-    "#!/bin/bash\n# shellcheck disable=SC2154\ntr 'a-z' 'A-Z'\nfind / -name *.php\nfind . -exec 'cat {} | wc -l' \\;\nexpr 1 * 2\ngrep 'cow*test' file\ntrap \"echo $num\" INT\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|tr 'a-z' 'A-Z'
+      #|find / -name *.php
+      #|find . -exec 'cat {} | wc -l' \;
+      #|expr 1 * 2
+      #|grep 'cow*test' file
+      #|trap "echo $num" INT
+      #|
+    ),
     [
       compat_info(
         2018, 3, 4, 9, "Use '[:lower:]' to support accents and foreign alphabets.",
@@ -776,7 +1006,18 @@ test "compat regression covers commands batch a core diagnostics" {
 test "compat regression covers commands batch a builtin diagnostics" {
   assert_compat_case(
     "commands-batch-a-builtins",
-    "#!/bin/sh\n# shellcheck disable=SC2154,SC2317\n. script arg\nsudo cd /root\nread $var\nread arr[val]\nprintf '%s %s' 1\nreturn 1 2\nexit 1000\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2154,SC2317
+      #|. script arg
+      #|sudo cd /root
+      #|read $var
+      #|read arr[val]
+      #|printf '%s %s' 1
+      #|return 1 2
+      #|exit 1000
+      #|
+    ),
     [
       compat_warning(
         2240, 3, 10, 13, "The dot command does not support arguments in sh/dash. Set them as variables.",
@@ -809,7 +1050,14 @@ test "compat regression covers commands batch a builtin diagnostics" {
 test "compat regression covers commands batch a find and printf follow-ups" {
   assert_compat_case(
     "commands-batch-a-followups",
-    "#!/bin/bash\nfind . -exec sh -c 'echo {}' \\;\nfind . -name '*.wav' -o -name '*.au' -exec rm {} +\ngrep *.mp3 file\nprintf foo bar\n",
+    (
+      #|#!/bin/bash
+      #|find . -exec sh -c 'echo {}' \;
+      #|find . -name '*.wav' -o -name '*.au' -exec rm {} +
+      #|grep *.mp3 file
+      #|printf foo bar
+      #|
+    ),
     [
       compat_warning(
         2156, 2, 20, 29, "Injecting filenames is fragile and insecure. Use parameters.",
@@ -831,7 +1079,19 @@ test "compat regression covers commands batch a find and printf follow-ups" {
 test "compat regression covers commands batch b core diagnostics" {
   assert_compat_case(
     "commands-batch-b-core",
-    "#!/bin/bash\n# shellcheck disable=SC2154\nalias a='cp $1 /a'\nalias foo=\"echo $PWD\"\nwhile getopts 'a:b' x; do case $x in a) foo;; esac; done\nlet a=1\nmv 'foo bar'\nchmod -r 0755 dir\nxargs -i{} echo {}\neval \"${args[@]@Q}\"\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|alias a='cp $1 /a'
+      #|alias foo="echo $PWD"
+      #|while getopts 'a:b' x; do case $x in a) foo;; esac; done
+      #|let a=1
+      #|mv 'foo bar'
+      #|chmod -r 0755 dir
+      #|xargs -i{} echo {}
+      #|eval "${args[@]@Q}"
+      #|
+    ),
     [
       compat_error(
         2142, 3, 7, 19, "Aliases can't use positional parameters. Use a function.",
@@ -864,7 +1124,17 @@ test "compat regression covers commands batch b core diagnostics" {
 test "compat regression covers commands batch b follow-up diagnostics" {
   assert_compat_case(
     "commands-batch-b-followups",
-    "#!/bin/bash\n# shellcheck disable=SC2154\nwhile getopts 'a:' x; do case $x in a) foo;; b) bar;; esac; done\ncp 'foo bar'\nln 'foo bar'\nalias x =0\nexport a +=b\neval \"${args[@]}\"\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|while getopts 'a:' x; do case $x in a) foo;; b) bar;; esac; done
+      #|cp 'foo bar'
+      #|ln 'foo bar'
+      #|alias x =0
+      #|export a +=b
+      #|eval "${args[@]}"
+      #|
+    ),
     [
       compat_warning(
         2220, 3, 26, 59, "Invalid flags are not handled. Add a *) case.",
@@ -889,7 +1159,22 @@ test "compat regression covers commands batch b follow-up diagnostics" {
 test "compat regression covers commands batch c phase 4 core diagnostics" {
   assert_compat_case(
     "commands-batch-c-core",
-    "#!/bin/bash\n# shellcheck disable=SC2154,SC2086,SC2034,SC2329\nmkdir -p -m 0755 a/b\nsu foo\nssh host \"echo $PS1\"\nset foo 42\nexport $foo\nunset foo[1]\nrm -rf /home\nrm -r $1/$2\necho foo         bar\nq() { local readonly var=1; }\nq2() { local x=1 y=$x; }\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086,SC2034,SC2329
+      #|mkdir -p -m 0755 a/b
+      #|su foo
+      #|ssh host "echo $PS1"
+      #|set foo 42
+      #|export $foo
+      #|unset foo[1]
+      #|rm -rf /home
+      #|rm -r $1/$2
+      #|echo foo         bar
+      #|q() { local readonly var=1; }
+      #|q2() { local x=1 y=$x; }
+      #|
+    ),
     [
       compat_warning(
         2174, 3, 10, 12, "When used with -p, -m only applies to the deepest directory.",
@@ -930,7 +1215,11 @@ test "compat regression covers commands batch c phase 4 core diagnostics" {
 test "compat regression covers commands batch c shell-specific diagnostics" {
   assert_compat_case(
     "commands-batch-c-time-pipeline",
-    "#!/bin/sh\ntime -p foo | bar\n",
+    (
+      #|#!/bin/sh
+      #|time -p foo | bar
+      #|
+    ),
     [
       compat_warning(
         2176, 2, 1, 5, "'time' is undefined for pipelines. time single stage or bash -c instead.",
@@ -940,7 +1229,11 @@ test "compat regression covers commands batch c shell-specific diagnostics" {
 
   assert_compat_case(
     "commands-batch-c-time-compound",
-    "#!/bin/dash\ntime ( foo; bar; )\n",
+    (
+      #|#!/bin/dash
+      #|time ( foo; bar; )
+      #|
+    ),
     [
       compat_warning(
         2177, 2, 6, 19, "'time' is undefined for compound commands, time sh -c instead.",
@@ -950,7 +1243,12 @@ test "compat regression covers commands batch c shell-specific diagnostics" {
 
   assert_compat_case(
     "commands-batch-c-local-scope",
-    "#!/bin/bash\n# shellcheck disable=SC2034\nlocal foo=3\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|local foo=3
+      #|
+    ),
     [compat_error(2168, 3, 1, 6, "'local' is only valid in functions.")],
   )
 }
@@ -958,7 +1256,33 @@ test "compat regression covers commands batch c shell-specific diagnostics" {
 ///|
 test "compat regression keeps analytics negatives quiet" {
   assert_no_compat_case(
-    "analytics-negatives", "#!/bin/bash\ncow=moo\nbar=moo\nfoo=cat\ndir=src\ncmd() { printf '%s\\n' ok; }\nf() { true; }\narr=( \"$foo\" \"$(cmd)\" * )\nfor file in \"$dir\"/*.txt; do :; done\nprintf '%s\\n' \"$foo\" | wc -c\nssh host <<'EOF'\necho $HOME\nEOF\nf\nfalse\nstatus=$?\n[[ $cow == \"$bar\" ]]\n[[ $foo =~ ^c.* ]]\ntest 1 -eq 2 2> file\necho foo > '2'\nls > myfile\n./file\necho \"$status\"\n",
+    "analytics-negatives",
+    (
+      #|#!/bin/bash
+      #|cow=moo
+      #|bar=moo
+      #|foo=cat
+      #|dir=src
+      #|cmd() { printf '%s\n' ok; }
+      #|f() { true; }
+      #|arr=( "$foo" "$(cmd)" * )
+      #|for file in "$dir"/*.txt; do :; done
+      #|printf '%s\n' "$foo" | wc -c
+      #|ssh host <<'EOF'
+      #|echo $HOME
+      #|EOF
+      #|f
+      #|false
+      #|status=$?
+      #|[[ $cow == "$bar" ]]
+      #|[[ $foo =~ ^c.* ]]
+      #|test 1 -eq 2 2> file
+      #|echo foo > '2'
+      #|ls > myfile
+      #|./file
+      #|echo "$status"
+      #|
+    ),
   )
 }
 
@@ -966,7 +1290,37 @@ test "compat regression keeps analytics negatives quiet" {
 test "compat regression keeps command negatives quiet" {
   assert_no_compat_case_with_optional_checks(
     "commands-negatives",
-    "#!/bin/bash\ncommand time -f '%E' sleep 1\nfind . -type f\nfind * -name '*.php'\nfind . -exec wc -l {} \\;\nfind . -ok sh -c 'rm \"$@\"' _ {} \\;\nfind . -name '*.wav' -o \\( -name '*.au' -exec rm {} + \\)\nfind . -exec echo {} \\; > file\nread -r foo\ngrep -E '.+'\ngrep -F '*' files\ntr -d '[:lower:]'\nprintf '%s %s\\n' 1 2\ncommand -v bash\nmkdir -p a/b\nmkdir -m 0755 a/b\nmkdir -p -m 0755 singlelevel\necho rm | su foo\nsu root < script\nssh host \"ls foo\"\nset -- if=/dev/null\nexport foo\nunset foo\nrm -r /home/${USER:?}/*\necho foo  bar\nf() { local foo=3; }\nq() { local var=1; }\nq2() { local x=1; local y=$x; }\n",
+    (
+      #|#!/bin/bash
+      #|command time -f '%E' sleep 1
+      #|find . -type f
+      #|find * -name '*.php'
+      #|find . -exec wc -l {} \;
+      #|find . -ok sh -c 'rm "$@"' _ {} \;
+      #|find . -name '*.wav' -o \( -name '*.au' -exec rm {} + \)
+      #|find . -exec echo {} \; > file
+      #|read -r foo
+      #|grep -E '.+'
+      #|grep -F '*' files
+      #|tr -d '[:lower:]'
+      #|printf '%s %s\n' 1 2
+      #|command -v bash
+      #|mkdir -p a/b
+      #|mkdir -m 0755 a/b
+      #|mkdir -p -m 0755 singlelevel
+      #|echo rm | su foo
+      #|su root < script
+      #|ssh host "ls foo"
+      #|set -- if=/dev/null
+      #|export foo
+      #|unset foo
+      #|rm -r /home/${USER:?}/*
+      #|echo foo  bar
+      #|f() { local foo=3; }
+      #|q() { local var=1; }
+      #|q2() { local x=1; local y=$x; }
+      #|
+    ),
     ["deprecate-which"],
   )
 }
@@ -974,7 +1328,16 @@ test "compat regression keeps command negatives quiet" {
 ///|
 test "compat regression keeps shell-support negatives quiet" {
   assert_no_compat_case(
-    "shell-support-negatives", "#!/bin/sh\nname=foo\nprintf '%s\\n' \"$name\"\ntest x = y\ntest -n \"$name\"\necho $((1 + 1))\n",
+    "shell-support-negatives",
+    (
+      #|#!/bin/sh
+      #|name=foo
+      #|printf '%s\n' "$name"
+      #|test x = y
+      #|test -n "$name"
+      #|echo $((1 + 1))
+      #|
+    ),
   )
 }
 
@@ -982,7 +1345,17 @@ test "compat regression keeps shell-support negatives quiet" {
 test "compat regression keeps optional-check negatives quiet" {
   assert_no_compat_case_with_optional_checks(
     "optional-negatives",
-    "#!/bin/bash\nsafe=hello\ncase $1 in\n  *) printf '%s\\n' \"${safe}\" ;;\nesac\n[[ -n \"${safe}\" ]]\n[[ -x foo ]]\ncommand -v bash\n",
+    (
+      #|#!/bin/bash
+      #|safe=hello
+      #|case $1 in
+      #|  *) printf '%s\n' "${safe}" ;;
+      #|esac
+      #|[[ -n "${safe}" ]]
+      #|[[ -x foo ]]
+      #|command -v bash
+      #|
+    ),
     [
       "useless-use-of-cat", "add-default-case", "quote-safe-variables", "avoid-nullary-conditions",
       "avoid-negated-conditions", "require-variable-braces", "check-unassigned-uppercase",
@@ -996,7 +1369,13 @@ test "compat regression keeps optional-check negatives quiet" {
 test "compat regression keeps multi-diagnostic sorting and filtering stable" {
   assert_compat_case(
     "sorting-and-filtering",
-    "#!/bin/bash\n# shellcheck disable=SC2005\necho `foo`\nprintf \"%s\\n\" $* $@\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2005
+      #|echo `foo`
+      #|printf "%s\n" $* $@
+      #|
+    ),
     [
       compat_warning(2046, 3, 6, 11, "Quote this to prevent word splitting."),
       compat_style(
@@ -1016,7 +1395,11 @@ test "compat regression keeps multi-diagnostic sorting and filtering stable" {
 test "compat regression covers shell-sensitive directives and rc settings" {
   assert_compat_case(
     "directive-shell-and-optional",
-    "# shellcheck shell=bash enable=require-double-brackets\n[ -x foo ]\n",
+    (
+      #|# shellcheck shell=bash enable=require-double-brackets
+      #|[ -x foo ]
+      #|
+    ),
     [
       compat_style(
         2292, 2, 1, 11, "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox.",
@@ -1026,7 +1409,10 @@ test "compat regression covers shell-sensitive directives and rc settings" {
 
   assert_compat_case_with_spec(
     "rc-shell-and-optional",
-    "[ -x foo ]\n",
+    (
+      #|[ -x foo ]
+      #|
+    ),
     [
       compat_style(
         2292, 1, 1, 11, "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox.",
@@ -1036,7 +1422,12 @@ test "compat regression covers shell-sensitive directives and rc settings" {
     .with_filename(Some("checker/testdata/rc/script.sh"))
     .with_config_files([
       (
-        "checker/testdata/rc/.shellcheckrc", "enable=require-double-brackets\nshell=bash\n",
+        "checker/testdata/rc/.shellcheckrc",
+        (
+          #|enable=require-double-brackets
+          #|shell=bash
+          #|
+        ),
       ),
     ]),
   )
@@ -1046,14 +1437,22 @@ test "compat regression covers shell-sensitive directives and rc settings" {
 test "compat regression lets explicit shell overrides win over annotations" {
   assert_compat_case_with_spec(
     "shell-override-precedence",
-    "# shellcheck shell=bash\n[[ x ]]\n",
+    (
+      #|# shellcheck shell=bash
+      #|[[ x ]]
+      #|
+    ),
     [compat_warning(3010, 2, 1, 8, "In POSIX sh, [[ ]] is undefined.")],
     CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
   )
 
   assert_no_compat_case_with_spec(
     "shell-override-quiet",
-    "# shellcheck shell=sh\n[[ x ]]\n",
+    (
+      #|# shellcheck shell=sh
+      #|[[ x ]]
+      #|
+    ),
     CheckSpec::default().with_shell_override(
       Some(@semantics.ShellDialect::Bash),
     ),

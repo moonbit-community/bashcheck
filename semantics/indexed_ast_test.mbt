@@ -104,7 +104,12 @@ fn first_indexed_command(script : @parser.Script) -> @parser.Command {
 
 ///|
 test "indexed ast tracks parent chains and nearest word/command" {
-  let script = parse_ok("foo() { echo \"hi $USER\" >out; }\n")
+  let script = parse_ok(
+    (
+      #|foo() { echo "hi $USER" >out; }
+      #|
+    ),
+  )
   let indexed = @semantics.build_index(script)
   let root = @semantics.root_id(indexed)
   assert_eq(root.to_int(), 0)
@@ -146,9 +151,23 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
     true,
     Some("/tmp/main.sh"),
     [],
-    [("lib.sh", "echo inside\n")],
+    [
+      (
+        "lib.sh",
+        (
+          #|echo inside
+          #|
+        ),
+      ),
+    ],
   )
-  let script = parse_with_options(". lib.sh\n", options)
+  let script = parse_with_options(
+    (
+      #|. lib.sh
+      #|
+    ),
+    options,
+  )
   let indexed = @semantics.build_index(script)
   let source_command = find_source_command(indexed)
 
@@ -197,7 +216,12 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
 
 ///|
 test "indexed ast exposes direct spans for span-carrying nodes" {
-  let script = parse_ok("echo hi >out\n")
+  let script = parse_ok(
+    (
+      #|echo hi >out
+      #|
+    ),
+  )
   let indexed = @semantics.build_index(script)
 
   let command = find_first_command(indexed)
@@ -222,7 +246,12 @@ test "indexed ast exposes direct spans for span-carrying nodes" {
 
 ///|
 test "indexed ast effective spans fall back to enclosing spans" {
-  let script = parse_ok("echo \"hi $USER\"\n")
+  let script = parse_ok(
+    (
+      #|echo "hi $USER"
+      #|
+    ),
+  )
   let indexed = @semantics.build_index(script)
   let parameter = find_parameter_part(indexed)
   let containing_word = match @semantics.word_of(indexed, parameter) {
@@ -240,7 +269,12 @@ test "indexed ast effective spans fall back to enclosing spans" {
 
 ///|
 test "indexed ast distinguishes exact spans from enclosing fallback spans" {
-  let script = parse_ok("echo \"hi $USER\"\n")
+  let script = parse_ok(
+    (
+      #|echo "hi $USER"
+      #|
+    ),
+  )
   let indexed = @semantics.build_index(script)
   let parameter = find_parameter_part(indexed)
 
@@ -261,7 +295,12 @@ test "indexed ast distinguishes exact spans from enclosing fallback spans" {
 
 ///|
 test "indexed ast hides synthetic spans for reparsed parameter operator words" {
-  let default_script = parse_ok("echo \"${foo:-$bar}\"\n")
+  let default_script = parse_ok(
+    (
+      #|echo "${foo:-$bar}"
+      #|
+    ),
+  )
   let default_indexed = @semantics.build_index(default_script)
   let default_inner_word = find_word_with_source(default_indexed, "$bar")
 
@@ -281,7 +320,12 @@ test "indexed ast hides synthetic spans for reparsed parameter operator words" {
     default_command.words[1].span.end.offset,
   )
 
-  let slice_script = parse_ok("echo \"${foo:$bar:1}\"\n")
+  let slice_script = parse_ok(
+    (
+      #|echo "${foo:$bar:1}"
+      #|
+    ),
+  )
   let slice_indexed = @semantics.build_index(slice_script)
   let slice_inner_word = find_word_with_source(slice_indexed, "$bar")
 

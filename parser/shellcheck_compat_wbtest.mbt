@@ -188,7 +188,14 @@ fn assert_shebang_status(
 
 ///|
 test "shellcheck whitebox compatibility spacing samples" {
-  assert_gap_status("prop_spacing1", "  \\\n # Comment", status_ok())
+  assert_gap_status(
+    "prop_spacing1",
+    (
+      #|  \
+      #| # Comment
+    ),
+    status_ok(),
+  )
   assert_gap_status(
     "prop_spacing2",
     "# We can continue lines with \\",
@@ -196,13 +203,34 @@ test "shellcheck whitebox compatibility spacing samples" {
   )
   assert_gap_status(
     "prop_spacing3",
-    "   \\\n #  --verbose=true \\",
+    (
+      #|   \
+      #| #  --verbose=true \
+    ),
     status_warning(),
   )
 
   assert_gap_status("prop_allspacing", "#foo", status_ok())
-  assert_gap_status("prop_allspacing2", " #foo\n # bar\n#baz\n", status_ok())
-  assert_gap_status("prop_allspacing3", "#foo\n#bar\n#baz\n", status_ok())
+  assert_gap_status(
+    "prop_allspacing2",
+    (
+      #| #foo
+      #| # bar
+      #|#baz
+      #|
+    ),
+    status_ok(),
+  )
+  assert_gap_status(
+    "prop_allspacing3",
+    (
+      #|#foo
+      #|#bar
+      #|#baz
+      #|
+    ),
+    status_ok(),
+  )
 }
 
 ///|
@@ -221,33 +249,85 @@ test "shellcheck whitebox compatibility brace expansion samples" {
 test "shellcheck whitebox compatibility config samples" {
   assert_config_ok("prop_readAnnotation11", "external-sources='true'")
   assert_config_ok("prop_readConfigKVs1", "disable=1234")
-  assert_config_ok("prop_readConfigKVs2", "# Comment\ndisable=1234 # Comment\n")
-  assert_config_ok("prop_readConfigKVs3", "")
-  assert_config_ok("prop_readConfigKVs4", "\n\n\n\n\t \n")
   assert_config_ok(
-    "prop_readConfigKVs5", "# shellcheck accepts annotation-like comments in rc files\ndisable=1234",
+    "prop_readConfigKVs2",
+    (
+      #|# Comment
+      #|disable=1234 # Comment
+      #|
+    ),
+  )
+  assert_config_ok("prop_readConfigKVs3", "")
+  assert_config_ok(
+    "prop_readConfigKVs4",
+    (
+      #|
+      #|
+      #|
+      #|
+      #|	 
+      #|
+    ),
+  )
+  assert_config_ok(
+    "prop_readConfigKVs5",
+    (
+      #|# shellcheck accepts annotation-like comments in rc files
+      #|disable=1234
+    ),
   )
 }
 
 ///|
 test "shellcheck whitebox compatibility shebang samples" {
-  assert_shebang_status("prop_readShebang1", "#!/bin/sh\n", status_ok())
-  assert_shebang_status("prop_readShebang2", "!# /bin/sh\n", status_warning())
+  assert_shebang_status(
+    "prop_readShebang1",
+    (
+      #|#!/bin/sh
+      #|
+    ),
+    status_ok(),
+  )
+  assert_shebang_status(
+    "prop_readShebang2",
+    (
+      #|!# /bin/sh
+      #|
+    ),
+    status_warning(),
+  )
   assert_shebang_status(
     "prop_readShebang3",
-    "#shellcheck shell=/bin/sh\n",
+    (
+      #|#shellcheck shell=/bin/sh
+      #|
+    ),
     status_not_ok(),
   )
   assert_shebang_status("prop_readShebang4", "! /bin/sh", status_warning())
-  assert_shebang_status("prop_readShebang5", "\n#!/bin/sh", status_warning())
+  assert_shebang_status(
+    "prop_readShebang5",
+    (
+      #|
+      #|#!/bin/sh
+    ),
+    status_warning(),
+  )
   assert_shebang_status(
     "prop_readShebang6",
-    " # Copyright \n!#/bin/bash",
+    (
+      #| # Copyright 
+      #|!#/bin/bash
+    ),
     status_warning(),
   )
   assert_shebang_status(
     "prop_readShebang7",
-    "# Copyright \nfoo\n#!/bin/bash",
+    (
+      #|# Copyright 
+      #|foo
+      #|#!/bin/bash
+    ),
     status_not_ok(),
   )
 }

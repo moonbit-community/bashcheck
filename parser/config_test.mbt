@@ -1,7 +1,13 @@
 ///|
 test "parse_config_report parses rc-style directives" {
   let report = @parser.parse_config_report(
-    "disable=SC2006\nsource-path=SCRIPTDIR/lib\nexternal-sources=true\n# shellcheck enable=control-flow\n",
+    (
+      #|disable=SC2006
+      #|source-path=SCRIPTDIR/lib
+      #|external-sources=true
+      #|# shellcheck enable=control-flow
+      #|
+    ),
   )
 
   assert_eq(report.diagnostics.length(), 0)
@@ -26,7 +32,13 @@ test "parse_config_report parses rc-style directives" {
 
 ///|
 test "parse_config_report keeps config diagnostics on the correct line" {
-  let report = @parser.parse_config_report("# ordinary comment\nbogus line\n")
+  let report = @parser.parse_config_report(
+    (
+      #|# ordinary comment
+      #|bogus line
+      #|
+    ),
+  )
 
   assert_eq(report.annotations.length(), 0)
   assert_eq(report.diagnostics.length(), 1)

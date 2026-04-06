@@ -95,7 +95,12 @@ test "shellcheck compatibility function and loop samples" {
   assert_ok("function keyword without parens", "function foo { true; }")
   assert_ok("function keyword with parens", "function foo () { true; }")
   assert_warning(
-    "function keyword missing space warning", "function foo{\ntrue\n}",
+    "function keyword missing space warning",
+    (
+      #|function foo{
+      #|true
+      #|}
+    ),
   )
   assert_ok("function keyword extended name", "function []!() { true; }")
   assert_ok("function at-sign name", "@require(){ true; }")
@@ -108,18 +113,46 @@ test "shellcheck compatibility function and loop samples" {
   assert_ok("for without in", "for i do true; done")
   assert_ok("arithmetic for compact", "for((i=0; i<10; i++)); do echo $i; done")
   assert_ok(
-    "arithmetic for with newline", "for ((i=0;i<10 && n>x;i++,--n))\ndo \necho $i\ndone",
+    "arithmetic for with newline",
+    (
+      #|for ((i=0;i<10 && n>x;i++,--n))
+      #|do 
+      #|echo $i
+      #|done
+    ),
   )
-  assert_ok("arithmetic for empty clauses", "for ((;;))\ndo echo $i\ndone")
   assert_ok(
-    "arithmetic for empty clauses inline do", "for ((;;)) do echo $i\ndone",
+    "arithmetic for empty clauses",
+    (
+      #|for ((;;))
+      #|do echo $i
+      #|done
+    ),
   )
   assert_ok(
-    "arithmetic for empty clauses semicolon", "for ((;;)) ; do echo $i\ndone",
+    "arithmetic for empty clauses inline do",
+    (
+      #|for ((;;)) do echo $i
+      #|done
+    ),
+  )
+  assert_ok(
+    "arithmetic for empty clauses semicolon",
+    (
+      #|for ((;;)) ; do echo $i
+      #|done
+    ),
   )
   assert_ok("arithmetic for brace body", "for ((;;)) { true; }")
   assert_ok(
-    "for with line-continuation in clause", "for foo\nin\\\n  bar\\\n  baz\ndo true; done",
+    "for with line-continuation in clause",
+    (
+      #|for foo
+      #|in\
+      #|  bar\
+      #|  baz
+      #|do true; done
+    ),
   )
   assert_warning(
     "for dollar iterator warning", "for $a in *; do echo \"$a\"; done",
@@ -147,12 +180,38 @@ test "shellcheck compatibility case and condition samples" {
   )
   assert_ok("double bracket regex alternation", "[[ $l =~ ogg|flac ]]")
   assert_ok("single bracket and file test", "[ foo -a -f bar ]")
-  assert_ok("double bracket multiline lhs and rhs", "[[\na == b\n||\nc == d ]]")
   assert_ok(
-    "double bracket multiline operator gap", "[[\na == b  ||\nc == d ]]",
+    "double bracket multiline lhs and rhs",
+    (
+      #|[[
+      #|a == b
+      #|||
+      #|c == d ]]
+    ),
   )
-  assert_ok("double bracket multiline rhs only", "[[ a == b\n||\nc == d ]]")
-  assert_ok("double bracket regex line breaks", "[[ a == b ||\n c == d ]]")
+  assert_ok(
+    "double bracket multiline operator gap",
+    (
+      #|[[
+      #|a == b  ||
+      #|c == d ]]
+    ),
+  )
+  assert_ok(
+    "double bracket multiline rhs only",
+    (
+      #|[[ a == b
+      #|||
+      #|c == d ]]
+    ),
+  )
+  assert_ok(
+    "double bracket regex line breaks",
+    (
+      #|[[ a == b ||
+      #| c == d ]]
+    ),
+  )
   assert_ok("double bracket regex counted repetition", "[[ foo =~ ^fo{1,3}$ ]]")
   assert_ok("single bracket empty", "[ ]")
   assert_ok("single bracket quoted parens", "[ '(' x \")\" ]")
@@ -167,8 +226,20 @@ test "shellcheck compatibility case and condition samples" {
   )
   assert_ok("double bracket array index unary op", "[[ -v arr[$var] ]]")
   assert_ok("double bracket file newer-than", "[[ lex.yy.c -ot program.l ]]")
-  assert_ok("condition line continuation before and", "[[ foo ]]\\\n && bar")
-  assert_warning("single bracket legacy or warning", "[ a == b \n -o c == d ]")
+  assert_ok(
+    "condition line continuation before and",
+    (
+      #|[[ foo ]]\
+      #| && bar
+    ),
+  )
+  assert_warning(
+    "single bracket legacy or warning",
+    (
+      #|[ a == b 
+      #| -o c == d ]
+    ),
+  )
   assert_ok("double bracket glob with quoted expansion", "[[ x = [\"$1\"] ]]")
   assert_ok("double bracket glob literal match", "[[ x = [*] ]]")
   assert_warning("condition trailing words", "[[ x ]] foo")
@@ -178,19 +249,39 @@ test "shellcheck compatibility case and condition samples" {
     "case multiple explicit patterns", "case foo in a ) lol; cow;; b|d) fooo; esac",
   )
   assert_ok(
-    "case star pattern with spaced paren", "case foo\n in * ) echo bar;; esac",
+    "case star pattern with spaced paren",
+    (
+      #|case foo
+      #| in * ) echo bar;; esac
+    ),
   )
   assert_ok(
-    "case branch background terminator", "case foo\n in * ) echo bar & ;; esac",
+    "case branch background terminator",
+    (
+      #|case foo
+      #| in * ) echo bar & ;; esac
+    ),
   )
   assert_ok(
-    "case reserved words as patterns", "case foo\n in if) :;; done) :;; esac",
+    "case reserved words as patterns",
+    (
+      #|case foo
+      #| in if) :;; done) :;; esac
+    ),
   )
   assert_ok(
-    "case fallthrough separator", "case foo\n in *) echo bar ;& bar) foo; esac",
+    "case fallthrough separator",
+    (
+      #|case foo
+      #| in *) echo bar ;& bar) foo; esac
+    ),
   )
   assert_ok(
-    "case continue separator", "case foo\n in *) echo bar;;& foo) baz;; esac",
+    "case continue separator",
+    (
+      #|case foo
+      #| in *) echo bar;;& foo) baz;; esac
+    ),
   )
 }
 
@@ -220,102 +311,343 @@ test "shellcheck compatibility arithmetic and heredoc samples" {
   assert_ok("arithmetic ternary rhs nesting", "(( a ? b : c ? d : e ))")
   assert_ok("arithmetic double negation", "(( !!a ))")
   assert_ok("arithmetic bitwise not", "(( ~0 ))")
-  assert_ok("arithmetic line continuation", "(( \\\n3 +\\\n  2 ))")
+  assert_ok(
+    "arithmetic line continuation",
+    (
+      #|(( \
+      #|3 +\
+      #|  2 ))
+    ),
+  )
 
-  assert_ok("heredoc simple body", "cat << foo\nlol\ncow\nfoo")
-  assert_warning(
-    "heredoc strip tabs rejects spaces", "cat <<- EOF\n  cow\n  EOF",
-  )
-  assert_ok("heredoc dollar quote fragment", "cat << foo\n$\"\nfoo")
-  assert_warning("heredoc unterminated backquote", "cat << foo\n`\nfoo")
   assert_ok(
-    "heredoc escaped command substitution text", "cat << foo\n\\$(f ())\nfoo",
-  )
-  assert_ok("heredoc escaped delimiter space", "cat << foo\\ bar\ncow\nfoo bar")
-  assert_ok(
-    "heredoc inside if simple redirect", "if true; then cat << foo; fi\nbar\nfoo\n",
-  )
-  assert_ok(
-    "heredoc process-like suffix on opener", "cat << foo $(\nfoo\n)lol\nfoo\n",
-  )
-  assert_ok("heredoc pipeline on opener", "cat << foo|cat\nbar\nfoo")
-  assert_ok(
-    "heredoc chained redirects in if", "if true; then cat << foo << bar; fi\nfoo\nbar\n",
-  )
-  assert_ok(
-    "heredoc delimiter with trailing redirect tokens", "cat <<foo>>bar\netc\nfoo",
-  )
-  assert_ok(
-    "quoted heredoc delimiter punctuation", "cat <<'#!'\nHello World\n#!\necho Done",
-  )
-  assert_ok(
-    "tab-stripping quoted heredoc delimiter", "cat <<- ' foo'\nbar\n foo\n",
+    "heredoc simple body",
+    (
+      #|cat << foo
+      #|lol
+      #|cow
+      #|foo
+    ),
   )
   assert_warning(
-    "tab-stripping quoted heredoc wrong indentation", "cat <<- ' foo'\nbar\n  foo\n foo\n",
+    "heredoc strip tabs rejects spaces",
+    (
+      #|cat <<- EOF
+      #|  cow
+      #|  EOF
+    ),
   )
   assert_ok(
-    "quoted heredoc mixed quote delimiter", "cat <<'\"foo'\nbar\n\"foo\n",
+    "heredoc dollar quote fragment",
+    (
+      #|cat << foo
+      #|$"
+      #|foo
+    ),
   )
-  assert_ok("tab-stripping heredoc punctuation", "cat <<- !foo\nbar\n!foo")
-  assert_warning("heredoc trailing space mismatch", "cat << foo\nbar\nfoo \n")
   assert_warning(
-    "heredoc extra text before delimiter", "cat <<foo\nbar\nfoo bar\nfoo",
-  )
-  assert_warning(
-    "heredoc indented end token warning", "cat << foo\n  foo\n()\nfoo\n",
+    "heredoc unterminated backquote",
+    (
+      #|cat << foo
+      #|`
+      #|foo
+    ),
   )
   assert_ok(
-    "heredoc indented end token with directive", "# shellcheck disable=SC1039\ncat << foo\n  foo\n()\nfoo\n",
+    "heredoc escaped command substitution text",
+    (
+      #|cat << foo
+      #|\$(f ())
+      #|foo
+    ),
   )
-  assert_warning("heredoc carriage returns", "cat << foo\r\ncow\r\nfoo\r\n")
+  assert_ok(
+    "heredoc escaped delimiter space",
+    (
+      #|cat << foo\ bar
+      #|cow
+      #|foo bar
+    ),
+  )
+  assert_ok(
+    "heredoc inside if simple redirect",
+    (
+      #|if true; then cat << foo; fi
+      #|bar
+      #|foo
+      #|
+    ),
+  )
+  assert_ok(
+    "heredoc process-like suffix on opener",
+    (
+      #|cat << foo $(
+      #|foo
+      #|)lol
+      #|foo
+      #|
+    ),
+  )
+  assert_ok(
+    "heredoc pipeline on opener",
+    (
+      #|cat << foo|cat
+      #|bar
+      #|foo
+    ),
+  )
+  assert_ok(
+    "heredoc chained redirects in if",
+    (
+      #|if true; then cat << foo << bar; fi
+      #|foo
+      #|bar
+      #|
+    ),
+  )
+  assert_ok(
+    "heredoc delimiter with trailing redirect tokens",
+    (
+      #|cat <<foo>>bar
+      #|etc
+      #|foo
+    ),
+  )
+  assert_ok(
+    "quoted heredoc delimiter punctuation",
+    (
+      #|cat <<'#!'
+      #|Hello World
+      #|#!
+      #|echo Done
+    ),
+  )
+  assert_ok(
+    "tab-stripping quoted heredoc delimiter",
+    (
+      #|cat <<- ' foo'
+      #|bar
+      #| foo
+      #|
+    ),
+  )
+  assert_warning(
+    "tab-stripping quoted heredoc wrong indentation",
+    (
+      #|cat <<- ' foo'
+      #|bar
+      #|  foo
+      #| foo
+      #|
+    ),
+  )
+  assert_ok(
+    "quoted heredoc mixed quote delimiter",
+    (
+      #|cat <<'"foo'
+      #|bar
+      #|"foo
+      #|
+    ),
+  )
+  assert_ok(
+    "tab-stripping heredoc punctuation",
+    (
+      #|cat <<- !foo
+      #|bar
+      #|!foo
+    ),
+  )
+  assert_warning(
+    "heredoc trailing space mismatch",
+    (
+      #|cat << foo
+      #|bar
+      #|foo 
+      #|
+    ),
+  )
+  assert_warning(
+    "heredoc extra text before delimiter",
+    (
+      #|cat <<foo
+      #|bar
+      #|foo bar
+      #|foo
+    ),
+  )
+  assert_warning(
+    "heredoc indented end token warning",
+    (
+      #|cat << foo
+      #|  foo
+      #|()
+      #|foo
+      #|
+    ),
+  )
+  assert_ok(
+    "heredoc indented end token with directive",
+    (
+      #|# shellcheck disable=SC1039
+      #|cat << foo
+      #|  foo
+      #|()
+      #|foo
+      #|
+    ),
+  )
+  assert_warning(
+    "heredoc carriage returns",
+    (
+      $|cat << foo\{'\r'}
+      $|cow\{'\r'}
+      $|foo\{'\r'}
+      $|
+    ),
+  )
   assert_not_ok(
-    "heredoc trailing space before crlf delimiter", "cat << foo \r\ncow\r\nfoo\r\n",
+    "heredoc trailing space before crlf delimiter",
+    (
+      $|cat << foo \{'\r'}
+      $|cow\{'\r'}
+      $|foo\{'\r'}
+      $|
+    ),
   )
 }
 
 ///|
 test "shellcheck compatibility metadata and script samples" {
-  assert_no_commands("prop_readAnnotation1", "# shellcheck disable=1234,5678\n")
   assert_no_commands(
-    "prop_readAnnotation2", "# shellcheck disable=SC1234 disable=SC5678\n",
+    "prop_readAnnotation1",
+    (
+      #|# shellcheck disable=1234,5678
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readAnnotation3", "# shellcheck disable=SC1234 source=/dev/null disable=SC5678\n",
+    "prop_readAnnotation2",
+    (
+      #|# shellcheck disable=SC1234 disable=SC5678
+      #|
+    ),
+  )
+  assert_no_commands(
+    "prop_readAnnotation3",
+    (
+      #|# shellcheck disable=SC1234 source=/dev/null disable=SC5678
+      #|
+    ),
   )
   assert_warning(
-    "prop_readAnnotation4", "# shellcheck cats=dogs disable=SC1234\n",
+    "prop_readAnnotation4",
+    (
+      #|# shellcheck cats=dogs disable=SC1234
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readAnnotation5", "# shellcheck disable=SC2002 # All cats are precious\n",
+    "prop_readAnnotation5",
+    (
+      #|# shellcheck disable=SC2002 # All cats are precious
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readAnnotation6", "# shellcheck disable=SC1234 # shellcheck foo=bar\n",
+    "prop_readAnnotation6",
+    (
+      #|# shellcheck disable=SC1234 # shellcheck foo=bar
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readAnnotation7", "# shellcheck disable=SC1000,SC2000-SC3000,SC1001\n",
+    "prop_readAnnotation7",
+    (
+      #|# shellcheck disable=SC1000,SC2000-SC3000,SC1001
+      #|
+    ),
   )
-  assert_no_commands("prop_readAnnotation8", "# shellcheck disable=all\n")
   assert_no_commands(
-    "prop_readAnnotation9", "# shellcheck source='foo bar' source-path=\"baz etc\"\n",
+    "prop_readAnnotation8",
+    (
+      #|# shellcheck disable=all
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readAnnotation10", "# shellcheck disable='SC1234,SC2345' enable=\"foo\" shell='bash'\n",
+    "prop_readAnnotation9",
+    (
+      #|# shellcheck source='foo bar' source-path="baz etc"
+      #|
+    ),
+  )
+  assert_no_commands(
+    "prop_readAnnotation10",
+    (
+      #|# shellcheck disable='SC1234,SC2345' enable="foo" shell='bash'
+      #|
+    ),
   )
   assert_no_commands("prop_readAnyComment", "# Comment")
 
-  assert_ok("prop_readScript1", "#!/bin/bash\necho hello world\n")
-  assert_warning("prop_readScript2", "#!/bin/bash\r\necho hello world\n")
-  assert_warning("prop_readScript3", "#!/bin/bash\necho hello\u00A0world")
-  assert_warning("prop_readScript4", "#!/usr/bin/perl\nfoo=(\n")
-  assert_no_commands(
-    "prop_readScript5", "#!/bin/bash\n#This is an empty script\n\n",
+  assert_ok(
+    "prop_readScript1",
+    (
+      #|#!/bin/bash
+      #|echo hello world
+      #|
+    ),
+  )
+  assert_warning(
+    "prop_readScript2",
+    (
+      $|#!/bin/bash\{'\r'}
+      $|echo hello world
+      $|
+    ),
+  )
+  assert_warning(
+    "prop_readScript3",
+    (
+      #|#!/bin/bash
+      #|echo hello world
+    ),
+  )
+  assert_warning(
+    "prop_readScript4",
+    (
+      #|#!/usr/bin/perl
+      #|foo=(
+      #|
+    ),
   )
   assert_no_commands(
-    "prop_readScript6", "#!/usr/bin/env -S X=FOO bash\n#This is an empty script\n\n",
+    "prop_readScript5",
+    (
+      #|#!/bin/bash
+      #|#This is an empty script
+      #|
+      #|
+    ),
+  )
+  assert_no_commands(
+    "prop_readScript6",
+    (
+      #|#!/usr/bin/env -S X=FOO bash
+      #|#This is an empty script
+      #|
+      #|
+    ),
   )
   assert_ok(
-    "prop_readScript7", "#!/bin/zsh\n# shellcheck disable=SC1071\nfor f (a b); echo $f\n",
+    "prop_readScript7",
+    (
+      #|#!/bin/zsh
+      #|# shellcheck disable=SC1071
+      #|for f (a b); echo $f
+      #|
+    ),
   )
 }
 
@@ -324,24 +656,60 @@ test "shellcheck compatibility word and expansion samples" {
   assert_word_ok("prop_readNormalWord", "'foo'\"bar\"{1..3}baz$(lol)")
   assert_word_ok("prop_readNormalWord2", "foo**(foo)!!!(@@(bar))")
   assert_word_ok("prop_readNormalWord3", "foo#")
-  assert_word_ok("prop_readNormalWord4", "$\"foo\"$'foo\nbar'")
+  assert_word_ok(
+    "prop_readNormalWord4",
+    (
+      #|$"foo"$'foo
+      #|bar'
+    ),
+  )
   assert_word_warning("prop_readNormalWord5", "${foo}}")
   assert_word_ok("prop_readNormalWord6", "foo/{}")
-  assert_word_ok("prop_readNormalWord7", "foo\\\nbar")
-  assert_warning("prop_readNormalWord8", "(foo\\ \nbar)")
-  assert_ok("prop_readNormalWord9", "(foo\\ ;\nbar)")
+  assert_word_ok(
+    "prop_readNormalWord7",
+    (
+      #|foo\
+      #|bar
+    ),
+  )
+  assert_warning(
+    "prop_readNormalWord8",
+    (
+      #|(foo\ 
+      #|bar)
+    ),
+  )
+  assert_ok(
+    "prop_readNormalWord9",
+    (
+      #|(foo\ ;
+      #|bar)
+    ),
+  )
   assert_word_warning("prop_readNormalWord10", "\u201Chello\u201D")
   assert_word_warning("prop_readNormalWord11", "\u2018hello\u2019")
   assert_word_warning("prop_readNormalWord12", "hello\u2018")
 
   assert_word_ok("prop_readProcSub1", "<(echo test | wc -l)")
   assert_word_ok("prop_readProcSub2", "<(  if true; then true; fi )")
-  assert_word_ok("prop_readProcSub3", "<( # nothing here \n)")
+  assert_word_ok(
+    "prop_readProcSub3",
+    (
+      #|<( # nothing here 
+      #|)
+    ),
+  )
 
   assert_word_ok("prop_readSingleQuoted", "'foo bar'")
   assert_word_warning("prop_readSingleQuoted2", "'foo bar\\'")
   assert_word_warning("prop_readSingleQuoted4", "'it\\'s")
-  assert_warning("prop_readSingleQuoted5", "foo='bar\ncow 'arg")
+  assert_warning(
+    "prop_readSingleQuoted5",
+    (
+      #|foo='bar
+      #|cow 'arg
+    ),
+  )
   assert_ok("prop_readSingleQuoted6", "foo='bar cow 'arg")
   assert_word_ok("prop_readSingleQuoted7", "'foo\u201C&bar'")
   assert_word_warning("prop_readSingleQuoted8", "'foo\u2018&bar'")
@@ -349,17 +717,47 @@ test "shellcheck compatibility word and expansion samples" {
   assert_word_ok("prop_readBackTicked", "`ls *.mp3`")
   assert_word_ok("prop_readBackTicked2", "`grep \"\\\"\"`")
   assert_word_warning("prop_readBackTicked3", "\u00B4grep \"\\\"\"\u00B4")
-  assert_ok("prop_readBackTicked4", "`echo foo\necho bar`")
+  assert_ok(
+    "prop_readBackTicked4",
+    (
+      #|`echo foo
+      #|echo bar`
+    ),
+  )
   assert_ok("prop_readBackTicked5", "echo `foo`bar")
-  assert_warning("prop_readBackTicked6", "echo `foo\necho `bar")
+  assert_warning(
+    "prop_readBackTicked6",
+    (
+      #|echo `foo
+      #|echo `bar
+    ),
+  )
   assert_ok("prop_readBackTicked7", "`#inline comment`")
-  assert_ok("prop_readBackTicked8", "echo `#comment` \\\nbar baz")
+  assert_ok(
+    "prop_readBackTicked8",
+    (
+      #|echo `#comment` \
+      #|bar baz
+    ),
+  )
 
   assert_word_ok("prop_readDoubleQuoted", "\"Hello $FOO\"")
   assert_word_ok("prop_readDoubleQuoted2", "\"$'\"")
   assert_word_ok("prop_readDoubleQuoted3", "\"\u2018hello\u2019\"")
-  assert_warning("prop_readDoubleQuoted4", "\"foo\nbar\"foo")
-  assert_ok("prop_readDoubleQuoted5", "lol \"foo\nbar\" etc")
+  assert_warning(
+    "prop_readDoubleQuoted4",
+    (
+      #|"foo
+      #|bar"foo
+    ),
+  )
+  assert_ok(
+    "prop_readDoubleQuoted5",
+    (
+      #|lol "foo
+      #|bar" etc
+    ),
+  )
   assert_ok("prop_readDoubleQuoted6", "echo \"${ ls; }\"")
   assert_ok("prop_readDoubleQuoted7", "echo \"${ ls;}bar\"")
   assert_word_warning("prop_readDoubleQuoted8", "\"\u201Chello\u201D\"")
@@ -394,15 +792,35 @@ test "shellcheck compatibility word and expansion samples" {
   assert_ok("prop_readArithmeticExpression", "((a?b:c))")
 
   assert_word_ok("prop_readDollarBraceCommandExpansion1", "${ ls; }")
-  assert_word_ok("prop_readDollarBraceCommandExpansion2", "${\nls\n}")
+  assert_word_ok(
+    "prop_readDollarBraceCommandExpansion2",
+    (
+      #|${
+      #|ls
+      #|}
+    ),
+  )
   assert_word_ok("prop_readDollarBraceCommandExpansion3", "${|  REPLY=42; }")
   assert_word_ok("prop_readDollarBraced1", "${foo//bar/baz}")
   assert_word_ok("prop_readDollarBraced2", "${foo/'{cow}'}")
   assert_word_ok("prop_readDollarBraced3", "${foo%%$(echo cow\\})}")
   assert_word_ok("prop_readDollarBraced4", "${foo#\\}}")
-  assert_word_ok("prop_readDollarExpansion1", "$(echo foo; ls\n)")
+  assert_word_ok(
+    "prop_readDollarExpansion1",
+    (
+      #|$(echo foo; ls
+      #|)
+    ),
+  )
   assert_word_ok("prop_readDollarExpansion2", "$(  )")
-  assert_word_ok("prop_readDollarExpansion3", "$( command \n#comment \n)")
+  assert_word_ok(
+    "prop_readDollarExpansion3",
+    (
+      #|$( command 
+      #|#comment 
+      #|)
+    ),
+  )
   assert_word_ok("prop_readDollarVariable", "$@")
   assert_word_ok("prop_readDollarVariable2", "$?!")
   assert_word_warning("prop_readDollarVariable3", "$10")
@@ -460,9 +878,21 @@ test "shellcheck compatibility command and compound samples" {
   assert_ok("prop_readPipeline5", "true | ! true")
 
   assert_ok("prop_readAndOr", "grep -i lol foo || exit 1")
-  assert_ok("prop_readAndOr1", "# shellcheck disable=1\nfoo")
   assert_ok(
-    "prop_readAndOr2", "# shellcheck disable=1\n# lol\n# shellcheck disable=3\nfoo",
+    "prop_readAndOr1",
+    (
+      #|# shellcheck disable=1
+      #|foo
+    ),
+  )
+  assert_ok(
+    "prop_readAndOr2",
+    (
+      #|# shellcheck disable=1
+      #|# lol
+      #|# shellcheck disable=3
+      #|foo
+    ),
   )
   assert_ok("prop_readTerm", "time ( foo; bar; )")
 
@@ -477,20 +907,59 @@ test "shellcheck compatibility command and compound samples" {
     "prop_readIfClause4", "if false; then true; else if true; then echo lol; fi; fi",
   )
   assert_ok(
-    "prop_readIfClause5", "if false; then true; else\nif true; then echo lol; fi; fi",
+    "prop_readIfClause5",
+    (
+      #|if false; then true; else
+      #|if true; then echo lol; fi; fi
+    ),
   )
-  assert_warning("prop_readIfClause6", "if true\nthen\nDo the thing\nfi")
+  assert_warning(
+    "prop_readIfClause6",
+    (
+      #|if true
+      #|then
+      #|Do the thing
+      #|fi
+    ),
+  )
 
   assert_ok("prop_readSubshell", "( cd /foo; tar cf stuff.tar * )")
   assert_ok("brace group script with separators", "{ a; b | c | d; e; }")
   assert_warning("brace group script without required space", "{foo;}")
   assert_ok("brace group script with nested subshell", "{(foo)}")
 
-  assert_ok("bats script form 1", "@test 'can parse' {\n  true\n}")
-  assert_ok("bats script form 2", "@test random text !(@*$Y&! {\n  true\n}")
-  assert_ok("bats script form 3", "@test foo { bar { baz {\n  true\n}")
+  assert_ok(
+    "bats script form 1",
+    (
+      #|@test 'can parse' {
+      #|  true
+      #|}
+    ),
+  )
+  assert_ok(
+    "bats script form 2",
+    (
+      #|@test random text !(@*$Y&! {
+      #|  true
+      #|}
+    ),
+  )
+  assert_ok(
+    "bats script form 3",
+    (
+      #|@test foo { bar { baz {
+      #|  true
+      #|}
+    ),
+  )
   assert_warning(
-    "bats script form with newline body opener", "@test foo \n{\n true\n}",
+    "bats script form with newline body opener",
+    (
+      #|@test foo 
+      #|{
+      #| true
+      #|}
+    ),
   )
 
   assert_ok("prop_readWhileClause", "while [[ -e foo ]]; do sleep 1; done")
@@ -498,7 +967,11 @@ test "shellcheck compatibility command and compound samples" {
   assert_ok("prop_readSelectClause1", "select foo in *; do echo $foo; done")
   assert_ok("prop_readSelectClause2", "select foo; do echo $foo; done")
   assert_ok(
-    "select newline separator without in", "select foo\ndo echo $foo; done",
+    "select newline separator without in",
+    (
+      #|select foo
+      #|do echo $foo; done
+    ),
   )
 
   assert_ok("prop_readCoProc1", "coproc foo { echo bar; }")

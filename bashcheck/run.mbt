@@ -717,7 +717,17 @@ fn unknown_format_error(format : String) -> CliError {
   support_error(
     "Unknown format " +
     format +
-    "\nSupported formats:\n  checkstyle\n  diff\n  gcc\n  json\n  json1\n  quiet\n  tty",
+    (
+      #|
+      #|Supported formats:
+      #|  checkstyle
+      #|  diff
+      #|  gcc
+      #|  json
+      #|  json1
+      #|  quiet
+      #|  tty
+    ),
   )
 }
 

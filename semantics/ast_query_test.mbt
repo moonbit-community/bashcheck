@@ -63,7 +63,12 @@ fn source_of(command : @parser.Command) -> @parser.SourceCommand {
 
 ///|
 test "command queries resolve wrappers and source commands" {
-  let wrapped = parse_query_ok("command -- printf '%s' \"$x\" >out\n")
+  let wrapped = parse_query_ok(
+    (
+      #|command -- printf '%s' "$x" >out
+      #|
+    ),
+  )
   let wrapped_command = first_command(wrapped)
   assert_eq(@semantics.command_name(wrapped_command), Some("command"))
   assert_eq(@semantics.effective_command_name(wrapped_command), Some("printf"))
@@ -99,7 +104,12 @@ test "command queries resolve wrappers and source commands" {
   ])
   assert_eq(@semantics.all_redirections(wrapped_command).length(), 1)
 
-  let introspection = parse_query_ok("command -v printf\n")
+  let introspection = parse_query_ok(
+    (
+      #|command -v printf
+      #|
+    ),
+  )
   let introspection_command = first_command(introspection)
   assert_eq(@semantics.command_name(introspection_command), Some("command"))
   assert_eq(
@@ -111,7 +121,12 @@ test "command queries resolve wrappers and source commands" {
     3,
   )
 
-  let quoted_introspection = parse_query_ok("command \"-v\" printf\n")
+  let quoted_introspection = parse_query_ok(
+    (
+      #|command "-v" printf
+      #|
+    ),
+  )
   let quoted_introspection_command = first_command(quoted_introspection)
   assert_eq(
     @semantics.command_name(quoted_introspection_command),
@@ -126,21 +141,36 @@ test "command queries resolve wrappers and source commands" {
     3,
   )
 
-  let quoted_end_of_options = parse_query_ok("command \"--\" printf '%s'\n")
+  let quoted_end_of_options = parse_query_ok(
+    (
+      #|command "--" printf '%s'
+      #|
+    ),
+  )
   let quoted_end_of_options_command = first_command(quoted_end_of_options)
   assert_eq(
     @semantics.effective_command_name(quoted_end_of_options_command),
     Some("command"),
   )
 
-  let quoted_pass_through = parse_query_ok("command '-p' printf\n")
+  let quoted_pass_through = parse_query_ok(
+    (
+      #|command '-p' printf
+      #|
+    ),
+  )
   let quoted_pass_through_command = first_command(quoted_pass_through)
   assert_eq(
     @semantics.effective_command_name(quoted_pass_through_command),
     Some("command"),
   )
 
-  let quoted_exec = parse_query_ok("exec \"-c\" sh -c true\n")
+  let quoted_exec = parse_query_ok(
+    (
+      #|exec "-c" sh -c true
+      #|
+    ),
+  )
   let quoted_exec_command = first_command(quoted_exec)
   assert_eq(@semantics.command_name(quoted_exec_command), Some("exec"))
   assert_eq(@semantics.effective_command_name(quoted_exec_command), Some("sh"))
@@ -152,7 +182,12 @@ test "command queries resolve wrappers and source commands" {
   assert_eq(quoted_exec_words[1].source, "-c")
   assert_eq(quoted_exec_words[2].source, "true")
 
-  let sourced = parse_query_ok(". lib.sh \"$x\"\n")
+  let sourced = parse_query_ok(
+    (
+      #|. lib.sh "$x"
+      #|
+    ),
+  )
   let source_command = first_command(sourced)
   assert_eq(@semantics.command_name(source_command), Some("."))
   assert_eq(@semantics.effective_command_name(source_command), Some("."))
@@ -168,31 +203,62 @@ test "command queries resolve wrappers and source commands" {
     ".", "lib.sh", "${VAR}",
   ])
 
-  let source_keyword = first_command(parse_query_ok("source lib.sh\n"))
+  let source_keyword = first_command(
+    parse_query_ok(
+      (
+        #|source lib.sh
+        #|
+      ),
+    ),
+  )
   assert_eq(@semantics.command_name(source_keyword), Some("source"))
   assert_eq(@semantics.effective_command_name(source_keyword), Some("source"))
 }
 
 ///|
 test "command basename queries keep direct and builtin names distinct" {
-  let direct = first_command(parse_query_ok("/usr/bin/find . -type f\n"))
+  let direct = first_command(
+    parse_query_ok(
+      (
+        #|/usr/bin/find . -type f
+        #|
+      ),
+    ),
+  )
   assert_eq(@semantics.command_name(direct), Some("/usr/bin/find"))
   assert_eq(@semantics.command_basename(direct), Some("find"))
   assert_true(@semantics.builtin_command_name(direct) is None)
 
-  let builtin = first_command(parse_query_ok("builtin read foo\n"))
+  let builtin = first_command(
+    parse_query_ok(
+      (
+        #|builtin read foo
+        #|
+      ),
+    ),
+  )
   assert_eq(@semantics.command_name(builtin), Some("builtin"))
   assert_eq(@semantics.command_basename(builtin), Some("builtin"))
   assert_eq(@semantics.builtin_command_name(builtin), Some("read"))
 
-  let wrapped = first_command(parse_query_ok("command read foo\n"))
+  let wrapped = first_command(
+    parse_query_ok(
+      (
+        #|command read foo
+        #|
+      ),
+    ),
+  )
   assert_true(@semantics.builtin_command_name(wrapped) is None)
 }
 
 ///|
 test "word queries detect literals flags constants globs and dollar strings" {
   let script = parse_query_ok(
-    "echo foo -n$bar \"-q\" abc*.sh \"*.sh\" ~user foo[x${bar}y] $'a\\n'\n",
+    (
+      #|echo foo -n$bar "-q" abc*.sh "*.sh" ~user foo[x${bar}y] $'a\n'
+      #|
+    ),
   )
   let simple = simple_of(first_command(script))
 
@@ -205,12 +271,25 @@ test "word queries detect literals flags constants globs and dollar strings" {
   assert_true(@semantics.is_glob_word(simple.words[4]))
   assert_true(!@semantics.is_glob_word(simple.words[5]))
   assert_true(@semantics.is_glob_word(simple.words[7]))
-  assert_eq(@semantics.literal_text(simple.words[8]), Some("a\n"))
+  assert_eq(
+    @semantics.literal_text(simple.words[8]),
+    Some(
+      (
+        #|a
+        #|
+      ),
+    ),
+  )
 }
 
 ///|
 test "special parameters stay visible in oversimplified commands" {
-  let script = parse_query_ok("echo \"$@\" $? $1 \"$USER\"\n")
+  let script = parse_query_ok(
+    (
+      #|echo "$@" $? $1 "$USER"
+      #|
+    ),
+  )
   let command = first_command(script)
   assert_eq(@semantics.oversimplify_command(command), [
     "echo", "@", "?", "1", "${VAR}",
@@ -219,7 +298,12 @@ test "special parameters stay visible in oversimplified commands" {
 
 ///|
 test "literal text preserves special parameters and positional recovery" {
-  let script = parse_query_report_ok("echo $? $1 $10 \"$?\" \"$10\"\n")
+  let script = parse_query_report_ok(
+    (
+      #|echo $? $1 $10 "$?" "$10"
+      #|
+    ),
+  )
   let simple = simple_of(first_command(script))
 
   assert_eq(@semantics.literal_text(simple.words[1]), Some("?"))
@@ -238,9 +322,23 @@ test "walkers stay within the current script and can inspect includes separately
     true,
     Some("/tmp/main.sh"),
     [],
-    [("lib.sh", "echo \"$(printf %s inner)\" >out\n")],
+    [
+      (
+        "lib.sh",
+        (
+          #|echo "$(printf %s inner)" >out
+          #|
+        ),
+      ),
+    ],
   )
-  let script = parse_query_with_options(". lib.sh\n", options)
+  let script = parse_query_with_options(
+    (
+      #|. lib.sh
+      #|
+    ),
+    options,
+  )
   let root_item = first_item(script)
   let root_command = first_command(script)
   let source = source_of(root_command)
@@ -312,7 +410,14 @@ fn first_if_body_item(script : @parser.Script) -> @parser.ListItem {
 ///|
 test "directive extraction stays local to the current script or list item" {
   let script = parse_query_ok(
-    "# shellcheck disable=SC1000 enable=root-check\nif true; then\n# shellcheck disable=SC2000 enable=inner-check\necho hi\nfi\n",
+    (
+      #|# shellcheck disable=SC1000 enable=root-check
+      #|if true; then
+      #|# shellcheck disable=SC2000 enable=inner-check
+      #|echo hi
+      #|fi
+      #|
+    ),
   )
   assert_eq(@semantics.extract_disable_directives(script), ["SC1000"])
   assert_eq(@semantics.extract_enable_directives(script), ["root-check"])

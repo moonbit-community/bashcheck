@@ -95,7 +95,12 @@ test "condition trailing tokens include shellcheck parse-stop diagnostic" {
 
 ///|
 test "quote diagnostics use shellcheck positions and wording" {
-  let double_report = parse_script_report("\"foo\nbar\"foo")
+  let double_report = parse_script_report(
+    (
+      #|"foo
+      #|bar"foo
+    ),
+  )
   expect_diagnostic(
     double_report.diagnostics,
     1078,
@@ -120,7 +125,12 @@ test "quote diagnostics use shellcheck positions and wording" {
     "This apostrophe terminated the single quoted string!",
   )
 
-  let backtick_report = parse_script_report("echo `foo\necho `bar")
+  let backtick_report = parse_script_report(
+    (
+      #|echo `foo
+      #|echo `bar
+    ),
+  )
   expect_diagnostic(
     backtick_report.diagnostics,
     1079,
@@ -132,7 +142,13 @@ test "quote diagnostics use shellcheck positions and wording" {
 
 ///|
 test "here documents surface nested parse errors with here-doc context" {
-  let report = parse_script_report("cat << foo\n`\nfoo")
+  let report = parse_script_report(
+    (
+      #|cat << foo
+      #|`
+      #|foo
+    ),
+  )
   match report.script {
     Some(_) => ()
     None => fail("expected recoverable parse")
@@ -209,7 +225,10 @@ test "shellcheck compatibility diagnostics stay aligned" {
   )
 
   let annotation_report = parse_script_report(
-    "# shellcheck cats=dogs disable=SC1234\n",
+    (
+      #|# shellcheck cats=dogs disable=SC1234
+      #|
+    ),
   )
   expect_diagnostic(
     annotation_report.diagnostics,
@@ -219,7 +238,12 @@ test "shellcheck compatibility diagnostics stay aligned" {
     "This directive is unknown. It will be ignored.",
   )
 
-  let nbsp_report = parse_script_report("#!/bin/bash\necho hello\u00A0world")
+  let nbsp_report = parse_script_report(
+    (
+      #|#!/bin/bash
+      #|echo hello world
+    ),
+  )
   expect_diagnostic(
     nbsp_report.diagnostics,
     1018,
@@ -240,7 +264,12 @@ test "shellcheck compatibility diagnostics stay aligned" {
 
 ///|
 test "phase 1 condition diagnostics use shellcheck codes positions and wording" {
-  let command_report = parse_script_report("[ grep foo ]\n")
+  let command_report = parse_script_report(
+    (
+      #|[ grep foo ]
+      #|
+    ),
+  )
   expect_diagnostic(
     command_report.diagnostics,
     1073,
@@ -263,7 +292,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "Expected test to end here (don't wrap commands in []/[[]]). Fix any mentioned problems and try again.",
   )
 
-  let unary_report = parse_script_report("[ -n ]\n")
+  let unary_report = parse_script_report(
+    (
+      #|[ -n ]
+      #|
+    ),
+  )
   expect_diagnostic(
     unary_report.diagnostics,
     1019,
@@ -272,7 +306,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "Expected this to be an argument to the unary condition.",
   )
 
-  let spacing_report = parse_script_report("[ a = b]\n")
+  let spacing_report = parse_script_report(
+    (
+      #|[ a = b]
+      #|
+    ),
+  )
   expect_diagnostic(
     spacing_report.diagnostics,
     1020,
@@ -288,7 +327,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "Missing space before ]. Fix any mentioned problems and try again.",
   )
 
-  let paren_spacing_report = parse_script_report("[ foo\\) ]\n")
+  let paren_spacing_report = parse_script_report(
+    (
+      #|[ foo\) ]
+      #|
+    ),
+  )
   expect_diagnostic(
     paren_spacing_report.diagnostics,
     1021,
@@ -297,7 +341,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "You need a space before the \\)",
   )
 
-  let grouping_report = parse_script_report("[ [ a = b ] ]\n")
+  let grouping_report = parse_script_report(
+    (
+      #|[ [ a = b ] ]
+      #|
+    ),
+  )
   expect_diagnostic(
     grouping_report.diagnostics,
     1026,
@@ -306,7 +355,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "If grouping expressions inside [..], use \\( ..\\).",
   )
 
-  let rhs_report = parse_script_report("[ foo = ]\n")
+  let rhs_report = parse_script_report(
+    (
+      #|[ foo = ]
+      #|
+    ),
+  )
   expect_diagnostic(
     rhs_report.diagnostics,
     1027,
@@ -315,7 +369,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "Expected another argument for this operator.",
   )
 
-  let single_group_report = parse_script_report("[ ( a = b ) ]\n")
+  let single_group_report = parse_script_report(
+    (
+      #|[ ( a = b ) ]
+      #|
+    ),
+  )
   if count_diagnostics(single_group_report.diagnostics, 1028) != 2 {
     abort("expected two SC1028 diagnostics")
   }
@@ -334,7 +393,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "In [..] you have to escape \\( \\) or preferably combine [..] expressions.",
   )
 
-  let double_group_report = parse_script_report("[[ \\( a = b \\) ]]\n")
+  let double_group_report = parse_script_report(
+    (
+      #|[[ \( a = b \) ]]
+      #|
+    ),
+  )
   if count_diagnostics(double_group_report.diagnostics, 1029) != 2 {
     abort("expected two SC1029 diagnostics")
   }
@@ -353,7 +417,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "In [[..]] you shouldn't escape ( or ).",
   )
 
-  let arithmetic_report = parse_script_report("[ 1 + 2 ]\n")
+  let arithmetic_report = parse_script_report(
+    (
+      #|[ 1 + 2 ]
+      #|
+    ),
+  )
   expect_diagnostic(
     arithmetic_report.diagnostics,
     1076,
@@ -362,7 +431,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "Trying to do math? Use e.g. [ $((i/2+7)) -ge 18 ].",
   )
 
-  let unicode_dash_report = parse_script_report("[ foo \uFF0Deq bar ]\n")
+  let unicode_dash_report = parse_script_report(
+    (
+      #|[ foo －eq bar ]
+      #|
+    ),
+  )
   expect_diagnostic(
     unicode_dash_report.diagnostics,
     1100,
@@ -371,7 +445,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
     "This is a unicode dash. Delete and retype as ASCII minus.",
   )
 
-  let tight_operator_report = parse_script_report("[ foo= bar ]\n")
+  let tight_operator_report = parse_script_report(
+    (
+      #|[ foo= bar ]
+      #|
+    ),
+  )
   expect_diagnostic(
     tight_operator_report.diagnostics,
     1108,
@@ -383,7 +462,12 @@ test "phase 1 condition diagnostics use shellcheck codes positions and wording" 
 
 ///|
 test "phase 1 parser boundary diagnostics use shellcheck codes positions and wording" {
-  let heredoc_report = parse_script_report("cat << (foo)\n")
+  let heredoc_report = parse_script_report(
+    (
+      #|cat << (foo)
+      #|
+    ),
+  )
   expect_diagnostic(
     heredoc_report.diagnostics,
     1009,
@@ -413,7 +497,12 @@ test "phase 1 parser boundary diagnostics use shellcheck codes positions and wor
     " Fix any mentioned problems and try again.",
   )
 
-  let function_report = parse_script_report("foo() echo hi\n")
+  let function_report = parse_script_report(
+    (
+      #|foo() echo hi
+      #|
+    ),
+  )
   expect_diagnostic(
     function_report.diagnostics,
     1064,
@@ -423,42 +512,79 @@ test "phase 1 parser boundary diagnostics use shellcheck codes positions and wor
   )
 
   expect_diagnostic(
-    parse_script_report("!#/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #|!#/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1084,
     1,
     1,
     "Use #!, not !#, for the shebang.",
   )
   expect_diagnostic(
-    parse_script_report("!/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #|!/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1104,
     1,
     1,
     "Use #!, not just !, for the shebang.",
   )
   expect_diagnostic(
-    parse_script_report("#/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #|#/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1113,
     1,
     2,
     "Use #!, not just #, for the shebang.",
   )
   expect_diagnostic(
-    parse_script_report(" #!/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #| #!/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1114,
     1,
     1,
     "Remove leading spaces before the shebang.",
   )
   expect_diagnostic(
-    parse_script_report("# !/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #|# !/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1115,
     1,
     2,
     "Remove spaces between # and ! in the shebang.",
   )
   expect_diagnostic(
-    parse_script_report("# comment\n#!/bin/bash\necho hi\n").diagnostics,
+    parse_script_report(
+      (
+        #|# comment
+        #|#!/bin/bash
+        #|echo hi
+        #|
+      ),
+    ).diagnostics,
     1128,
     2,
     1,
@@ -467,11 +593,30 @@ test "phase 1 parser boundary diagnostics use shellcheck codes positions and wor
 
   let source_depth_files : Array[(String, String)] = []
   for i in 0..<101 {
-    source_depth_files.push(("f\{i}.sh", "source f\{i + 1}.sh\n"))
+    source_depth_files.push(
+      (
+        "f\{i}.sh",
+        (
+          $|source f\{i + 1}.sh
+          $|
+        ),
+      ),
+    )
   }
-  source_depth_files.push(("f101.sh", "echo ok\n"))
+  source_depth_files.push(
+    (
+      "f101.sh",
+      (
+        #|echo ok
+        #|
+      ),
+    ),
+  )
   let source_depth_report = parse_script_with_options(
-    "source f1.sh\n",
+    (
+      #|source f1.sh
+      #|
+    ),
     ParseOptions::new(
       false,
       false,
@@ -493,7 +638,13 @@ test "phase 1 parser boundary diagnostics use shellcheck codes positions and wor
 
 ///|
 test "recoverable EOF here-doc diagnostics are not duplicated" {
-  let report = parse_script_report("cat << foo\n  foo\n")
+  let report = parse_script_report(
+    (
+      #|cat << foo
+      #|  foo
+      #|
+    ),
+  )
   if count_diagnostics(report.diagnostics, 1039) != 1 {
     abort("expected a single SC1039 diagnostic")
   }
@@ -508,7 +659,12 @@ test "recoverable EOF here-doc diagnostics are not duplicated" {
 
 ///|
 test "bats recovery keeps shellcheck's leading-space 1072 wording" {
-  let report = parse_script_report("@test foo\n")
+  let report = parse_script_report(
+    (
+      #|@test foo
+      #|
+    ),
+  )
   match report.script {
     Some(_) => ()
     None => fail("expected recoverable parse")

@@ -8,8 +8,20 @@ test "shellcheck gap coverage single and double quoted samples" {
 
   assert_ok("prop_readDoubleQuoted2", "echo \"$'\"")
   assert_ok("prop_readDoubleQuoted3", "echo \"‘hello’\"")
-  assert_warning("prop_readDoubleQuoted4", "\"foo\nbar\"foo")
-  assert_ok("prop_readDoubleQuoted5", "lol \"foo\nbar\" etc")
+  assert_warning(
+    "prop_readDoubleQuoted4",
+    (
+      #|"foo
+      #|bar"foo
+    ),
+  )
+  assert_ok(
+    "prop_readDoubleQuoted5",
+    (
+      #|lol "foo
+      #|bar" etc
+    ),
+  )
   assert_ok("prop_readDoubleQuoted6", "echo \"${ ls; }\"")
   assert_ok("prop_readDoubleQuoted7", "echo \"${ ls;}bar\"")
   assert_warning("prop_readDoubleQuoted8", "echo \"“hello”\"")
@@ -18,11 +30,29 @@ test "shellcheck gap coverage single and double quoted samples" {
 
 ///|
 test "shellcheck gap coverage backquoted samples" {
-  assert_ok("prop_readBackTicked4", "`echo foo\necho bar`")
+  assert_ok(
+    "prop_readBackTicked4",
+    (
+      #|`echo foo
+      #|echo bar`
+    ),
+  )
   assert_ok("prop_readBackTicked5", "echo `foo`bar")
-  assert_warning("prop_readBackTicked6", "echo `foo\necho `bar")
+  assert_warning(
+    "prop_readBackTicked6",
+    (
+      #|echo `foo
+      #|echo `bar
+    ),
+  )
   assert_ok("prop_readBackTicked7", "`#inline comment`")
-  assert_ok("prop_readBackTicked8", "echo `#comment` \\\nbar baz")
+  assert_ok(
+    "prop_readBackTicked8",
+    (
+      #|echo `#comment` \
+      #|bar baz
+    ),
+  )
 }
 
 ///|
@@ -54,7 +84,12 @@ test "shellcheck gap coverage assignment samples" {
 
 ///|
 test "brace expansions and array indexes stay balanced across nested shell syntax" {
-  let brace_script = parse_ok("echo {foo,\"}\"}\n")
+  let brace_script = parse_ok(
+    (
+      #|echo {foo,"}"}
+      #|
+    ),
+  )
   let (_, brace_simple) = first_simple(brace_script)
   match brace_simple.words[1].parts[0] {
     @parser.WordPart::BraceExpansion(expansion) => {
@@ -66,7 +101,12 @@ test "brace expansions and array indexes stay balanced across nested shell synta
     _ => fail("expected brace expansion containing quoted closing brace")
   }
 
-  let brace_subst = parse_ok("echo {foo,$(printf %s })}\n")
+  let brace_subst = parse_ok(
+    (
+      #|echo {foo,$(printf %s })}
+      #|
+    ),
+  )
   let (_, brace_subst_simple) = first_simple(brace_subst)
   match brace_subst_simple.words[1].parts[0] {
     @parser.WordPart::BraceExpansion(expansion) => {
@@ -77,14 +117,24 @@ test "brace expansions and array indexes stay balanced across nested shell synta
     _ => fail("expected brace expansion containing command substitution")
   }
 
-  let index_script = parse_ok("a[$(printf %s ])]=42\n")
+  let index_script = parse_ok(
+    (
+      #|a[$(printf %s ])]=42
+      #|
+    ),
+  )
   let (_, index_simple) = first_simple(index_script)
   assert_eq(index_simple.assignments.length(), 1)
   assert_eq(index_simple.assignments[0].indexes.length(), 1)
   assert_eq(index_raw(index_simple.assignments[0].indexes[0]), "$(printf %s ])")
   assert_eq(assignment_word(index_simple.assignments[0].value).source, "42")
 
-  let parameter_index_script = parse_ok("echo ${arr[$(printf %s ])]}\n")
+  let parameter_index_script = parse_ok(
+    (
+      #|echo ${arr[$(printf %s ])]}
+      #|
+    ),
+  )
   let (_, parameter_index_simple) = first_simple(parameter_index_script)
   match braced_parameter(parameter_index_simple.words[1].parts[0]).index {
     Some(index) => assert_eq(index_raw(index), "$(printf %s ])")
@@ -94,7 +144,12 @@ test "brace expansions and array indexes stay balanced across nested shell synta
 
 ///|
 test "command substitutions stay balanced across nested parameter expansions" {
-  let script = parse_ok("echo $(printf %s ${x//)/_}) <(printf %s ${x//)/_})\n")
+  let script = parse_ok(
+    (
+      #|echo $(printf %s ${x//)/_}) <(printf %s ${x//)/_})
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
 
   match simple.words[1].parts[0] {
@@ -120,7 +175,12 @@ test "command substitutions stay balanced across nested parameter expansions" {
 
 ///|
 test "parameter expansions preserve nested command substitutions with closing parens" {
-  let script = parse_ok("echo ${foo:=$(printf %s ${x//)/_})}\n")
+  let script = parse_ok(
+    (
+      #|echo ${foo:=$(printf %s ${x//)/_})}
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   let expansion = braced_parameter(simple.words[1].parts[0])
   assert_eq(expansion.raw, "foo:=$(printf %s ${x//)/_})")
@@ -134,7 +194,12 @@ test "parameter expansions preserve nested command substitutions with closing pa
 
 ///|
 test "arithmetic expansions preserve nested command substitutions with closing parens" {
-  let script = parse_ok("echo $(( $(printf %s ${x//)/_}) + 1 ))\n")
+  let script = parse_ok(
+    (
+      #|echo $(( $(printf %s ${x//)/_}) + 1 ))
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
     @parser.WordPart::ArithmeticExpansion(expr) =>
@@ -146,7 +211,10 @@ test "arithmetic expansions preserve nested command substitutions with closing p
 ///|
 test "parameter operators ignore nested separator characters" {
   let script = parse_ok(
-    "echo ${var:${foo:-1}:2} ${var:$(printf %s :):1} ${var/${foo:-/}/x} ${var/$(printf %s /)/$(printf %s /)}\n",
+    (
+      #|echo ${var:${foo:-1}:2} ${var:$(printf %s :):1} ${var/${foo:-/}/x} ${var/$(printf %s /)/$(printf %s /)}
+      #|
+    ),
   )
   let (_, simple) = first_simple(script)
 
@@ -203,7 +271,12 @@ test "parameter operators ignore nested separator characters" {
 
 ///|
 test "legacy dollar bracket arithmetic ignores closing brackets inside nested shell syntax" {
-  let script = parse_ok("echo $[$(printf %s ]) + ${arr[$(printf %s ])]} + 1]\n")
+  let script = parse_ok(
+    (
+      #|echo $[$(printf %s ]) + ${arr[$(printf %s ])]} + 1]
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
     @parser.WordPart::DollarBracket(expr) =>
@@ -218,7 +291,10 @@ test "legacy dollar bracket arithmetic ignores closing brackets inside nested sh
 ///|
 test "modern arithmetic expansions ignore closing brackets inside nested shell syntax" {
   let script = parse_ok(
-    "echo $(( arr[$(printf %s ])] + ${arr[$(printf %s ])]} + 1 ))\n",
+    (
+      #|echo $(( arr[$(printf %s ])] + ${arr[$(printf %s ])]} + 1 ))
+      #|
+    ),
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
@@ -234,7 +310,10 @@ test "modern arithmetic expansions ignore closing brackets inside nested shell s
 ///|
 test "array literals and associative indices preserve nested shell syntax" {
   let script = parse_ok(
-    "map=([\"a ] b\"]=x [$(printf %s ])]=y [${arr[$(printf %s ])]}]=(foo \"bar]\" $(printf %s ])))\n",
+    (
+      #|map=(["a ] b"]=x [$(printf %s ])]=y [${arr[$(printf %s ])]}]=(foo "bar]" $(printf %s ])))
+      #|
+    ),
   )
   let (_, simple) = first_simple(script)
   assert_eq(simple.assignments.length(), 1)
@@ -265,7 +344,12 @@ test "array literals and associative indices preserve nested shell syntax" {
 
 ///|
 test "brace expansions and extglobs ignore separators inside backticks" {
-  let brace_script = parse_ok("echo {foo,`printf %s ,`,bar}\n")
+  let brace_script = parse_ok(
+    (
+      #|echo {foo,`printf %s ,`,bar}
+      #|
+    ),
+  )
   let (_, brace_simple) = first_simple(brace_script)
   match brace_simple.words[1].parts[0] {
     @parser.WordPart::BraceExpansion(expansion) => {
@@ -277,7 +361,12 @@ test "brace expansions and extglobs ignore separators inside backticks" {
     _ => fail("expected brace expansion with backquoted element")
   }
 
-  let extglob_script = parse_ok("echo @(foo|`printf %s '|'`|bar)\n")
+  let extglob_script = parse_ok(
+    (
+      #|echo @(foo|`printf %s '|'`|bar)
+      #|
+    ),
+  )
   let (_, extglob_simple) = first_simple(extglob_script)
   match extglob_simple.words[1].parts[0] {
     @parser.WordPart::ExtGlob(pattern) => {
@@ -293,7 +382,10 @@ test "brace expansions and extglobs ignore separators inside backticks" {
 ///|
 test "arithmetic for clauses ignore semicolons inside nested shell syntax" {
   let script = parse_ok(
-    "for (( $(echo i=0; echo j=1); i<10; i++ )); do :; done\n",
+    (
+      #|for (( $(echo i=0; echo j=1); i<10; i++ )); do :; done
+      #|
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::ForArithmetic(clause) => {
@@ -308,7 +400,10 @@ test "arithmetic for clauses ignore semicolons inside nested shell syntax" {
 ///|
 test "arithmetic for clauses ignore semicolons inside backticks" {
   let script = parse_ok(
-    "for (( `echo i=0; echo j=1`; i<10; i++ )); do :; done\n",
+    (
+      #|for (( `echo i=0; echo j=1`; i<10; i++ )); do :; done
+      #|
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::ForArithmetic(clause) => {
@@ -322,7 +417,12 @@ test "arithmetic for clauses ignore semicolons inside backticks" {
 
 ///|
 test "arithmetic for clauses ignore semicolons inside parameter expansions" {
-  let script = parse_ok("for (( ${x//;/_}; i<10; i++ )); do :; done\n")
+  let script = parse_ok(
+    (
+      #|for (( ${x//;/_}; i<10; i++ )); do :; done
+      #|
+    ),
+  )
   match first_command(script).kind {
     @parser.CommandKind::ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "${x//;/_}")
@@ -335,7 +435,12 @@ test "arithmetic for clauses ignore semicolons inside parameter expansions" {
 
 ///|
 test "arithmetic groups ignore closing parens inside nested shell syntax" {
-  let script = parse_ok("echo $(( (${x//)/_}) + (`printf %s ')'`) ))\n")
+  let script = parse_ok(
+    (
+      #|echo $(( (${x//)/_}) + (`printf %s ')'`) ))
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
     @parser.WordPart::ArithmeticExpansion(expr) => {
@@ -361,7 +466,15 @@ test "arithmetic groups ignore closing parens inside nested shell syntax" {
 ///|
 test "case bodies ignore closing parens inside nested shell syntax" {
   let script = parse_ok(
-    "case $x in\nfoo)\n  echo ${x//)/_}\n  echo `printf %s ')'`\n  ;;\nesac\n",
+    (
+      #|case $x in
+      #|foo)
+      #|  echo ${x//)/_}
+      #|  echo `printf %s ')'`
+      #|  ;;
+      #|esac
+      #|
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::Case(clause) => {

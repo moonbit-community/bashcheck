@@ -237,9 +237,23 @@ test "cfg keeps included source scripts under the source command" {
     true,
     Some("/tmp/main.sh"),
     [],
-    [("lib.sh", "echo inside\n")],
+    [
+      (
+        "lib.sh",
+        (
+          #|echo inside
+          #|
+        ),
+      ),
+    ],
   )
-  let script = parse_cfg_with_options(". lib.sh\n", options)
+  let script = parse_cfg_with_options(
+    (
+      #|. lib.sh
+      #|
+    ),
+    options,
+  )
   let cfg = build_cfg(script, CfgParameters::new(false, false))
 
   let source_id = find_source_ast_id(cfg)
@@ -259,12 +273,23 @@ test "cfg keeps included source scripts under the source command" {
 ///|
 test "cfg models background items and lastpipe-dependent pipelines" {
   let background = build_cfg(
-    parse_cfg_ok("echo a &\necho b\n"),
+    parse_cfg_ok(
+      (
+        #|echo a &
+        #|echo b
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
   assert_true(has_background_pid(background))
 
-  let pipeline = parse_cfg_ok("printf x | cat\n")
+  let pipeline = parse_cfg_ok(
+    (
+      #|printf x | cat
+      #|
+    ),
+  )
   let detached = build_cfg(pipeline, CfgParameters::new(false, false))
   let lastpipe = build_cfg(pipeline, CfgParameters::new(true, false))
   assert_eq(count_execute_subshells(detached), 2)
@@ -274,7 +299,12 @@ test "cfg models background items and lastpipe-dependent pipelines" {
 ///|
 test "cfg resolves builtin and command wrappers without treating flags as commands" {
   let builtin_cfg = build_cfg(
-    parse_cfg_ok("builtin -- printf -v out '%s' foo\n"),
+    parse_cfg_ok(
+      (
+        #|builtin -- printf -v out '%s' foo
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
   assert_true(has_string_write_effect(builtin_cfg, "out"))
@@ -282,7 +312,12 @@ test "cfg resolves builtin and command wrappers without treating flags as comman
 
   let command_cfg = build_cfg(
     parse_cfg_ok(
-      "command -- printf '%s' foo\ncommand -p printf '%s' foo\ncommand -v printf\n",
+      (
+        #|command -- printf '%s' foo
+        #|command -p printf '%s' foo
+        #|command -v printf
+        #|
+      ),
     ),
     CfgParameters::new(false, false),
   )
@@ -295,7 +330,12 @@ test "cfg resolves builtin and command wrappers without treating flags as comman
 
 ///|
 test "cfg pipefail promotes leading pipeline exits into real flow" {
-  let script = parse_cfg_ok("false | true\n")
+  let script = parse_cfg_ok(
+    (
+      #|false | true
+      #|
+    ),
+  )
   let detached = build_cfg(script, CfgParameters::new(false, false))
   let pipefail = build_cfg(script, CfgParameters::new(false, true))
 
@@ -325,7 +365,13 @@ test "cfg pipefail promotes leading pipeline exits into real flow" {
 ///|
 test "cfg separates function definition effects from later calls" {
   let cfg = build_cfg(
-    parse_cfg_ok("f() { echo hi; }\nf\n"),
+    parse_cfg_ok(
+      (
+        #|f() { echo hi; }
+        #|f
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -337,7 +383,13 @@ test "cfg separates function definition effects from later calls" {
 ///|
 test "cfg models named fd redirections as variable writes and close reads" {
   let cfg = build_cfg(
-    parse_cfg_ok("exec {fd}>out\nexec {fd}>&-\n"),
+    parse_cfg_ok(
+      (
+        #|exec {fd}>out
+        #|exec {fd}>&-
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -348,7 +400,13 @@ test "cfg models named fd redirections as variable writes and close reads" {
 ///|
 test "cfg models DEFINE builtins and clustered unset options" {
   let cfg = build_cfg(
-    parse_cfg_ok("DEFINE_string foo '' ''\nunset -vf foo\n"),
+    parse_cfg_ok(
+      (
+        #|DEFINE_string foo '' ''
+        #|unset -vf foo
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -359,7 +417,12 @@ test "cfg models DEFINE builtins and clustered unset options" {
 ///|
 test "cfg records definition hints for variable existence tests" {
   let cfg = build_cfg(
-    parse_cfg_ok("if [[ -v foo ]]; then echo \"$foo\"; fi\n"),
+    parse_cfg_ok(
+      (
+        #|if [[ -v foo ]]; then echo "$foo"; fi
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -369,7 +432,12 @@ test "cfg records definition hints for variable existence tests" {
 ///|
 test "cfg traverses parameter expansion operator contents" {
   let cfg = build_cfg(
-    parse_cfg_ok(": \"${x:=$(printf hi)}\" \"${y:-$z}\"\n"),
+    parse_cfg_ok(
+      (
+        #|: "${x:=$(printf hi)}" "${y:-$z}"
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -380,7 +448,13 @@ test "cfg traverses parameter expansion operator contents" {
 ///|
 test "cfg models arithmetic assignments and increments as integer writes" {
   let cfg = build_cfg(
-    parse_cfg_ok("(( x = 1 ))\n(( ++y ))\n"),
+    parse_cfg_ok(
+      (
+        #|(( x = 1 ))
+        #|(( ++y ))
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
 
@@ -391,7 +465,13 @@ test "cfg models arithmetic assignments and increments as integer writes" {
 ///|
 test "cfg post dominators work for simple linear scripts" {
   let cfg = build_cfg(
-    parse_cfg_ok("echo a\nprintf b\n"),
+    parse_cfg_ok(
+      (
+        #|echo a
+        #|printf b
+        #|
+      ),
+    ),
     CfgParameters::new(false, false),
   )
   let first = find_command_ast_id(cfg, "echo")

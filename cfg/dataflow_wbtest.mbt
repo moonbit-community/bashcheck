@@ -100,7 +100,13 @@ fn expect_literal(
 ///|
 test "dataflow tracks builtin-driven variable properties and kinds" {
   let (cfg, analysis) = build_analysis_ok(
-    "declare -i n\nwait -p pid\nmapfile arr\nunset -v arr\n",
+    (
+      #|declare -i n
+      #|wait -p pid
+      #|mapfile arr
+      #|unset -v arr
+      #|
+    ),
   )
 
   let declare_cmd = nth_command_ast_id(cfg, "declare", 0)
@@ -130,7 +136,13 @@ test "dataflow tracks builtin-driven variable properties and kinds" {
 
 ///|
 test "dataflow does not infer arrays from indexed parameter reads" {
-  let (cfg, analysis) = build_analysis_ok("x=scalar\nprintf '%s' \"${x[0]}\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|x=scalar
+      #|printf '%s' "${x[0]}"
+      #|
+    ),
+  )
   let printf_cmd = nth_command_ast_id(cfg, "printf", 0)
 
   assert_true(
@@ -140,7 +152,14 @@ test "dataflow does not infer arrays from indexed parameter reads" {
 
 ///|
 test "dataflow does not infer arrays from indexed arithmetic reads" {
-  let (cfg, analysis) = build_analysis_ok("x=7\ni=0\necho $((x[i]))\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|x=7
+      #|i=0
+      #|echo $((x[i]))
+      #|
+    ),
+  )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
 
   assert_true(
@@ -150,7 +169,14 @@ test "dataflow does not infer arrays from indexed arithmetic reads" {
 
 ///|
 test "dataflow preserves scalar append assignment values" {
-  let (cfg, analysis) = build_analysis_ok("x=old\nx+=new\necho \"$x\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|x=old
+      #|x+=new
+      #|echo "$x"
+      #|
+    ),
+  )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
 
   expect_literal(incoming_ast_state(analysis, echo_cmd), "x", "oldnew")
@@ -159,7 +185,12 @@ test "dataflow preserves scalar append assignment values" {
 ///|
 test "dataflow propagates function globals and drops function locals" {
   let (cfg, analysis) = build_analysis_ok(
-    "x=base\nf() { local y=tmp; x=next; }\nf\n",
+    (
+      #|x=base
+      #|f() { local y=tmp; x=next; }
+      #|f
+      #|
+    ),
   )
   let call_cmd = nth_command_ast_id(cfg, "f", 0)
   let state = outgoing_ast_state(analysis, call_cmd)
@@ -171,7 +202,14 @@ test "dataflow propagates function globals and drops function locals" {
 
 ///|
 test "dataflow keeps subshell writes isolated from the parent shell" {
-  let (cfg, analysis) = build_analysis_ok("x=outer\n( x=inner )\necho \"$x\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|x=outer
+      #|( x=inner )
+      #|echo "$x"
+      #|
+    ),
+  )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
 
@@ -180,7 +218,13 @@ test "dataflow keeps subshell writes isolated from the parent shell" {
 
 ///|
 test "dataflow keeps declare assignments with expansions in scope" {
-  let (cfg, analysis) = build_analysis_ok("y=value\ndeclare x=$y\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|y=value
+      #|declare x=$y
+      #|
+    ),
+  )
   let declare_cmd = nth_command_ast_id(cfg, "declare", 0)
   let state = outgoing_ast_state(analysis, declare_cmd)
 
@@ -189,16 +233,34 @@ test "dataflow keeps declare assignments with expansions in scope" {
 
 ///|
 test "dataflow decodes dollar single quoted assignment literals" {
-  let (cfg, analysis) = build_analysis_ok("x=$'a\\nb'\nprintf '%s' \"$x\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|x=$'a\nb'
+      #|printf '%s' "$x"
+      #|
+    ),
+  )
   let printf_cmd = nth_command_ast_id(cfg, "printf", 0)
 
-  expect_literal(incoming_ast_state(analysis, printf_cmd), "x", "a\nb")
+  expect_literal(
+    incoming_ast_state(analysis, printf_cmd),
+    "x",
+    (
+      #|a
+      #|b
+    ),
+  )
 }
 
 ///|
 test "dataflow parses declare flags without treating operands as options" {
   let (cfg, analysis) = build_analysis_ok(
-    "declare data\ndeclare -i x\ndeclare +i x\n",
+    (
+      #|declare data
+      #|declare -i x
+      #|declare +i x
+      #|
+    ),
   )
   let plain_declare = nth_command_ast_id(cfg, "declare", 0)
   let integer_declare = nth_command_ast_id(cfg, "declare", 1)
@@ -223,7 +285,12 @@ test "dataflow parses declare flags without treating operands as options" {
 
 ///|
 test "dataflow parses clustered wait -p options" {
-  let (cfg, analysis) = build_analysis_ok("wait -np pid\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|wait -np pid
+      #|
+    ),
+  )
   let wait_cmd = nth_command_ast_id(cfg, "wait", 0)
 
   assert_true(
@@ -236,7 +303,12 @@ test "dataflow parses clustered wait -p options" {
 
 ///|
 test "dataflow keeps wait -p targets after nonliteral operands" {
-  let (cfg, analysis) = build_analysis_ok("wait \"$job\" -np pid\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|wait "$job" -np pid
+      #|
+    ),
+  )
   let wait_cmd = nth_command_ast_id(cfg, "wait", 0)
 
   assert_true(
@@ -249,7 +321,12 @@ test "dataflow keeps wait -p targets after nonliteral operands" {
 
 ///|
 test "dataflow excludes read option arguments from assignment targets" {
-  let (cfg, analysis) = build_analysis_ok("read -d delim target\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|read -d delim target
+      #|
+    ),
+  )
   let read_cmd = nth_command_ast_id(cfg, "read", 0)
   let state = outgoing_ast_state(analysis, read_cmd)
 
@@ -259,7 +336,12 @@ test "dataflow excludes read option arguments from assignment targets" {
 
 ///|
 test "dataflow keeps read -a targets after trailing nonliteral operands" {
-  let (cfg, analysis) = build_analysis_ok("read -a arr \"$rest\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|read -a arr "$rest"
+      #|
+    ),
+  )
   let read_cmd = nth_command_ast_id(cfg, "read", 0)
 
   assert_true(
@@ -270,7 +352,11 @@ test "dataflow keeps read -a targets after trailing nonliteral operands" {
 ///|
 test "dataflow keeps DEFINE builtins and clustered unset effects visible" {
   let (cfg, analysis) = build_analysis_ok(
-    "DEFINE_string foo '' ''\nunset -vf foo\n",
+    (
+      #|DEFINE_string foo '' ''
+      #|unset -vf foo
+      #|
+    ),
   )
   let define_cmd = nth_command_ast_id(cfg, "DEFINE_string", 0)
   let unset_cmd = nth_command_ast_id(cfg, "unset", 0)
@@ -288,7 +374,14 @@ test "dataflow keeps DEFINE builtins and clustered unset effects visible" {
 ///|
 test "dataflow tracks readonly and export assignment builtins" {
   let (cfg, analysis) = build_analysis_ok(
-    "readonly foo=bar\nbuiltin export var=4\nf() { :; }\nexport -f f\necho \"$foo $var\"\n",
+    (
+      #|readonly foo=bar
+      #|builtin export var=4
+      #|f() { :; }
+      #|export -f f
+      #|echo "$foo $var"
+      #|
+    ),
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
@@ -301,7 +394,11 @@ test "dataflow tracks readonly and export assignment builtins" {
 ///|
 test "dataflow keeps command wrapper targets conservative" {
   let (cfg, analysis) = build_analysis_ok(
-    "command export var=4\necho \"$var\"\n",
+    (
+      #|command export var=4
+      #|echo "$var"
+      #|
+    ),
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
@@ -312,7 +409,11 @@ test "dataflow keeps command wrapper targets conservative" {
 ///|
 test "dataflow does not unwrap busybox applets into builtin side effects" {
   let (cfg, analysis) = build_analysis_ok(
-    "busybox printf -v foo %s value\necho \"$foo\"\n",
+    (
+      #|busybox printf -v foo %s value
+      #|echo "$foo"
+      #|
+    ),
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
@@ -323,7 +424,11 @@ test "dataflow does not unwrap busybox applets into builtin side effects" {
 ///|
 test "dataflow parses printf -v with bsd-style options" {
   let (cfg, analysis) = build_analysis_ok(
-    "printf -v 'array[0]' %s \"$var\"\nprintf '%s' -v foo\n",
+    (
+      #|printf -v 'array[0]' %s "$var"
+      #|printf '%s' -v foo
+      #|
+    ),
   )
   let array_printf = nth_command_ast_id(cfg, "printf", 0)
   let positional_printf = nth_command_ast_id(cfg, "printf", 1)
@@ -343,7 +448,11 @@ test "dataflow parses printf -v with bsd-style options" {
 ///|
 test "dataflow preserves clustered unset mode through mixed literal args" {
   let (cfg, analysis) = build_analysis_ok(
-    "DEFINE_string foo '' ''\nunset -vf \"$x\" foo\n",
+    (
+      #|DEFINE_string foo '' ''
+      #|unset -vf "$x" foo
+      #|
+    ),
   )
   let unset_cmd = nth_command_ast_id(cfg, "unset", 0)
 
@@ -354,7 +463,12 @@ test "dataflow preserves clustered unset mode through mixed literal args" {
 
 ///|
 test "dataflow read fallback only keeps trailing contiguous literal targets" {
-  let (cfg, analysis) = build_analysis_ok("read foo \"$bar\"\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|read foo "$bar"
+      #|
+    ),
+  )
   let read_cmd = nth_command_ast_id(cfg, "read", 0)
   let state = outgoing_ast_state(analysis, read_cmd)
 
@@ -363,7 +477,12 @@ test "dataflow read fallback only keeps trailing contiguous literal targets" {
 
 ///|
 test "dataflow tracks named fd redirections as integer assignments" {
-  let (cfg, analysis) = build_analysis_ok("exec {fd}>out\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|exec {fd}>out
+      #|
+    ),
+  )
   let exec_cmd = nth_command_ast_id(cfg, "exec", 0)
 
   assert_true(
@@ -376,7 +495,13 @@ test "dataflow tracks named fd redirections as integer assignments" {
 
 ///|
 test "dataflow marks commands after exit as unreachable" {
-  let (cfg, analysis) = build_analysis_ok("exit\necho nope\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|exit
+      #|echo nope
+      #|
+    ),
+  )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
 
   assert_true(!command_is_reachable(analysis, echo_cmd))
@@ -388,7 +513,13 @@ test "dataflow marks commands after exit as unreachable" {
 
 ///|
 test "dataflow does not treat straggler-only function bodies as entry reachable" {
-  let (cfg, analysis) = build_analysis_ok("f() { echo hidden; }\necho live\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|f() { echo hidden; }
+      #|echo live
+      #|
+    ),
+  )
   let hidden = nth_command_ast_id(cfg, "echo", 0)
   let live = nth_command_ast_id(cfg, "echo", 1)
 
@@ -399,7 +530,11 @@ test "dataflow does not treat straggler-only function bodies as entry reachable"
 ///|
 test "dataflow analyzes nested functions discovered from stragglers" {
   let (cfg, analysis) = build_analysis_ok(
-    "outer() { inner() { echo nested; }; }\necho live\n",
+    (
+      #|outer() { inner() { echo nested; }; }
+      #|echo live
+      #|
+    ),
   )
   let nested = nth_command_ast_id(cfg, "echo", 0)
   let live = nth_command_ast_id(cfg, "echo", 1)
@@ -414,7 +549,13 @@ test "dataflow analyzes nested functions discovered from stragglers" {
 
 ///|
 test "dataflow keeps dead functions analyzable after explicit exit" {
-  let (cfg, analysis) = build_analysis_ok("f() { echo hidden; }\nexit\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|f() { echo hidden; }
+      #|exit
+      #|
+    ),
+  )
   let hidden = nth_command_ast_id(cfg, "echo", 0)
 
   assert_true(!command_is_reachable(analysis, hidden))
@@ -427,7 +568,12 @@ test "dataflow keeps dead functions analyzable after explicit exit" {
 ///|
 test "dataflow preserves outer values when branch-local variables shadow them" {
   let (cfg, analysis) = build_analysis_ok(
-    "x=global\nf() { if maybe; then local x=local; fi; echo \"$x\"; }\nf\n",
+    (
+      #|x=global
+      #|f() { if maybe; then local x=local; fi; echo "$x"; }
+      #|f
+      #|
+    ),
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
@@ -438,7 +584,13 @@ test "dataflow preserves outer values when branch-local variables shadow them" {
 
 ///|
 test "dataflow keeps post-dominance and node lookups available" {
-  let (cfg, analysis) = build_analysis_ok("echo a\nprintf b\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|echo a
+      #|printf b
+      #|
+    ),
+  )
   let first = nth_command_ast_id(cfg, "echo", 0)
   let second = nth_command_ast_id(cfg, "printf", 0)
 
@@ -461,10 +613,22 @@ test "dataflow keeps source prefix assignments visible inside sourced scripts" {
     true,
     Some("/tmp/main.sh"),
     [],
-    [("lib.sh", "echo \"$x\"\n")],
+    [
+      (
+        "lib.sh",
+        (
+          #|echo "$x"
+          #|
+        ),
+      ),
+    ],
   )
   let (cfg, analysis) = build_analysis_with_options(
-    "x=inner . lib.sh\n", options,
+    (
+      #|x=inner . lib.sh
+      #|
+    ),
+    options,
   )
   let sourced_echo = nth_command_ast_id(cfg, "echo", 0)
 
@@ -474,7 +638,12 @@ test "dataflow keeps source prefix assignments visible inside sourced scripts" {
 ///|
 test "dataflow tracks arithmetic assignments and increments as integer values" {
   let (cfg, analysis) = build_analysis_ok(
-    "(( x = 1 ))\n(( x++ ))\necho \"$x\"\n",
+    (
+      #|(( x = 1 ))
+      #|(( x++ ))
+      #|echo "$x"
+      #|
+    ),
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
   let state = incoming_ast_state(analysis, echo_cmd)
@@ -485,7 +654,12 @@ test "dataflow tracks arithmetic assignments and increments as integer values" {
 
 ///|
 test "dataflow read fallback parses literal option suffixes conservatively" {
-  let (cfg, analysis) = build_analysis_ok("read \"$opts\" -na field\n")
+  let (cfg, analysis) = build_analysis_ok(
+    (
+      #|read "$opts" -na field
+      #|
+    ),
+  )
   let read_cmd = nth_command_ast_id(cfg, "read", 0)
   let state = outgoing_ast_state(analysis, read_cmd)
 
@@ -503,10 +677,24 @@ test "dataflow drops source prefix assignments after the sourced script ends" {
     true,
     Some("/tmp/main.sh"),
     [],
-    [("lib.sh", ":\n")],
+    [
+      (
+        "lib.sh",
+        (
+          #|:
+          #|
+        ),
+      ),
+    ],
   )
   let (cfg, analysis) = build_analysis_with_options(
-    "x=outer\nx=inner . lib.sh\necho \"$x\"\n", options,
+    (
+      #|x=outer
+      #|x=inner . lib.sh
+      #|echo "$x"
+      #|
+    ),
+    options,
   )
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
 
@@ -516,7 +704,11 @@ test "dataflow drops source prefix assignments after the sourced script ends" {
 ///|
 test "dataflow treats commands after break in loops as unreachable" {
   let (cfg, analysis) = build_analysis_ok(
-    "while maybe; do break; echo hidden; done\necho live\n",
+    (
+      #|while maybe; do break; echo hidden; done
+      #|echo live
+      #|
+    ),
   )
   let hidden = nth_command_ast_id(cfg, "echo", 0)
   let live = nth_command_ast_id(cfg, "echo", 1)
@@ -528,7 +720,11 @@ test "dataflow treats commands after break in loops as unreachable" {
 ///|
 test "dataflow treats commands after continue in loops as unreachable" {
   let (cfg, analysis) = build_analysis_ok(
-    "for x in a; do continue; echo hidden; done\necho live\n",
+    (
+      #|for x in a; do continue; echo hidden; done
+      #|echo live
+      #|
+    ),
   )
   let hidden = nth_command_ast_id(cfg, "echo", 0)
   let live = nth_command_ast_id(cfg, "echo", 1)

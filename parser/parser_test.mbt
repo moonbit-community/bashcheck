@@ -299,7 +299,13 @@ test "function keyword accepts extended shellcheck-style names" {
 
 ///|
 test "bare function names follow shellcheck-style character rules" {
-  let script = parse_ok("@require(){ :; }\nfoo#bar(){ :; }\n")
+  let script = parse_ok(
+    (
+      #|@require(){ :; }
+      #|foo#bar(){ :; }
+      #|
+    ),
+  )
   match first_command(script).kind {
     @parser.CommandKind::Function(function_) =>
       assert_eq(function_.name, "@require")
@@ -318,7 +324,15 @@ test "bare function names follow shellcheck-style character rules" {
 
 ///|
 test "function diagnostics remain recoverable" {
-  let report = parse_report("foo(a, b) { true; }\nfunction foo{\ntrue\n}\n")
+  let report = parse_report(
+    (
+      #|foo(a, b) { true; }
+      #|function foo{
+      #|true
+      #|}
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_eq(script.items.length(), 2)
   assert_true(report_has_code(report, 1065))
@@ -410,14 +424,27 @@ test "for loop with command substitution in double quotes" {
 
 ///|
 test "simple here doc stores parsed parts" {
-  let script = parse_ok("cat <<EOF\nhello $USER\nEOF\n")
+  let script = parse_ok(
+    (
+      #|cat <<EOF
+      #|hello $USER
+      #|EOF
+      #|
+    ),
+  )
   let (command, simple) = first_simple(script)
   assert_eq(simple.words.length(), 1)
   assert_eq(command.redirects.length(), 1)
   match command.redirects[0].target {
     @parser.RedirectionTarget::HereDoc(doc) => {
       assert_eq(doc.delimiter, "EOF")
-      assert_eq(doc.body, "hello $USER\n")
+      assert_eq(
+        doc.body,
+        (
+          #|hello $USER
+          #|
+        ),
+      )
       assert_eq(doc.quoted, false)
       match doc.parts {
         Some(parts) => assert_true(parts.length() >= 2)
@@ -430,7 +457,14 @@ test "simple here doc stores parsed parts" {
 
 ///|
 test "unquoted here doc keeps quote characters literal" {
-  let script = parse_ok("cat <<EOF\n\"$USER\"\nEOF\n")
+  let script = parse_ok(
+    (
+      #|cat <<EOF
+      #|"$USER"
+      #|EOF
+      #|
+    ),
+  )
   let command = first_command(script)
   match command.redirects[0].target {
     @parser.RedirectionTarget::HereDoc(doc) =>
@@ -446,7 +480,14 @@ test "unquoted here doc keeps quote characters literal" {
             _ => fail("expected parameter expansion, got \{script.dump()}")
           }
           match parts[2] {
-            @parser.WordPart::Literal(text) => assert_eq(text, "\"\n")
+            @parser.WordPart::Literal(text) =>
+              assert_eq(
+                text,
+                (
+                  #|"
+                  #|
+                ),
+              )
             _ => fail("expected literal closing quote, got \{script.dump()}")
           }
         }
@@ -458,7 +499,14 @@ test "unquoted here doc keeps quote characters literal" {
 
 ///|
 test "here doc can hang off command inside if" {
-  let script = parse_ok("if true; then cat <<EOF; fi\nhello\nEOF\n")
+  let script = parse_ok(
+    (
+      #|if true; then cat <<EOF; fi
+      #|hello
+      #|EOF
+      #|
+    ),
+  )
   let command = first_command(script)
   match command.kind {
     @parser.CommandKind::If(clause) => {
@@ -467,7 +515,13 @@ test "here doc can hang off command inside if" {
         @parser.CommandKind::Simple(_) =>
           match inner.redirects[0].target {
             @parser.RedirectionTarget::HereDoc(doc) =>
-              assert_eq(doc.body, "hello\n")
+              assert_eq(
+                doc.body,
+                (
+                  #|hello
+                  #|
+                ),
+              )
             _ => fail("expected here doc in if body, got \{script.dump()}")
           }
         _ => fail("expected simple command in if body, got \{script.dump()}")
@@ -480,7 +534,12 @@ test "here doc can hang off command inside if" {
 ///|
 test "top level metadata and source command" {
   let script = parse_ok(
-    "#!/usr/bin/env bash\n# shellcheck disable=SC2086 shell=bash\nsource lib.sh foo\n",
+    (
+      #|#!/usr/bin/env bash
+      #|# shellcheck disable=SC2086 shell=bash
+      #|source lib.sh foo
+      #|
+    ),
   )
   match script.shebang {
     Some(line) => assert_eq(line, "#!/usr/bin/env bash")
@@ -509,10 +568,22 @@ test "source command captures options and resolves includes from parse options" 
     true,
     Some("scripts/main.sh"),
     ["scripts/lib"],
-    [("scripts/lib/helpers.sh", "echo hi\n")],
+    [
+      (
+        "scripts/lib/helpers.sh",
+        (
+          #|echo hi
+          #|
+        ),
+      ),
+    ],
   )
   let report = parse_report_with_options(
-    "source -p vendor/lib helpers.sh foo\n", options,
+    (
+      #|source -p vendor/lib helpers.sh foo
+      #|
+    ),
+    options,
   )
   let script = report_script(report)
   match first_command(script).kind {
@@ -550,11 +621,23 @@ test "source resolution accepts quoted constants and source annotations" {
     true,
     Some("scripts/main.sh"),
     ["scripts/lib"],
-    [("scripts/lib/helpers.sh", "echo hi\n")],
+    [
+      (
+        "scripts/lib/helpers.sh",
+        (
+          #|echo hi
+          #|
+        ),
+      ),
+    ],
   )
 
   let quoted_report = parse_report_with_options(
-    "source \"helpers.sh\"\n", options,
+    (
+      #|source "helpers.sh"
+      #|
+    ),
+    options,
   )
   let quoted_script = report_script(quoted_report)
   match first_command(quoted_script).kind {
@@ -569,7 +652,13 @@ test "source resolution accepts quoted constants and source annotations" {
   }
 
   let override_report = parse_report_with_options(
-    "echo before\n# shellcheck source=helpers.sh\nsource \"$lib\"\n", options,
+    (
+      #|echo before
+      #|# shellcheck source=helpers.sh
+      #|source "$lib"
+      #|
+    ),
+    options,
   )
   let override_script = report_script(override_report)
   assert_eq(override_script.items[1].annotations.length(), 1)
@@ -607,7 +696,11 @@ test "pipeline segments preserve repeated and inline bang prefixes" {
 ///|
 test "supported env split-string shebang is accepted" {
   let script = parse_ok(
-    "#!/usr/bin/env --split-string=FOO=bar bash -eu\ntrue\n",
+    (
+      #|#!/usr/bin/env --split-string=FOO=bar bash -eu
+      #|true
+      #|
+    ),
   )
   match script.shebang {
     Some(line) =>
@@ -618,7 +711,14 @@ test "supported env split-string shebang is accepted" {
 
 ///|
 test "shellcheck shell directive overrides shebang shell validation" {
-  let script = parse_ok("#!/usr/bin/perl\n# shellcheck shell=bash\necho hi\n")
+  let script = parse_ok(
+    (
+      #|#!/usr/bin/perl
+      #|# shellcheck shell=bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
     @parser.Annotation::Shell(shell) => assert_eq(shell, "bash")
@@ -628,7 +728,13 @@ test "shellcheck shell directive overrides shebang shell validation" {
 
 ///|
 test "shellcheck shell directive accepts shellcheck-known aliases" {
-  let script = parse_ok("# shellcheck shell=\"busybox ash\"\ntrue\n")
+  let script = parse_ok(
+    (
+      #|# shellcheck shell="busybox ash"
+      #|true
+      #|
+    ),
+  )
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
     @parser.Annotation::Shell(shell) => assert_eq(shell, "busybox ash")
@@ -638,32 +744,76 @@ test "shellcheck shell directive accepts shellcheck-known aliases" {
 
 ///|
 test "malformed first-line shebangs report explicit errors" {
-  let leading = parse_error("  #!/bin/bash\necho hi\n")
+  let leading = parse_error(
+    (
+      #|  #!/bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(leading.contains("Remove leading spaces before the shebang."))
 
-  let spaced = parse_error("# !/bin/bash\necho hi\n")
+  let spaced = parse_error(
+    (
+      #|# !/bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(spaced.contains("Remove spaces between # and ! in the shebang."))
 
-  let swapped = parse_error("!#/bin/bash\necho hi\n")
+  let swapped = parse_error(
+    (
+      #|!#/bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(swapped.contains("Use #!, not !#, for the shebang."))
 
-  let missing_hash = parse_error("! /bin/bash\necho hi\n")
+  let missing_hash = parse_error(
+    (
+      #|! /bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(missing_hash.contains("Use #!, not just !, for the shebang."))
 
-  let missing_bang = parse_error("# /bin/bash\necho hi\n")
+  let missing_bang = parse_error(
+    (
+      #|# /bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(missing_bang.contains("Use #!, not just #, for the shebang."))
 }
 
 ///|
 test "shebangs after headers are rejected" {
-  let blank_prefixed = parse_error("\n#!/bin/bash\necho hi\n")
+  let blank_prefixed = parse_error(
+    (
+      #|
+      #|#!/bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(
     blank_prefixed.contains(
       "The shebang must be on the first line. Delete blanks and move comments.",
     ),
   )
 
-  let comment_prefixed = parse_error("# Copyright\n#!/bin/bash\necho hi\n")
+  let comment_prefixed = parse_error(
+    (
+      #|# Copyright
+      #|#!/bin/bash
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(
     comment_prefixed.contains(
       "The shebang must be on the first line. Delete blanks and move comments.",
@@ -673,20 +823,49 @@ test "shebangs after headers are rejected" {
 
 ///|
 test "unsupported and unknown shebang shells are rejected without override" {
-  let unsupported_report = parse_report("#!/usr/bin/perl\necho hi\n")
+  let unsupported_report = parse_report(
+    (
+      #|#!/usr/bin/perl
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(report_has_code(unsupported_report, 1071))
-  let unsupported = parse_error("#!/usr/bin/perl\necho hi\n")
+  let unsupported = parse_error(
+    (
+      #|#!/usr/bin/perl
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(unsupported.contains("unsupported shebang shell 'perl'"))
 
-  let unknown_report = parse_report("#!/usr/bin/env customsh\necho hi\n")
+  let unknown_report = parse_report(
+    (
+      #|#!/usr/bin/env customsh
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(report_has_code(unknown_report, 1008))
-  let unknown = parse_error("#!/usr/bin/env customsh\necho hi\n")
+  let unknown = parse_error(
+    (
+      #|#!/usr/bin/env customsh
+      #|echo hi
+      #|
+    ),
+  )
   assert_true(unknown.contains("unrecognized shebang shell 'customsh'"))
 }
 
 ///|
 test "utf-8 bom emits shellcheck-style diagnostic while preserving metadata" {
-  let report = parse_report("\u{FEFF}echo hi\n")
+  let report = parse_report(
+    (
+      #|﻿echo hi
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1082))
   assert_true(script.has_bom)
@@ -694,17 +873,33 @@ test "utf-8 bom emits shellcheck-style diagnostic while preserving metadata" {
 
 ///|
 test "unknown shell directive values are rejected" {
-  let unknown = parse_error("# shellcheck shell=customsh\ntrue\n")
+  let unknown = parse_error(
+    (
+      #|# shellcheck shell=customsh
+      #|true
+      #|
+    ),
+  )
   assert_true(unknown.contains("unknown shell directive value 'customsh'"))
 
-  let path = parse_error("# shellcheck shell=/bin/bash\ntrue\n")
+  let path = parse_error(
+    (
+      #|# shellcheck shell=/bin/bash
+      #|true
+      #|
+    ),
+  )
   assert_true(path.contains("unknown shell directive value '/bin/bash'"))
 }
 
 ///|
 test "quoted shellcheck annotations preserve valid keys and report forbidden inline external-sources" {
   let report = parse_report(
-    "# shellcheck source-path=\"foo bar\" external_sources=true extended_analysis=false\ntrue\n",
+    (
+      #|# shellcheck source-path="foo bar" external_sources=true extended_analysis=false
+      #|true
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.annotations.length(), 2)
@@ -727,7 +922,11 @@ test "quoted shellcheck annotations preserve valid keys and report forbidden inl
 ///|
 test "quoted shellcheck directive values preserve backslashes literally" {
   let script = parse_ok(
-    "# shellcheck source=\"lib\\\\ name.sh\" source-path=\"foo\\\\bar\"\ntrue\n",
+    (
+      #|# shellcheck source="lib\\ name.sh" source-path="foo\\bar"
+      #|true
+      #|
+    ),
   )
   assert_eq(script.annotations.length(), 2)
   match script.annotations[0] {
@@ -743,7 +942,11 @@ test "quoted shellcheck directive values preserve backslashes literally" {
 ///|
 test "disable and enable directives accept shellcheck-style values" {
   let script = parse_ok(
-    "# shellcheck disable='SC1000,SC2000-SC3000,all' enable=\"quote-safe,require-variable-braces\"\ntrue\n",
+    (
+      #|# shellcheck disable='SC1000,SC2000-SC3000,all' enable="quote-safe,require-variable-braces"
+      #|true
+      #|
+    ),
   )
   assert_eq(script.annotations.length(), 5)
   match script.annotations[0] {
@@ -772,7 +975,11 @@ test "disable and enable directives accept shellcheck-style values" {
 ///|
 test "invalid shellcheck boolean values become diagnostics" {
   let report = parse_report(
-    "# shellcheck external-sources=yes extended-analysis=maybe\ntrue\n",
+    (
+      #|# shellcheck external-sources=yes extended-analysis=maybe
+      #|true
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.annotations.length(), 0)
@@ -781,14 +988,24 @@ test "invalid shellcheck boolean values become diagnostics" {
 
 ///|
 test "shellcheck directives reject unterminated quoted values" {
-  let err = parse_error("# shellcheck source=\"foo bar\ntrue\n")
+  let err = parse_error(
+    (
+      #|# shellcheck source="foo bar
+      #|true
+      #|
+    ),
+  )
   assert_true(err.contains("missing terminating quote for directive"))
 }
 
 ///|
 test "unknown shellcheck keys are ignored while valid ones still parse" {
   let script = parse_ok(
-    "# shellcheck frob=wat disable=SC2086 source=lib.sh\ntrue\n",
+    (
+      #|# shellcheck frob=wat disable=SC2086 source=lib.sh
+      #|true
+      #|
+    ),
   )
   assert_eq(script.annotations.length(), 2)
   match script.annotations[0] {
@@ -804,7 +1021,11 @@ test "unknown shellcheck keys are ignored while valid ones still parse" {
 ///|
 test "invalid directive pairs ignore the rest of the line" {
   let report = parse_report(
-    "# shellcheck disable=SC2086 broken shell=bash source=lib.sh\ntrue\n",
+    (
+      #|# shellcheck disable=SC2086 broken shell=bash source=lib.sh
+      #|true
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.annotations.length(), 1)
@@ -818,7 +1039,11 @@ test "invalid directive pairs ignore the rest of the line" {
 ///|
 test "invalid disable and enable values become diagnostics and stop the rest of the line" {
   let disable_report = parse_report(
-    "# shellcheck disable=SC2086 disable=wat source=lib.sh\ntrue\n",
+    (
+      #|# shellcheck disable=SC2086 disable=wat source=lib.sh
+      #|true
+      #|
+    ),
   )
   let disable_script = report_script(disable_report)
   assert_eq(disable_script.annotations.length(), 1)
@@ -829,7 +1054,11 @@ test "invalid disable and enable values become diagnostics and stop the rest of 
   assert_true(disable_report.diagnostics[0].message.contains("invalid disable"))
 
   let enable_report = parse_report(
-    "# shellcheck enable=require-variable-braces,123 source=lib.sh\ntrue\n",
+    (
+      #|# shellcheck enable=require-variable-braces,123 source=lib.sh
+      #|true
+      #|
+    ),
   )
   let enable_script = report_script(enable_report)
   assert_eq(enable_script.annotations.length(), 0)
@@ -839,7 +1068,11 @@ test "invalid disable and enable values become diagnostics and stop the rest of 
 ///|
 test "directive csv whitespace becomes a diagnostic" {
   let report = parse_report(
-    "# shellcheck disable=SC2086, SC2154 source=lib.sh\ntrue\n",
+    (
+      #|# shellcheck disable=SC2086, SC2154 source=lib.sh
+      #|true
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.annotations.length(), 0)
@@ -849,7 +1082,11 @@ test "directive csv whitespace becomes a diagnostic" {
 ///|
 test "directive values do not treat backslashes as shell escapes" {
   let report = parse_report(
-    "# shellcheck source=foo\\ bar disable=SC2086\ntrue\n",
+    (
+      #|# shellcheck source=foo\ bar disable=SC2086
+      #|true
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.annotations.length(), 1)
@@ -863,7 +1100,13 @@ test "directive values do not treat backslashes as shell escapes" {
 ///|
 test "list items preserve shellcheck annotations beyond file metadata" {
   let script = parse_ok(
-    "echo one\n# shellcheck disable=SC2086 source=lib.sh\n# ordinary comment\necho two\n",
+    (
+      #|echo one
+      #|# shellcheck disable=SC2086 source=lib.sh
+      #|# ordinary comment
+      #|echo two
+      #|
+    ),
   )
   assert_eq(script.annotations.length(), 0)
   assert_eq(script.items.length(), 2)
@@ -882,7 +1125,13 @@ test "list items preserve shellcheck annotations beyond file metadata" {
 ///|
 test "nested compound bodies preserve shellcheck annotations on list items" {
   let script = parse_ok(
-    "if true; then\n# shellcheck disable=SC2016\necho '$HOME'\nfi\n",
+    (
+      #|if true; then
+      #|# shellcheck disable=SC2016
+      #|echo '$HOME'
+      #|fi
+      #|
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::If(clause) => {
@@ -900,7 +1149,13 @@ test "nested compound bodies preserve shellcheck annotations on list items" {
 
 ///|
 test "command-leading braces become brace groups while literal braces still work in words" {
-  let report = parse_report("{foo;}\necho {bar} foo{baz} }qux\n")
+  let report = parse_report(
+    (
+      #|{foo;}
+      #|echo {bar} foo{baz} }qux
+      #|
+    ),
+  )
   let script = match report.script {
     Some(script) => script
     None => fail(@debug.to_string(report))
@@ -934,7 +1189,12 @@ test "command-leading braces become brace groups while literal braces still work
 
 ///|
 test "top-level closing brace reports reserved-word error" {
-  let err = parse_error("}\n")
+  let err = parse_error(
+    (
+      #|}
+      #|
+    ),
+  )
   assert_true(err.contains("unexpected reserved word '}'"))
 }
 
@@ -1147,25 +1407,55 @@ test "conditions reject missing operands and trailing words" {
     trailing_expr.contains("unexpected tokens after condition expression"),
   )
 
-  let double_trailing = parse_report("[[ x ]] foo\n")
+  let double_trailing = parse_report(
+    (
+      #|[[ x ]] foo
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(double_trailing, 1140, 1))
 
-  let single_trailing = parse_report("[ x ] foo\n")
+  let single_trailing = parse_report(
+    (
+      #|[ x ] foo
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(single_trailing, 1140, 1))
 
-  let double_legacy = parse_report("[[ x ]] -a [[ y ]]\n")
+  let double_legacy = parse_report(
+    (
+      #|[[ x ]] -a [[ y ]]
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(double_legacy, 1139, 1))
 
-  let single_legacy = parse_report("[ x ] or [ y ]\n")
+  let single_legacy = parse_report(
+    (
+      #|[ x ] or [ y ]
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(single_legacy, 1139, 1))
 }
 
 ///|
 test "compound commands require separators before following words" {
-  let brace_report = parse_report("{ echo hi; } foo\n")
+  let brace_report = parse_report(
+    (
+      #|{ echo hi; } foo
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(brace_report, 1141, 1))
 
-  let arithmetic_report = parse_report("((x)) bar\n")
+  let arithmetic_report = parse_report(
+    (
+      #|((x)) bar
+      #|
+    ),
+  )
   assert_true(report_has_code_on_line(arithmetic_report, 1141, 1))
 }
 
@@ -1286,7 +1576,12 @@ test "arithmetic command and arithmetic for loop" {
 
 ///|
 test "arithmetic for loop delimiter diagnostics align more closely with shellcheck" {
-  let spaced = parse_report("for ( (i = 0; i < 3; i++) ) do echo $i; done\n")
+  let spaced = parse_report(
+    (
+      #|for ( (i = 0; i < 3; i++) ) do echo $i; done
+      #|
+    ),
+  )
   let spaced_script = report_script(spaced)
   assert_true(report_has_code(spaced, 1138))
   match first_command(spaced_script).kind {
@@ -1298,7 +1593,12 @@ test "arithmetic for loop delimiter diagnostics align more closely with shellche
     _ => fail("expected arithmetic for loop with spaced delimiters")
   }
 
-  let missing_open = parse_report("for (;;); do echo $i; done\n")
+  let missing_open = parse_report(
+    (
+      #|for (;;); do echo $i; done
+      #|
+    ),
+  )
   assert_true(report_has_code(missing_open, 1137))
   assert_true(missing_open.script is None)
 }
@@ -1333,7 +1633,10 @@ test "arithmetic nodes preserve variable indices" {
 ///|
 test "arithmetic expressions keep shell fragments and line continuations structured" {
   let script = parse_ok(
-    "(( 1+`echo 2` + $foo + $? + 10#08 * 16#f + \\\n  foo[9*y+x] ))",
+    (
+      #|(( 1+`echo 2` + $foo + $? + 10#08 * 16#f + \
+      #|  foo[9*y+x] ))
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::Arithmetic(command) => {
@@ -1418,7 +1721,12 @@ test "ambiguous dollar-double-paren falls back to command substitution with a di
 
 ///|
 test "ambiguous dollar-double-paren diagnostic keeps shellcheck severity and span" {
-  let report = parse_report("echo $(((1)) && 3)\n")
+  let report = parse_report(
+    (
+      #|echo $(((1)) && 3)
+      #|
+    ),
+  )
   let mut found = false
   for diagnostic in report.diagnostics {
     if diagnostic.code == Some(1102) {
@@ -1436,7 +1744,13 @@ test "ambiguous dollar-double-paren diagnostic keeps shellcheck severity and spa
 
 ///|
 test "ambiguous double-paren compound commands fall back to subshells" {
-  let report = parse_report("(( i++ ) # comment\n)\n")
+  let report = parse_report(
+    (
+      #|(( i++ ) # comment
+      #|)
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1105))
   match first_command(script).kind {
@@ -1471,7 +1785,12 @@ test "select, case, and coproc commands" {
     _ => fail("expected case clause")
   }
 
-  let implicit_break = parse_ok("case x in a) echo hi\nesac")
+  let implicit_break = parse_ok(
+    (
+      #|case x in a) echo hi
+      #|esac
+    ),
+  )
   match first_command(implicit_break).kind {
     @parser.CommandKind::Case(clause) => {
       assert_eq(clause.items.length(), 1)
@@ -1518,7 +1837,13 @@ test "select, case, and coproc commands" {
 
 ///|
 test "select loops accept newline separators before do without in clause" {
-  let script = parse_ok("select choice\ndo echo \"$choice\"; done\n")
+  let script = parse_ok(
+    (
+      #|select choice
+      #|do echo "$choice"; done
+      #|
+    ),
+  )
   match first_command(script).kind {
     @parser.CommandKind::Select(clause) => {
       assert_eq(clause.name, "choice")
@@ -1533,24 +1858,52 @@ test "select loops accept newline separators before do without in clause" {
 
 ///|
 test "bats parser keeps malformed @test syntax recoverable" {
-  let newline_report = parse_report("@test foo \n{\n true\n}\n")
+  let newline_report = parse_report(
+    (
+      #|@test foo 
+      #|{
+      #| true
+      #|}
+      #|
+    ),
+  )
   assert_true(newline_report.script is Some(_))
   assert_true(report_has_code(newline_report, 1073))
   assert_true(report_has_code(newline_report, 1072))
 
-  let no_brace_report = parse_report("@test foo\n")
+  let no_brace_report = parse_report(
+    (
+      #|@test foo
+      #|
+    ),
+  )
   assert_true(no_brace_report.script is Some(_))
   assert_true(report_has_code(no_brace_report, 1073))
   assert_true(report_has_code(no_brace_report, 1072))
 
-  let comment_report = parse_report("@test foo # comment\n{\n true\n}\n")
+  let comment_report = parse_report(
+    (
+      #|@test foo # comment
+      #|{
+      #| true
+      #|}
+      #|
+    ),
+  )
   assert_true(comment_report.script is Some(_))
   assert_true(report_has_code(comment_report, 1073))
 }
 
 ///|
 test "bats parser allows empty same-line test names like shellcheck" {
-  let script = parse_ok("@test  {\n  true\n}\n")
+  let script = parse_ok(
+    (
+      #|@test  {
+      #|  true
+      #|}
+      #|
+    ),
+  )
   match first_command(script).kind {
     @parser.CommandKind::BatsTest(clause) => {
       assert_eq(clause.name, "")
@@ -1562,7 +1915,14 @@ test "bats parser allows empty same-line test names like shellcheck" {
 
 ///|
 test "comments terminate commands and inline shellcheck directives warn" {
-  let script = parse_ok("echo foo # comment\nbar && # note\nbaz\n")
+  let script = parse_ok(
+    (
+      #|echo foo # comment
+      #|bar && # note
+      #|baz
+      #|
+    ),
+  )
   let (_, first) = first_simple(script)
   assert_eq(first.words.length(), 2)
   assert_eq(first.words[0].source, "echo")
@@ -1581,7 +1941,12 @@ test "comments terminate commands and inline shellcheck directives warn" {
     _ => fail("expected trailing simple command after comment")
   }
 
-  let directive = parse_report("echo hi # shellcheck disable=SC2086\n")
+  let directive = parse_report(
+    (
+      #|echo hi # shellcheck disable=SC2086
+      #|
+    ),
+  )
   let directive_script = report_script(directive)
   assert_true(report_has_code(directive, 1126))
   let (_, directive_simple) = first_simple(directive_script)
@@ -1590,7 +1955,13 @@ test "comments terminate commands and inline shellcheck directives warn" {
 
 ///|
 test "trailing shellcheck directives at eof use expected-command diagnostics" {
-  let report = parse_report("echo hi\n# shellcheck disable=SC2086\n")
+  let report = parse_report(
+    (
+      #|echo hi
+      #|# shellcheck disable=SC2086
+      #|
+    ),
+  )
   assert_true(report.script is None)
   assert_true(report_has_code(report, 1072))
   assert_true(!report_has_code(report, 1123))
@@ -1603,31 +1974,69 @@ test "separator diagnostics align more closely with shellcheck" {
   assert_eq(redirect_command.redirects.length(), 1)
   assert_eq(redirect_simple.words.length(), 2)
 
-  let background_semicolon = parse_report("a &; b\n")
+  let background_semicolon = parse_report(
+    (
+      #|a &; b
+      #|
+    ),
+  )
   let background_script = report_script(background_semicolon)
   assert_true(report_has_code(background_semicolon, 1045))
   assert_eq(background_script.items.length(), 2)
 
-  let html_amp = parse_report("a &amp; b\n")
+  let html_amp = parse_report(
+    (
+      #|a &amp; b
+      #|
+    ),
+  )
   assert_true(report_has_code(html_amp, 1109))
 
-  let html_gt = parse_report("a &gt; file; b\n")
+  let html_gt = parse_report(
+    (
+      #|a &gt; file; b
+      #|
+    ),
+  )
   assert_true(report_has_code(html_gt, 1109))
 
-  let url = parse_report("curl https://example.com/?foo=moo&bar=cow\n")
+  let url = parse_report(
+    (
+      #|curl https://example.com/?foo=moo&bar=cow
+      #|
+    ),
+  )
   assert_true(report_has_code(url, 1132))
 
-  let bad_pipe_break = parse_report("echo hi\n| cat\n")
+  let bad_pipe_break = parse_report(
+    (
+      #|echo hi
+      #|| cat
+      #|
+    ),
+  )
   assert_true(report_has_code(bad_pipe_break, 1133))
 
-  let bad_and_break = parse_report("true\n&& echo hi\n")
+  let bad_and_break = parse_report(
+    (
+      #|true
+      #|&& echo hi
+      #|
+    ),
+  )
   assert_true(report_has_code(bad_and_break, 1133))
 }
 
 ///|
 test "case branch annotations emit shellcheck-style diagnostics" {
   let report = parse_report(
-    "case $x in\n# shellcheck disable=SC2086\na) echo one ;;\nesac\n",
+    (
+      #|case $x in
+      #|# shellcheck disable=SC2086
+      #|a) echo one ;;
+      #|esac
+      #|
+    ),
   )
   let script = report_script(report)
   assert_true(report_has_code(report, 1009))
@@ -1647,7 +2056,13 @@ test "case branch annotations emit shellcheck-style diagnostics" {
 ///|
 test "case items recover missing separators and pattern closers" {
   let missing_separator = parse_report(
-    "case x in\na) echo one\nb) echo two ;;\nesac\n",
+    (
+      #|case x in
+      #|a) echo one
+      #|b) echo two ;;
+      #|esac
+      #|
+    ),
   )
   let separator_script = report_script(missing_separator)
   assert_true(report_has_code(missing_separator, 1074))
@@ -1656,24 +2071,64 @@ test "case items recover missing separators and pattern closers" {
     _ => fail("expected recovered case clause")
   }
 
-  let missing_paren = parse_report("case x in\na echo one ;;\nesac\n")
+  let missing_paren = parse_report(
+    (
+      #|case x in
+      #|a echo one ;;
+      #|esac
+      #|
+    ),
+  )
   assert_true(report_has_code(missing_paren, 1085))
 }
 
 ///|
 test "case item bodies do not mistake function and arithmetic headers for patterns" {
   let script = parse_ok(
-    "case $x in\n" +
-    "a)\n" +
-    "  func_usage ()\n" +
-    "  {\n" +
-    "    echo hi\n" +
-    "  }\n" +
-    "  for ((i=0; i<1; i++)); do\n" +
-    "    echo \"$i\"\n" +
-    "  done\n" +
-    "  ;;\n" +
-    "esac\n",
+    (
+      #|case $x in
+      #|
+    ) +
+    (
+      #|a)
+      #|
+    ) +
+    (
+      #|  func_usage ()
+      #|
+    ) +
+    (
+      #|  {
+      #|
+    ) +
+    (
+      #|    echo hi
+      #|
+    ) +
+    (
+      #|  }
+      #|
+    ) +
+    (
+      #|  for ((i=0; i<1; i++)); do
+      #|
+    ) +
+    (
+      #|    echo "$i"
+      #|
+    ) +
+    (
+      #|  done
+      #|
+    ) +
+    (
+      #|  ;;
+      #|
+    ) +
+    (
+      #|esac
+      #|
+    ),
   )
   match first_command(script).kind {
     @parser.CommandKind::Case(clause) => {
@@ -1696,7 +2151,13 @@ test "case item bodies do not mistake function and arithmetic headers for patter
 
 ///|
 test "bats tests are parsed as compound commands" {
-  let simple = parse_ok("@test 'can parse' {\n  true\n}")
+  let simple = parse_ok(
+    (
+      #|@test 'can parse' {
+      #|  true
+      #|}
+    ),
+  )
   match first_command(simple).kind {
     @parser.CommandKind::BatsTest(clause) => {
       assert_eq(clause.name, "'can parse'")
@@ -1705,7 +2166,13 @@ test "bats tests are parsed as compound commands" {
     _ => fail("expected bats test")
   }
 
-  let nested_name = parse_ok("@test foo { bar { baz {\n  true\n}")
+  let nested_name = parse_ok(
+    (
+      #|@test foo { bar { baz {
+      #|  true
+      #|}
+    ),
+  )
   match first_command(nested_name).kind {
     @parser.CommandKind::BatsTest(clause) => {
       assert_eq(clause.name, "foo { bar { baz")
@@ -1714,7 +2181,13 @@ test "bats tests are parsed as compound commands" {
     _ => fail("expected bats test with brace-rich name")
   }
 
-  let quoted_brace = parse_ok("@test 'brace { in name' {\n  true\n}")
+  let quoted_brace = parse_ok(
+    (
+      #|@test 'brace { in name' {
+      #|  true
+      #|}
+    ),
+  )
   match first_command(quoted_brace).kind {
     @parser.CommandKind::BatsTest(clause) => {
       assert_eq(clause.name, "'brace { in name'")
@@ -1781,7 +2254,12 @@ test "word forms cover bash expansions" {
 
 ///|
 test "brace expansion ignores separators inside quotes" {
-  let script = parse_ok("echo {\"a,b\"}\n")
+  let script = parse_ok(
+    (
+      #|echo {"a,b"}
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   assert_eq(simple.words[1].source, "{\"a,b\"}")
   assert_eq(simple.words[1].parts.length(), 3)
@@ -1857,7 +2335,11 @@ test "brace command substitution is parsed as a word part" {
 ///|
 test "brace command substitution handles comments, nested groups, and piped form" {
   let script = parse_ok(
-    "echo ${ if true; then { echo hi; } # }\nfi; } ${| REPLY=42; }\n",
+    (
+      #|echo ${ if true; then { echo hi; } # }
+      #|fi; } ${| REPLY=42; }
+      #|
+    ),
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
@@ -1880,7 +2362,13 @@ test "brace command substitution handles comments, nested groups, and piped form
 
 ///|
 test "ksh-style brace command substitution failures keep shellcheck context" {
-  let report = parse_report("echo ${ # comment\nx//)/_}\n")
+  let report = parse_report(
+    (
+      #|echo ${ # comment
+      #|x//)/_}
+      #|
+    ),
+  )
   assert_true(report.script is None)
   assert_true(report_has_code(report, 1009))
   assert_true(report_has_code(report, 1073))
@@ -2153,15 +2641,38 @@ test "backquoted and heredoc escapes preserve backslashes" {
     _ => fail("expected backquoted substitution")
   }
 
-  let heredoc = parse_ok("cat <<EOF\n\\a\n\\$USER\nEOF\n")
+  let heredoc = parse_ok(
+    (
+      #|cat <<EOF
+      #|\a
+      #|\$USER
+      #|EOF
+      #|
+    ),
+  )
   let (command, _) = first_simple(heredoc)
   match command.redirects[0].target {
     @parser.RedirectionTarget::HereDoc(doc) => {
-      assert_eq(doc.body, "\\a\n\\$USER\n")
+      assert_eq(
+        doc.body,
+        (
+          #|\a
+          #|\$USER
+          #|
+        ),
+      )
       match doc.parts {
         Some(parts) =>
           match parts[0] {
-            @parser.WordPart::Literal(text) => assert_eq(text, "\\a\n$USER\n")
+            @parser.WordPart::Literal(text) =>
+              assert_eq(
+                text,
+                (
+                  #|\a
+                  #|$USER
+                  #|
+                ),
+              )
             _ => fail("expected literal here-doc part")
           }
         None => fail("expected parsed heredoc parts")
@@ -2173,7 +2684,15 @@ test "backquoted and heredoc escapes preserve backslashes" {
 
 ///|
 test "assignment diagnostics align more closely with shellcheck" {
-  let report = parse_report("foo= bar\nIFS= value\nfoo==bar\na=((1))\n")
+  let report = parse_report(
+    (
+      #|foo= bar
+      #|IFS= value
+      #|foo==bar
+      #|a=((1))
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code_on_line(report, 1007, 1))
   assert_true(!report_has_code_on_line(report, 1007, 2))
@@ -2204,7 +2723,12 @@ test "assignment diagnostics align more closely with shellcheck" {
 
 ///|
 test "bang spacing and dollar-left array assignments emit shellcheck diagnostics" {
-  let bang = parse_report("!foo\n")
+  let bang = parse_report(
+    (
+      #|!foo
+      #|
+    ),
+  )
   let bang_script = report_script(bang)
   assert_true(report_has_code(bang, 1035))
   let segment = bang_script.items[0].and_or.head.segments[0]
@@ -2215,18 +2739,35 @@ test "bang spacing and dollar-left array assignments emit shellcheck diagnostics
     _ => fail("expected negated simple command")
   }
 
-  let lhs = parse_report("$foo=(bar)\n")
+  let lhs = parse_report(
+    (
+      #|$foo=(bar)
+      #|
+    ),
+  )
   assert_true(report_has_code(lhs, 1066))
   assert_true(lhs.script is None)
 
-  let indexed_lhs = parse_report("$foo[${x//]/_}]=(bar)\n")
+  let indexed_lhs = parse_report(
+    (
+      #|$foo[${x//]/_}]=(bar)
+      #|
+    ),
+  )
   assert_true(report_has_code(indexed_lhs, 1066))
   assert_true(indexed_lhs.script is None)
 }
 
 ///|
 test "double-quoted lonely dollars and bare expansions emit shellcheck-style diagnostics" {
-  let report = parse_report("echo \"$\"5\necho $10\necho $arr[@]\n")
+  let report = parse_report(
+    (
+      #|echo "$"5
+      #|echo $10
+      #|echo $arr[@]
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1135))
   assert_true(report_has_code(report, 1037))
@@ -2284,7 +2825,14 @@ test "double-quoted lonely dollars and bare expansions emit shellcheck-style dia
 
 ///|
 test "bare dollar diagnostics preserve shellcheck-style spans and recovery" {
-  let report = parse_report("echo \"$\"5\necho $10\necho $arr[@]\n")
+  let report = parse_report(
+    (
+      #|echo "$"5
+      #|echo $10
+      #|echo $arr[@]
+      #|
+    ),
+  )
   let script = report_script(report)
 
   let mut saw_1135 = false
@@ -2344,7 +2892,12 @@ test "bare dollar diagnostics preserve shellcheck-style spans and recovery" {
 
 ///|
 test "normal word diagnostics align with shellcheck for escapes and reserved words" {
-  let escapes = parse_report("echo \\n \\t \\r \\c\n")
+  let escapes = parse_report(
+    (
+      #|echo \n \t \r \c
+      #|
+    ),
+  )
   let escapes_script = report_script(escapes)
   assert_true(report_has_code(escapes, 1012))
   assert_true(report_has_code(escapes, 1001))
@@ -2355,23 +2908,45 @@ test "normal word diagnostics align with shellcheck for escapes and reserved wor
   assert_eq(simple.words[3].source, "\\r")
   assert_eq(simple.words[4].source, "\\c")
 
-  let line_break = parse_report("echo foo\\ \nbar\n")
+  let line_break = parse_report(
+    (
+      #|echo foo\ 
+      #|bar
+      #|
+    ),
+  )
   let line_break_script = report_script(line_break)
   assert_true(report_has_code(line_break, 1101))
   assert_eq(line_break_script.items.length(), 2)
 
-  let single_quote = parse_report("echo 'it\\'s'\n")
+  let single_quote = parse_report(
+    (
+      #|echo 'it\'s'
+      #|
+    ),
+  )
   assert_true(report_has_code(single_quote, 1003))
   assert_true(single_quote.script is None)
 }
 
 ///|
 test "literal apostrophe escapes stay quiet like shellcheck" {
-  let simple = parse_report("echo \\'\n")
+  let simple = parse_report(
+    (
+      #|echo \'
+      #|
+    ),
+  )
   assert_true(!report_has_code(simple, 1001))
 
   let pattern = parse_report(
-    "case $x in\n*-dark\\') echo ok ;;\n\\'*HighContrast*) echo hi ;;\nesac\n",
+    (
+      #|case $x in
+      #|*-dark\') echo ok ;;
+      #|\'*HighContrast*) echo hi ;;
+      #|esac
+      #|
+    ),
   )
   assert_true(!report_has_code(pattern, 1001))
   match first_command(report_script(pattern)).kind {
@@ -2382,19 +2957,36 @@ test "literal apostrophe escapes stay quiet like shellcheck" {
 
 ///|
 test "multiline single quotes can concatenate with adjacent double quotes" {
-  let report = parse_report("echo 'foo\nbar'\"baz\"\n")
+  let report = parse_report(
+    (
+      #|echo 'foo
+      #|bar'"baz"
+      #|
+    ),
+  )
   assert_true(!report_has_code(report, 1078))
   assert_true(!report_has_code(report, 1079))
   match first_command(report_script(report)).kind {
     @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[1].source, "'foo\nbar'\"baz\"")
+      assert_eq(
+        simple.words[1].source,
+        (
+          #|'foo
+          #|bar'"baz"
+        ),
+      )
     _ => fail("expected simple command")
   }
 }
 
 ///|
 test "literal curly braces in normal words warn like shellcheck" {
-  let report = parse_report("echo HEAD^{commit} HEAD^2^{tree} foo/{}\n")
+  let report = parse_report(
+    (
+      #|echo HEAD^{commit} HEAD^2^{tree} foo/{}
+      #|
+    ),
+  )
   let script = report_script(report)
   let mut literal_brace_warnings = 0
   for diagnostic in report.diagnostics {
@@ -2411,7 +3003,14 @@ test "literal curly braces in normal words warn like shellcheck" {
 
 ///|
 test "here doc parsing propagates nested diagnostics" {
-  let report = parse_report("cat <<EOF\n“hi”\nEOF\n")
+  let report = parse_report(
+    (
+      #|cat <<EOF
+      #|“hi”
+      #|EOF
+      #|
+    ),
+  )
   let mut saw_unicode_quote = false
   for diagnostic in report.diagnostics {
     if diagnostic.message.contains("unicode quote") {
@@ -2423,32 +3022,80 @@ test "here doc parsing propagates nested diagnostics" {
 
 ///|
 test "here doc reports specific delimiter mismatches" {
-  let trailing_space_report = parse_report("cat <<EOF\nhi\nEOF \n")
+  let trailing_space_report = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF 
+      #|
+    ),
+  )
   let trailing_space_script = report_script(trailing_space_report)
   assert_true(report_has_code(trailing_space_report, 1118))
   match first_command(trailing_space_script).redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) => assert_eq(doc.body, "hi\n")
+    @parser.RedirectionTarget::HereDoc(doc) =>
+      assert_eq(
+        doc.body,
+        (
+          #|hi
+          #|
+        ),
+      )
     _ => fail("expected recovered here doc with trailing-space delimiter")
   }
 
-  let indentation = parse_report("cat <<EOF\nhi\n  EOF\n")
+  let indentation = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|  EOF
+      #|
+    ),
+  )
   assert_true(report_has_code(indentation, 1039))
 
-  let tabs_only = parse_report("cat <<-EOF\nhi\n  EOF\n")
+  let tabs_only = parse_report(
+    (
+      #|cat <<-EOF
+      #|hi
+      #|  EOF
+      #|
+    ),
+  )
   assert_true(report_has_code(tabs_only, 1040))
 
-  let trailer = parse_report("cat <<EOF\nhi\nEOF # nope\n")
+  let trailer = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF # nope
+      #|
+    ),
+  )
   assert_true(report_has_code(trailer, 1120))
 }
 
 ///|
 test "here doc delimiter quote removal respects shell quoting rules" {
-  let script = parse_ok("cat <<'\\\"foo'\nbar\n\\\"foo\n")
+  let script = parse_ok(
+    (
+      #|cat <<'\"foo'
+      #|bar
+      #|\"foo
+      #|
+    ),
+  )
   let command = first_command(script)
   match command.redirects[0].target {
     @parser.RedirectionTarget::HereDoc(doc) => {
       assert_eq(doc.delimiter, "\\\"foo")
-      assert_eq(doc.body, "bar\n")
+      assert_eq(
+        doc.body,
+        (
+          #|bar
+          #|
+        ),
+      )
       assert_true(doc.quoted)
     }
     _ => fail("expected here doc")
@@ -2457,7 +3104,14 @@ test "here doc delimiter quote removal respects shell quoting rules" {
 
 ///|
 test "here doc delimiters do not emit ordinary word escape diagnostics" {
-  let report = parse_report("cat <<\\EOF\nx\nEOF\n")
+  let report = parse_report(
+    (
+      #|cat <<\EOF
+      #|x
+      #|EOF
+      #|
+    ),
+  )
   assert_true(!report_has_code(report, 1001))
   match first_command(report_script(report)).redirects[0].target {
     @parser.RedirectionTarget::HereDoc(here_doc) => {
@@ -2471,7 +3125,12 @@ test "here doc delimiters do not emit ordinary word escape diagnostics" {
 ///|
 test "simple command diagnostics cover shellcheck-style command validation" {
   let report = parse_report(
-    "// Lol\nElseIf foo\ntrap 'if true; then echo hi' INT\n",
+    (
+      #|// Lol
+      #|ElseIf foo
+      #|trap 'if true; then echo hi' INT
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.items.length(), 3)
@@ -2483,7 +3142,16 @@ test "simple command diagnostics cover shellcheck-style command validation" {
 
 ///|
 test "keyword-like command words emit shellcheck-style spacing and case diagnostics" {
-  let report = parse_report("If\nif[\nthen#oops\nelse!\ndo:\n")
+  let report = parse_report(
+    (
+      #|If
+      #|if[
+      #|then#oops
+      #|else!
+      #|do:
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_eq(script.items.length(), 5)
   assert_true(report_has_code(report, 1081))
@@ -2495,7 +3163,12 @@ test "keyword-like command words emit shellcheck-style spacing and case diagnost
 
 ///|
 test "eval and let commands emit shellcheck-style diagnostics" {
-  let let_report = parse_report("let 'a -lt 3'\n")
+  let let_report = parse_report(
+    (
+      #|let 'a -lt 3'
+      #|
+    ),
+  )
   let let_script = report_script(let_report)
   assert_true(report_has_code(let_report, 1106))
   match first_command(let_script).kind {
@@ -2504,7 +3177,12 @@ test "eval and let commands emit shellcheck-style diagnostics" {
     _ => fail("expected let simple command")
   }
 
-  let eval_report = parse_report("command eval ( foo )\n")
+  let eval_report = parse_report(
+    (
+      #|command eval ( foo )
+      #|
+    ),
+  )
   assert_true(report_has_code(eval_report, 1098))
 }
 
@@ -2517,9 +3195,23 @@ test "source parse failure becomes a skip diagnostic" {
     true,
     Some("scripts/main.sh"),
     ["scripts/lib"],
-    [("scripts/lib/bad.sh", "echo \"unterminated\n")],
+    [
+      (
+        "scripts/lib/bad.sh",
+        (
+          #|echo "unterminated
+          #|
+        ),
+      ),
+    ],
   )
-  let report = parse_report_with_options("source bad.sh\n", options)
+  let report = parse_report_with_options(
+    (
+      #|source bad.sh
+      #|
+    ),
+    options,
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1094))
   match first_command(script).kind {
@@ -2545,7 +3237,13 @@ test "source commands keep leading assignments and path-focused diagnostics" {
     ["scripts/lib"],
     [],
   )
-  let report = parse_report_with_options("FOO=bar source missing.sh\n", options)
+  let report = parse_report_with_options(
+    (
+      #|FOO=bar source missing.sh
+      #|
+    ),
+    options,
+  )
   let script = report_script(report)
   assert_eq(report.diagnostics.length(), 1)
   assert_eq(report.diagnostics[0].code, Some(1091))
@@ -2565,41 +3263,87 @@ test "source commands keep leading assignments and path-focused diagnostics" {
 
 ///|
 test "here doc trailer and eof diagnostics align more closely with shellcheck" {
-  let paren = parse_report("cat <<EOF\nhi\nEOF)\n")
+  let paren = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF)
+      #|
+    ),
+  )
   assert_true(report_has_code(paren, 1119))
   assert_true(report_has_code(paren, 1009))
   assert_true(report_has_code(paren, 1073))
   assert_true(report_has_code(paren, 1072))
 
-  let comment = parse_report("cat <<EOF\nhi\nEOF # nope\n")
+  let comment = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF # nope
+      #|
+    ),
+  )
   assert_true(report_has_code(comment, 1120))
   assert_true(report_has_code(comment, 1009))
   assert_true(report_has_code(comment, 1073))
   assert_true(report_has_code(comment, 1072))
 
-  let terminator = parse_report("cat <<EOF\nhi\nEOF ; echo later\n")
+  let terminator = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF ; echo later
+      #|
+    ),
+  )
   assert_true(report_has_code(terminator, 1121))
   assert_true(report_has_code(terminator, 1009))
   assert_true(report_has_code(terminator, 1073))
   assert_true(report_has_code(terminator, 1072))
 
-  let spaced_trailer = parse_report("cat <<EOF\nhi\nEOF   x\n")
+  let spaced_trailer = parse_report(
+    (
+      #|cat <<EOF
+      #|hi
+      #|EOF   x
+      #|
+    ),
+  )
   assert_true(report_has_code(spaced_trailer, 1122))
   assert_true(report_has_code(spaced_trailer, 1009))
   assert_true(report_has_code(spaced_trailer, 1073))
   assert_true(report_has_code(spaced_trailer, 1072))
 
-  let glued = parse_report("cat <<EOF\nhelloEOFworld\n")
+  let glued = parse_report(
+    (
+      #|cat <<EOF
+      #|helloEOFworld
+      #|
+    ),
+  )
   assert_true(report_has_code(glued, 1041))
   assert_true(report_has_code(glued, 1042))
 
-  let wrong_case = parse_report("cat <<EOF\neof\n")
+  let wrong_case = parse_report(
+    (
+      #|cat <<EOF
+      #|eof
+      #|
+    ),
+  )
   assert_true(report_has_code(wrong_case, 1043))
   assert_true(report_has_code(wrong_case, 1009))
   assert_true(report_has_code(wrong_case, 1073))
   assert_true(report_has_code(wrong_case, 1072))
 
-  let missing = parse_report("cat <<EOF\nhello\n")
+  let missing = parse_report(
+    (
+      #|cat <<EOF
+      #|hello
+      #|
+    ),
+  )
   assert_true(report_has_code(missing, 1044))
   assert_true(report_has_code(missing, 1009))
   assert_true(report_has_code(missing, 1073))
@@ -2628,7 +3372,12 @@ test "for loops accept brace-group bodies" {
 
 ///|
 test "for loops warn about dollar-prefixed iterator names" {
-  let report = parse_report("for $a in *; do echo \"$a\"; done\n")
+  let report = parse_report(
+    (
+      #|for $a in *; do echo "$a"; done
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1086))
   match first_command(script).kind {
@@ -2639,31 +3388,56 @@ test "for loops warn about dollar-prefixed iterator names" {
 
 ///|
 test "loop header separators align more closely with shellcheck" {
-  let for_report = parse_report("for i in a b do true; done\n")
+  let for_report = parse_report(
+    (
+      #|for i in a b do true; done
+      #|
+    ),
+  )
   assert_true(report_has_code(for_report, 1063))
   match first_command(report_script(for_report)).kind {
     @parser.CommandKind::ForIn(_) => ()
     _ => fail("expected recoverable for loop")
   }
 
-  let select_report = parse_report("select i in a b do echo \"$i\"; done\n")
+  let select_report = parse_report(
+    (
+      #|select i in a b do echo "$i"; done
+      #|
+    ),
+  )
   assert_true(report_has_code(select_report, 1063))
   match first_command(report_script(select_report)).kind {
     @parser.CommandKind::Select(_) => ()
     _ => fail("expected recoverable select loop")
   }
 
-  let missing_separator = parse_report("select i do echo \"$i\"; done\n")
+  let missing_separator = parse_report(
+    (
+      #|select i do echo "$i"; done
+      #|
+    ),
+  )
   assert_true(missing_separator.script is None)
 
-  let invalid_values = parse_report("select i (a b)\n")
+  let invalid_values = parse_report(
+    (
+      #|select i (a b)
+      #|
+    ),
+  )
   assert_true(invalid_values.script is None)
 }
 
 ///|
 test "orphan shellcheck annotations before branch keywords become diagnostics" {
   let report = parse_report(
-    "if true; then echo ok\n# shellcheck disable=SC2086\nelif false; then :; fi\n",
+    (
+      #|if true; then echo ok
+      #|# shellcheck disable=SC2086
+      #|elif false; then :; fi
+      #|
+    ),
   )
   let script = report_script(report)
   assert_true(report.diagnostics.length() >= 1)
@@ -2681,7 +3455,10 @@ test "orphan shellcheck annotations before branch keywords become diagnostics" {
 ///|
 test "else if on the same line emits a shellcheck-style diagnostic" {
   let report = parse_report(
-    "if false; then :; else if true; then echo hi; fi; fi\n",
+    (
+      #|if false; then :; else if true; then echo hi; fi; fi
+      #|
+    ),
   )
   let script = report_script(report)
   assert_true(report_has_code(report, 1075))
@@ -2694,7 +3471,12 @@ test "else if on the same line emits a shellcheck-style diagnostic" {
 ///|
 test "if clauses recover missing keywords and empty branches" {
   let report = parse_report(
-    "if true; fi\nif true; then; else; fi\nif true; then echo hi\n",
+    (
+      #|if true; fi
+      #|if true; then; else; fi
+      #|if true; then echo hi
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.items.length(), 3)
@@ -2725,7 +3507,12 @@ test "if clauses recover missing keywords and empty branches" {
 ///|
 test "loop do groups recover missing keywords and direct semicolons" {
   let report = parse_report(
-    "while true; done\nwhile true; do; done\nwhile true; do echo hi\n",
+    (
+      #|while true; done
+      #|while true; do; done
+      #|while true; do echo hi
+      #|
+    ),
   )
   let script = report_script(report)
   assert_eq(script.items.length(), 3)
@@ -2750,7 +3537,12 @@ test "loop do groups recover missing keywords and direct semicolons" {
 
 ///|
 test "brace groups recover missing closing braces at eof" {
-  let report = parse_report("{ echo hi\n")
+  let report = parse_report(
+    (
+      #|{ echo hi
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1056))
   match first_command(script).kind {
@@ -2762,7 +3554,12 @@ test "brace groups recover missing closing braces at eof" {
 ///|
 test "array indices follow associative declarations like shellcheck" {
   let regular = parse_ok(
-    "arr[i + 1]=x\necho ${arr[$j + 2]}\n(( arr[k + 3]++ ))\n",
+    (
+      #|arr[i + 1]=x
+      #|echo ${arr[$j + 2]}
+      #|(( arr[k + 3]++ ))
+      #|
+    ),
   )
   let (_, regular_assignment) = simple_at(regular, 0)
   assert_eq(
@@ -2791,7 +3588,13 @@ test "array indices follow associative declarations like shellcheck" {
   }
 
   let associative = parse_ok(
-    "declare -A map=([foo]=bar)\nmap[$key + 1]=x\necho ${map[$item + 2]}\n(( map[$expr + 3]++ ))\n",
+    (
+      #|declare -A map=([foo]=bar)
+      #|map[$key + 1]=x
+      #|echo ${map[$item + 2]}
+      #|(( map[$expr + 3]++ ))
+      #|
+    ),
   )
   let (_, associative_assignment) = simple_at(associative, 1)
   assert_true(
@@ -2833,7 +3636,13 @@ test "special diagnostics cover unicode input carriage returns and process subst
     unicode_space.diagnostics[0].message.contains("non-breaking space"),
   )
 
-  let carriage_return = parse_report("echo hi\r\necho bye\r\n")
+  let carriage_return = parse_report(
+    (
+      $|echo hi\{'\r'}
+      $|echo bye\{'\r'}
+      $|
+    ),
+  )
   assert_true(carriage_return.diagnostics.length() >= 2)
   assert_true(
     carriage_return.diagnostics[0].message.contains("carriage return"),
@@ -2851,13 +3660,25 @@ test "special diagnostics cover unicode input carriage returns and process subst
 
 ///|
 test "line continuations keep parse errors on the right line" {
-  let err = parse_error("echo foo \\\n\"unterminated")
+  let err = parse_error(
+    (
+      #|echo foo \
+      #|"unterminated
+    ),
+  )
   assert_true(err.has_prefix("2:"))
 }
 
 ///|
 test "comment backslashes after line continuations emit shellcheck-style diagnostics" {
-  let report = parse_report("echo foo \\\n# comment \\\necho bar\n")
+  let report = parse_report(
+    (
+      #|echo foo \
+      #|# comment \
+      #|echo bar
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code_on_line(report, 1143, 2))
   assert_eq(script.items.length(), 2)
@@ -2875,7 +3696,12 @@ test "unterminated double quote reports readable error" {
 
 ///|
 test "backquoted substitutions unescape shell-special backslashes" {
-  let script = parse_ok("echo `printf \\$HOME`\n")
+  let script = parse_ok(
+    (
+      #|echo `printf \$HOME`
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
     @parser.WordPart::BackQuoted(inner) => {
@@ -2894,7 +3720,12 @@ test "backquoted substitutions unescape shell-special backslashes" {
 
 ///|
 test "backquoted substitutions propagate nested diagnostics to outer report" {
-  let report = parse_report("echo `ElseIf foo`\n")
+  let report = parse_report(
+    (
+      #|echo `ElseIf foo`
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code_on_line(report, 1131, 1))
   let (_, simple) = first_simple(script)
@@ -2917,9 +3748,23 @@ test "backquoted substitutions inherit parse options for nested source resolutio
     true,
     Some("scripts/main.sh"),
     ["scripts/lib"],
-    [("scripts/lib/helpers.sh", "echo hi\n")],
+    [
+      (
+        "scripts/lib/helpers.sh",
+        (
+          #|echo hi
+          #|
+        ),
+      ),
+    ],
   )
-  let report = parse_report_with_options("echo `source helpers.sh`\n", options)
+  let report = parse_report_with_options(
+    (
+      #|echo `source helpers.sh`
+      #|
+    ),
+    options,
+  )
   let script = report_script(report)
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
@@ -2947,10 +3792,22 @@ test "other nested script substitutions inherit parse options for source resolut
     true,
     Some("scripts/main.sh"),
     ["scripts/lib"],
-    [("scripts/lib/helpers.sh", "echo hi\n")],
+    [
+      (
+        "scripts/lib/helpers.sh",
+        (
+          #|echo hi
+          #|
+        ),
+      ),
+    ],
   )
   let report = parse_report_with_options(
-    "echo $(source helpers.sh) <(source helpers.sh) ${ source helpers.sh; }\n", options,
+    (
+      #|echo $(source helpers.sh) <(source helpers.sh) ${ source helpers.sh; }
+      #|
+    ),
+    options,
   )
   let script = report_script(report)
   let (_, simple) = first_simple(script)
@@ -3006,7 +3863,12 @@ test "other nested script substitutions inherit parse options for source resolut
 
 ///|
 test "acute-accent command substitutions emit shellcheck-style diagnostics" {
-  let report = parse_report("echo ´printf x´\n")
+  let report = parse_report(
+    (
+      #|echo ´printf x´
+      #|
+    ),
+  )
   let script = report_script(report)
   assert_true(report_has_code(report, 1077))
   let (_, simple) = first_simple(script)
@@ -3022,7 +3884,12 @@ test "acute-accent command substitutions emit shellcheck-style diagnostics" {
 
 ///|
 test "double-quoted backquoted substitutions unescape escaped quotes" {
-  let script = parse_ok("echo \"`printf \\\"x\\\"`\"\n")
+  let script = parse_ok(
+    (
+      #|echo "`printf \"x\"`"
+      #|
+    ),
+  )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
     @parser.WordPart::DoubleQuoted(parts) =>

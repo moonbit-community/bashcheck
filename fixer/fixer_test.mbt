@@ -14,7 +14,9 @@ fn command_span(source : String, index : Int) -> @parser.Span {
 
 ///|
 test "fixer detects overlapping replacements" {
-  let source = "echo foo\n"
+  let source =
+    #|echo foo
+    #|
   let span = command_span(source, 0)
   let lhs = Replacement::new(
     "test.sh",
@@ -35,7 +37,10 @@ test "fixer detects overlapping replacements" {
 
 ///|
 test "fixer applies sorted non-overlapping replacements" {
-  let source = "echo foo\nprintf hi\n"
+  let source =
+    #|echo foo
+    #|printf hi
+    #|
   let first = command_span(source, 0)
   let second = command_span(source, 1)
   let first_replacement = Replacement::new(
@@ -56,7 +61,16 @@ test "fixer applies sorted non-overlapping replacements" {
   )
 
   let fix = Fix::from_replacements([second_replacement, first_replacement])
-  assert_eq(apply_fix(fix, source), Some("echo bar\nprintf bye\n"))
+  assert_eq(
+    apply_fix(fix, source),
+    Some(
+      (
+        #|echo bar
+        #|printf bye
+        #|
+      ),
+    ),
+  )
 }
 
 ///|
@@ -80,7 +94,14 @@ test "fixer realigns tab-expanded columns" {
     ),
   ])
 
-  let realigned = realign_columns_for_tabs(fix, "\tfoo\nbar\tbaz\n")
+  let realigned = realign_columns_for_tabs(
+    fix,
+    (
+      #|	foo
+      #|bar	baz
+      #|
+    ),
+  )
   assert_eq(realigned.replacements[0].start.column, 2)
   assert_eq(realigned.replacements[0].end.column, 5)
   assert_eq(realigned.replacements[1].start.column, 5)
@@ -100,7 +121,13 @@ test "fixer leaves out-of-range tab realignment untouched" {
     ),
   ])
 
-  let realigned = realign_columns_for_tabs(fix, "echo ok\n")
+  let realigned = realign_columns_for_tabs(
+    fix,
+    (
+      #|echo ok
+      #|
+    ),
+  )
   assert_eq(realigned.replacements[0].start.column, 4)
   assert_eq(realigned.replacements[0].end.column, 4)
 }

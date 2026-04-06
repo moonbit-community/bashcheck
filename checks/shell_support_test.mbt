@@ -1,7 +1,17 @@
 ///|
 test "shell support checks flag common sh bashisms" {
   let diagnostics = check_source(
-    "#!/bin/sh\nsource lib.sh\ncat < <(echo x)\n((x += 1))\nfoo+=bar\narr=(a b)\n[[ x ]]\necho foo |& cat\n",
+    (
+      #|#!/bin/sh
+      #|source lib.sh
+      #|cat < <(echo x)
+      #|((x += 1))
+      #|foo+=bar
+      #|arr=(a b)
+      #|[[ x ]]
+      #|echo foo |& cat
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 3046))
@@ -15,9 +25,24 @@ test "shell support checks flag common sh bashisms" {
 
 ///|
 test "shell support severity follows the active shell dialect" {
-  let sh_diagnostic = first_code(check_source("#!/bin/sh\n((x += 1))\n"), 3006)
+  let sh_diagnostic = first_code(
+    check_source(
+      (
+        #|#!/bin/sh
+        #|((x += 1))
+        #|
+      ),
+    ),
+    3006,
+  )
   let dash_diagnostic = first_code(
-    check_source("#!/bin/dash\n((x += 1))\n"),
+    check_source(
+      (
+        #|#!/bin/dash
+        #|((x += 1))
+        #|
+      ),
+    ),
     3006,
   )
 
@@ -40,7 +65,13 @@ test "shell support severity follows the active shell dialect" {
 ///|
 test "busybox sh keeps busybox-specific allowances but still flags arrays" {
   let diagnostics = check_source(
-    "#!/bin/busybox sh\nsource /dev/null\n[[ x ]]\necho ${x:0:3} ${x/st/xt} ${x[1]} ${!x[@]} ${!prefix*} ${x^^}\n",
+    (
+      #|#!/bin/busybox sh
+      #|source /dev/null
+      #|[[ x ]]
+      #|echo ${x:0:3} ${x/st/xt} ${x[1]} ${!x[@]} ${!prefix*} ${x^^}
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 3046))
@@ -56,7 +87,25 @@ test "busybox sh keeps busybox-specific allowances but still flags arrays" {
 ///|
 test "shell support checks flag test operator arithmetic and star-at gaps" {
   let diagnostics = check_source(
-    "#!/bin/sh\ntest x \\< y\n[ x == y ]\ntest foo =~ bar\ntest -v var\ntest -a file\ntest -o errexit\ntest -R ref\ntest -N file\ntest -k /tmp\ntest -G file\ntest -O file\necho $((i++))\necho $((2**3))\necho $((16#FF))\necho ${@%foo}\n",
+    (
+      #|#!/bin/sh
+      #|test x \< y
+      #|[ x == y ]
+      #|test foo =~ bar
+      #|test -v var
+      #|test -a file
+      #|test -o errexit
+      #|test -R ref
+      #|test -N file
+      #|test -k /tmp
+      #|test -G file
+      #|test -O file
+      #|echo $((i++))
+      #|echo $((2**3))
+      #|echo $((16#FF))
+      #|echo ${@%foo}
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 3012))
@@ -79,7 +128,23 @@ test "shell support checks flag test operator arithmetic and star-at gaps" {
 ///|
 test "shell support checks flag redirects command shortcuts and wrapped source" {
   let diagnostics = check_source(
-    "#!/bin/sh\n# shellcheck disable=SC2046,SC2006,SC2182\nfoo &> /dev/null\ncmd >& file\nexec {fd}>&2\necho foo 42>/dev/null\ncat < /dev/tcp/host/123\necho *[^0-9]*\nfoo-bar() { true; }\necho $(<file)\necho `<file`\ntrap foo ERR SIGINT sigterm\nprintf '%q' \"$1\"\ncommand source lib.sh\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2046,SC2006,SC2182
+      #|foo &> /dev/null
+      #|cmd >& file
+      #|exec {fd}>&2
+      #|echo foo 42>/dev/null
+      #|cat < /dev/tcp/host/123
+      #|echo *[^0-9]*
+      #|foo-bar() { true; }
+      #|echo $(<file)
+      #|echo `<file`
+      #|trap foo ERR SIGINT sigterm
+      #|printf '%q' "$1"
+      #|command source lib.sh
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 3020))
@@ -101,7 +166,23 @@ test "shell support checks flag redirects command shortcuts and wrapped source" 
 ///|
 test "shell support checks flag non-posix builtin flags and set options" {
   let diagnostics = check_source(
-    "#!/bin/sh\n# shellcheck disable=SC2162\nread -a foo\nprintf -v out %s foo\nexport -f foo\nreadonly -a bar\nhash -l\ncd -P -e .\ntype -a ls\nulimit -x unlimited\nset -o emacs\nset --bad\nexec -c env\necho -ne foo\n",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2162
+      #|read -a foo
+      #|printf -v out %s foo
+      #|export -f foo
+      #|readonly -a bar
+      #|hash -l
+      #|cd -P -e .
+      #|type -a ls
+      #|ulimit -x unlimited
+      #|set -o emacs
+      #|set --bad
+      #|exec -c env
+      #|echo -ne foo
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 3045), 9)
@@ -114,15 +195,43 @@ test "shell support checks flag non-posix builtin flags and set options" {
 ///|
 test "shell support bash variables and dialect-specific allowances stay scoped" {
   let sh_diagnostics = check_source(
-    "#!/bin/sh\nHOSTNAME=foo\necho $HOSTNAME\nRANDOM=9\necho $RANDOM\n",
+    (
+      #|#!/bin/sh
+      #|HOSTNAME=foo
+      #|echo $HOSTNAME
+      #|RANDOM=9
+      #|echo $RANDOM
+      #|
+    ),
   )
   let dash_diagnostics = check_source(
-    "#!/bin/dash\ntest x \\< y\ntest -k /tmp\necho $_\n",
+    (
+      #|#!/bin/dash
+      #|test x \< y
+      #|test -k /tmp
+      #|echo $_
+      #|
+    ),
   )
   let busybox_diagnostics = check_source(
-    "#!/bin/busybox sh\ntype -p test\necho -ne foo\nread -p prompt -r name\ntrap stop EXIT SIGTERM\nsource /dev/null\n[ x == y ]\n",
+    (
+      #|#!/bin/busybox sh
+      #|type -p test
+      #|echo -ne foo
+      #|read -p prompt -r name
+      #|trap stop EXIT SIGTERM
+      #|source /dev/null
+      #|[ x == y ]
+      #|
+    ),
   )
-  let dash_echo_flags = check_source("#!/bin/dash\necho -ne foo\n")
+  let dash_echo_flags = check_source(
+    (
+      #|#!/bin/dash
+      #|echo -ne foo
+      #|
+    ),
+  )
 
   assert_eq(count_code(sh_diagnostics, 3028), 1)
   assert_true(first_code(sh_diagnostics, 3028).message.contains("RANDOM"))

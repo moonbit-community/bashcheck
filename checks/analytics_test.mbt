@@ -1,6 +1,12 @@
 ///|
 test "analytics checks flag backticks and unquoted command substitutions" {
-  let diagnostics = check_source("echo `foo`\nrm $(ls)\n")
+  let diagnostics = check_source(
+    (
+      #|echo `foo`
+      #|rm $(ls)
+      #|
+    ),
+  )
 
   assert_true(has_code(diagnostics, 2006))
   assert_true(has_code(diagnostics, 2046))
@@ -8,14 +14,21 @@ test "analytics checks flag backticks and unquoted command substitutions" {
 
 ///|
 test "analytics checks attach fixes for backticks" {
-  let source = "echo `printf '%s' \"$x\"`/`date +%F`\n"
+  let source =
+    #|echo `printf '%s' "$x"`/`date +%F`
+    #|
   let diagnostic = first_code(check_source(source), 2006)
 
   match diagnostic.fix {
     Some(fix) =>
       assert_eq(
         @fixer.apply_fix(fix, source),
-        Some("echo $(printf '%s' \"$x\")/$(date +%F)\n"),
+        Some(
+          (
+            #|echo $(printf '%s' "$x")/$(date +%F)
+            #|
+          ),
+        ),
       )
     None => checks_fail("expected SC2006 fix")
   }
@@ -24,7 +37,13 @@ test "analytics checks attach fixes for backticks" {
 ///|
 test "analytics checks flag fragile for-in forms and ls/find substitutions" {
   let diagnostics = check_source(
-    "for f in \"$(ls)\"; do :; done\nfor g in ls; do :; done\nfor h in $(ls *.mp3); do :; done\nfor i in $(find / -name '*.mp3'); do :; done\n",
+    (
+      #|for f in "$(ls)"; do :; done
+      #|for g in ls; do :; done
+      #|for h in $(ls *.mp3); do :; done
+      #|for i in $(find / -name '*.mp3'); do :; done
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2066))
@@ -35,7 +54,12 @@ test "analytics checks flag fragile for-in forms and ls/find substitutions" {
 
 ///|
 test "analytics checks flag unquoted star and array expansions" {
-  let diagnostics = check_source("printf '%s\\n' $@ ${arr[@]} ${*} ${arr[*]}\n")
+  let diagnostics = check_source(
+    (
+      #|printf '%s\n' $@ ${arr[@]} ${*} ${arr[*]}
+      #|
+    ),
+  )
 
   assert_true(count_code(diagnostics, 2068) >= 2)
   assert_true(count_code(diagnostics, 2048) >= 2)
@@ -44,7 +68,12 @@ test "analytics checks flag unquoted star and array expansions" {
 ///|
 test "analytics checks flag single and double bracket operator misuse" {
   let diagnostics = check_source(
-    "#!/bin/bash\n[ test =~ foo ]\n[[ 3 \\< 4 ]]\n",
+    (
+      #|#!/bin/bash
+      #|[ test =~ foo ]
+      #|[[ 3 \< 4 ]]
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2074))
@@ -53,13 +82,26 @@ test "analytics checks flag single and double bracket operator misuse" {
 
 ///|
 test "analytics checks allow native double bracket angle operators" {
-  let diagnostics = check_source("#!/bin/bash\n[[ a < b ]]\n[[ c > d ]]\n")
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|[[ a < b ]]
+      #|[[ c > d ]]
+      #|
+    ),
+  )
   assert_true(!has_code(diagnostics, 2075))
 }
 
 ///|
 test "analytics optional checks flag useless use of cat" {
-  let script = parse_checks_ok("cat foo | grep bar\ncat \"$var\" | grep bar\n")
+  let script = parse_checks_ok(
+    (
+      #|cat foo | grep bar
+      #|cat "$var" | grep bar
+      #|
+    ),
+  )
   let diagnostics = check_script(
     script,
     options=CheckOptions::default().with_optional_checks(["useless-use-of-cat"]),
@@ -75,7 +117,14 @@ test "analytics optional checks flag useless use of cat" {
 ///|
 test "analytics optional checks avoid useless-cat false positives" {
   let script = parse_checks_ok(
-    "cat * | grep bar\ncat $var | grep bar\ncat \"${!var}\" | grep bar\ncat \"$@\" | grep bar\ncat -n | grep bar\n",
+    (
+      #|cat * | grep bar
+      #|cat $var | grep bar
+      #|cat "${!var}" | grep bar
+      #|cat "$@" | grep bar
+      #|cat -n | grep bar
+      #|
+    ),
   )
   let diagnostics = check_script(
     script,
@@ -88,7 +137,10 @@ test "analytics optional checks avoid useless-cat false positives" {
 ///|
 test "analytics optional checks recommend default case arms" {
   let script = parse_checks_ok(
-    "case $1 in a) true ;; ?*?) true ;; *?) true ;; esac\n",
+    (
+      #|case $1 in a) true ;; ?*?) true ;; *?) true ;; esac
+      #|
+    ),
   )
   let diagnostics = check_script(
     script,
@@ -104,7 +156,12 @@ test "analytics optional checks recommend default case arms" {
 
 ///|
 test "analytics optional checks accept existing default case arms" {
-  let script = parse_checks_ok("case $1 in x|*) true ;; **) true ;; esac\n")
+  let script = parse_checks_ok(
+    (
+      #|case $1 in x|*) true ;; **) true ;; esac
+      #|
+    ),
+  )
   let diagnostics = check_script(
     script,
     options=CheckOptions::default().with_optional_checks(["add-default-case"]),
@@ -116,7 +173,13 @@ test "analytics optional checks accept existing default case arms" {
 ///|
 test "analytics checks flag assignment misuse patterns" {
   let diagnostics = check_source(
-    "foo=bar | grep x\nout=ls -l\nprefix=hello printf '%s\\n' \"$prefix\"\nsame=\"$same\"\n",
+    (
+      #|foo=bar | grep x
+      #|out=ls -l
+      #|prefix=hello printf '%s\n' "$prefix"
+      #|same="$same"
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2036))
@@ -129,7 +192,12 @@ test "analytics checks flag assignment misuse patterns" {
 ///|
 test "analytics checks avoid assignment misuse false positives" {
   let diagnostics = check_source(
-    "foo=bar\nvalue=$(echo \"$value\") cmd\nsame=$other\n",
+    (
+      #|foo=bar
+      #|value=$(echo "$value") cmd
+      #|same=$other
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2036))
@@ -142,7 +210,13 @@ test "analytics checks avoid assignment misuse false positives" {
 ///|
 test "analytics checks flag conditional operator misuse and quoted regexes" {
   let diagnostics = check_source(
-    "#!/bin/bash\n[ foo -a -f bar ]\n[ -z 3 -o a = b ]\n[[ $foo =~ 'cow|bar' ]]\n",
+    (
+      #|#!/bin/bash
+      #|[ foo -a -f bar ]
+      #|[ -z 3 -o a = b ]
+      #|[[ $foo =~ 'cow|bar' ]]
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2166), 2)
@@ -151,7 +225,13 @@ test "analytics checks flag conditional operator misuse and quoted regexes" {
 
 ///|
 test "analytics checks avoid literal regex false positives" {
-  let diagnostics = check_source("#!/bin/bash\n[[ $foo =~ \"bar\" ]]\n")
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|[[ $foo =~ "bar" ]]
+      #|
+    ),
+  )
 
   assert_true(!has_code(diagnostics, 2076))
 }
@@ -159,7 +239,13 @@ test "analytics checks avoid literal regex false positives" {
 ///|
 test "analytics checks flag array splitting loop globs and subshell tests" {
   let diagnostics = check_source(
-    "arr=( $var $(cmd) )\nfor file in $dir/*.txt; do :; done\n( -e file )\n( 1 -gt 2 )\n",
+    (
+      #|arr=( $var $(cmd) )
+      #|for file in $dir/*.txt; do :; done
+      #|( -e file )
+      #|( 1 -gt 2 )
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2206))
@@ -172,7 +258,12 @@ test "analytics checks flag array splitting loop globs and subshell tests" {
 ///|
 test "analytics checks avoid quoted array and loop glob false positives" {
   let diagnostics = check_source(
-    "arr=( \"$var\" \"$(cmd)\" $! $$ $# ${#arr[@]} * foo{1,2} )\nfor file in \"$dir\"/*.txt; do :; done\n( grep -c foo bar )\n",
+    (
+      #|arr=( "$var" "$(cmd)" $! $$ $# ${#arr[@]} * foo{1,2} )
+      #|for file in "$dir"/*.txt; do :; done
+      #|( grep -c foo bar )
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2206))
@@ -185,7 +276,14 @@ test "analytics checks avoid quoted array and loop glob false positives" {
 ///|
 test "analytics batch b checks flag glob confusion empty tests and glob comparisons" {
   let diagnostics = check_source(
-    "#!/bin/bash\n[[ $cow == $bar ]]\n[ $cow = *foo* ]\n[[ $foo =~ *foo* ]]\nif [ ]; then :; fi\n",
+    (
+      #|#!/bin/bash
+      #|[[ $cow == $bar ]]
+      #|[ $cow = *foo* ]
+      #|[[ $foo =~ *foo* ]]
+      #|if [ ]; then :; fi
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2053))
@@ -197,7 +295,14 @@ test "analytics batch b checks flag glob confusion empty tests and glob comparis
 ///|
 test "analytics batch b checks keep regex and comparison false positives in check" {
   let diagnostics = check_source(
-    "#!/bin/bash\n[[ $cow == \"$bar\" ]]\n[ $cow = foo ]\n[[ $foo =~ ^c.* ]]\n[[ $foo =~ x\\* ]]\n",
+    (
+      #|#!/bin/bash
+      #|[[ $cow == "$bar" ]]
+      #|[ $cow = foo ]
+      #|[[ $foo =~ ^c.* ]]
+      #|[[ $foo =~ x\* ]]
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2053))
@@ -205,7 +310,12 @@ test "analytics batch b checks keep regex and comparison false positives in chec
   assert_true(!has_code(diagnostics, 2049))
 
   let busybox = run_checks_with_shell(
-    parse_checks_ok("[[ $f == *foo* ]]\n"),
+    parse_checks_ok(
+      (
+        #|[[ $f == *foo* ]]
+        #|
+      ),
+    ),
     @semantics.ShellDialect::BusyboxSh,
     false,
     [],
@@ -216,7 +326,13 @@ test "analytics batch b checks keep regex and comparison false positives in chec
 ///|
 test "analytics batch b checks flag redirect and command target confusion" {
   let diagnostics = check_source(
-    "test 3 > 1\n/usr/bin/test $var > $foo\nfoo 1>2\nls > rm\n",
+    (
+      #|test 3 > 1
+      #|/usr/bin/test $var > $foo
+      #|foo 1>2
+      #|ls > rm
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2065), 2)
@@ -227,7 +343,12 @@ test "analytics batch b checks flag redirect and command target confusion" {
 ///|
 test "analytics batch b checks avoid redirect target false positives" {
   let diagnostics = check_source(
-    "test 1 -eq 2 2> file\necho foo > '2'\nls > myfile\n",
+    (
+      #|test 1 -eq 2 2> file
+      #|echo foo > '2'
+      #|ls > myfile
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2065))
@@ -238,7 +359,18 @@ test "analytics batch b checks avoid redirect target false positives" {
 ///|
 test "analytics batch b checks flag arithmetic and malformed command names" {
   let diagnostics = check_source(
-    "./ file\nfoo=bar * 2\nn=2\ni=n*2\nfoo*\n-e file\n''\n/\nfoo,\n",
+    (
+      #|./ file
+      #|foo=bar * 2
+      #|n=2
+      #|i=n*2
+      #|foo*
+      #|-e file
+      #|''
+      #|/
+      #|foo,
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2083))
@@ -254,7 +386,14 @@ test "analytics batch b checks flag arithmetic and malformed command names" {
 ///|
 test "analytics batch b checks avoid command shape false positives" {
   let diagnostics = check_source(
-    "./file\necho foo*\n'--myexec--' args\n. foo.sh\n: foo\n",
+    (
+      #|./file
+      #|echo foo*
+      #|'--myexec--' args
+      #|. foo.sh
+      #|: foo
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2083))
@@ -268,7 +407,12 @@ test "analytics batch b checks avoid command shape false positives" {
 ///|
 test "analytics batch b checks flag output-stealing command substitutions" {
   let diagnostics = check_source(
-    "out=$(foo > log)\nerr=$(foo >&2)\nkeep=$(foo 2>&1 > /dev/null)\n",
+    (
+      #|out=$(foo > log)
+      #|err=$(foo >&2)
+      #|keep=$(foo 2>&1 > /dev/null)
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2327), 2)
@@ -278,7 +422,17 @@ test "analytics batch b checks flag output-stealing command substitutions" {
 ///|
 test "analytics batch c checks flag echo-wc ssh heredoc and late function definitions" {
   let diagnostics = check_source(
-    "#!/bin/bash\n# shellcheck disable=SC2154\necho \"$foo\" | wc -c\nssh host <<EOF2\necho $HOME\nEOF2\nf\nf() { true; }\n",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|echo "$foo" | wc -c
+      #|ssh host <<EOF2
+      #|echo $HOME
+      #|EOF2
+      #|f
+      #|f() { true; }
+      #|
+    ),
   )
 
   assert_true(has_code(diagnostics, 2000))
@@ -289,7 +443,15 @@ test "analytics batch c checks flag echo-wc ssh heredoc and late function defini
 ///|
 test "analytics batch c checks flag overwritten exit codes" {
   let diagnostics = check_source(
-    "#!/bin/bash\nx(){ return 1; }\nx\n[ $? -eq 1 ] || [ $? -eq 2 ]\necho \"$?\"\necho \"$?\"\n",
+    (
+      #|#!/bin/bash
+      #|x(){ return 1; }
+      #|x
+      #|[ $? -eq 1 ] || [ $? -eq 2 ]
+      #|echo "$?"
+      #|echo "$?"
+      #|
+    ),
   )
 
   assert_eq(count_code(diagnostics, 2319), 1)
@@ -299,7 +461,20 @@ test "analytics batch c checks flag overwritten exit codes" {
 ///|
 test "analytics batch c checks avoid false positives for quiet cases" {
   let diagnostics = check_source(
-    "#!/bin/bash\nfoo=bar\nprintf '%s\\n' \"$foo\" | wc -c\nssh host <<'EOF'\necho $HOME\nEOF\nf() { true; }\nf\nfalse\nstatus=$?\necho \"$status\"\n",
+    (
+      #|#!/bin/bash
+      #|foo=bar
+      #|printf '%s\n' "$foo" | wc -c
+      #|ssh host <<'EOF'
+      #|echo $HOME
+      #|EOF
+      #|f() { true; }
+      #|f
+      #|false
+      #|status=$?
+      #|echo "$status"
+      #|
+    ),
   )
 
   assert_true(!has_code(diagnostics, 2000))
@@ -311,7 +486,12 @@ test "analytics batch c checks avoid false positives for quiet cases" {
 
 ///|
 test "analytics optional checks flag quote-safe variables only for clean standalone words" {
-  let source = "safe=hello\necho $safe\nunsafe='hi there'\necho $unsafe\n"
+  let source =
+    #|safe=hello
+    #|echo $safe
+    #|unsafe='hi there'
+    #|echo $unsafe
+    #|
   let diagnostics = check_script(
     parse_checks_ok(source),
     options=CheckOptions::default().with_optional_checks([
@@ -329,7 +509,15 @@ test "analytics optional checks flag quote-safe variables only for clean standal
     Some(fix) =>
       assert_eq(
         @fixer.apply_fix(fix, source),
-        Some("safe=hello\necho \"$safe\"\nunsafe='hi there'\necho $unsafe\n"),
+        Some(
+          (
+            #|safe=hello
+            #|echo "$safe"
+            #|unsafe='hi there'
+            #|echo $unsafe
+            #|
+          ),
+        ),
       )
     None => checks_fail("expected SC2248 fix")
   }
@@ -339,7 +527,18 @@ test "analytics optional checks flag quote-safe variables only for clean standal
 test "analytics optional checks flag nullary and negated conditions" {
   let diagnostics = check_script(
     parse_checks_ok(
-      "[ \"$name\" ]\n[[ $(cmd) ]]\n[[ \"$a$b\" ]]\n[[ -n \"$a\" ]]\n[ ! -z \"$var\" ]\n! [ -n \"$var\" ]\n[[ ! $var == foo ]]\n! [[ $var -gt 3 ]]\n! [[ $var =~ .* ]]\n",
+      (
+        #|[ "$name" ]
+        #|[[ $(cmd) ]]
+        #|[[ "$a$b" ]]
+        #|[[ -n "$a" ]]
+        #|[ ! -z "$var" ]
+        #|! [ -n "$var" ]
+        #|[[ ! $var == foo ]]
+        #|! [[ $var -gt 3 ]]
+        #|! [[ $var =~ .* ]]
+        #|
+      ),
     ),
     options=CheckOptions::default().with_optional_checks([
       "avoid-nullary-conditions", "avoid-negated-conditions",
@@ -355,7 +554,12 @@ test "analytics optional checks flag nullary and negated conditions" {
 
 ///|
 test "analytics optional checks require braces for bare variable references" {
-  let source = "echo $name\nprintf '%s' prefix=$name\nprintf '%s' \"$name\"\n$tool=42\n"
+  let source =
+    #|echo $name
+    #|printf '%s' prefix=$name
+    #|printf '%s' "$name"
+    #|$tool=42
+    #|
   let diagnostics = check_script(
     parse_checks_ok(source),
     options=CheckOptions::default().with_optional_checks([
@@ -370,7 +574,13 @@ test "analytics optional checks require braces for bare variable references" {
       assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
-          "echo ${name}\nprintf '%s' prefix=$name\nprintf '%s' \"$name\"\n$tool=42\n",
+          (
+            #|echo ${name}
+            #|printf '%s' prefix=$name
+            #|printf '%s' "$name"
+            #|$tool=42
+            #|
+          ),
         ),
       )
     None => checks_fail("expected SC2250 fix on bare variable word")
@@ -380,7 +590,13 @@ test "analytics optional checks require braces for bare variable references" {
 ///|
 test "analytics optional checks extend unassigned-variable warnings to uppercase names" {
   let diagnostics = check_script(
-    parse_checks_ok("echo $VAR\necho $foo\n"),
+    parse_checks_ok(
+      (
+        #|echo $VAR
+        #|echo $foo
+        #|
+      ),
+    ),
     options=CheckOptions::default().with_optional_checks([
       "check-unassigned-uppercase",
     ]),
@@ -392,7 +608,13 @@ test "analytics optional checks extend unassigned-variable warnings to uppercase
 
 ///|
 test "analytics optional checks require double brackets only in supporting shells" {
-  let script = parse_checks_ok("[ -x foo ]\n[[ -x foo ]]\n")
+  let script = parse_checks_ok(
+    (
+      #|[ -x foo ]
+      #|[[ -x foo ]]
+      #|
+    ),
+  )
   let bash = run_checks_with_shell(
     script,
     @semantics.ShellDialect::Bash,
@@ -411,7 +633,18 @@ test "analytics optional checks require double brackets only in supporting shell
 test "analytics optional checks flag set-e suppression contexts for functions" {
   let diagnostics = run_checks_with_shell(
     parse_checks_ok(
-      "#!/bin/bash\nset -e\nf(){ false; }\nresult=$(f)\nf && echo ok\nif f; then :; fi\nwhile f; do :; done\n! f\nfoo=$(set -e; f)\n",
+      (
+        #|#!/bin/bash
+        #|set -e
+        #|f(){ false; }
+        #|result=$(f)
+        #|f && echo ok
+        #|if f; then :; fi
+        #|while f; do :; done
+        #|! f
+        #|foo=$(set -e; f)
+        #|
+      ),
     ),
     @semantics.ShellDialect::Bash,
     false,
@@ -426,7 +659,15 @@ test "analytics optional checks flag set-e suppression contexts for functions" {
 test "analytics optional checks flag additional masked return contexts" {
   let diagnostics = check_script(
     parse_checks_ok(
-      "false | true\ntrue $(false)\nx=$(false)$(true)\nreadarray -t files < <(ls)\nx=$(false)true\necho asdf | false\n",
+      (
+        #|false | true
+        #|true $(false)
+        #|x=$(false)$(true)
+        #|readarray -t files < <(ls)
+        #|x=$(false)true
+        #|echo asdf | false
+        #|
+      ),
     ),
     options=CheckOptions::default().with_optional_checks([
       "check-extra-masked-returns",
