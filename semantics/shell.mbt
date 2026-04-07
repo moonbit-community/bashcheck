@@ -1,5 +1,6 @@
 ///|
 /// Shell dialects recognized by the checker.
+#warnings("-deprecated_syntax")
 pub(all) enum ShellDialect {
   Sh
   Bash
@@ -10,6 +11,7 @@ pub(all) enum ShellDialect {
 
 ///|
 /// Whether a script is analyzed as an executed file or as a sourced file.
+#warnings("-deprecated_syntax")
 pub(all) enum ExecutionMode {
   Executed
   Sourced

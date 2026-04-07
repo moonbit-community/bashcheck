@@ -1,6 +1,7 @@
 ///|
 /// Severity levels emitted by low-level lint checks before the checker layer
 /// remaps them into its public reporting model.
+#warnings("-deprecated_syntax")
 pub enum CheckSeverity {
   Error
   Warning

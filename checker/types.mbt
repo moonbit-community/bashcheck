@@ -1,6 +1,7 @@
 ///|
 /// Severity levels used by the public checker API after parse and lint
 /// diagnostics have been normalized into a single model.
+#warnings("-deprecated_syntax")
 pub enum DiagnosticSeverity {
   Error
   Warning
