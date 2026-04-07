@@ -7,12 +7,62 @@ priv struct ShellSupportRule {
 
 ///|
 fn shell_support_description(code : Int, summary : String) -> CheckDescription {
-  { code, severity: CheckSeverity::Warning, category: "shell-support", summary }
+  shell_support_description_with_severity(code, CheckSeverity::Warning, summary)
+}
+
+///|
+fn shell_support_description_with_severity(
+  code : Int,
+  severity : CheckSeverity,
+  summary : String,
+) -> CheckDescription {
+  { code, severity, category: "shell-support", summary }
 }
 
 ///|
 fn shell_support_descriptions() -> Array[CheckDescription] {
   [
+    shell_support_description_with_severity(
+      2001,
+      CheckSeverity::Style,
+      "Use ${var//search/replace} instead of echo | sed for simple substitutions.",
+    ),
+    shell_support_description_with_severity(
+      2025,
+      CheckSeverity::Info,
+      "Wrap PS1 escape sequences in \\[..\\] to preserve line wrapping.",
+    ),
+    shell_support_description(
+      2051, "Bash doesn't support variables in brace range expansions.",
+    ),
+    shell_support_description_with_severity(
+      2079,
+      CheckSeverity::Error,
+      "(( )) doesn't support decimals. Use bc or awk.",
+    ),
+    shell_support_description_with_severity(
+      2175,
+      CheckSeverity::Style,
+      "Quote invalid brace expansions passed literally to eval.",
+    ),
+    shell_support_description(
+      2180, "Bash does not support multidimensional arrays.",
+    ),
+    shell_support_description_with_severity(
+      2325,
+      CheckSeverity::Error,
+      "Multiple leading ! before pipelines are a bash/ksh extension.",
+    ),
+    shell_support_description_with_severity(
+      2326,
+      CheckSeverity::Error,
+      "! is not allowed in the middle of pipelines.",
+    ),
+    shell_support_description_with_severity(
+      2332,
+      CheckSeverity::Error,
+      "[ ! -a/-o ... ] is always true in single-bracket tests.",
+    ),
     shell_support_description(
       3001, "Process substitution is not portable to sh/dash.",
     ),
@@ -169,32 +219,72 @@ fn run_shell_support_checks(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  if !shell_is_posix_sh(shell) {
-    return
-  }
   let assigned_names = collect_assigned_shell_support_names(script)
   visit_script_pipelines(script, fn(pipeline) {
-    if pipeline.operators.any(fn(op) {
-        match op {
-          @parser.PipeOperator::PipeAndStderr => true
-          _ => false
-        }
-      }) {
-      push_shell_support_diagnostic(
-        diagnostics,
-        shell,
-        pipeline.span,
-        3029,
-        "|& in place of 2>&1 | is",
-      )
-    }
+    check_shell_support_pipeline(pipeline, shell, diagnostics)
   })
   visit_script_commands(script, fn(command) {
     check_shell_support_command(command, shell, diagnostics)
+    let effective_name = @semantics.effective_command_name(command)
     visit_direct_words_in_command(command, fn(word, _) {
-      check_shell_support_word(word, shell, assigned_names, diagnostics)
+      check_shell_support_word(
+        word, shell, assigned_names, effective_name, diagnostics,
+      )
     })
   })
+}
+
+///|
+fn check_shell_support_pipeline(
+  pipeline : @parser.Pipeline,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  if shell_is_posix_sh(shell) &&
+    pipeline.operators.any(fn(op) {
+      match op {
+        @parser.PipeOperator::PipeAndStderr => true
+        _ => false
+      }
+    }) {
+    push_shell_support_diagnostic(
+      diagnostics,
+      shell,
+      pipeline.span,
+      3029,
+      "|& in place of 2>&1 | is",
+    )
+  }
+  if shell_is_posix_sh(shell) {
+    for segment in pipeline.segments {
+      if segment.bangs > 1 {
+        push_diagnostic(
+          diagnostics,
+          span_prefix(segment.span, 1),
+          CheckSeverity::Error,
+          2325,
+          "Multiple ! in front of pipelines are a bash/ksh extension. Use only 0 or 1.",
+        )
+      }
+    }
+  }
+  if shell != @semantics.ShellDialect::Ksh {
+    let mut i = 1
+    while i < pipeline.segments.length() {
+      let segment = pipeline.segments[i]
+      if segment.bangs > 0 {
+        push_diagnostic(
+          diagnostics,
+          span_prefix(segment.span, 1),
+          CheckSeverity::Error,
+          2326,
+          "! is not allowed in the middle of pipelines. Use command group as in cmd | { ! cmd; } if necessary.",
+        )
+      }
+      i += 1
+    }
+  }
+  check_shell_support_echo_sed_pipeline(pipeline, shell, diagnostics)
 }
 
 ///|
@@ -266,6 +356,12 @@ fn check_shell_support_command(
         shell,
         diagnostics,
       )
+      maybe_push_decimal_arithmetic_command_diagnostic(
+        command,
+        arithmetic.expr,
+        shell,
+        diagnostics,
+      )
     }
     @parser.CommandKind::Select(_) =>
       push_shell_support_diagnostic(
@@ -295,6 +391,9 @@ fn check_shell_support_command(
         shell,
         diagnostics,
       )
+      check_shell_support_negated_unary_ops(
+        command, condition, shell, diagnostics,
+      )
     }
     @parser.CommandKind::CoProc(_) =>
       push_shell_support_diagnostic(
@@ -304,7 +403,12 @@ fn check_shell_support_command(
         3032,
         "coproc is",
       )
-    @parser.CommandKind::Source(source) =>
+    @parser.CommandKind::Source(source) => {
+      check_shell_support_assignment_extensions(
+        source.assignments,
+        shell,
+        diagnostics,
+      )
       if source.keyword == "source" &&
         shell != @semantics.ShellDialect::BusyboxSh {
         push_shell_support_diagnostic(
@@ -315,6 +419,7 @@ fn check_shell_support_command(
           "'source' in place of '.' is",
         )
       }
+    }
     @parser.CommandKind::Function(function_) =>
       if !shell_support_is_function_name(function_.name) {
         push_shell_support_diagnostic(
@@ -336,13 +441,129 @@ fn check_shell_support_command(
         shell,
         simple.assignments,
       )
+      check_shell_support_assignment_extensions(
+        simple.assignments,
+        shell,
+        diagnostics,
+      )
       check_shell_support_simple_command(command, shell, diagnostics)
     }
     _ => ()
   }
+  check_shell_support_echo_sed_here_string(command, shell, diagnostics)
   for redirect in command.redirects {
     check_shell_support_redirection(redirect, shell, diagnostics)
   }
+}
+
+///|
+fn check_shell_support_echo_sed_pipeline(
+  pipeline : @parser.Pipeline,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell_support_is_echo_sed_shell(shell) else { return }
+  guard pipeline.segments.length() == 2 else { return }
+  let echo_command = pipeline.segments[0].command
+  guard @semantics.command_name(echo_command) == Some("echo") else { return }
+  let echo_arguments = @semantics.command_arguments(echo_command)
+  guard echo_arguments.length() == 1 &&
+    word_is_plain_variable_reference(echo_arguments[0]) else {
+    return
+  }
+  maybe_push_echo_sed_diagnostic(
+    pipeline.span,
+    pipeline.segments[1].command,
+    diagnostics,
+  )
+}
+
+///|
+fn check_shell_support_echo_sed_here_string(
+  command : @parser.Command,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell_support_is_echo_sed_shell(shell) else { return }
+  guard command.redirects.any(fn(redirect) {
+    match redirect.op {
+      @parser.RedirectionOperator::HereString => true
+      _ => false
+    }
+  }) else {
+    return
+  }
+  maybe_push_echo_sed_diagnostic(command.span, command, diagnostics)
+}
+
+///|
+fn maybe_push_echo_sed_diagnostic(
+  span : @parser.Span,
+  command : @parser.Command,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard @semantics.effective_command_name(command) == Some("sed") else {
+    return
+  }
+  let arguments = @semantics.effective_command_arguments(command)
+  match sed_script_argument(arguments) {
+    Some(word) =>
+      match @semantics.literal_text(word) {
+        Some(text) if shell_support_is_simple_sed_substitution(text) =>
+          push_diagnostic(
+            diagnostics,
+            span,
+            CheckSeverity::Style,
+            2001,
+            "See if you can use ${variable//search/replace} instead.",
+          )
+        _ => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn sed_script_argument(arguments : Array[@parser.Word]) -> @parser.Word? {
+  match arguments {
+    [word] => Some(word)
+    [flag, word] =>
+      match @semantics.literal_text(flag) {
+        Some("-e") => Some(word)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn shell_support_is_echo_sed_shell(shell : @semantics.ShellDialect) -> Bool {
+  shell == @semantics.ShellDialect::Bash ||
+  shell == @semantics.ShellDialect::Ksh
+}
+
+///|
+fn shell_support_is_simple_sed_substitution(text : String) -> Bool {
+  let view = text[:]
+  if view.length() < 4 || view[0] != 's' || text.contains("\n") {
+    return false
+  }
+  let delimiter = view[1]
+  let body = if view[view.length() - 1] == 'g' {
+    text.view(end_offset=view.length() - 1).to_string()
+  } else {
+    text
+  }
+  let body_view = body[:]
+  let mut count = 0
+  let mut i = 2
+  while i < body_view.length() {
+    if body_view[i] == delimiter {
+      count += 1
+    }
+    i += 1
+  }
+  count == 2
 }
 
 ///|
@@ -862,10 +1083,92 @@ fn maybe_push_array_assignment_diagnostic(
 }
 
 ///|
+fn check_shell_support_assignment_extensions(
+  assignments : Array[@parser.Assignment],
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell == @semantics.ShellDialect::Bash else { return }
+  for assignment in assignments {
+    if assignment.name == "PS1" {
+      maybe_push_ps1_assignment_diagnostic(assignment, diagnostics)
+    }
+    if assignment.indexes.length() > 1 {
+      push_diagnostic(
+        diagnostics,
+        assignment_multidimensional_index_span(assignment),
+        CheckSeverity::Warning,
+        2180,
+        "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
+      )
+    }
+    if assignment_value_has_multidimensional_array(assignment.value) {
+      push_diagnostic(
+        diagnostics,
+        array_assignment_value_span(assignment),
+        CheckSeverity::Warning,
+        2180,
+        "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
+      )
+    }
+  }
+}
+
+///|
+fn maybe_push_ps1_assignment_diagnostic(
+  assignment : @parser.Assignment,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match assignment.value {
+    @parser.AssignmentValue::Word(word) =>
+      if shell_support_contains_unescaped_ps1_escape(word.source) {
+        push_diagnostic(
+          diagnostics,
+          word.span,
+          CheckSeverity::Info,
+          2025,
+          "Make sure all escape sequences are enclosed in \\[..\\] to prevent line wrapping issues",
+        )
+      }
+    _ => ()
+  }
+}
+
+///|
+fn assignment_value_has_multidimensional_array(
+  value : @parser.AssignmentValue,
+) -> Bool {
+  match value {
+    @parser.AssignmentValue::ArrayLiteral(elements) =>
+      elements.any(fn(element) {
+        array_element_has_multidimensional_array(element)
+      })
+    _ => false
+  }
+}
+
+///|
+fn array_element_has_multidimensional_array(
+  element : @parser.ArrayElement,
+) -> Bool {
+  if element.indexes.length() > 1 {
+    return true
+  }
+  match element.value {
+    @parser.AssignmentValue::ArrayLiteral(elements) =>
+      elements.any(fn(nested) {
+        array_element_has_multidimensional_array(nested)
+      })
+    _ => false
+  }
+}
+
+///|
 fn check_shell_support_word(
   word : @parser.Word,
   shell : @semantics.ShellDialect,
   assigned_names : Array[String],
+  effective_command_name : String?,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   let mut saw_process_substitution = false
@@ -888,23 +1191,39 @@ fn check_shell_support_word(
       @parser.WordPart::DollarBracket(expr) => {
         saw_dollar_bracket = true
         collect_shell_support_arithmetic_codes(expr, arithmetic_codes)
+        maybe_push_decimal_arithmetic_word_diagnostic(
+          word, expr, shell, diagnostics,
+        )
       }
-      @parser.WordPart::ArithmeticExpansion(expr) =>
+      @parser.WordPart::ArithmeticExpansion(expr) => {
         collect_shell_support_arithmetic_codes(expr, arithmetic_codes)
-      @parser.WordPart::BraceExpansion(_) => saw_brace_expansion = true
+        maybe_push_decimal_arithmetic_word_diagnostic(
+          word, expr, shell, diagnostics,
+        )
+      }
+      @parser.WordPart::BraceExpansion(expansion) => {
+        saw_brace_expansion = true
+        maybe_push_brace_range_variable_diagnostic(
+          word, expansion, effective_command_name, shell, diagnostics,
+        )
+      }
       @parser.WordPart::Glob(raw) =>
         if raw.contains("[^") {
           saw_glob_caret = true
         }
       @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script) =>
+      | @parser.WordPart::BraceCommandSubstitution(_, script) => {
+        check_shell_support_substitution_script(script, shell, diagnostics)
         if script_is_only_redirection(script) {
           saw_dollar_redirection = true
         }
-      @parser.WordPart::BackQuoted(script) =>
+      }
+      @parser.WordPart::BackQuoted(script) => {
+        check_shell_support_substitution_script(script, shell, diagnostics)
         if script_is_only_redirection(script) {
           saw_backquoted_redirection = true
         }
+      }
       @parser.WordPart::Parameter(name)
       | @parser.WordPart::SpecialParameter(name) =>
         if bash_variable_name is None &&
@@ -913,6 +1232,9 @@ fn check_shell_support_word(
         }
       @parser.WordPart::BracedParameter(expansion) => {
         collect_parameter_expansion_codes(expansion, shell, parameter_codes)
+        maybe_push_multidimensional_parameter_diagnostic(
+          word, expansion, shell, diagnostics,
+        )
         match expansion.name {
           Some(name) =>
             if bash_variable_name is None &&
@@ -1026,6 +1348,155 @@ fn check_shell_support_word(
       shell_support_feature_name(code),
     )
   }
+}
+
+///|
+fn maybe_push_decimal_arithmetic_command_diagnostic(
+  command : @parser.Command,
+  expr : @parser.ArithmeticExpr,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell != @semantics.ShellDialect::Ksh else { return }
+  match first_decimal_arithmetic_literal(expr) {
+    Some(literal) =>
+      match string_offset(expr.raw, literal) {
+        Some(offset) =>
+          push_diagnostic(
+            diagnostics,
+            span_offset(command.span, offset + 2, literal.length()),
+            CheckSeverity::Error,
+            2079,
+            "(( )) doesn't support decimals. Use bc or awk.",
+          )
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn maybe_push_decimal_arithmetic_word_diagnostic(
+  word : @parser.Word,
+  expr : @parser.ArithmeticExpr,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell != @semantics.ShellDialect::Ksh else { return }
+  match first_decimal_arithmetic_literal(expr) {
+    Some(literal) =>
+      push_diagnostic(
+        diagnostics,
+        span_for_nested_word_text(word, expr.raw, literal),
+        CheckSeverity::Error,
+        2079,
+        "(( )) doesn't support decimals. Use bc or awk.",
+      )
+    None => ()
+  }
+}
+
+///|
+fn maybe_push_brace_range_variable_diagnostic(
+  word : @parser.Word,
+  expansion : @parser.BraceExpansion,
+  effective_command_name : String?,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell == @semantics.ShellDialect::Bash else { return }
+  guard brace_expansion_uses_variable_range(expansion) else { return }
+  let span = span_for_word_text(word, expansion.raw)
+  match effective_command_name {
+    Some("eval") =>
+      push_diagnostic(
+        diagnostics,
+        span,
+        CheckSeverity::Style,
+        2175,
+        "Quote this invalid brace expansion since it should be passed literally to eval.",
+      )
+    _ =>
+      push_diagnostic(
+        diagnostics,
+        span,
+        CheckSeverity::Warning,
+        2051,
+        "Bash doesn't support variables in brace range expansions.",
+      )
+  }
+}
+
+///|
+fn maybe_push_multidimensional_parameter_diagnostic(
+  word : @parser.Word,
+  expansion : @parser.ParameterExpansion,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell == @semantics.ShellDialect::Bash else { return }
+  if expansion.raw.contains("][") {
+    push_diagnostic(
+      diagnostics,
+      span_for_word_text(word, "${" + expansion.raw + "}"),
+      CheckSeverity::Warning,
+      2180,
+      "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
+    )
+  }
+}
+
+///|
+fn check_shell_support_negated_unary_ops(
+  command : @parser.Command,
+  condition : @parser.ConditionCommand,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell == @semantics.ShellDialect::Bash else { return }
+  match condition.kind {
+    @parser.ConditionKind::SingleBracket => ()
+    _ => return
+  }
+  match condition.expr {
+    @parser.ConditionExpr::Not(inner) =>
+      match inner {
+        @parser.ConditionExpr::Unary(op, _) =>
+          if op == "-a" || op == "-o" {
+            push_diagnostic(
+              diagnostics,
+              single_bracket_negation_span(command, condition.raw),
+              CheckSeverity::Error,
+              2332,
+              negated_unary_ops_message(op),
+            )
+          }
+        _ => ()
+      }
+    _ => ()
+  }
+}
+
+///|
+fn negated_unary_ops_message(op : String) -> String {
+  match op {
+    "-o" =>
+      "[ ! -o opt ] is always true because -o becomes logical OR. Use [[ ]] or ! [ -o opt ]."
+    "-a" =>
+      "[ ! -a file ] is always true because -a becomes logical AND. Use -e instead."
+    _ => "[ ! -a/-o ... ] is always true."
+  }
+}
+
+///|
+fn check_shell_support_substitution_script(
+  script : @parser.Script,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_pipelines(script, fn(pipeline) {
+    check_shell_support_echo_sed_pipeline(pipeline, shell, diagnostics)
+  })
 }
 
 ///|
@@ -1574,6 +2045,236 @@ fn shell_support_busybox_echo_flag_word(text : String) -> Bool {
     i += 1
   }
   true
+}
+
+///|
+fn word_is_plain_variable_reference(word : @parser.Word) -> Bool {
+  match word.parts {
+    [@parser.WordPart::Parameter(_)] => true
+    [@parser.WordPart::BracedParameter(expansion)] =>
+      braced_parameter_is_plain_reference(expansion)
+    [@parser.WordPart::DoubleQuoted(parts)] =>
+      quoted_parts_are_plain_variable_reference(parts)
+    _ => false
+  }
+}
+
+///|
+fn quoted_parts_are_plain_variable_reference(
+  parts : Array[@parser.WordPart],
+) -> Bool {
+  match parts {
+    [@parser.WordPart::Parameter(_)] => true
+    [@parser.WordPart::BracedParameter(expansion)] =>
+      braced_parameter_is_plain_reference(expansion)
+    _ => false
+  }
+}
+
+///|
+fn braced_parameter_is_plain_reference(
+  expansion : @parser.ParameterExpansion,
+) -> Bool {
+  expansion.name is Some(_) &&
+  !expansion.length_prefix &&
+  !expansion.indirect &&
+  expansion.index is None &&
+  expansion.operator is None
+}
+
+///|
+fn brace_expansion_uses_variable_range(
+  expansion : @parser.BraceExpansion,
+) -> Bool {
+  expansion.elements.any(fn(element) {
+    element.source.contains("$..") || element.source.contains("..$")
+  })
+}
+
+///|
+fn first_decimal_arithmetic_literal(expr : @parser.ArithmeticExpr) -> String? {
+  let mut i = 0
+  while i < expr.tokens.length() {
+    match expr.tokens[i] {
+      @parser.ArithmeticToken::Literal(text) =>
+        if shell_support_is_decimal_arithmetic_literal(text) {
+          return Some(text)
+        } else if i + 2 < expr.tokens.length() {
+          match (expr.tokens[i + 1], expr.tokens[i + 2]) {
+            (
+              @parser.ArithmeticToken::Literal(dot),
+              @parser.ArithmeticToken::Literal(fraction),
+            ) =>
+              if dot == "." && shell_support_is_decimal_pair(text, fraction) {
+                return Some(text + "." + fraction)
+              }
+            _ => ()
+          }
+        }
+      @parser.ArithmeticToken::Group(inner) =>
+        match first_decimal_arithmetic_literal(inner) {
+          Some(literal) => return Some(literal)
+          None => ()
+        }
+      _ => ()
+    }
+    i += 1
+  }
+  None
+}
+
+///|
+fn shell_support_is_decimal_arithmetic_literal(text : String) -> Bool {
+  let view = text[:]
+  if view.length() < 2 || !shell_support_is_ascii_digit(view[0]) {
+    return false
+  }
+  let mut i = 1
+  while i < view.length() {
+    if view[i] == '.' {
+      return true
+    }
+    i += 1
+  }
+  false
+}
+
+///|
+fn shell_support_is_decimal_pair(integer : String, fraction : String) -> Bool {
+  let view = integer[:]
+  if view.length() == 0 || !shell_support_is_ascii_digit(view[0]) {
+    return false
+  }
+  shell_support_string_is_digits(fraction)
+}
+
+///|
+fn shell_support_contains_unescaped_ps1_escape(text : String) -> Bool {
+  let stripped = strip_ps1_prompt_enclosures(text)
+  stripped.contains("\\x1B") ||
+  stripped.contains("\\x1b") ||
+  stripped.contains("\\e") ||
+  stripped.contains("\\033") ||
+  stripped.contains("\u001B")
+}
+
+///|
+fn strip_ps1_prompt_enclosures(text : String) -> String {
+  let view = text[:]
+  let buf = StringBuilder::new()
+  let mut i = 0
+  while i < view.length() {
+    if i + 1 < view.length() && view[i] == '\\' && view[i + 1] == '[' {
+      i += 2
+      while i < view.length() {
+        if i + 1 < view.length() && view[i] == '\\' && view[i + 1] == ']' {
+          i += 2
+          break
+        }
+        i += 1
+      }
+      continue
+    }
+    buf.write_char(view[i].unsafe_to_char())
+    i += 1
+  }
+  buf.to_string()
+}
+
+///|
+fn string_offset(text : String, needle : String) -> Int? {
+  let view = text[:]
+  let needle_view = needle[:]
+  if needle_view.length() == 0 {
+    return Some(0)
+  }
+  let mut i = 0
+  while i + needle_view.length() <= view.length() {
+    let mut j = 0
+    while j < needle_view.length() && view[i + j] == needle_view[j] {
+      j += 1
+    }
+    if j == needle_view.length() {
+      return Some(i)
+    }
+    i += 1
+  }
+  None
+}
+
+///|
+fn span_for_word_text(word : @parser.Word, text : String) -> @parser.Span {
+  match string_offset(word.source, text) {
+    Some(offset) => span_offset(word.span, offset, text.length())
+    None => word.span
+  }
+}
+
+///|
+fn span_for_nested_word_text(
+  word : @parser.Word,
+  outer : String,
+  inner : String,
+) -> @parser.Span {
+  match string_offset(word.source, outer) {
+    Some(outer_offset) =>
+      match string_offset(outer, inner) {
+        Some(inner_offset) =>
+          span_offset(word.span, outer_offset + inner_offset, inner.length())
+        None => word.span
+      }
+    None => word.span
+  }
+}
+
+///|
+fn single_bracket_negation_span(
+  command : @parser.Command,
+  raw : String,
+) -> @parser.Span {
+  let offset = match string_offset(raw, "!") {
+    Some(offset) => offset + 2
+    None => 2
+  }
+  span_offset(command.span, offset, 1)
+}
+
+///|
+fn assignment_multidimensional_index_span(
+  assignment : @parser.Assignment,
+) -> @parser.Span {
+  if assignment.indexes.length() < 2 {
+    return assignment.span
+  }
+  let mut offset = assignment.name[:].length()
+  let mut i = 0
+  while i < 1 {
+    offset += assignment.indexes[i].raw[:].length() + 2
+    i += 1
+  }
+  let second = assignment.indexes[1]
+  let width = if second.raw[:].length() == 0 {
+    1
+  } else {
+    second.raw[:].length()
+  }
+  span_offset(assignment.span, offset + 1, width)
+}
+
+///|
+fn span_offset(span : @parser.Span, offset : Int, width : Int) -> @parser.Span {
+  @parser.Span::new(
+    @parser.Position::new(
+      span.start.offset + offset,
+      span.start.line,
+      span.start.column + offset,
+    ),
+    @parser.Position::new(
+      span.start.offset + offset + width,
+      span.start.line,
+      span.start.column + offset + width,
+    ),
+  )
 }
 
 ///|

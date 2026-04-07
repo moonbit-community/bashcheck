@@ -53,6 +53,7 @@ fn commands_descriptions() -> Array[CheckDescription] {
   append_commands_batch_a_descriptions(descriptions)
   append_commands_batch_b_descriptions(descriptions)
   append_commands_batch_c_descriptions(descriptions)
+  append_commands_batch_d_descriptions(descriptions)
   descriptions
 }
 
@@ -129,6 +130,7 @@ fn run_command_checks(
   check_argument_comparison_spacing(script, diagnostics)
   check_eval_array(script, diagnostics)
   run_commands_batch_c_checks(script, shell, diagnostics)
+  run_commands_batch_d_checks(script, diagnostics)
   check_deprecated_tempfile(script, diagnostics)
   check_deprecated_grep_variants(script, diagnostics)
   check_sudo_redirects(script, diagnostics)

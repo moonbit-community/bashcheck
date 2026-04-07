@@ -70,6 +70,7 @@ pub struct ConfigParseReport {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the default parser options.
 pub fn ParseOptions::default() -> ParseOptions {

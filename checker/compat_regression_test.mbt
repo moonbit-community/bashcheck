@@ -307,6 +307,9 @@ test "compat regression covers phase 7 set-e and masked-return diagnostics" {
       #|
     ),
     [
+      compat_warning(
+        2034, 4, 1, 7, "result appears unused. Verify use (or export if used externally).",
+      ),
       compat_info(
         2311, 4, 10, 11, "Bash implicitly disabled set -e for this function invocation because it's inside a command substitution. Add set -e; before it or enable inherit_errexit.",
       ),
@@ -337,6 +340,9 @@ test "compat regression covers analytics assignment and loop diagnostics" {
     ),
     [
       compat_warning(
+        2034, 3, 1, 4, "foo appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
         2036, 3, 1, 8, "If you wanted to assign the output of the pipeline, use a=$(b | c) .",
       ),
       compat_error(
@@ -350,6 +356,9 @@ test "compat regression covers analytics assignment and loop diagnostics" {
       ),
       compat_info(
         2269, 6, 1, 13, "This variable is assigned to itself, so the assignment does nothing.",
+      ),
+      compat_warning(
+        2034, 7, 1, 4, "arr appears unused. Verify use (or export if used externally).",
       ),
       compat_warning(
         2206, 7, 7, 11, "Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a.",
@@ -390,7 +399,154 @@ test "compat regression covers analytics condition diagnostics" {
         2166, 4, 1, 18, "Prefer [ p ] || [ q ] as [ p -o q ] is not well defined.",
       ),
       compat_warning(
+        2050, 4, 13, 14, "This expression is constant. Did you forget the $ on a variable?",
+      ),
+      compat_warning(
         2076, 5, 12, 21, "Remove quotes from right-hand side of =~ to match as a regex rather than literally.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics unused assignment diagnostics" {
+  assert_compat_case(
+    "analytics-batch-a-unused-assignments",
+    (
+      #|#!/bin/bash
+      #|foo=bar
+      #|readonly baz=qux
+      #|declare zap
+      #|typeset t=3
+      #|f(){ local x=1; }
+      #|export nope=1
+      #|used=1
+      #|echo $used
+      #|
+    ),
+    [
+      compat_warning(
+        2034, 2, 1, 4, "foo appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
+        2034, 3, 10, 13, "baz appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
+        2034, 4, 9, 12, "zap appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
+        2034, 5, 9, 10, "t appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
+        2034, 6, 12, 13, "x appears unused. Verify use (or export if used externally).",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics unquoted parameter diagnostics" {
+  assert_compat_case(
+    "analytics-batch-a-unquoted-parameters",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|echo $foo
+      #|echo ${foo:-bar}
+      #|echo $1
+      #|echo $*
+      #|echo ${array[*]}
+      #|echo ${array[@]}
+      #|echo ${foo:+bar}
+      #|echo ${#foo}
+      #|
+    ),
+    [
+      compat_info(
+        2086, 3, 6, 10, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_info(
+        2086, 4, 6, 17, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_info(
+        2086, 5, 6, 8, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_warning(
+        2048, 6, 6, 8, "Use \"$@\" (with quotes) to prevent whitespace problems.",
+      ),
+      compat_info(
+        2086, 6, 6, 8, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_warning(
+        2048, 7, 6, 17, "Use \"${array[@]}\" (with quotes) to prevent whitespace problems.",
+      ),
+      compat_info(
+        2086, 7, 6, 17, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_error(
+        2068, 8, 6, 17, "Double quote array expansions to avoid re-splitting elements.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics uppercase misspelling diagnostics" {
+  assert_compat_case(
+    "analytics-batch-a-uppercase-misspellings",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2086
+      #|HOME_DIR=1
+      #|PATHS=1
+      #|echo $HOMR_DIR
+      #|echo ${PATS}
+      #|
+    ),
+    [
+      compat_info(
+        2153, 5, 6, 15, "Possible misspelling: HOMR_DIR may not be assigned. Did you mean HOME_DIR?",
+      ),
+      compat_info(
+        2153, 6, 6, 13, "Possible misspelling: PATS may not be assigned. Did you mean PATHS?",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics bad parameter substitution diagnostics" {
+  assert_compat_case(
+    "analytics-bad-parameter-substitutions",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2086,SC2154
+      #|echo ${"bar"}
+      #|echo ${{var}
+      #|echo ${$(x)//x/y}
+      #|echo ${'foo'}
+      #|echo ${${x%.*}##*/}
+      #|echo ${${x}foo!}
+      #|
+    ),
+    [
+      compat_error(
+        2297, 3, 8, 13, "Double quotes must be outside ${}: ${\"invalid\"} vs \"${valid}\".",
+      ),
+      compat_error(
+        2296, 4, 8, 12, "Parameter expansions can't start with {. Double check syntax.",
+      ),
+      compat_error(
+        2300, 5, 8, 12, "Parameter expansion can't be applied to command substitutions. Use temporary variables.",
+      ),
+      compat_error(
+        2301, 6, 8, 13, "Parameter expansion starts with unexpected quotes. Double check syntax.",
+      ),
+      compat_error(
+        2299, 7, 8, 15, "Parameter expansions can't be nested. Use temporary variables.",
+      ),
+      compat_error(
+        2298, 8, 8, 12, "${${x}} is invalid. For expansion, use ${x}. For indirection, use arrays, ${!x} or (for sh) eval.",
       ),
     ],
   )
@@ -412,6 +568,9 @@ test "compat regression covers analytics batch b condition diagnostics" {
     [
       compat_warning(
         2053, 3, 12, 16, "Quote the right-hand side of == in [[ ]] to prevent glob matching.",
+      ),
+      compat_info(
+        2086, 4, 3, 7, "Double quote to prevent globbing and word splitting.",
       ),
       compat_error(
         2081, 4, 10, 15, "[ .. ] can't match globs. Use [[ .. ]] or case statement.",
@@ -473,6 +632,12 @@ test "compat regression covers analytics batch b command diagnostics" {
         2099, 2, 5, 6, "Use $((..)) for arithmetics, e.g. i=$((i + 2))",
       ),
       compat_warning(
+        2034, 3, 1, 2, "n appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
+        2034, 4, 1, 2, "i appears unused. Verify use (or export if used externally).",
+      ),
+      compat_warning(
         2100, 4, 3, 6, "Use $((..)) for arithmetics, e.g. i=$((i * 2))",
       ),
       compat_warning(
@@ -527,6 +692,9 @@ test "compat regression covers analytics batch b redirection diagnostics" {
       ),
       compat_warning(
         2238, 4, 6, 8, "Redirecting to/from command name instead of file. Did you want pipes/xargs (or quote to ignore)?",
+      ),
+      compat_warning(
+        2034, 5, 1, 4, "out appears unused. Verify use (or export if used externally).",
       ),
       compat_warning(
         2327, 5, 5, 17, "This command substitution will be empty because the command's output gets redirected away.",
@@ -816,6 +984,9 @@ test "compat regression covers shell-support operator and arithmetic diagnostics
         3014, 4, 1, 11, "In POSIX sh, == in place of = is undefined.",
       ),
       compat_warning(
+        2050, 4, 5, 7, "This expression is constant. Did you forget the $ on a variable?",
+      ),
+      compat_warning(
         3015, 5, 10, 12, "In POSIX sh, =~ regex matching is undefined.",
       ),
       compat_warning(
@@ -941,6 +1112,9 @@ test "compat regression covers shell-support builtin flag diagnostics" {
       compat_warning(3045, 4, 9, 10, "In POSIX sh, printf -v is undefined."),
       compat_warning(3045, 5, 9, 10, "In POSIX sh, export -f is undefined."),
       compat_warning(3045, 6, 11, 12, "In POSIX sh, readonly -a is undefined."),
+      compat_warning(
+        2034, 6, 13, 16, "bar appears unused. Verify use (or export if used externally).",
+      ),
       compat_warning(3045, 7, 7, 8, "In POSIX sh, hash -l is undefined."),
       compat_warning(3045, 8, 8, 9, "In POSIX sh, cd -e is undefined."),
       compat_warning(3045, 9, 7, 8, "In POSIX sh, type -a is undefined."),
@@ -1028,6 +1202,9 @@ test "compat regression covers commands batch a builtin diagnostics" {
       compat_info(2162, 5, 1, 5, "read without -r will mangle backslashes."),
       compat_warning(
         2229, 5, 6, 10, "This does not read 'var'. Remove $/${} for that, or use ${var?} to quiet.",
+      ),
+      compat_info(
+        2086, 5, 6, 10, "Double quote to prevent globbing and word splitting.",
       ),
       compat_info(2162, 6, 1, 5, "read without -r will mangle backslashes."),
       compat_warning(
@@ -1259,6 +1436,7 @@ test "compat regression keeps analytics negatives quiet" {
     "analytics-negatives",
     (
       #|#!/bin/bash
+      #|# shellcheck disable=SC2034
       #|cow=moo
       #|bar=moo
       #|foo=cat
@@ -1292,6 +1470,7 @@ test "compat regression keeps command negatives quiet" {
     "commands-negatives",
     (
       #|#!/bin/bash
+      #|# shellcheck disable=SC2034
       #|command time -f '%E' sleep 1
       #|find . -type f
       #|find * -name '*.php'
@@ -1383,6 +1562,9 @@ test "compat regression keeps multi-diagnostic sorting and filtering stable" {
       ),
       compat_warning(
         2048, 4, 15, 17, "Use \"$@\" (with quotes) to prevent whitespace problems.",
+      ),
+      compat_info(
+        2086, 4, 15, 17, "Double quote to prevent globbing and word splitting.",
       ),
       compat_error(
         2068, 4, 18, 20, "Double quote array expansions to avoid re-splitting elements.",

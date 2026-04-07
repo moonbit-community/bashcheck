@@ -146,6 +146,7 @@ fn analytics_descriptions() -> Array[CheckDescription] {
       summary: "Escaped < and > are invalid in [[ .. ]].",
     },
   ]
+  append_analytics_batch_a_descriptions(descriptions)
   append_analytics_batch_b_descriptions(descriptions)
   append_analytics_batch_c_descriptions(descriptions)
   descriptions
@@ -356,6 +357,7 @@ fn run_analytics_checks(
   check_conditional_and_ors(script, diagnostics)
   check_quoted_condition_regex(script, diagnostics)
   check_subshell_as_test(script, diagnostics)
+  run_analytics_batch_a_checks(script, shell, diagnostics)
   run_analytics_batch_b_checks(script, shell, diagnostics)
   run_analytics_batch_c_checks(script, shell, diagnostics)
 }

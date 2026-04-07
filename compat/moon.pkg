@@ -5,7 +5,10 @@ import {
   "moonbit-community/bashcheck/parser" @parser,
   "moonbit-community/bashcheck/semantics" @semantics,
   "moonbitlang/async",
+  "moonbitlang/async/fs" @fs,
+  "moonbitlang/async/process" @process,
   "moonbitlang/core/debug" @debug,
+  "moonbitlang/core/json" @json,
 } for "test"
 
 supported_targets = "+native"

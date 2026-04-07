@@ -202,6 +202,7 @@ pub fn unary_test_operators() -> Array[String] {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the short-option specification for the `read` builtin.
 pub fn read_option_spec() -> String {
@@ -210,6 +211,7 @@ pub fn read_option_spec() -> String {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the short-option specification for the `mapfile` builtin.
 pub fn mapfile_option_spec() -> String {

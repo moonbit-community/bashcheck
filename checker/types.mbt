@@ -35,6 +35,7 @@ pub struct CheckSpec {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the default checker configuration.
 ///

@@ -19,6 +19,7 @@ pub struct FormatOptions {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the default formatting options.
 pub fn FormatOptions::default() -> FormatOptions {
@@ -45,6 +46,7 @@ pub fn FormatOptions::with_enable_color(
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the default output format used by the CLI.
 pub fn OutputFormat::default() -> OutputFormat {

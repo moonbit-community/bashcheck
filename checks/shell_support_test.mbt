@@ -85,6 +85,98 @@ test "busybox sh keeps busybox-specific allowances but still flags arrays" {
 }
 
 ///|
+test "shell support checks flag bash-only compatibility tail rules" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2331
+      #|PS1='\\033[1;35m\\$ '
+      #|echo {1..$n}
+      #|eval echo DSC{0001..$n}.jpg
+      #|foo[1][2]=3
+      #|foo=( [1][2]=c )
+      #|echo ${foo[1][2]}
+      #|((3.14*1))
+      #|true | ! true
+      #|[ ! -a file ]
+      #|
+    ),
+  )
+
+  assert_true(has_code(diagnostics, 2025))
+  assert_true(has_code(diagnostics, 2051))
+  assert_true(has_code(diagnostics, 2079))
+  assert_true(has_code(diagnostics, 2175))
+  assert_true(has_code(diagnostics, 2180))
+  assert_true(has_code(diagnostics, 2326))
+  assert_true(has_code(diagnostics, 2332))
+  assert_true(
+    match first_code(diagnostics, 2025).severity {
+      CheckSeverity::Info => true
+      _ => false
+    },
+  )
+  assert_true(
+    match first_code(diagnostics, 2079).severity {
+      CheckSeverity::Error => true
+      _ => false
+    },
+  )
+  assert_true(
+    match first_code(diagnostics, 2175).severity {
+      CheckSeverity::Style => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "shell support checks keep bash tail negatives scoped" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|PS1='\\[\\e\\]'
+      #|echo {1,3,$n}
+      #|true | ( ! true )
+      #|! ! true
+      #|! [ -o braceexpand ]
+      #|[[ ! -o braceexpand ]]
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2025))
+  assert_true(!has_code(diagnostics, 2051))
+  assert_true(!has_code(diagnostics, 2175))
+  assert_true(!has_code(diagnostics, 2325))
+  assert_true(!has_code(diagnostics, 2326))
+  assert_true(!has_code(diagnostics, 2332))
+}
+
+///|
+test "shell support checks flag echo-sed rewrites and sh multiple bangs" {
+  let bash_diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|FOO=$(echo "$cow" | sed 's/foo/bar/g')
+      #|bar=$(sed -e 's,foo,bar,' <<< "$cow")
+      #|
+    ),
+  )
+  let sh_diagnostics = check_source(
+    (
+      #|#!/bin/sh
+      #|! ! true
+      #|
+    ),
+  )
+
+  assert_eq(count_code(bash_diagnostics, 2001), 2)
+  assert_true(has_code(sh_diagnostics, 2325))
+}
+
+///|
 test "shell support checks flag test operator arithmetic and star-at gaps" {
   let diagnostics = check_source(
     (

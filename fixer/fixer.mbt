@@ -7,6 +7,7 @@ pub enum InsertionPoint {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the insertion-point value that places text before the range start.
 pub fn InsertionPoint::before() -> InsertionPoint {
@@ -15,6 +16,7 @@ pub fn InsertionPoint::before() -> InsertionPoint {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Returns the insertion-point value that places text after the range end.
 pub fn InsertionPoint::after() -> InsertionPoint {
@@ -59,6 +61,7 @@ pub struct Fix {
 
 ///|
 // CHECK THIS: THUNK
+
 ///|
 /// Creates an empty fix.
 pub fn Fix::new() -> Fix {
