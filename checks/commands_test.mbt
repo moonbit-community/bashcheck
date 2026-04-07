@@ -575,13 +575,25 @@ test "command checks flag alias pitfalls from phase 5" {
 }
 
 ///|
-test "command checks avoid false positives for harmless alias forms" {
+test "command checks avoid false positives for alias listing and quoted bodies" {
   let diagnostics = check_source(
     (
-      #|alias $1='foo'
       #|alias -p
       #|alias foo='echo {1..10}'
       #|alias foo='echo $PWD'
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2142))
+  assert_true(!has_code(diagnostics, 2139))
+}
+
+///|
+test "command checks still flag expansions in alias names" {
+  let diagnostics = check_source(
+    (
+      #|alias $1='foo'
       #|
     ),
   )

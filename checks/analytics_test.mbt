@@ -224,7 +224,7 @@ test "analytics checks flag conditional operator misuse and quoted regexes" {
 }
 
 ///|
-test "analytics checks avoid literal regex false positives" {
+test "analytics checks keep quoted =~ literals quiet" {
   let diagnostics = check_source(
     (
       #|#!/bin/bash
