@@ -77,9 +77,9 @@ pub fn Fix::from_replacements(replacements : Array[Replacement]) -> Fix {
 ///|
 /// Reports whether two replacements overlap in the same file.
 ///
-/// Zero-width insertions are treated specially:
-/// - two insertions at the same offset overlap;
-/// - an insertion overlaps a non-empty range when it falls inside that range.
+/// Replacements use half-open offsets. Zero-width insertions therefore do not
+/// overlap other replacements when they sit exactly on a range boundary, but
+/// they do overlap when they land strictly inside another range.
 pub fn detect_overlap(lhs : Replacement, rhs : Replacement) -> Bool {
   if lhs.filename != rhs.filename {
     return false
@@ -88,15 +88,6 @@ pub fn detect_overlap(lhs : Replacement, rhs : Replacement) -> Bool {
   let lhs_end = lhs.end.offset
   let rhs_start = rhs.start.offset
   let rhs_end = rhs.end.offset
-  if lhs_start == lhs_end && rhs_start == rhs_end {
-    return lhs_start == rhs_start
-  }
-  if lhs_start == lhs_end {
-    return rhs_start <= lhs_start && lhs_start < rhs_end
-  }
-  if rhs_start == rhs_end {
-    return lhs_start <= rhs_start && rhs_start < lhs_end
-  }
   lhs_start < rhs_end && rhs_start < lhs_end
 }
 
@@ -249,6 +240,22 @@ fn replacement_precedes(lhs : Replacement, rhs : Replacement) -> Bool {
   }
   if lhs.end.offset != rhs.end.offset {
     return lhs.end.offset < rhs.end.offset
+  }
+  if lhs.start.offset == lhs.end.offset && rhs.start.offset == rhs.end.offset {
+    if lhs.insertion_point != rhs.insertion_point {
+      return insertion_rank(lhs.insertion_point) <
+        insertion_rank(rhs.insertion_point)
+    }
+    match lhs.insertion_point {
+      InsertionPoint::InsertBefore =>
+        if lhs.precedence != rhs.precedence {
+          return lhs.precedence > rhs.precedence
+        }
+      InsertionPoint::InsertAfter =>
+        if lhs.precedence != rhs.precedence {
+          return lhs.precedence < rhs.precedence
+        }
+    }
   }
   if lhs.precedence != rhs.precedence {
     return lhs.precedence > rhs.precedence

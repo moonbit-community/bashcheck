@@ -1,13 +1,14 @@
 {
   "name": "moonbit-community/bashcheck",
   "version": "0.1.0",
-  "preferred-target": "native",
   "deps": {
-    "moonbitlang/async": "0.17.0"
+    "moonbitlang/async": "0.17.0",
+    "moonbitlang/quickcheck": "0.11.2"
   },
   "readme": "README.mbt.md",
   "repository": "",
   "license": "Apache-2.0",
   "keywords": [],
-  "description": ""
+  "description": "",
+  "preferred-target": "native"
 }
