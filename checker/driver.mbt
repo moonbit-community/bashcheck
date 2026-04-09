@@ -100,6 +100,7 @@ fn merge_parse_and_lint_diagnostics(
   }
   match (base_script, script) {
     (Some(base_script), Some(script)) => {
+      append_shebang_entry_diagnostics(diagnostics, filename, spec, script)
       if parse_report_has_code(report, 1071) {
         return sort_diagnostics(diagnostics)
       }
@@ -340,6 +341,350 @@ fn unknown_shell_diagnostic(
     message: "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive.",
     fix: None,
   }
+}
+
+///|
+fn append_shebang_entry_diagnostics(
+  diagnostics : Array[PositionedDiagnostic],
+  filename : String,
+  spec : CheckSpec,
+  script : @parser.Script,
+) -> Unit {
+  guard spec.shell_override is None && !script_has_shell_annotation(script) else {
+    return
+  }
+  let shebang = match script.shebang {
+    Some(shebang) => shebang
+    None => return
+  }
+  let command = checker_shebang_command_text(shebang)
+  let span = checker_shebang_span(script, shebang)
+  if checker_executable_from_shebang(shebang) == "ash" {
+    let diagnostic = {
+      filename,
+      span,
+      severity: DiagnosticSeverity::Warning,
+      code: Some(2187),
+      message: "Ash scripts will be checked as Dash. Add '# shellcheck shell=dash' to silence.",
+      fix: None,
+    }
+    if diagnostic_is_included(Some(script), spec, diagnostic) {
+      diagnostics.push(diagnostic)
+    }
+  }
+  if command != "" && !command.has_prefix("/") {
+    let diagnostic = {
+      filename,
+      span,
+      severity: DiagnosticSeverity::Error,
+      code: Some(2239),
+      message: "Ensure the shebang uses an absolute path to the interpreter.",
+      fix: None,
+    }
+    if diagnostic_is_included(Some(script), spec, diagnostic) {
+      diagnostics.push(diagnostic)
+    }
+  }
+  match checker_shebang_words(shebang).get(0) {
+    Some(first) if checker_quote_removed_source(first).has_suffix("/") => {
+      let diagnostic = {
+        filename,
+        span,
+        severity: DiagnosticSeverity::Error,
+        code: Some(2246),
+        message: "This shebang specifies a directory. Ensure the interpreter is a file.",
+        fix: None,
+      }
+      if diagnostic_is_included(Some(script), spec, diagnostic) {
+        diagnostics.push(diagnostic)
+      }
+    }
+    _ => ()
+  }
+}
+
+///|
+fn script_has_shell_annotation(script : @parser.Script) -> Bool {
+  for annotation in script.annotations {
+    match annotation {
+      @parser.Annotation::Shell(_) => return true
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+fn checker_shebang_span(
+  script : @parser.Script,
+  shebang : String,
+) -> @parser.Span {
+  let start = if script.has_bom {
+    @parser.Position::new(1, 1, 2)
+  } else {
+    @parser.Position::new(0, 1, 1)
+  }
+  let end_ = @parser.Position::new(
+    start.offset + shebang.length(),
+    1,
+    start.column + shebang.length(),
+  )
+  @parser.Span::new(start, end_)
+}
+
+///|
+fn checker_shebang_command_text(shebang : String) -> String {
+  if shebang.has_prefix("#!") {
+    checker_trim_ascii_space(shebang.view(start_offset=2).to_string())
+  } else {
+    checker_trim_ascii_space(shebang)
+  }
+}
+
+///|
+fn checker_executable_from_shebang(shebang : String) -> String {
+  let words = checker_shebang_words(shebang)
+  if words.length() == 0 {
+    return ""
+  }
+  let first = checker_basename(checker_quote_removed_source(words[0]))
+  if first == "busybox" {
+    if words.length() < 2 {
+      return first
+    }
+    let second = checker_basename(checker_quote_removed_source(words[1]))
+    match second {
+      "sh" => "busybox sh"
+      "ash" => "busybox ash"
+      _ => second
+    }
+  } else if first == "env" {
+    checker_env_shell_from_args(words, 1)
+  } else {
+    first
+  }
+}
+
+///|
+fn checker_shebang_words(shebang : String) -> Array[String] {
+  checker_split_shell_words(checker_shebang_command_text(shebang))
+}
+
+///|
+fn checker_env_shell_from_args(args : Array[String], start : Int) -> String {
+  let mut i = start
+  while i < args.length() {
+    let arg = checker_quote_removed_source(args[i])
+    if arg == "-S" || arg == "--split-string" {
+      if i + 1 < args.length() {
+        let split = checker_split_string_args_with_tail(
+          checker_split_shell_words(checker_quote_removed_source(args[i + 1])),
+          args,
+          i + 2,
+        )
+        let shell = checker_env_shell_from_args(split, 0)
+        if shell != "" {
+          return shell
+        }
+        i += 2
+        continue
+      }
+      i += 1
+      continue
+    }
+    if arg.has_prefix("--split-string=") {
+      let head = arg.view(start_offset="--split-string=".length()).to_string()
+      let split = if head != "" {
+        checker_split_string_args_with_tail(
+          checker_split_shell_words(head),
+          args,
+          i + 1,
+        )
+      } else if i + 1 < args.length() {
+        checker_split_string_args_with_tail(
+          checker_split_shell_words(checker_quote_removed_source(args[i + 1])),
+          args,
+          i + 2,
+        )
+      } else {
+        []
+      }
+      if split.length() > 0 {
+        let shell = checker_env_shell_from_args(split, 0)
+        if shell != "" {
+          return shell
+        }
+        if head == "" {
+          i += 2
+          continue
+        }
+      }
+      i += 1
+      continue
+    }
+    if arg.has_prefix("-") || arg.contains("=") {
+      i += 1
+      continue
+    }
+    return checker_basename(arg)
+  }
+  ""
+}
+
+///|
+fn checker_split_string_args_with_tail(
+  split : Array[String],
+  args : Array[String],
+  tail_start : Int,
+) -> Array[String] {
+  let combined : Array[String] = []
+  for part in split {
+    combined.push(part)
+  }
+  let mut i = tail_start
+  while i < args.length() {
+    combined.push(args[i])
+    i += 1
+  }
+  combined
+}
+
+///|
+fn checker_split_shell_words(text : String) -> Array[String] {
+  let values : Array[String] = []
+  let current = StringBuilder::new()
+  let view = text[:]
+  let mut i = 0
+  let mut quote : UInt16? = None
+  while i < view.length() {
+    let ch = view[i]
+    match quote {
+      Some(current_quote) => {
+        current.write_char(ch.unsafe_to_char())
+        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+          i += 1
+          current.write_char(view[i].unsafe_to_char())
+        } else if ch == current_quote {
+          quote = None
+        }
+      }
+      None =>
+        if ch == ' ' || ch == '\t' {
+          let item = current.to_string()
+          if item != "" {
+            values.push(item)
+            current.reset()
+          }
+        } else {
+          current.write_char(ch.unsafe_to_char())
+          if ch == '\\' && i + 1 < view.length() {
+            i += 1
+            current.write_char(view[i].unsafe_to_char())
+          } else if ch == '\'' || ch == '"' {
+            quote = Some(ch)
+          }
+        }
+    }
+    i += 1
+  }
+  let tail = current.to_string()
+  if tail != "" {
+    values.push(tail)
+  }
+  values
+}
+
+///|
+fn checker_quote_removed_source(raw : String) -> String {
+  let buf = StringBuilder::new()
+  let view = raw[:]
+  let mut i = 0
+  let mut quote : UInt16? = None
+  while i < view.length() {
+    let ch = view[i]
+    match quote {
+      Some(current) => {
+        if ch == current {
+          quote = None
+          i += 1
+          continue
+        }
+        if current == '"' && ch == '\\' && i + 1 < view.length() {
+          let next = view[i + 1]
+          if next == '$' ||
+            next == '"' ||
+            next == '\\' ||
+            next == '\n' ||
+            next == '\r' {
+            buf.write_char(next.unsafe_to_char())
+            i += 2
+            continue
+          }
+        }
+        buf.write_char(ch.unsafe_to_char())
+        i += 1
+      }
+      None => {
+        if ch == '\'' || ch == '"' {
+          quote = Some(ch)
+          i += 1
+          continue
+        }
+        if ch == '\\' {
+          if i + 1 < view.length() {
+            buf.write_char(view[i + 1].unsafe_to_char())
+            i += 2
+          } else {
+            i += 1
+          }
+          continue
+        }
+        buf.write_char(ch.unsafe_to_char())
+        i += 1
+      }
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn checker_trim_ascii_space(text : String) -> String {
+  let view = text[:]
+  let mut start = 0
+  while start < view.length() &&
+        (
+          view[start] == ' ' ||
+          view[start] == '\t' ||
+          view[start] == '\r' ||
+          view[start] == '\n'
+        ) {
+    start += 1
+  }
+  let mut end_ = view.length()
+  while end_ > start &&
+        (
+          view[end_ - 1] == ' ' ||
+          view[end_ - 1] == '\t' ||
+          view[end_ - 1] == '\r' ||
+          view[end_ - 1] == '\n'
+        ) {
+    end_ -= 1
+  }
+  text.view(start_offset=start, end_offset=end_).to_string()
+}
+
+///|
+fn checker_basename(text : String) -> String {
+  let view = text[:]
+  let mut start = 0
+  let mut i = 0
+  while i < view.length() {
+    if view[i] == '/' {
+      start = i + 1
+    }
+    i += 1
+  }
+  text.view(start_offset=start).to_string()
 }
 
 ///|

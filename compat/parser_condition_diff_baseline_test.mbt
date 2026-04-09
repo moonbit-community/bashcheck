@@ -139,6 +139,32 @@ test "phase 1 parser condition diagnostics align with shellcheck" {
   )
 
   assert_parser_diagnostics_match(
+    "SC1033",
+    (
+      #|[[ foo ]
+      #|
+    ),
+    [
+      shellcheck_error(
+        1033, 1, 8, "Test expression was opened with double [[ but closed with single ]. Make sure they match.",
+      ),
+    ],
+  )
+
+  assert_parser_diagnostics_match(
+    "SC1034",
+    (
+      #|[ foo ]]
+      #|
+    ),
+    [
+      shellcheck_error(
+        1034, 1, 1, "Test expression was opened with single [ but closed with double ]]. Make sure they match.",
+      ),
+    ],
+  )
+
+  assert_parser_diagnostics_match(
     "SC1076",
     (
       #|[ 1 + 2 ]

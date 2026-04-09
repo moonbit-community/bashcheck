@@ -1470,7 +1470,7 @@ test "compat regression keeps command negatives quiet" {
     "commands-negatives",
     (
       #|#!/bin/bash
-      #|# shellcheck disable=SC2034
+      #|# shellcheck disable=SC2034,SC2086
       #|command time -f '%E' sleep 1
       #|find . -type f
       #|find * -name '*.php'

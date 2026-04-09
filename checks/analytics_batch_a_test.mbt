@@ -127,6 +127,33 @@ test "analytics batch a flags pure unquoted parameter words with shellcheck-styl
 }
 
 ///|
+test "analytics batch a flags mixed unquoted parameter words with shellcheck-style fixes" {
+  let source =
+    #|#!/bin/bash
+    #|# shellcheck disable=SC2154
+    #|echo x$foo
+    #|
+  let diagnostics = check_source(source)
+
+  assert_eq(count_code(diagnostics, 2086), 1)
+  match first_code(diagnostics, 2086).fix {
+    Some(fix) =>
+      assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|#!/bin/bash
+            #|# shellcheck disable=SC2154
+            #|echo x"$foo"
+            #|
+          ),
+        ),
+      )
+    None => checks_fail("expected SC2086 fix")
+  }
+}
+
+///|
 test "analytics batch a ignores case words for unquoted parameter expansion" {
   let diagnostics = check_source(
     (

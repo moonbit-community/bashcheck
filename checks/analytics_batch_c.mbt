@@ -24,10 +24,22 @@ fn analytics_batch_c_descriptions() -> Array[CheckDescription] {
       summary: "Quote ssh heredoc delimiters when the body expands locally.",
     },
     {
+      code: 2181,
+      severity: CheckSeverity::Style,
+      category: "analytics",
+      summary: "Check command success directly instead of reading $?.",
+    },
+    {
       code: 2218,
       severity: CheckSeverity::Error,
       category: "analytics",
       summary: "Functions should be defined before they are invoked.",
+    },
+    {
+      code: 2247,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "Flip leading $ and \" if this should be a quoted substitution.",
     },
     {
       code: 2319,
@@ -52,6 +64,8 @@ fn run_analytics_batch_c_checks(
 ) -> Unit {
   check_echo_wc(script, diagnostics)
   check_ssh_here_doc(script, diagnostics)
+  check_exit_code_tests(script, diagnostics)
+  check_dollar_quote_paren(script, diagnostics)
   let cfg = @cfg.build_cfg(
     script,
     @cfg.CfgParameters::new(
@@ -110,6 +124,246 @@ fn check_ssh_here_doc(
       }
     }
   })
+}
+
+///|
+fn check_exit_code_tests(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let first_function_commands = collect_first_function_command_spans(script)
+  visit_script_commands(script, fn(command) {
+    if first_function_commands.any(fn(span) { span == command.span }) {
+      return
+    }
+    match command.kind {
+      @parser.CommandKind::Condition(condition) =>
+        visit_exit_code_condition_expr(condition.expr, diagnostics)
+      _ => ()
+    }
+  })
+}
+
+///|
+fn visit_exit_code_condition_expr(
+  expr : @parser.ConditionExpr,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match expr {
+    @parser.ConditionExpr::Binary(op, lhs, rhs) =>
+      match exit_code_test_diagnostic(op, lhs, rhs) {
+        Some((span, message)) =>
+          push_diagnostic(
+            diagnostics,
+            span,
+            CheckSeverity::Style,
+            2181,
+            message,
+          )
+        None => ()
+      }
+    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+      visit_exit_code_condition_expr(inner, diagnostics)
+    @parser.ConditionExpr::And(lhs, rhs)
+    | @parser.ConditionExpr::Or(lhs, rhs) => {
+      visit_exit_code_condition_expr(lhs, diagnostics)
+      visit_exit_code_condition_expr(rhs, diagnostics)
+    }
+    @parser.ConditionExpr::Empty
+    | @parser.ConditionExpr::Word(_)
+    | @parser.ConditionExpr::Unary(_, _) => ()
+  }
+}
+
+///|
+fn exit_code_test_diagnostic(
+  op : String,
+  lhs : @parser.Word,
+  rhs : @parser.Word,
+) -> (@parser.Span, String)? {
+  if word_is_zero_literal(rhs) && word_is_exit_code(lhs) {
+    return Some(
+      (lhs.span, exit_code_test_message(exit_code_test_checks_success_lhs(op))),
+    )
+  }
+  if word_is_zero_literal(lhs) && word_is_exit_code(rhs) {
+    return Some(
+      (rhs.span, exit_code_test_message(exit_code_test_checks_success_rhs(op))),
+    )
+  }
+  None
+}
+
+///|
+fn exit_code_test_checks_success_lhs(op : String) -> Bool {
+  op != "-gt" && op != "-ne" && op != "!=" && op != "!"
+}
+
+///|
+fn exit_code_test_checks_success_rhs(op : String) -> Bool {
+  op != "-ne" && op != "!="
+}
+
+///|
+fn exit_code_test_message(for_success : Bool) -> String {
+  "Check exit code directly with e.g. 'if " +
+  (if for_success { "" } else { "! " }) +
+  "mycmd;', not indirectly with $?."
+}
+
+///|
+fn word_is_zero_literal(word : @parser.Word) -> Bool {
+  @semantics.literal_text(word) == Some("0")
+}
+
+///|
+fn word_is_exit_code(word : @parser.Word) -> Bool {
+  @semantics.literal_text(word) == Some("?")
+}
+
+///|
+fn collect_first_function_command_spans(
+  script : @parser.Script,
+) -> Array[@parser.Span] {
+  let spans : Array[@parser.Span] = []
+  visit_script_commands(script, fn(command) {
+    match command.kind {
+      @parser.CommandKind::Function(function_) =>
+        match first_executable_command(function_.body) {
+          Some(first) => spans.push(first.span)
+          None => ()
+        }
+      _ => ()
+    }
+  })
+  spans
+}
+
+///|
+fn first_executable_command(command : @parser.Command) -> @parser.Command? {
+  match command.kind {
+    @parser.CommandKind::Time(clause) =>
+      first_executable_command_in_pipeline(clause.body)
+    @parser.CommandKind::Subshell(script)
+    | @parser.CommandKind::BraceGroup(script)
+    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+      first_executable_command_in_script(script)
+    @parser.CommandKind::If(clause) =>
+      match clause.arms.get(0) {
+        Some(arm) => first_executable_command_in_script(arm.condition)
+        None => Some(command)
+      }
+    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+      first_executable_command_in_script(clause.condition)
+    @parser.CommandKind::ForIn(clause) =>
+      first_executable_command_in_script(clause.body)
+    @parser.CommandKind::ForArithmetic(clause) =>
+      first_executable_command_in_script(clause.body)
+    @parser.CommandKind::Select(clause) =>
+      first_executable_command_in_script(clause.body)
+    @parser.CommandKind::Case(clause) =>
+      match clause.items.get(0) {
+        Some(item) => first_executable_command_in_script(item.body)
+        None => Some(command)
+      }
+    @parser.CommandKind::CoProc(clause) => first_executable_command(clause.body)
+    @parser.CommandKind::Function(function_) =>
+      first_executable_command(function_.body)
+    @parser.CommandKind::Simple(_)
+    | @parser.CommandKind::Source(_)
+    | @parser.CommandKind::Condition(_)
+    | @parser.CommandKind::Arithmetic(_) => Some(command)
+  }
+}
+
+///|
+fn first_executable_command_in_script(
+  script : @parser.Script,
+) -> @parser.Command? {
+  for item in script.items {
+    match first_executable_command_in_and_or(item.and_or) {
+      Some(command) => return Some(command)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn first_executable_command_in_and_or(
+  list : @parser.AndOrList,
+) -> @parser.Command? {
+  match first_executable_command_in_pipeline(list.head) {
+    Some(command) => return Some(command)
+    None => ()
+  }
+  for pair in list.tail {
+    let (_, pipeline) = pair
+    match first_executable_command_in_pipeline(pipeline) {
+      Some(command) => return Some(command)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn first_executable_command_in_pipeline(
+  pipeline : @parser.Pipeline,
+) -> @parser.Command? {
+  for segment in pipeline.segments {
+    match first_executable_command(segment.command) {
+      Some(command) => return Some(command)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn check_dollar_quote_paren(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    visit_direct_words_in_command(command, fn(word, _) {
+      if !word_starts_with_dollar_quote_paren(word) {
+        return
+      }
+      push_diagnostic_with_fix(
+        diagnostics,
+        word.span,
+        CheckSeverity::Warning,
+        2247,
+        "Flip leading $ and \" if this should be a quoted substitution.",
+        @fixer.Fix::from_replacements([
+          @fixer.Replacement::new(
+            "",
+            word.span.start,
+            span_prefix(word.span, 2).end,
+            "\"$",
+            7,
+            @fixer.InsertionPoint::after(),
+          ),
+        ]),
+      )
+    })
+  })
+}
+
+///|
+fn word_starts_with_dollar_quote_paren(word : @parser.Word) -> Bool {
+  match word.parts {
+    [@parser.WordPart::DollarDoubleQuoted(parts)] =>
+      match parts.get(0) {
+        Some(@parser.WordPart::Literal(text)) => {
+          let view = text[:]
+          view.length() > 0 && (view[0] == '(' || view[0] == '{')
+        }
+        _ => false
+      }
+    _ => false
+  }
 }
 
 ///|

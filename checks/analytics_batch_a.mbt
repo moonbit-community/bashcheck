@@ -588,7 +588,7 @@ fn check_unquoted_parameter_expansions(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let quote_safe_word_spans = analytics_collect_quote_safe_word_spans(
+  let quote_safe_target_spans = analytics_collect_quote_safe_word_spans(
     script, shell,
   )
   visit_script_commands(script, fn(command) {
@@ -596,20 +596,22 @@ fn check_unquoted_parameter_expansions(
       if !analytics_word_place_checks_2086(place) {
         return
       }
-      if quote_safe_word_spans.any(fn(span) { span == word.span }) {
+      if analytics_declaration_argument_skips_2086(command, word, place) {
         return
       }
-      if !analytics_word_needs_2086(word) {
-        return
+      for target in analytics_quote_targets_2086(word) {
+        if quote_safe_target_spans.any(fn(span) { span == target.span }) {
+          continue
+        }
+        push_diagnostic_with_fix(
+          diagnostics,
+          target.span,
+          CheckSeverity::Info,
+          2086,
+          "Double quote to prevent globbing and word splitting.",
+          analytics_quote_span_fix(target.span),
+        )
       }
-      push_diagnostic_with_fix(
-        diagnostics,
-        word.span,
-        CheckSeverity::Info,
-        2086,
-        "Double quote to prevent globbing and word splitting.",
-        analytics_quote_word_fix(word),
-      )
     })
   })
 }
@@ -631,13 +633,11 @@ fn analytics_collect_quote_safe_word_spans(
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
       Some(@semantics.NodeRef::Word(word)) =>
-        match word_unquoted_single_variable_name(word) {
-          Some(name) =>
-            if quote_safe_word_context_allows(cfg, id, word) &&
-              variable_state_is_quote_safe(analysis, id, name) {
-              spans.push(word.span)
-            }
-          None => ()
+        for target in analytics_quote_safe_targets(word) {
+          if quote_safe_word_context_allows(cfg, id, word) &&
+            variable_state_is_quote_safe(analysis, id, target.name) {
+            spans.push(target.span)
+          }
         }
       _ => ()
     }
@@ -654,30 +654,129 @@ fn analytics_word_place_checks_2086(place : WordPlace) -> Bool {
 }
 
 ///|
-fn analytics_word_needs_2086(word : @parser.Word) -> Bool {
-  if word.parts.length() == 0 {
-    return false
+fn analytics_declaration_argument_skips_2086(
+  command : @parser.Command,
+  word : @parser.Word,
+  place : WordPlace,
+) -> Bool {
+  guard place == WordPlace::CommandArgument else { return false }
+  let command_name = match @semantics.effective_command_name(command) {
+    Some(name) => name
+    None => return false
   }
-  let mut warned = false
+  @semantics.is_declaring_command(command_name) &&
+  analytics_declared_name(word) is Some(_)
+}
+
+///|
+priv struct Analytics2086Target {
+  span : @parser.Span
+}
+
+///|
+priv struct AnalyticsQuoteSafeTarget {
+  span : @parser.Span
+  name : String
+}
+
+///|
+fn analytics_quote_targets_2086(
+  word : @parser.Word,
+) -> Array[Analytics2086Target] {
+  let targets : Array[Analytics2086Target] = []
+  let mut offset = 0
   for part in word.parts {
-    match part {
-      @parser.WordPart::Parameter(_) => warned = true
-      @parser.WordPart::SpecialParameter(name) =>
-        if analytics_special_parameter_needs_2086(name) {
-          warned = true
-        } else {
-          return false
-        }
-      @parser.WordPart::BracedParameter(expansion) =>
-        if analytics_braced_parameter_needs_2086(expansion) {
-          warned = true
-        } else {
-          return false
-        }
-      _ => return false
+    let remaining = word.source.view(start_offset=offset).to_string()
+    let fragment = analytics_bad_parameter_part_fragment(part, remaining)
+    let fragment_offset = match analytics_string_offset(remaining, fragment) {
+      Some(inner) => offset + inner
+      None => offset
     }
+    let remaining_width = word.source.length() - fragment_offset
+    let fragment_width = if fragment.length() <= remaining_width {
+      fragment.length()
+    } else {
+      remaining_width
+    }
+    if analytics_part_needs_2086(part) {
+      targets.push({
+        span: analytics_span_offset(word.span, fragment_offset, fragment_width),
+      })
+    }
+    offset = fragment_offset + fragment_width
   }
-  warned
+  targets
+}
+
+///|
+fn analytics_quote_safe_targets(
+  word : @parser.Word,
+) -> Array[AnalyticsQuoteSafeTarget] {
+  let targets : Array[AnalyticsQuoteSafeTarget] = []
+  let mut offset = 0
+  for part in word.parts {
+    let remaining = word.source.view(start_offset=offset).to_string()
+    let fragment = analytics_bad_parameter_part_fragment(part, remaining)
+    let fragment_offset = match analytics_string_offset(remaining, fragment) {
+      Some(inner) => offset + inner
+      None => offset
+    }
+    let remaining_width = word.source.length() - fragment_offset
+    let fragment_width = if fragment.length() <= remaining_width {
+      fragment.length()
+    } else {
+      remaining_width
+    }
+    match analytics_quote_safe_part_name(part) {
+      Some(name) =>
+        targets.push({
+          span: analytics_span_offset(
+            word.span,
+            fragment_offset,
+            fragment_width,
+          ),
+          name,
+        })
+      None => ()
+    }
+    offset = fragment_offset + fragment_width
+  }
+  targets
+}
+
+///|
+fn analytics_quote_safe_part_name(part : @parser.WordPart) -> String? {
+  match part {
+    @parser.WordPart::Parameter(name) =>
+      if is_identifier_name(name) {
+        Some(name)
+      } else {
+        None
+      }
+    @parser.WordPart::BracedParameter(
+      {
+        length_prefix: false,
+        indirect: false,
+        name: Some(name),
+        index: None,
+        operator: None,
+        ..,
+      }
+    ) => if is_identifier_name(name) { Some(name) } else { None }
+    _ => None
+  }
+}
+
+///|
+fn analytics_part_needs_2086(part : @parser.WordPart) -> Bool {
+  match part {
+    @parser.WordPart::Parameter(_) => true
+    @parser.WordPart::SpecialParameter(name) =>
+      analytics_special_parameter_needs_2086(name)
+    @parser.WordPart::BracedParameter(expansion) =>
+      analytics_braced_parameter_needs_2086(expansion)
+    _ => false
+  }
 }
 
 ///|
@@ -705,20 +804,20 @@ fn analytics_braced_parameter_needs_2086(
 }
 
 ///|
-fn analytics_quote_word_fix(word : @parser.Word) -> @fixer.Fix {
+fn analytics_quote_span_fix(span : @parser.Span) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
       "",
-      word.span.start,
-      word.span.start,
+      span.start,
+      span.start,
       "\"",
       7,
       @fixer.InsertionPoint::after(),
     ),
     @fixer.Replacement::new(
       "",
-      word.span.end,
-      word.span.end,
+      span.end,
+      span.end,
       "\"",
       7,
       @fixer.InsertionPoint::before(),
