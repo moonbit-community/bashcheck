@@ -30,6 +30,100 @@ fn root_nodes(cfg : CFG) -> Array[CfgNodeId] {
 }
 
 ///|
+fn count_structural_nodes(cfg : CFG) -> Int {
+  let mut count = 0
+  for node in cfg.nodes {
+    if node.kind == CfgNodeKind::Structural {
+      count += 1
+    }
+  }
+  count
+}
+
+///|
+fn valid_node_id(cfg : CFG, id : CfgNodeId) -> Bool {
+  let index = id.to_int()
+  0 <= index && index < cfg.nodes.length() && cfg.nodes[index].id == id
+}
+
+///|
+fn assert_cfg_node_references_valid(cfg : CFG) -> Unit {
+  for i in 0..<cfg.nodes.length() {
+    if cfg.nodes[i].id.to_int() != i {
+      cfg_fail("expected dense node ids")
+    }
+  }
+  for edge in cfg.graph_edges {
+    if !valid_node_id(cfg, edge.from) || !valid_node_id(cfg, edge.to) {
+      cfg_fail("edge references invalid node id")
+    }
+  }
+  for node in cfg.nodes {
+    match node.kind {
+      CfgNodeKind::ExecuteSubshell(_, entry, exit_) =>
+        if !valid_node_id(cfg, entry) || !valid_node_id(cfg, exit_) {
+          cfg_fail("subshell node references invalid node id")
+        }
+      CfgNodeKind::ApplyEffects(effects) =>
+        for tagged in effects {
+          match tagged.effect {
+            CfgEffect::DefineFunction(_, _, entry, exit_) =>
+              if !valid_node_id(cfg, entry) || !valid_node_id(cfg, exit_) {
+                cfg_fail("function effect references invalid node id")
+              }
+            _ => ()
+          }
+        }
+      _ => ()
+    }
+  }
+  for range in cfg.ast_ranges {
+    match range {
+      Some((start, end_)) =>
+        if !valid_node_id(cfg, start) || !valid_node_id(cfg, end_) {
+          cfg_fail("ast range references invalid node id")
+        }
+      None => ()
+    }
+  }
+  for values in cfg.ast_nodes {
+    for node in values {
+      if !valid_node_id(cfg, node) {
+        cfg_fail("ast nodes reference invalid node id")
+      }
+    }
+  }
+}
+
+///|
+fn assert_same_nodes(lhs : CFG, rhs : CFG) -> Unit {
+  if lhs.nodes != rhs.nodes {
+    cfg_fail("expected normalized nodes to match build_cfg output")
+  }
+}
+
+///|
+fn assert_same_edges(lhs : CFG, rhs : CFG) -> Unit {
+  if lhs.graph_edges != rhs.graph_edges {
+    cfg_fail("expected normalized edges to match build_cfg output")
+  }
+}
+
+///|
+fn assert_same_ast_ranges(lhs : CFG, rhs : CFG) -> Unit {
+  if lhs.ast_ranges != rhs.ast_ranges {
+    cfg_fail("expected normalized ast ranges to match build_cfg output")
+  }
+}
+
+///|
+fn assert_same_ast_nodes(lhs : CFG, rhs : CFG) -> Unit {
+  if lhs.ast_nodes != rhs.ast_nodes {
+    cfg_fail("expected normalized ast nodes to match build_cfg output")
+  }
+}
+
+///|
 fn count_execute_subshells(cfg : CFG) -> Int {
   let mut count = 0
   for id in root_nodes(cfg) {
@@ -226,6 +320,28 @@ fn incoming_edge_count(
     }
   }
   count
+}
+
+///|
+test "cfg normalization collapses structural chains without breaking references" {
+  let script = parse_cfg_ok(
+    (
+      #|f() { return; }
+      #|f
+      #|
+    ),
+  )
+  let raw = build_cfg_unoptimized(script, CfgParameters::new(false, false))
+  let normalized = normalize_cfg(raw)
+  let built = build_cfg(script, CfgParameters::new(false, false))
+
+  assert_true(normalized.nodes.length() < raw.nodes.length())
+  assert_true(count_structural_nodes(normalized) < count_structural_nodes(raw))
+  assert_cfg_node_references_valid(normalized)
+  assert_same_nodes(built, normalized)
+  assert_same_edges(built, normalized)
+  assert_same_ast_ranges(built, normalized)
+  assert_same_ast_nodes(built, normalized)
 }
 
 ///|

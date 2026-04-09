@@ -84,7 +84,8 @@ fn merge_parse_and_lint_diagnostics(
       diagnostics.push(diagnostic)
     }
   }
-  let script = match report.script {
+  let base_script = report.script
+  let script = match base_script {
     // Config annotations become part of the script before later filters inspect
     // per-node disable directives.
     Some(script) => Some(apply_config_to_script(script, config.annotations))
@@ -92,12 +93,16 @@ fn merge_parse_and_lint_diagnostics(
   }
   for diagnostic in report.diagnostics {
     let positioned = positioned_parse_diagnostic(filename, diagnostic)
-    if diagnostic_is_included(script, spec, positioned) {
+    if parse_diagnostic_allowed_by_spec(spec, positioned) &&
+      diagnostic_is_included(script, spec, positioned) {
       diagnostics.push(positioned)
     }
   }
-  match script {
-    Some(script) => {
+  match (base_script, script) {
+    (Some(base_script), Some(script)) => {
+      if parse_report_has_code(report, 1071) {
+        return sort_diagnostics(diagnostics)
+      }
       // Shell selection depends on the parsed script plus caller overrides.
       let shell = @semantics.determine_shell_with_fallback(
         script,
@@ -125,7 +130,12 @@ fn merge_parse_and_lint_diagnostics(
       let lint = @checks.run_checks_with_shell(
         script,
         shell,
-        effective_extended_analysis(spec, script, optional_checks),
+        effective_extended_analysis(
+          spec,
+          base_script,
+          config.annotations,
+          optional_checks,
+        ),
         optional_checks,
       )
       for diagnostic in lint {
@@ -135,9 +145,33 @@ fn merge_parse_and_lint_diagnostics(
         }
       }
     }
-    None => ()
+    _ => ()
   }
   sort_diagnostics(diagnostics)
+}
+
+///|
+fn parse_report_has_code(report : @parser.ParseReport, code : Int) -> Bool {
+  for diagnostic in report.diagnostics {
+    if diagnostic.code == Some(code) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Applies checker-level parse-diagnostic suppressions that depend on the spec.
+fn parse_diagnostic_allowed_by_spec(
+  spec : CheckSpec,
+  diagnostic : PositionedDiagnostic,
+) -> Bool {
+  match diagnostic.code {
+    // Upstream ShellCheck treats an explicit shell override as authoritative and
+    // suppresses the shebang-shell mismatch/unknown-shell parse diagnostic.
+    Some(1071) => spec.shell_override is None
+    _ => true
+  }
 }
 
 ///|
@@ -148,6 +182,7 @@ fn merge_parse_and_lint_diagnostics(
 fn effective_extended_analysis(
   spec : CheckSpec,
   script : @parser.Script,
+  config_annotations : Array[@parser.Annotation],
   optional_checks : Array[String],
 ) -> Bool {
   let enabled = if spec.extended_analysis_forced {
@@ -155,10 +190,28 @@ fn effective_extended_analysis(
   } else {
     match script_extended_analysis_override(script) {
       Some(flag) => flag
-      None => spec.extended_analysis
+      None =>
+        match config_extended_analysis_override(config_annotations) {
+          Some(flag) => flag
+          None => spec.extended_analysis
+        }
     }
   }
   enabled || optional_checks.contains("control-flow")
+}
+
+///|
+fn config_extended_analysis_override(
+  annotations : Array[@parser.Annotation],
+) -> Bool? {
+  let mut flag_override : Bool? = None
+  for annotation in annotations {
+    match annotation {
+      @parser.Annotation::ExtendedAnalysis(flag) => flag_override = Some(flag)
+      _ => ()
+    }
+  }
+  flag_override
 }
 
 ///|

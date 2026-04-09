@@ -98,6 +98,81 @@ fn expect_literal(
 }
 
 ///|
+fn assert_same_program_state(
+  label : String,
+  lhs : ProgramState?,
+  rhs : ProgramState?,
+) -> Unit {
+  if lhs != rhs {
+    dataflow_fail(label)
+  }
+}
+
+///|
+test "dataflow is stable across cfg normalization" {
+  let script = parse_dataflow_ok(
+    (
+      #|f() { x=inner; return; }
+      #|x=outer
+      #|f
+      #|echo "$x"
+      #|
+    ),
+  )
+  let raw = build_cfg_unoptimized(script, CfgParameters::new(false, false))
+  let normalized = build_cfg(script, CfgParameters::new(false, false))
+  let raw_analysis = analyze_control_flow(raw)
+  let normalized_analysis = analyze_control_flow(normalized)
+
+  for ast_id in ast_ids(raw) {
+    assert_same_program_state(
+      "incoming ast state changed after normalization",
+      incoming_state_of_ast(raw_analysis, ast_id),
+      incoming_state_of_ast(normalized_analysis, ast_id),
+    )
+    assert_same_program_state(
+      "outgoing ast state changed after normalization",
+      outgoing_state_of_ast(raw_analysis, ast_id),
+      outgoing_state_of_ast(normalized_analysis, ast_id),
+    )
+  }
+}
+
+///|
+test "dataflow preserves case-arm reachability across cfg normalization" {
+  let script = parse_dataflow_ok(
+    (
+      #|#!/bin/bash
+      #|cat foo | grep bar
+      #|case $1 in a) true ;; esac
+      #|
+    ),
+  )
+  let raw = build_cfg_unoptimized(script, CfgParameters::new(false, false))
+  let normalized = build_cfg(script, CfgParameters::new(false, false))
+  let raw_analysis = analyze_control_flow(raw)
+  let normalized_analysis = analyze_control_flow(normalized)
+  let raw_true = nth_command_ast_id(raw, "true", 0)
+  let normalized_true = nth_command_ast_id(normalized, "true", 0)
+
+  assert_true(command_is_reachable(raw_analysis, raw_true))
+  assert_eq(
+    command_is_reachable(raw_analysis, raw_true),
+    command_is_reachable(normalized_analysis, normalized_true),
+  )
+  assert_same_program_state(
+    "case-arm incoming state changed after normalization",
+    incoming_state_of_ast(raw_analysis, raw_true),
+    incoming_state_of_ast(normalized_analysis, normalized_true),
+  )
+  assert_same_program_state(
+    "case-arm outgoing state changed after normalization",
+    outgoing_state_of_ast(raw_analysis, raw_true),
+    outgoing_state_of_ast(normalized_analysis, normalized_true),
+  )
+}
+
+///|
 test "dataflow tracks builtin-driven variable properties and kinds" {
   let (cfg, analysis) = build_analysis_ok(
     (

@@ -225,6 +225,244 @@ pub fn build_cfg(script : @parser.Script, params : CfgParameters) -> CFG {
 }
 
 ///|
+#warnings("-unused_value")
+fn build_cfg_unoptimized(
+  script : @parser.Script,
+  params : CfgParameters,
+) -> CFG {
+  let collector = AstCollector::new()
+  let root = collector.copy_script(script, None)
+  let builder = GraphBuilder::new(root, collector.entries, params)
+  builder.build_raw()
+}
+
+///|
+fn finalize_cfg(cfg : CFG) -> CFG {
+  let normalized = normalize_cfg(cfg)
+  let post_dominators = compute_post_dominators_inner(normalized)
+  {
+    root: normalized.root,
+    ast_entries: normalized.ast_entries,
+    ast_ranges: normalized.ast_ranges,
+    ast_nodes: normalized.ast_nodes,
+    nodes: normalized.nodes,
+    graph_edges: normalized.graph_edges,
+    post_dominators,
+    main_exit: normalized.main_exit,
+  }
+}
+
+///|
+fn normalize_cfg(cfg : CFG) -> CFG {
+  let count = cfg.nodes.length()
+  if count == 0 {
+    return cfg
+  }
+  let flow_in = init_int_grid(count, 0)
+  let flow_out = init_int_grid(count, 0)
+  for edge in cfg.graph_edges {
+    if edge.kind == CfgEdgeKind::Flow {
+      flow_out[edge.from.to_int()] += 1
+      flow_in[edge.to.to_int()] += 1
+    }
+  }
+  let structural_candidates = init_bool_grid(count, false)
+  for node in cfg.nodes {
+    let index = node.id.to_int()
+    structural_candidates[index] = node.kind == CfgNodeKind::Structural &&
+      flow_in[index] == 1 &&
+      flow_out[index] == 1
+  }
+  let direct_remap = init_int_grid(count, 0)
+  for i in 0..<count {
+    direct_remap[i] = i
+  }
+  for edge in cfg.graph_edges {
+    let from = edge.from.to_int()
+    let to = edge.to.to_int()
+    if edge.kind == CfgEdgeKind::Flow &&
+      structural_candidates[from] &&
+      structural_candidates[to] {
+      union_remap(direct_remap, from, to)
+    }
+  }
+  let old_to_rep : Array[CfgNodeId] = []
+  for i in 0..<count {
+    old_to_rep.push(cfg_node_id(resolve_remap(direct_remap, i)))
+  }
+  let kept_old_ids : Array[CfgNodeId] = []
+  for i in 0..<count {
+    if old_to_rep[i] == cfg_node_id(i) {
+      kept_old_ids.push(cfg_node_id(i))
+    }
+  }
+  let kept_index = init_int_grid(count, -1)
+  for i in 0..<kept_old_ids.length() {
+    kept_index[kept_old_ids[i].to_int()] = i
+  }
+  let old_to_new : Array[CfgNodeId] = []
+  for i in 0..<count {
+    let rep = old_to_rep[i].to_int()
+    old_to_new.push(cfg_node_id(kept_index[rep]))
+  }
+  let nodes : Array[CfgNode] = []
+  for old_id in kept_old_ids {
+    let new_id = old_to_new[old_id.to_int()]
+    let node = cfg.nodes[old_id.to_int()]
+    nodes.push({ id: new_id, kind: remap_node_kind(node.kind, old_to_new) })
+  }
+  let graph_edges : Array[CfgEdge] = []
+  for edge in cfg.graph_edges {
+    let from = edge.from.to_int()
+    let to = edge.to.to_int()
+    let remapped_from = old_to_new[from]
+    let remapped_to = old_to_new[to]
+    if edge.kind == CfgEdgeKind::Flow && remapped_from == remapped_to {
+      continue
+    }
+    append_unique_cfg_edge(graph_edges, {
+      from: remapped_from,
+      to: remapped_to,
+      kind: edge.kind,
+    })
+  }
+  let ast_ranges : Array[(CfgNodeId, CfgNodeId)?] = []
+  for range in cfg.ast_ranges {
+    ast_ranges.push(
+      match range {
+        Some((start, end_)) =>
+          Some((old_to_new[start.to_int()], old_to_new[end_.to_int()]))
+        None => None
+      },
+    )
+  }
+  let ast_nodes : Array[Array[CfgNodeId]] = []
+  for values in cfg.ast_nodes {
+    let remapped : Array[CfgNodeId] = []
+    for node in values {
+      append_unique_node_id(remapped, old_to_new[node.to_int()])
+    }
+    ast_nodes.push(remapped)
+  }
+  {
+    root: cfg.root,
+    ast_entries: copy_ast_entries(cfg.ast_entries),
+    ast_ranges,
+    ast_nodes,
+    nodes,
+    graph_edges,
+    post_dominators: [],
+    main_exit: old_to_new[cfg.main_exit.to_int()],
+  }
+}
+
+///|
+fn resolve_remap(direct_remap : Array[Int], index : Int) -> Int {
+  let next = direct_remap[index]
+  if next == index {
+    index
+  } else {
+    resolve_remap(direct_remap, next)
+  }
+}
+
+///|
+fn union_remap(direct_remap : Array[Int], lhs : Int, rhs : Int) -> Unit {
+  let lhs_root = resolve_remap(direct_remap, lhs)
+  let rhs_root = resolve_remap(direct_remap, rhs)
+  if lhs_root == rhs_root {
+    return
+  }
+  if lhs_root < rhs_root {
+    direct_remap[rhs_root] = lhs_root
+  } else {
+    direct_remap[lhs_root] = rhs_root
+  }
+}
+
+///|
+fn remap_node_kind(
+  kind : CfgNodeKind,
+  old_to_new : Array[CfgNodeId],
+) -> CfgNodeKind {
+  match kind {
+    CfgNodeKind::ApplyEffects(effects) =>
+      CfgNodeKind::ApplyEffects(remap_effects(effects, old_to_new))
+    CfgNodeKind::ExecuteSubshell(reason, entry, exit_) =>
+      CfgNodeKind::ExecuteSubshell(
+        reason,
+        old_to_new[entry.to_int()],
+        old_to_new[exit_.to_int()],
+      )
+    _ => kind
+  }
+}
+
+///|
+fn remap_effects(
+  effects : Array[CfgTaggedEffect],
+  old_to_new : Array[CfgNodeId],
+) -> Array[CfgTaggedEffect] {
+  let remapped : Array[CfgTaggedEffect] = []
+  for tagged in effects {
+    remapped.push({
+      ast_id: tagged.ast_id,
+      effect: remap_effect(tagged.effect, old_to_new),
+    })
+  }
+  remapped
+}
+
+///|
+fn remap_effect(effect : CfgEffect, old_to_new : Array[CfgNodeId]) -> CfgEffect {
+  match effect {
+    CfgEffect::DefineFunction(name, ast_id, entry, exit_) =>
+      CfgEffect::DefineFunction(
+        name,
+        ast_id,
+        old_to_new[entry.to_int()],
+        old_to_new[exit_.to_int()],
+      )
+    _ => effect
+  }
+}
+
+///|
+fn init_int_grid(count : Int, value : Int) -> Array[Int] {
+  let values : Array[Int] = []
+  for _ in 0..<count {
+    values.push(value)
+  }
+  values
+}
+
+///|
+fn init_bool_grid(count : Int, value : Bool) -> Array[Bool] {
+  let values : Array[Bool] = []
+  for _ in 0..<count {
+    values.push(value)
+  }
+  values
+}
+
+///|
+fn append_unique_node_id(values : Array[CfgNodeId], node : CfgNodeId) -> Unit {
+  if !contains_node_id(values, node) {
+    values.push(node)
+  }
+}
+
+///|
+fn append_unique_cfg_edge(values : Array[CfgEdge], edge : CfgEdge) -> Unit {
+  for value in values {
+    if value == edge {
+      return
+    }
+  }
+  values.push(edge)
+}
+
+///|
 fn ast_tag_of(node_ref : @semantics.NodeRef) -> AstTag {
   match node_ref {
     @semantics.NodeRef::Script(_) => AstTag::Script
@@ -400,7 +638,7 @@ fn GraphBuilder::new(
 }
 
 ///|
-fn GraphBuilder::build(self : GraphBuilder) -> CFG {
+fn GraphBuilder::build_raw(self : GraphBuilder) -> CFG {
   self.ast_stack.push(self.root)
   let entry = self.new_node(CfgNodeKind::EntryPoint("MAIN"))
   let implied_exit = self.new_node(CfgNodeKind::ImpliedExit)
@@ -430,17 +668,12 @@ fn GraphBuilder::build(self : GraphBuilder) -> CFG {
     post_dominators: [],
     main_exit,
   }
-  let post_dominators = compute_post_dominators_inner(cfg)
-  {
-    root: cfg.root,
-    ast_entries: cfg.ast_entries,
-    ast_ranges: cfg.ast_ranges,
-    ast_nodes: cfg.ast_nodes,
-    nodes: cfg.nodes,
-    graph_edges: cfg.graph_edges,
-    post_dominators,
-    main_exit: cfg.main_exit,
-  }
+  cfg
+}
+
+///|
+fn GraphBuilder::build(self : GraphBuilder) -> CFG {
+  finalize_cfg(self.build_raw())
 }
 
 ///|

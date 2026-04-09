@@ -67,6 +67,20 @@ fn test_fixes(expected : String, original : String, fixes : Array[Fix]) -> Bool 
 }
 
 ///|
+fn assert_fixer_prop(label : String, value : Bool) -> Unit {
+  if !value {
+    abort("\{label}: expected true")
+  }
+}
+
+///|
+fn assert_fixer_eq(label : String, actual : String, expected : String) -> Unit {
+  if actual != expected {
+    abort("\{label}: expected \{expected}, got \{actual}")
+  }
+}
+
+///|
 fn do_replace(
   start_column : Int,
   end_column : Int,
@@ -101,76 +115,88 @@ fn ordered_pair(lhs : Int, rhs : Int) -> (Int, Int) {
 
 ///|
 test "shellcheck fixer overlap props" {
-  assert_true(
+  assert_fixer_prop(
+    "prop_overlap_contiguous",
     compat_no_overlap(
       t_from_start(10, 12, "foo", 1),
       t_from_start(12, 14, "bar", 2),
     ),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_overlap_adjacent_zerowidth",
     compat_no_overlap(
       t_from_start(3, 3, "foo", 1),
       t_from_start(3, 3, "bar", 2),
     ),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_overlap_enclosed",
     compat_overlap(t_from_start(3, 5, "foo", 1), t_from_start(1, 10, "bar", 2)),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_overlap_partial",
     compat_overlap(t_from_start(1, 5, "foo", 1), t_from_start(3, 7, "bar", 2)),
   )
 }
 
 ///|
 test "shellcheck fixer doReplace props" {
-  assert_eq(do_replace(0, 0, "1234", "A"), "A1234")
-  assert_eq(do_replace(1, 1, "1234", "A"), "A1234")
-  assert_eq(do_replace(1, 2, "1234", "A"), "A234")
-  assert_eq(do_replace(3, 3, "1234", "A"), "12A34")
-  assert_eq(do_replace(4, 4, "1234", "A"), "123A4")
-  assert_eq(do_replace(5, 5, "1234", "A"), "1234A")
+  assert_fixer_eq("prop_doReplace1", do_replace(0, 0, "1234", "A"), "A1234")
+  assert_fixer_eq("prop_doReplace2", do_replace(1, 1, "1234", "A"), "A1234")
+  assert_fixer_eq("prop_doReplace3", do_replace(1, 2, "1234", "A"), "A234")
+  assert_fixer_eq("prop_doReplace4", do_replace(3, 3, "1234", "A"), "12A34")
+  assert_fixer_eq("prop_doReplace5", do_replace(4, 4, "1234", "A"), "123A4")
+  assert_fixer_eq("prop_doReplace6", do_replace(5, 5, "1234", "A"), "1234A")
 }
 
 ///|
 test "shellcheck fixer fixed replacement props" {
-  assert_true(
+  assert_fixer_prop(
+    "prop_simpleFix1",
     test_fixes("hello world", "hell world", [
       test_fix([t_from_end(5, 5, "o", 1)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_anchorsLeft",
     test_fixes("-->foobar<--", "--><--", [
       test_fix([t_from_start(4, 4, "foo", 1), t_from_start(4, 4, "bar", 2)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_anchorsRight",
     test_fixes("-->foobar<--", "--><--", [
       test_fix([t_from_end(4, 4, "bar", 1), t_from_end(4, 4, "foo", 2)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_anchorsBoth1",
     test_fixes("-->foobar<--", "--><--", [
       test_fix([t_from_start(4, 4, "bar", 2), t_from_end(4, 4, "foo", 1)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_anchorsBoth2",
     test_fixes("-->foobar<--", "--><--", [
       test_fix([t_from_end(4, 4, "foo", 2), t_from_start(4, 4, "bar", 1)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_composeFixes1",
     test_fixes("cd \"$1\" || exit", "cd $1", [
       test_fix([t_from_start(4, 4, "\"", 10), t_from_end(6, 6, "\"", 10)]),
       test_fix([t_from_end(6, 6, " || exit", 5)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_composeFixes2",
     test_fixes("$(\"$1\")", "`$1`", [
       test_fix([t_from_start(1, 2, "$(", 5), t_from_end(4, 5, ")", 5)]),
       test_fix([t_from_start(2, 2, "\"", 10), t_from_end(4, 4, "\"", 10)]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_composeFixes3",
     test_fixes("(x)[x]", "xx", [
       test_fix([
         t_from_start(1, 1, "(", 4),
@@ -180,7 +206,8 @@ test "shellcheck fixer fixed replacement props" {
       ]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_composeFixes4",
     test_fixes("(x)[x]", "xx", [
       test_fix([
         t_from_start(1, 1, "(", 4),
@@ -190,7 +217,8 @@ test "shellcheck fixer fixed replacement props" {
       ]),
     ]),
   )
-  assert_true(
+  assert_fixer_prop(
+    "prop_composeFixes5",
     test_fixes("\"$(x)\"", "`x`", [
       test_fix([
         t_from_start(1, 2, "$(", 2),
