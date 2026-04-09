@@ -3470,6 +3470,23 @@ fn Parser::condition_starts_closing(
 }
 
 ///|
+fn Parser::condition_closing_delimiter(
+  self : Parser,
+  double_bracket : Bool,
+  regex_rhs_expected : Bool,
+  group_depth : Int,
+) -> String? {
+  if self.starts_with("]]") {
+    return Some("]]")
+  }
+  if self.peek() == Some(']') &&
+    (!double_bracket || (!regex_rhs_expected && group_depth == 0)) {
+    return Some("]")
+  }
+  None
+}
+
+///|
 fn Parser::condition_regex_has_boundary_after_space(
   self : Parser,
   double_bracket : Bool,
@@ -3628,13 +3645,33 @@ fn Parser::read_condition_tokens(
   self : Parser,
   double_bracket : Bool,
   context : String,
-) -> (String, Array[ConditionToken], Position) raise ParseError {
+) -> (String, Array[ConditionToken], String, Position) raise ParseError {
   let start_offset = self.offset
   let tokens : Array[ConditionToken] = []
   let mut regex_rhs_expected = false
   let mut group_depth = 0
   self.skip_condition_space(double_bracket)
-  while !self.condition_starts_closing(double_bracket) {
+  while true {
+    match
+      self.condition_closing_delimiter(
+        double_bracket, regex_rhs_expected, group_depth,
+      ) {
+      Some(closing) =>
+        if group_depth > 0 {
+          raise ParseError::Message(
+            pos=self.position(),
+            message="missing ')' in condition expression",
+          )
+        } else {
+          return (
+            trim_ascii_space(self.current_slice(start_offset)),
+            tokens,
+            closing,
+            self.position(),
+          )
+        }
+      None => ()
+    }
     if self.eof() {
       raise self.unexpected_end(context)
     }
@@ -3822,13 +3859,7 @@ fn Parser::read_condition_tokens(
     }
     self.skip_condition_space(double_bracket)
   }
-  if group_depth > 0 {
-    raise ParseError::Message(
-      pos=self.position(),
-      message="missing ')' in condition expression",
-    )
-  }
-  (trim_ascii_space(self.current_slice(start_offset)), tokens, self.position())
+  raise self.unexpected_end(context)
 }
 
 ///|
@@ -4332,7 +4363,7 @@ fn Parser::parse_condition_command(
   let start = self.position()
   self.advance_n(opening.length())
   let fallback = self.position()
-  let (raw, tokens, closing_pos) = self.read_condition_tokens(
+  let (raw, tokens, actual_closing, closing_pos) = self.read_condition_tokens(
     double_bracket, context,
   ) catch {
     err => {
@@ -4340,13 +4371,31 @@ fn Parser::parse_condition_command(
       raise err
     }
   }
-  self.advance_n(closing.length())
+  self.advance_n(actual_closing.length())
   let (expr, next_index) = parse_condition_expression_from_tokens(
     tokens, kind, closing_pos,
   ) catch {
     err => {
       self.rethrow_condition_parse_error(start, err)
       raise err
+    }
+  }
+  if actual_closing != closing {
+    match kind {
+      ConditionKind::DoubleBracket =>
+        self.emit_diagnostic(
+          DiagnosticSeverity::Error,
+          closing_pos,
+          "Test expression was opened with double [[ but closed with single ]. Make sure they match.",
+          Some(1033),
+        )
+      ConditionKind::SingleBracket =>
+        self.emit_diagnostic(
+          DiagnosticSeverity::Error,
+          start,
+          "Test expression was opened with single [ but closed with double ]]. Make sure they match.",
+          Some(1034),
+        )
     }
   }
   if next_index != tokens.length() {

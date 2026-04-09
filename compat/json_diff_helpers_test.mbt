@@ -51,24 +51,6 @@ async fn assert_shellcheck_json_matches(
 }
 
 ///|
-async fn assert_shellcheck_json_differs(
-  label : String,
-  source : String,
-  spec? : @checker.CheckSpec = shellcheck_diff_spec(),
-) -> Unit {
-  let (shellcheck_output, bashcheck_output) = run_shellcheck_json_pair(
-    label, source, spec,
-  )
-  let expected = normalize_json_diff_diagnostics(shellcheck_output)
-  let actual = normalize_json_diff_diagnostics(bashcheck_output)
-  if actual == expected {
-    abort(
-      "\{label}: expected a known shellcheck diff, but both tools produced \{@debug.to_string(actual)}",
-    )
-  }
-}
-
-///|
 async fn run_shellcheck_json_pair(
   label : String,
   source : String,

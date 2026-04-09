@@ -165,6 +165,38 @@ test "checker shell precedence keeps stronger entry signals above filename hints
 }
 
 ///|
+test "checker emits shebang entry diagnostics and respects shell overrides" {
+  let ash = check_script(
+    (
+      #|#!bin/ash
+      #|true
+      #|
+    ),
+  )
+  let directory = check_script(
+    (
+      #|#!/bin/sh/
+      #|true
+      #|
+    ),
+  )
+  let overridden = check_script(
+    (
+      #|#!bin/ash
+      #|# shellcheck shell=dash
+      #|true
+      #|
+    ),
+  )
+
+  assert_true(checker_has_code(ash.diagnostics, 2187))
+  assert_true(checker_has_code(ash.diagnostics, 2239))
+  assert_true(checker_has_code(directory.diagnostics, 2246))
+  assert_true(!checker_has_code(overridden.diagnostics, 2187))
+  assert_true(!checker_has_code(overridden.diagnostics, 2239))
+}
+
+///|
 test "checker advertises shellcheck-compatible optional checks without exposing control-flow" {
   assert_true(!supported_optional_checks().contains("control-flow"))
   assert_true(supported_optional_checks().contains("useless-use-of-cat"))

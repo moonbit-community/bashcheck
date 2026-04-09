@@ -40,13 +40,79 @@ async test "phase 0 dynamic json diff aligns newly closed command gaps" {
 }
 
 ///|
-async test "phase 0 dynamic json diff captures known analytics gaps" {
-  assert_shellcheck_json_differs(
-    "SC2086-still-open-mixed-word-gap",
+async test "phase 0 dynamic json diff aligns planned compatibility gaps" {
+  assert_shellcheck_json_matches(
+    "SC2086-mixed-word",
     (
       #|#!/bin/bash
       #|# shellcheck disable=SC2154
       #|echo x$foo
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC1033",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|[[ "$foo" ]
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC1034",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|[ "$foo" ]]
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2181",
+    (
+      #|#!/bin/bash
+      #|true
+      #|[ $? == 0 ]
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2187",
+    (
+      #|#!bin/ash
+      #|true
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2239",
+    (
+      #|#!bin/sh
+      #|true
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2246",
+    (
+      #|#!/bin/sh/
+      #|true
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2247",
+    (
+      #|#!/bin/bash
+      #|$"(foo)"
       #|
     ),
   )

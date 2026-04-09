@@ -40,6 +40,74 @@ test "phase 2 entry semantics align for SC2148" {
 }
 
 ///|
+test "phase 3 entry semantics align for shebang and exit-code gaps" {
+  assert_diagnostics_match(
+    "SC2181",
+    (
+      #|#!/bin/bash
+      #|true
+      #|[ $? == 0 ]
+      #|
+    ),
+    [
+      shellcheck_style(
+        2181, 3, 3, "Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.",
+      ),
+    ],
+  )
+
+  assert_diagnostics_match(
+    "SC2187-SC2239",
+    (
+      #|#!bin/ash
+      #|true
+      #|
+    ),
+    [
+      shellcheck_error(
+        2239, 1, 1, "Ensure the shebang uses an absolute path to the interpreter.",
+      ),
+      shellcheck_warning(
+        2187, 1, 1, "Ash scripts will be checked as Dash. Add '# shellcheck shell=dash' to silence.",
+      ),
+    ],
+    spec=@checker.CheckSpec::default(),
+  )
+
+  assert_diagnostics_match(
+    "SC2246",
+    (
+      #|#!/bin/sh/
+      #|true
+      #|
+    ),
+    [
+      shellcheck_error(
+        2246, 1, 1, "This shebang specifies a directory. Ensure the interpreter is a file.",
+      ),
+    ],
+    spec=@checker.CheckSpec::default(),
+  )
+
+  assert_diagnostics_match(
+    "SC2247",
+    (
+      #|#!/bin/bash
+      #|$"(foo)"
+      #|
+    ),
+    [
+      shellcheck_warning(
+        2247, 2, 1, "Flip leading $ and \" if this should be a quoted substitution.",
+      ),
+      shellcheck_warning(
+        2288, 2, 1, "This is interpreted as a command name ending with ')'. Double check syntax.",
+      ),
+    ],
+  )
+}
+
+///|
 test "phase 3 analytics alignment closes SC2000 and SC2087 gaps" {
   assert_diagnostics_match(
     "SC2000",

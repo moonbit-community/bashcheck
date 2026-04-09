@@ -431,13 +431,18 @@ test "analytics batch c checks flag echo-wc ssh heredoc and late function defini
       #|EOF2
       #|f
       #|f() { true; }
+      #|true
+      #|[ $? == 0 ]
+      #|$"(foo)"
       #|
     ),
   )
 
   assert_true(has_code(diagnostics, 2000))
   assert_true(has_code(diagnostics, 2087))
+  assert_true(has_code(diagnostics, 2181))
   assert_true(has_code(diagnostics, 2218))
+  assert_true(has_code(diagnostics, 2247))
 }
 
 ///|
@@ -470,16 +475,20 @@ test "analytics batch c checks avoid false positives for quiet cases" {
       #|EOF
       #|f() { true; }
       #|f
+      #|g() { [ $? == 0 ]; }
       #|false
       #|status=$?
       #|echo "$status"
+      #|"$("foo")"
       #|
     ),
   )
 
   assert_true(!has_code(diagnostics, 2000))
   assert_true(!has_code(diagnostics, 2087))
+  assert_true(!has_code(diagnostics, 2181))
   assert_true(!has_code(diagnostics, 2218))
+  assert_true(!has_code(diagnostics, 2247))
   assert_true(!has_code(diagnostics, 2319))
   assert_true(!has_code(diagnostics, 2320))
 }
