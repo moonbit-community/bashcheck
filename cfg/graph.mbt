@@ -1636,7 +1636,7 @@ fn GraphBuilder::build_condition_expr(
     @parser.ConditionExpr::Empty => self.none()
     @parser.ConditionExpr::Word(_) =>
       self.sequence_ids(self.children_with_kind(id, AstTag::Word))
-    @parser.ConditionExpr::Unary(op, word) => {
+    @parser.ConditionExpr::Unary(op, _, word) => {
       let base = self.sequence_ids(self.children_with_kind(id, AstTag::Word))
       let effects = condition_unary_hint_effects(id, op, word)
       if effects.length() == 0 {
@@ -1648,7 +1648,7 @@ fn GraphBuilder::build_condition_expr(
         )
       }
     }
-    @parser.ConditionExpr::Binary(_, _, _) =>
+    @parser.ConditionExpr::Binary(_, _, _, _) =>
       self.sequence_ids(self.children_with_kind(id, AstTag::Word))
     @parser.ConditionExpr::Group(_) | @parser.ConditionExpr::Not(_) =>
       self.sequence_ids(self.children_of(id))

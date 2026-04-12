@@ -839,10 +839,10 @@ fn IndexBuilder::visit_condition_expr(
     @parser.ConditionExpr::Word(word) => {
       let _ = self.visit_word(word)
     }
-    @parser.ConditionExpr::Unary(_, word) => {
+    @parser.ConditionExpr::Unary(_, _, word) => {
       let _ = self.visit_word(word)
     }
-    @parser.ConditionExpr::Binary(_, lhs, rhs) => {
+    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
       let _ = self.visit_word(lhs)
       let _ = self.visit_word(rhs)
     }

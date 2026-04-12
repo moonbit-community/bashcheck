@@ -452,9 +452,9 @@ fn dump_condition_expr(expr : ConditionExpr) -> String {
   match expr {
     ConditionExpr::Empty => "empty"
     ConditionExpr::Word(word) => dump_word(word)
-    ConditionExpr::Unary(op, word) =>
+    ConditionExpr::Unary(op, _, word) =>
       "unary(\{dump_quoted(op)}, \{dump_word(word)})"
-    ConditionExpr::Binary(op, left, right) =>
+    ConditionExpr::Binary(op, _, left, right) =>
       "binary(\{dump_quoted(op)}, \{dump_word(left)}, \{dump_word(right)})"
     ConditionExpr::Group(inner) => "group(\{dump_condition_expr(inner)})"
     ConditionExpr::Not(inner) => "not(\{dump_condition_expr(inner)})"

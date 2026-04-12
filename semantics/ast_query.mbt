@@ -666,11 +666,12 @@ fn traverse_condition_expr(
 ) -> Unit {
   match expr {
     @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) | @parser.ConditionExpr::Unary(_, word) =>
+    @parser.ConditionExpr::Word(word)
+    | @parser.ConditionExpr::Unary(_, _, word) =>
       traverse_word(
         word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.ConditionExpr::Binary(_, lhs, rhs) => {
+    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
       traverse_word(
         lhs, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )

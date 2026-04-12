@@ -241,7 +241,7 @@ fn check_unnecessarily_inverted_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Not(@parser.ConditionExpr::Unary(op, _)) =>
+    @parser.ConditionExpr::Not(@parser.ConditionExpr::Unary(op, _, _)) =>
       match op {
         "-n" =>
           push_diagnostic(
@@ -261,7 +261,7 @@ fn check_unnecessarily_inverted_condition_expr(
           )
         _ => ()
       }
-    @parser.ConditionExpr::Not(@parser.ConditionExpr::Binary(op, _, _)) =>
+    @parser.ConditionExpr::Not(@parser.ConditionExpr::Binary(op, _, _, _)) =>
       match inverted_condition_operator(op) {
         Some(new_op) =>
           push_diagnostic(
@@ -295,7 +295,7 @@ fn check_unnecessarily_inverted_banged_condition(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, _) =>
+    @parser.ConditionExpr::Unary(op, _, _) =>
       match op {
         "-n" =>
           push_diagnostic(
@@ -315,7 +315,7 @@ fn check_unnecessarily_inverted_banged_condition(
           )
         _ => ()
       }
-    @parser.ConditionExpr::Binary(op, _, _) =>
+    @parser.ConditionExpr::Binary(op, _, _, _) =>
       match inverted_condition_operator(op) {
         Some(new_op) =>
           push_diagnostic(
@@ -886,9 +886,10 @@ fn collect_condition_masked_commands(
 ) -> Unit {
   match expr {
     @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) | @parser.ConditionExpr::Unary(_, word) =>
+    @parser.ConditionExpr::Word(word)
+    | @parser.ConditionExpr::Unary(_, _, word) =>
       collect_word_embedded_commands(word, masked)
-    @parser.ConditionExpr::Binary(_, lhs, rhs) => {
+    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
       collect_word_embedded_commands(lhs, masked)
       collect_word_embedded_commands(rhs, masked)
     }

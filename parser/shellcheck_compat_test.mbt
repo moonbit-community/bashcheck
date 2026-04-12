@@ -702,7 +702,7 @@ test "shellcheck compatibility word and expansion samples" {
 
   assert_word_ok("prop_readSingleQuoted", "'foo bar'")
   assert_word_warning("prop_readSingleQuoted2", "'foo bar\\'")
-  assert_word_warning("prop_readSingleQuoted4", "'it\\'s")
+  assert_word_warning("prop_readSingleQuoted4", "'it's")
   assert_warning(
     "prop_readSingleQuoted5",
     (
@@ -711,8 +711,8 @@ test "shellcheck compatibility word and expansion samples" {
     ),
   )
   assert_ok("prop_readSingleQuoted6", "foo='bar cow 'arg")
-  assert_word_ok("prop_readSingleQuoted7", "'foo\u201C&bar'")
-  assert_word_warning("prop_readSingleQuoted8", "'foo\u2018&bar'")
+  assert_word_ok("prop_readSingleQuoted7", "'foo\u201Cbar'")
+  assert_word_warning("prop_readSingleQuoted8", "'foo\u2018bar'")
 
   assert_word_ok("prop_readBackTicked", "`ls *.mp3`")
   assert_word_ok("prop_readBackTicked2", "`grep \"\\\"\"`")

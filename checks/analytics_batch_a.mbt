@@ -1479,6 +1479,9 @@ fn check_constant_conditions(
     match command.kind {
       @parser.CommandKind::Condition(condition) =>
         visit_condition_binaries(condition.expr, fn(op, lhs, rhs) {
+          if !analytics_condition_binary_operator_is_known(op) {
+            return
+          }
           if analytics_condition_binary_is_dynamic(condition.kind, op) {
             return
           }
@@ -1499,6 +1502,16 @@ fn check_constant_conditions(
 }
 
 ///|
+fn analytics_condition_binary_operator_is_known(op : String) -> Bool {
+  let normalized = if op.has_prefix("\\") {
+    op.view(start_offset=1).to_string()
+  } else {
+    op
+  }
+  @semantics.binary_test_operators().contains(normalized)
+}
+
+///|
 fn analytics_condition_binary_is_dynamic(
   kind : @parser.ConditionKind,
   op : String,
@@ -1514,9 +1527,29 @@ fn analytics_condition_binary_is_dynamic(
 ///|
 fn analytics_condition_word_is_constant(word : @parser.Word) -> Bool {
   @semantics.literal_text(word) is Some(_) &&
-  !word_has_quoteable_top_level_expansion(word) &&
+  !analytics_condition_parts_have_dynamic_content(word.parts) &&
   !@semantics.is_glob_word(word) &&
   !analytics_word_has_unquoted_tilde(word)
+}
+
+///|
+fn analytics_condition_parts_have_dynamic_content(
+  parts : Array[@parser.WordPart],
+) -> Bool {
+  for part in parts {
+    match part {
+      @parser.WordPart::Literal(_)
+      | @parser.WordPart::SingleQuoted(_)
+      | @parser.WordPart::DollarSingleQuoted(_) => ()
+      @parser.WordPart::DoubleQuoted(nested)
+      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+        if analytics_condition_parts_have_dynamic_content(nested) {
+          return true
+        }
+      _ => return true
+    }
+  }
+  false
 }
 
 ///|

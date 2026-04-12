@@ -30,6 +30,12 @@ fn analytics_batch_c_descriptions() -> Array[CheckDescription] {
       summary: "Check command success directly instead of reading $?.",
     },
     {
+      code: 2128,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "Expanding an array without an index only yields the first element.",
+    },
+    {
       code: 2218,
       severity: CheckSeverity::Error,
       category: "analytics",
@@ -74,6 +80,7 @@ fn run_analytics_batch_c_checks(
     ),
   )
   let analysis = @cfg.analyze_control_flow(cfg)
+  check_array_without_index(cfg, analysis, diagnostics)
   check_use_before_definition(cfg, analysis, diagnostics)
   check_overwritten_exit_code(cfg, analysis, diagnostics)
 }
@@ -150,7 +157,7 @@ fn visit_exit_code_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(op, lhs, rhs) =>
+    @parser.ConditionExpr::Binary(op, _, lhs, rhs) =>
       match exit_code_test_diagnostic(op, lhs, rhs) {
         Some((span, message)) =>
           push_diagnostic(
@@ -171,7 +178,7 @@ fn visit_exit_code_condition_expr(
     }
     @parser.ConditionExpr::Empty
     | @parser.ConditionExpr::Word(_)
-    | @parser.ConditionExpr::Unary(_, _) => ()
+    | @parser.ConditionExpr::Unary(_, _, _) => ()
   }
 }
 
@@ -219,6 +226,69 @@ fn word_is_zero_literal(word : @parser.Word) -> Bool {
 ///|
 fn word_is_exit_code(word : @parser.Word) -> Bool {
   @semantics.literal_text(word) == Some("?")
+}
+
+///|
+fn check_array_without_index(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  for id in @cfg.ast_ids(cfg) {
+    match @cfg.ast_ref_of(cfg, id) {
+      Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
+        maybe_push_array_without_index_diagnostic(
+          cfg, analysis, id, name, diagnostics,
+        )
+      Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+        match plain_array_parameter_name(expansion) {
+          Some(name) =>
+            maybe_push_array_without_index_diagnostic(
+              cfg, analysis, id, name, diagnostics,
+            )
+          None => ()
+        }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn plain_array_parameter_name(
+  expansion : @parser.ParameterExpansion,
+) -> String? {
+  if expansion.length_prefix ||
+    expansion.indirect ||
+    expansion.index is Some(_) ||
+    parameter_has_names_operator(expansion) {
+    return None
+  }
+  match expansion.operator {
+    None => expansion.name
+    _ => None
+  }
+}
+
+///|
+fn maybe_push_array_without_index_diagnostic(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+  id : @cfg.CfgAstId,
+  name : String,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match @cfg.incoming_state_of_ast(analysis, id) {
+    Some(state) if state.state_is_reachable &&
+      @cfg.variable_may_be_array(state, name) =>
+      push_diagnostic(
+        diagnostics,
+        ast_effect_span(cfg, id),
+        CheckSeverity::Warning,
+        2128,
+        "Expanding an array without an index only gives the first element.",
+      )
+    _ => ()
+  }
 }
 
 ///|
