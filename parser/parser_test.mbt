@@ -1209,7 +1209,7 @@ test "single and double bracket conditions parse as dedicated commands" {
       }
       assert_true(condition.raw.contains("$x"))
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, operand) => {
+        @parser.ConditionExpr::Unary(op, _, operand) => {
           assert_eq(op, "-n")
           assert_eq(operand.source, "$x")
         }
@@ -1227,7 +1227,7 @@ test "single and double bracket conditions parse as dedicated commands" {
       }
       assert_true(condition.raw.contains("\"$x\""))
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, operand) => {
+        @parser.ConditionExpr::Unary(op, _, operand) => {
           assert_eq(op, "-n")
           assert_eq(operand.source, "\"$x\"")
         }
@@ -1248,7 +1248,7 @@ test "condition expressions capture grouping and boolean operators" {
           match left {
             @parser.ConditionExpr::Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "==")
                   assert_eq(lhs.source, "a")
                   assert_eq(rhs.source, "b")
@@ -1260,7 +1260,7 @@ test "condition expressions capture grouping and boolean operators" {
           match right {
             @parser.ConditionExpr::Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "==")
                   assert_eq(lhs.source, "c")
                   assert_eq(rhs.source, "d")
@@ -1293,7 +1293,7 @@ test "condition expressions support negation, escaped groups, and regex words" {
       match condition.expr {
         @parser.ConditionExpr::Not(inner) =>
           match inner {
-            @parser.ConditionExpr::Unary(op, operand) => {
+            @parser.ConditionExpr::Unary(op, _, operand) => {
               assert_eq(op, "-n")
               assert_eq(operand.source, "$x")
             }
@@ -1312,7 +1312,7 @@ test "condition expressions support negation, escaped groups, and regex words" {
           match left {
             @parser.ConditionExpr::Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "=")
                   assert_eq(lhs.source, "a")
                   assert_eq(rhs.source, "b")
@@ -1324,7 +1324,7 @@ test "condition expressions support negation, escaped groups, and regex words" {
           match right {
             @parser.ConditionExpr::Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "=")
                   assert_eq(lhs.source, "c")
                   assert_eq(rhs.source, "d")
@@ -1343,7 +1343,7 @@ test "condition expressions support negation, escaped groups, and regex words" {
   match first_command(regex).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "a(b)|c")
@@ -1360,7 +1360,7 @@ test "double bracket string comparison operators parse like shellcheck" {
   match first_command(greater).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, ">")
           assert_eq(lhs.source, "$cword")
           assert_eq(rhs.source, "1")
@@ -1374,7 +1374,7 @@ test "double bracket string comparison operators parse like shellcheck" {
   match first_command(lesser).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "<")
           assert_eq(lhs.source, "$cword")
           assert_eq(rhs.source, "10")
@@ -1383,6 +1383,92 @@ test "double bracket string comparison operators parse like shellcheck" {
       }
     _ => fail("expected condition command")
   }
+}
+
+///|
+test "condition parser preserves unknown operators for checks" {
+  let unary = parse_report("[ -M a ]")
+  assert_true(!report_has_code(unary, 1073))
+  let unary_script = report_script(unary)
+  match first_command(unary_script).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Unary(op, _, operand) => {
+          assert_eq(op, "-M")
+          assert_eq(operand.source, "a")
+        }
+        _ => fail("expected unknown unary operator to be preserved")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let longer_unary = parse_report("[ -abc a ]")
+  assert_true(!report_has_code(longer_unary, 1073))
+  let longer_unary_script = report_script(longer_unary)
+  match first_command(longer_unary_script).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Unary(op, _, operand) => {
+          assert_eq(op, "-abc")
+          assert_eq(operand.source, "a")
+        }
+        _ => fail("expected longer unknown unary operator to be preserved")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let binary = parse_report("[[ a -xz b ]]")
+  assert_true(!report_has_code(binary, 1073))
+  let binary_script = report_script(binary)
+  match first_command(binary_script).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+          assert_eq(op, "-xz")
+          assert_eq(lhs.source, "a")
+          assert_eq(rhs.source, "b")
+        }
+        _ => fail("expected unknown binary operator to be preserved")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let longer_binary = parse_report("[[ a -xyz b ]]")
+  assert_true(!report_has_code(longer_binary, 1073))
+  let longer_binary_script = report_script(longer_binary)
+  match first_command(longer_binary_script).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+          assert_eq(op, "-xyz")
+          assert_eq(lhs.source, "a")
+          assert_eq(rhs.source, "b")
+        }
+        _ => fail("expected longer unknown binary operator to be preserved")
+      }
+    _ => fail("expected condition command")
+  }
+}
+
+///|
+test "dash-prefixed non-operators do not become unknown operators" {
+  let dash_number = parse_report("[ -1 a ]")
+  assert_true(!report_has_code(dash_number, 1019))
+
+  let double_dash = parse_report("[ -- a ]")
+  assert_true(!report_has_code(double_dash, 1019))
+
+  let dash_dot = parse_report("[ -. a ]")
+  assert_true(!report_has_code(dash_dot, 1019))
+
+  let binary_number = parse_report("[[ a -1 b ]]")
+  assert_true(!report_has_code(binary_number, 1027))
+
+  let binary_double_dash = parse_report("[[ a -- b ]]")
+  assert_true(!report_has_code(binary_double_dash, 1027))
+
+  let binary_dash_dot = parse_report("[[ a -. b ]]")
+  assert_true(!report_has_code(binary_dash_dot, 1027))
 }
 
 ///|
@@ -1465,7 +1551,7 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
   match first_command(grouped).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$c")
           assert_eq(rhs.source, "f( ]] )*")
@@ -1479,7 +1565,7 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
   match first_command(embedded).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$c")
           assert_eq(rhs.source, "f( ($var ]]) )*")
@@ -1493,7 +1579,7 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
   match first_command(escaped).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "^(a\\ b)$")
@@ -1507,7 +1593,7 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
   match first_command(logical_chars).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$v")
           assert_eq(rhs.source, "a&&b|c||d")
@@ -1521,7 +1607,7 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
   match first_command(escaped_groups).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, lhs, rhs) => {
+        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "\\.a\\.(\\.b\\.)\\.c\\.")
@@ -1538,7 +1624,7 @@ test "regex condition parts preserve backslashes" {
   match first_command(script).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(_, _, rhs) => {
+        @parser.ConditionExpr::Binary(_, _, _, rhs) => {
           assert_eq(rhs.source, "\\.a\\.(\\.b\\.)\\.c\\.")
           match rhs.parts[0] {
             @parser.WordPart::Literal(text) =>
@@ -3348,6 +3434,11 @@ test "here doc trailer and eof diagnostics align more closely with shellcheck" {
   assert_true(report_has_code(missing, 1009))
   assert_true(report_has_code(missing, 1073))
   assert_true(report_has_code(missing, 1072))
+
+  let opener_only = parse_report("cat << eof")
+  assert_true(report_has_code(opener_only, 1044))
+  assert_true(report_has_code(opener_only, 1073))
+  assert_true(report_has_code(opener_only, 1072))
 }
 
 ///|

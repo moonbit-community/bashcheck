@@ -37,6 +37,26 @@ fn assert_determine_shell_case_with_fallback(
 }
 
 ///|
+fn literal_variables_compat(source : String) -> Array[String] {
+  let word = @parser.parse_text_as_word(source)
+  let names : Array[String] = []
+  for part in word.parts {
+    @semantics.walk_word_part(part, fn(current) {
+      match current {
+        @parser.WordPart::Parameter(name) => names.push(name)
+        @parser.WordPart::BracedParameter(expansion) =>
+          match expansion.name {
+            Some(name) => names.push(name)
+            None => ()
+          }
+        _ => ()
+      }
+    })
+  }
+  names
+}
+
+///|
 test "shellcheck analyzerlib determineShell props" {
   assert_determine_shell_case(
     "prop_determineShell0",
@@ -56,10 +76,7 @@ test "shellcheck analyzerlib determineShell props" {
   )
   assert_determine_shell_case(
     "prop_determineShell2",
-    (
-      #|true
-      #|
-    ),
+    "",
     @semantics.ShellDialect::Bash,
   )
   assert_determine_shell_case(
@@ -146,4 +163,14 @@ test "shellcheck analyzerlib determineShell props" {
     ),
     @semantics.ShellDialect::BusyboxSh,
   )
+}
+
+///|
+/// Adapted upstream coverage: bashcheck does not expose ShellCheck's
+/// getVariablesFromLiteral helper, so assert the equivalent variable-name
+/// recovery from the parsed literal word instead.
+test "shellcheck analyzerlib literal variable props" {
+  assert_eq(literal_variables_compat("$foo${bar//a/b}$BAZ"), [
+    "foo", "bar", "BAZ",
+  ])
 }

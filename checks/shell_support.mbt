@@ -1461,7 +1461,7 @@ fn check_shell_support_negated_unary_ops(
   match condition.expr {
     @parser.ConditionExpr::Not(inner) =>
       match inner {
-        @parser.ConditionExpr::Unary(op, _) =>
+        @parser.ConditionExpr::Unary(op, _, _) =>
           if op == "-a" || op == "-o" {
             push_diagnostic(
               diagnostics,
@@ -1592,7 +1592,7 @@ fn check_shell_support_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, _) =>
+    @parser.ConditionExpr::Unary(op, _, _) =>
       match shell_support_unary_test_rule(op) {
         Some(rule) =>
           maybe_push_shell_support_rule_diagnostic(
@@ -1600,7 +1600,7 @@ fn check_shell_support_condition_expr(
           )
         None => ()
       }
-    @parser.ConditionExpr::Binary(op, _, _) =>
+    @parser.ConditionExpr::Binary(op, _, _, _) =>
       match shell_support_binary_test_rule(op) {
         Some(rule) =>
           maybe_push_shell_support_rule_diagnostic(

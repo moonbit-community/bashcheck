@@ -98,6 +98,11 @@ fn merge_parse_and_lint_diagnostics(
       diagnostics.push(positioned)
     }
   }
+  match script {
+    Some(script) =>
+      append_missing_source_diagnostics(diagnostics, filename, spec, script)
+    None => ()
+  }
   match (base_script, script) {
     (Some(base_script), Some(script)) => {
       append_shebang_entry_diagnostics(diagnostics, filename, spec, script)
@@ -171,8 +176,105 @@ fn parse_diagnostic_allowed_by_spec(
     // Upstream ShellCheck treats an explicit shell override as authoritative and
     // suppresses the shebang-shell mismatch/unknown-shell parse diagnostic.
     Some(1071) => spec.shell_override is None
+    // Recursive include diagnostics are internal parser bookkeeping. The
+    // public checker does not surface them.
+    Some(1093) => false
     _ => true
   }
+}
+
+///|
+fn append_missing_source_diagnostics(
+  diagnostics : Array[PositionedDiagnostic],
+  filename : String,
+  spec : CheckSpec,
+  script : @parser.Script,
+) -> Unit {
+  if spec.check_sourced {
+    return
+  }
+  for command in top_level_commands(script) {
+    @semantics.walk_command(command, fn(current) {
+      match current.kind {
+        @parser.CommandKind::Source(source) =>
+          match @semantics.literal_text(source.path) {
+            Some(path) if !source_file_is_available(spec, path) => {
+              let diagnostic = {
+                filename,
+                span: source.path.span,
+                severity: DiagnosticSeverity::Warning,
+                code: Some(1091),
+                message: "source file '\{path}' was not provided in parse options",
+                fix: None,
+              }
+              if diagnostic_is_included(Some(script), spec, diagnostic) {
+                diagnostics.push(diagnostic)
+              }
+            }
+            _ => ()
+          }
+        _ => ()
+      }
+    })
+  }
+}
+
+///|
+fn top_level_commands(script : @parser.Script) -> Array[@parser.Command] {
+  let commands : Array[@parser.Command] = []
+  for item in script.items {
+    for segment in item.and_or.head.segments {
+      commands.push(segment.command)
+    }
+    for pair in item.and_or.tail {
+      for segment in pair.1.segments {
+        commands.push(segment.command)
+      }
+    }
+  }
+  commands
+}
+
+///|
+fn source_file_is_available(spec : CheckSpec, path : String) -> Bool {
+  if path == "/dev/null" {
+    return true
+  }
+  if source_file_is_listed(spec.source_files, path) {
+    return true
+  }
+  if path.has_prefix("/") {
+    return false
+  }
+  match spec.filename {
+    Some(filename) =>
+      if source_file_is_listed(
+          spec.source_files,
+          path_join(path_dirname(filename), path),
+        ) {
+        return true
+      }
+    None => ()
+  }
+  for source_path in spec.source_paths {
+    if source_file_is_listed(spec.source_files, path_join(source_path, path)) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn source_file_is_listed(
+  source_files : Array[(String, String)],
+  path : String,
+) -> Bool {
+  for pair in source_files {
+    if pair.0 == path {
+      return true
+    }
+  }
+  false
 }
 
 ///|

@@ -356,6 +356,18 @@ fn span_prefix(span : @parser.Span, width : Int) -> @parser.Span {
 }
 
 ///|
+fn span_suffix(span : @parser.Span, width : Int) -> @parser.Span {
+  @parser.Span::new(
+    @parser.Position::new(
+      span.end.offset - width,
+      span.end.line,
+      span.end.column - width,
+    ),
+    span.end,
+  )
+}
+
+///|
 fn effective_command_span(command : @parser.Command) -> @parser.Span {
   match @semantics.effective_command_words(command).get(0) {
     Some(word) => word.span
@@ -373,7 +385,24 @@ fn command_keyword_span(
 
 ///|
 fn redirect_operator_span(redirect : @parser.Redirection) -> @parser.Span {
+  match (redirect.op, redirect.target) {
+    (
+      @parser.RedirectionOperator::HereDoc
+      | @parser.RedirectionOperator::HereDocStrip,
+      @parser.RedirectionTarget::HereDoc(doc),
+    ) => return span_suffix(redirect.span, here_doc_delimiter_width(doc))
+    _ => ()
+  }
   span_prefix(redirect.span, redirection_operator_width(redirect))
+}
+
+///|
+fn here_doc_delimiter_width(doc : @parser.HereDoc) -> Int {
+  if doc.quoted {
+    doc.delimiter.length() + 2
+  } else {
+    doc.delimiter.length()
+  }
 }
 
 ///|

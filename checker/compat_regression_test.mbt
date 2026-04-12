@@ -153,15 +153,6 @@ fn assert_no_compat_case_with_optional_checks(
 }
 
 ///|
-fn assert_no_compat_case_with_spec(
-  label : String,
-  source : String,
-  spec : CheckSpec,
-) -> Unit {
-  assert_compat_case_with_spec(label, source, [], spec)
-}
-
-///|
 test "compat regression covers analytics core diagnostics" {
   assert_compat_case(
     "analytics-core",
@@ -220,6 +211,135 @@ test "compat regression covers analytics core diagnostics" {
       ),
       compat_error(
         2045, 8, 10, 21, "Iterating over ls output is fragile. Use globs.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics phase 1 tree diagnostics" {
+  assert_compat_case(
+    "analytics-phase-1-tree",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2068,SC2086
+      #|foo() { echo $1; }
+      #|alias bar='printf %s\n'
+      #|sudo foo
+      #|foo
+      #|if true; then cd foo; fi
+      #|arr=(a b)
+      #|for i in ${arr[@]}; do
+      #|  echo ${arr[i]}
+      #|done
+      #|{
+      #|  alias x=y
+      #|  x
+      #|}
+      #|a[0]=foo
+      #|echo "$a"
+      #|
+    ),
+    [
+      compat_warning(
+        2120, 3, 1, 4, "foo references arguments, but none are ever passed.",
+      ),
+      compat_info(
+        2032, 3, 1, 4, "This function can't be invoked via sudo on line 5.",
+      ),
+      compat_warning(
+        2033, 5, 6, 9, "Shell functions can't be passed to external commands. Use separate script or sh -c.",
+      ),
+      compat_info(
+        2119, 6, 1, 4, "Use foo \"$@\" if function's $1 should mean script's $1.",
+      ),
+      compat_warning(
+        2164, 7, 15, 17, "Use 'cd ... || exit' or 'cd ... || return' in case cd fails.",
+      ),
+      compat_warning(
+        2302, 9, 10, 19, "This loops over values. To loop over keys, use \"\\${!array[@]}\".",
+      ),
+      compat_warning(
+        2303, 10, 8, 17, "i is an array value, not a key. Use directly or loop over keys instead.",
+      ),
+      compat_warning(
+        2262, 13, 9, 12, "This alias can't be defined and used in the same parsing unit. Use a function instead.",
+      ),
+      compat_info(
+        2263, 14, 3, 4, "Since they're in the same parsing unit, this command will not refer to the previously mentioned alias.",
+      ),
+      compat_warning(
+        2128, 17, 6, 10, "Expanding an array without an index only gives the first element.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers translated string variable fixups" {
+  assert_compat_case(
+    "analytics-translated-string-variable",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2209
+      #|foo_bar2=val; $"foo_bar2"
+      #|
+    ),
+    [
+      compat_warning(
+        2256, 3, 15, 26, "This translated string is the name of a variable. Flip leading $ and \" if this should be a quoted substitution.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers leading x comparison fixes" {
+  assert_compat_case(
+    "analytics-leading-x-comparison",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086
+      #|[ x"$foo" = x'lol' ]
+      #|test X$foo = Xbar
+      #|
+    ),
+    [
+      compat_style(
+        2268, 3, 3, 10, "Avoid x-prefix in comparisons as it no longer serves a purpose.",
+      ),
+      compat_style(
+        2268, 4, 6, 11, "Avoid x-prefix in comparisons as it no longer serves a purpose.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers second arg comparison diagnostics" {
+  assert_compat_case(
+    "analytics-second-arg-comparison",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086,SC2046
+      #|foo = $bar
+      #|foo == $bar
+      #|var += $(foo)
+      #|var +=$(foo)
+      #|
+    ),
+    [
+      compat_error(
+        2283, 3, 5, 6, "Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal).",
+      ),
+      compat_error(
+        2284, 4, 1, 12, "Use [ x = y ] to compare values (or quote '==' if literal).",
+      ),
+      compat_error(
+        2285, 5, 1, 14, "Remove spaces around += to assign (or quote '+=' if literal).",
+      ),
+      compat_error(
+        2285, 6, 1, 13, "Remove spaces around += to assign (or quote '+=' if literal).",
       ),
     ],
   )
@@ -395,14 +515,192 @@ test "compat regression covers analytics condition diagnostics" {
       compat_warning(
         2166, 3, 1, 18, "Prefer [ p ] && [ q ] as [ p -a q ] is not well defined.",
       ),
+      compat_error(
+        2078, 3, 3, 6, "This expression is constant. Did you forget a $ somewhere?",
+      ),
       compat_warning(
         2166, 4, 1, 18, "Prefer [ p ] || [ q ] as [ p -o q ] is not well defined.",
+      ),
+      compat_error(
+        2157, 4, 6, 7, "Argument to -z is always false due to literal strings.",
       ),
       compat_warning(
         2050, 4, 13, 14, "This expression is constant. Did you forget the $ on a variable?",
       ),
       compat_warning(
         2076, 5, 12, 21, "Remove quotes from right-hand side of =~ to match as a regex rather than literally.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers unknown condition operators once parser preserves them" {
+  assert_compat_case(
+    "analytics-batch-g-valid-cond-ops",
+    (
+      #|#!/bin/bash
+      #|[ -M a ]
+      #|[[ a -xz b ]]
+      #|
+    ),
+    [
+      compat_warning(2058, 2, 3, 5, "Unknown unary operator."),
+      compat_warning(2057, 3, 6, 9, "Unknown binary operator."),
+    ],
+  )
+}
+
+///|
+test "compat regression keeps unknown unary operator spans on the operator" {
+  assert_compat_case(
+    "analytics-batch-g-unknown-unary-operator-span",
+    (
+      #|#!/bin/bash
+      #|[    -M a ]
+      #|[[ -M
+      #|  a ]]
+      #|
+    ),
+    [
+      compat_warning(2058, 2, 6, 8, "Unknown unary operator."),
+      compat_warning(2058, 3, 4, 6, "Unknown unary operator."),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch h option glob diagnostics" {
+  assert_compat_case(
+    "analytics-batch-h-option-globs",
+    (
+      #|#!/bin/bash
+      #|rm *.txt
+      #|ls ??.*
+      #|rm -- *.txt
+      #|
+    ),
+    [
+      compat_info(
+        2035, 2, 4, 9, "Use ./*glob* or -- *glob* so names with dashes won't become options.",
+      ),
+      compat_info(
+        2035, 3, 4, 8, "Use ./*glob* or -- *glob* so names with dashes won't become options.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch h suspicious ifs diagnostics" {
+  assert_compat_case(
+    "analytics-batch-h-suspicious-ifs",
+    (
+      #|#!/bin/bash
+      #|IFS="\n"
+      #|IFS=' \t\n'
+      #|IFS=$'\t'
+      #|
+    ),
+    [
+      compat_warning(
+        2141, 2, 5, 9, "This backslash is literal. Did you mean IFS=$'\\n' ?",
+      ),
+      compat_warning(
+        2141, 3, 5, 12, "This IFS value contains a literal backslash. For tabs/linefeeds/escapes, use $'..', literal, or printf.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch h tilde in path diagnostics" {
+  assert_compat_case(
+    "analytics-batch-h-tilde-in-path",
+    (
+      #|#!/bin/bash
+      #|PATH="$PATH:~/bin"
+      #|PATH='~foo/bin'
+      #|PATH=~/bin
+      #|
+    ),
+    [
+      compat_warning(
+        2147, 2, 1, 19, "Literal tilde in PATH works poorly across programs.",
+      ),
+      compat_warning(
+        2147, 3, 1, 16, "Literal tilde in PATH works poorly across programs.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch i expansion diagnostics" {
+  assert_compat_case(
+    "analytics-batch-i-expansions",
+    (
+      #|#!/bin/bash
+      #|echo "foo$@"
+      #|echo ${var#$x}
+      #|echo "${name#$y}"
+      #|
+    ),
+    [
+      compat_error(
+        2145, 2, 10, 12, "Argument mixes string and array. Use * or separate argument.",
+      ),
+      compat_warning(2154, 3, 6, 15, "var is referenced but not assigned."),
+      compat_info(
+        2086, 3, 6, 15, "Double quote to prevent globbing and word splitting.",
+      ),
+      compat_info(
+        2295, 3, 12, 14, "Expansions inside ${..} need to be quoted separately, otherwise they match as patterns.",
+      ),
+      compat_warning(2154, 4, 7, 17, "name is referenced but not assigned."),
+      compat_info(
+        2295, 4, 14, 16, "Expansions inside ${..} need to be quoted separately, otherwise they match as patterns.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch k while-read pitfalls" {
+  assert_compat_case(
+    "analytics-batch-k-while-read-pitfalls",
+    (
+      #|#!/bin/bash
+      #|while read -r foo; do ssh "$foo" uptime; done
+      #|while read -r foo; do ffmpeg -i foo.mkv bar.mkv -an; done
+      #|while read -r foo; do mplayer foo.ogv > file; done
+      #|while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv; done
+      #|
+    ),
+    [
+      compat_info(
+        2095, 2, 1, 46, "ssh may swallow stdin, preventing this loop from working properly.",
+      ),
+      compat_warning(
+        2095, 2, 23, 40, "Use ssh -n to prevent ssh from swallowing stdin.",
+      ),
+      compat_info(
+        2095, 3, 1, 58, "ffmpeg may swallow stdin, preventing this loop from working properly.",
+      ),
+      compat_warning(
+        2095, 3, 23, 52, "Use ffmpeg -nostdin to prevent ffmpeg from swallowing stdin.",
+      ),
+      compat_info(
+        2095, 4, 1, 51, "mplayer may swallow stdin, preventing this loop from working properly.",
+      ),
+      compat_warning(
+        2095, 4, 23, 45, "Use mplayer -noconsolecontrols to prevent mplayer from swallowing stdin.",
+      ),
+      compat_info(
+        2095, 5, 1, 60, "HandBrakeCLI may swallow stdin, preventing this loop from working properly.",
+      ),
+      compat_warning(
+        2095, 5, 23, 54, "Use HandBrakeCLI < /dev/null to prevent HandBrakeCLI from swallowing stdin.",
       ),
     ],
   )
@@ -828,6 +1126,171 @@ test "compat regression covers control-flow diagnostics" {
 }
 
 ///|
+test "compat regression covers bats negation and unreachable function diagnostics" {
+  assert_compat_case(
+    "bats-negation-and-unreachable-function",
+    (
+      #|#!/bin/bash
+      #|@test "negation" { ! true; false; }
+      #|@test "condition" { ! [[ -e test ]]; }
+      #|f() { echo hidden; }
+      #|exit
+      #|
+    ),
+    [
+      compat_error(
+        2314, 2, 20, 21, "In Bats, ! does not cause a test failure. Use 'run ! ' (on Bats >= 1.5.0) instead.",
+      ),
+      compat_style(
+        2315, 3, 21, 22, "In Bats, ! will not fail the test if it is not the last command anymore. Fold the `!` into the conditional!",
+      ),
+      compat_info(
+        2329, 4, 1, 21, "This function is never invoked. Check usage (or ignored if invoked indirectly).",
+      ),
+    ],
+  )
+
+  assert_no_compat_case(
+    "bats-negation-and-unreachable-function-allowed-forms",
+    (
+      #|#!/bin/bash
+      #|@test "run ok" { run ! true; }
+      #|@test "or false ok" { ! [[ -e test ]] || false; }
+      #|@test "or false bracket ok" { ! [ -e test ] || false; }
+      #|f() { echo live; }
+      #|f
+      #|
+    ),
+  )
+}
+
+///|
+test "compat regression covers blatant recursion diagnostics" {
+  assert_compat_case(
+    "blatant-recursion",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|cd() { cd "$lol/$1" || exit; }
+      #|
+    ),
+    [
+      compat_error(
+        2264, 3, 8, 10, "This function unconditionally re-invokes itself. Missing 'command'?",
+      ),
+    ],
+  )
+
+  assert_no_compat_case(
+    "blatant-recursion-negatives",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2164,SC2086,SC2329
+      #|f() { command f; }
+      #|cd() { builtin cd $1; }
+      #|g() { [ -z "$1" ] || g "$1"; }
+      #|h() { echo ready; h; }
+      #|
+    ),
+  )
+}
+
+///|
+test "compat regression covers equals in command diagnostics" {
+  assert_compat_case(
+    "equals-in-command",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086
+      #|0='foo'
+      #|1='foo'
+      #|$var=foo
+      #|${var}=foo
+      #|var${x}=value
+      #|=======
+      #|======= Here =======
+      #|foo
+      #|=42
+      #|411toppm=true
+      #|
+    ),
+    [
+      compat_error(
+        2277, 3, 1, 3, "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
+      ),
+      compat_error(
+        2270, 4, 1, 3, "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
+      ),
+      compat_error(
+        2281, 5, 1, 5, "Don't use $ on the left side of assignments.",
+      ),
+      compat_error(
+        2281, 6, 1, 7, "Don't use ${} on the left side of assignments.",
+      ),
+      compat_error(
+        2271, 7, 1, 14, "For indirection, use arrays, declare \"var$n=value\", or (for sh) read/eval.",
+      ),
+      compat_error(
+        2273, 8, 1, 8, "Sequence of ===s found. Merge conflict or intended as a commented border?",
+      ),
+      compat_error(
+        2274, 9, 1, 21, "Command name starts with ===. Intended as a commented border?",
+      ),
+      compat_error(
+        2275, 11, 1, 4, "Command name starts with =. Bad line break?",
+      ),
+      compat_error(
+        2282, 12, 1, 14, "Variable names can't start with numbers, so this is interpreted as a command.",
+      ),
+    ],
+  )
+
+  assert_compat_case_with_spec(
+    "equals-in-command-ksh-zero",
+    (
+      #|$0='foo'
+      #|
+    ),
+    [
+      compat_error(
+        2278, 1, 1, 3, "$0 can't be assigned in Ksh (but it does reflect the current function).",
+      ),
+    ],
+    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Ksh)),
+  )
+
+  assert_compat_case_with_spec(
+    "equals-in-command-dash-zero",
+    (
+      #|${0}='foo'
+      #|
+    ),
+    [
+      compat_error(
+        2279, 1, 1, 5, "$0 can't be assigned in Dash. This becomes a command name.",
+      ),
+    ],
+    CheckSpec::default().with_shell_override(
+      Some(@semantics.ShellDialect::Dash),
+    ),
+  )
+
+  assert_compat_case_with_spec(
+    "equals-in-command-sh-zero",
+    (
+      #|0='foo'
+      #|
+    ),
+    [
+      compat_error(
+        2280, 1, 1, 3, "$0 can't be assigned this way, and there is no portable alternative.",
+      ),
+    ],
+    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
+  )
+}
+
+///|
 test "compat regression covers shell-support word diagnostics" {
   assert_compat_case(
     "shell-support-words",
@@ -1020,6 +1483,26 @@ test "compat regression covers shell-support operator and arithmetic diagnostics
 }
 
 ///|
+test "compat regression covers SC2331 legacy unary -a diagnostics" {
+  assert_compat_case(
+    "legacy-unary-a",
+    (
+      #|#!/bin/bash
+      #|[ ! -a file ]
+      #|
+    ),
+    [
+      compat_error(
+        2332, 2, 3, 4, "[ ! -a file ] is always true because -a becomes logical AND. Use -e instead.",
+      ),
+      compat_style(
+        2331, 2, 5, 7, "For file existence, prefer standard -e over legacy -a.",
+      ),
+    ],
+  )
+}
+
+///|
 test "compat regression covers shell-support redirect and wrapped command diagnostics" {
   assert_compat_case(
     "shell-support-redirects-and-wrappers",
@@ -1157,6 +1640,9 @@ test "compat regression covers commands batch a core diagnostics" {
       compat_warning(
         2061, 4, 14, 19, "Quote the parameter to -name so the shell won't interpret it.",
       ),
+      compat_info(
+        2035, 4, 14, 19, "Use ./*glob* or -- *glob* so names with dashes won't become options.",
+      ),
       compat_warning(
         2150, 5, 8, 13, "-exec does not invoke a shell. Rewrite or use -exec sh -c .. .",
       ),
@@ -1165,6 +1651,9 @@ test "compat regression covers commands batch a core diagnostics" {
       ),
       compat_error(
         2304, 6, 8, 9, "* must be escaped to multiply: \\*. Modern $((x * y)) avoids this issue.",
+      ),
+      compat_info(
+        2035, 6, 8, 9, "Use ./*glob* or -- *glob* so names with dashes won't become options.",
       ),
       compat_info(
         2022, 7, 6, 16, "Note that unlike globs, w* here matches 'www' but not 'whiskey'.",
@@ -1244,6 +1733,9 @@ test "compat regression covers commands batch a find and printf follow-ups" {
       ),
       compat_warning(
         2062, 4, 6, 11, "Quote the grep pattern so the shell won't interpret it.",
+      ),
+      compat_info(
+        2035, 4, 6, 11, "Use ./*glob* or -- *glob* so names with dashes won't become options.",
       ),
       compat_error(
         2182, 5, 8, 11, "This printf format string has no variables. Other arguments are ignored.",
@@ -1466,14 +1958,14 @@ test "compat regression keeps analytics negatives quiet" {
 
 ///|
 test "compat regression keeps command negatives quiet" {
-  assert_no_compat_case_with_optional_checks(
+  assert_compat_case_with_optional_checks(
     "commands-negatives",
     (
       #|#!/bin/bash
       #|# shellcheck disable=SC2034,SC2086
       #|command time -f '%E' sleep 1
       #|find . -type f
-      #|find * -name '*.php'
+      #|find . -name '*.php'
       #|find . -exec wc -l {} \;
       #|find . -ok sh -c 'rm "$@"' _ {} \;
       #|find . -name '*.wav' -o \( -name '*.au' -exec rm {} + \)
@@ -1500,6 +1992,7 @@ test "compat regression keeps command negatives quiet" {
       #|q2() { local x=1; local y=$x; }
       #|
     ),
+    [],
     ["deprecate-which"],
   )
 }
@@ -1624,19 +2117,351 @@ test "compat regression lets explicit shell overrides win over annotations" {
       #|[[ x ]]
       #|
     ),
-    [compat_warning(3010, 2, 1, 8, "In POSIX sh, [[ ]] is undefined.")],
+    [
+      compat_warning(3010, 2, 1, 8, "In POSIX sh, [[ ]] is undefined."),
+      compat_error(
+        2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
+      ),
+    ],
     CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
   )
 
-  assert_no_compat_case_with_spec(
+  assert_compat_case_with_spec(
     "shell-override-quiet",
     (
       #|# shellcheck shell=sh
       #|[[ x ]]
       #|
     ),
+    [
+      compat_error(
+        2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
+      ),
+    ],
     CheckSpec::default().with_shell_override(
       Some(@semantics.ShellDialect::Bash),
     ),
+  )
+}
+
+///|
+test "compat regression covers analytics phase 3 condition-logic diagnostics" {
+  assert_compat_case(
+    "analytics-phase-3-condition-logic",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086,SC2050,SC2166
+      #|foo && bar || baz
+      #|[[ $a != x || $a != y ]]
+      #|[ $a != x -o $a != y ]
+      #|[ $a != x ] || [ $a != y ]
+      #|[ 1 -eq $x ] && [ $x -eq 2 ]
+      #|(( a!=1 || a!=2 ))
+      #|(( a==1 && a==2 ))
+      #|
+    ),
+    [
+      compat_warning(
+        2015, 3, 15, 18, "Note that A && B || C is not if-then-else. C may run when A is true.",
+      ),
+      compat_warning(
+        2056, 4, 21, 22, "You probably wanted && here, otherwise it's always true.",
+      ),
+      compat_warning(
+        2055, 5, 20, 21, "You probably wanted && here, otherwise it's always true.",
+      ),
+      compat_warning(
+        2252, 6, 24, 25, "You probably wanted && here, otherwise it's always true.",
+      ),
+      compat_warning(
+        2333, 7, 26, 27, "You probably wanted || here, otherwise it's always false.",
+      ),
+      compat_warning(
+        2056, 8, 1, 19, "You probably wanted && here, otherwise it's always true.",
+      ),
+      compat_warning(
+        2334, 9, 1, 19, "You probably wanted || here, otherwise it's always false.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics phase 3 numeric-and-case diagnostics" {
+  assert_compat_case(
+    "analytics-phase-3-numeric-and-case",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2050,SC2154,SC2086
+      #|case foo in
+      #|  $bar) :;;
+      #|  *$bar*) :;;
+      #|esac
+      #|[[ 10 < 3 ]]
+      #|[[ 3.14 -eq 2 ]]
+      #|[[ foo <= bar ]]
+      #|[ foo \> bar ]
+      #|[ foo -eq bar ]
+      #|[[ foo -eq bar ]]
+      #|
+    ),
+    [
+      compat_warning(
+        2194, 3, 6, 9, "This word is constant. Did you forget the $ on a variable?",
+      ),
+      compat_warning(
+        2254, 4, 3, 7, "Quote expansions in case patterns to match literally rather than as a glob.",
+      ),
+      compat_error(
+        2071, 7, 9, 10, "< is for string comparisons. Use -lt instead.",
+      ),
+      compat_error(
+        2072, 8, 4, 8, "Decimals are not supported in shell numeric comparisons.",
+      ),
+      compat_error(
+        2122, 9, 11, 14, "<= is not a valid operator. Use '! a > b' instead.",
+      ),
+      compat_error(
+        2073, 10, 10, 13, "Escape < and > in [ ] comparisons so they are not treated as redirections.",
+      ),
+      compat_error(
+        2170, 11, 11, 14, "Invalid number for this test operator. Use a string comparison instead.",
+      ),
+      compat_warning(
+        2309, 12, 12, 15, "Quoted or literal strings are being compared numerically.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics phase 3 arithmetic-context diagnostics" {
+  assert_compat_case(
+    "analytics-phase-3-arithmetic-context",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|a[$((1+1))]=n
+      #|echo $(( ((1+1)) ))
+      #|echo $(( (x) ))
+      #|n=4
+      #|x+=1
+      #|y+=n
+      #|declare -i z=0
+      #|z+=1
+      #|w+='1'
+      #|
+    ),
+    [
+      compat_style(
+        2321, 3, 3, 11, "Array indices are already arithmetic contexts. Prefer removing the $(( and )).",
+      ),
+      compat_style(
+        2323, 4, 10, 17, "$(( (x) )) is the same as $(( x )). Prefer not wrapping in additional parentheses.",
+      ),
+      compat_style(
+        2322, 4, 11, 16, "In arithmetic contexts, ((x)) is the same as (x). Prefer only one layer of parentheses.",
+      ),
+      compat_style(
+        2323, 5, 10, 13, "$(( (x) )) is the same as $(( x )). Prefer not wrapping in additional parentheses.",
+      ),
+      compat_warning(
+        2324, 7, 1, 2, "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence.",
+      ),
+      compat_warning(
+        2324, 8, 1, 2, "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers analytics batch m unmatchable case diagnostics" {
+  assert_compat_case(
+    "analytics-batch-m-constant-word",
+    (
+      #|#!/bin/bash
+      #|case foo in bar) true; esac
+      #|
+    ),
+    [
+      compat_warning(
+        2194, 2, 6, 9, "This word is constant. Did you forget the $ on a variable?",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-m-impossible-pattern",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|case foo-$bar in ??|*) true; esac
+      #|
+    ),
+    [
+      compat_warning(
+        2195, 3, 18, 20, "This pattern will never match the case statement's word. Double check them.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-m-shadowed-pattern",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|case $f in cow) true;; bar|cow) false;; esac
+      #|
+    ),
+    [
+      compat_warning(
+        2221, 3, 12, 15, "This pattern always overrides a later one on line 3.",
+      ),
+      compat_warning(
+        2222, 3, 28, 31, "This pattern never matches because of a previous pattern on line 3.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-m-constant-word-with-shadowed-pattern",
+    (
+      #|#!/bin/bash
+      #|case foo in cow) true;; bar|cow) false;; esac
+      #|
+    ),
+    [
+      compat_warning(
+        2194, 2, 6, 9, "This word is constant. Did you forget the $ on a variable?",
+      ),
+      compat_warning(
+        2221, 2, 13, 16, "This pattern always overrides a later one on line 2.",
+      ),
+      compat_warning(
+        2222, 2, 29, 32, "This pattern never matches because of a previous pattern on line 2.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-q-redirect-and-pipe-diagnostics",
+    (
+      #|#!/bin/bash
+      #|> file
+      #|> file | grep foo
+      #|grep foo | > bar
+      #|foo | echo bar
+      #|foo | basename < file.txt
+      #|ls > foo > bar
+      #|ls > foo 2> bar > baz
+      #|
+    ),
+    [
+      compat_warning(
+        2188, 2, 1, 7, "This redirection doesn't have a command. Move to its command (or use 'true' as no-op).",
+      ),
+      compat_error(
+        2260, 3, 1, 2, "This redirection overrides the output pipe. Use 'tee' to output to both.",
+      ),
+      compat_error(
+        2189, 3, 1, 7, "You can't have | between this redirection and the command it should apply to.",
+      ),
+      compat_error(
+        2189, 4, 12, 17, "You can't have | between this redirection and the command it should apply to.",
+      ),
+      compat_warning(
+        2216, 5, 7, 15, "Piping to 'echo', a command that doesn't read stdin. Did you want 'cat' instead?",
+      ),
+      compat_warning(
+        2216, 6, 7, 26, "Piping to 'basename', a command that doesn't read stdin. Wrong command or missing xargs?",
+      ),
+      compat_warning(
+        2217, 6, 7, 26, "Redirecting to 'basename', a command that doesn't read stdin. Bad quoting, wrong command or missing xargs?",
+      ),
+      compat_error(
+        2259, 6, 16, 17, "This redirection overrides piped input. To use both, merge or pass filenames.",
+      ),
+      compat_error(
+        2261, 7, 4, 5, "Multiple redirections compete for stdout. Use cat, tee, or pass filenames instead.",
+      ),
+      compat_error(
+        2261, 7, 10, 11, "Multiple redirections compete for stdout. Use cat, tee, or pass filenames instead.",
+      ),
+      compat_error(
+        2261, 8, 4, 5, "Multiple redirections compete for stdout. Use cat, tee, or pass filenames instead.",
+      ),
+      compat_error(
+        2261, 8, 17, 18, "Multiple redirections compete for stdout. Use cat, tee, or pass filenames instead.",
+      ),
+    ],
+  )
+
+  assert_no_compat_case(
+    "analytics-batch-q-here-doc-nested-consumer-is-not-a-pipe-consumer",
+    (
+      #|#!/bin/bash
+      #|foo | cat <<EOF
+      #|$(cat)
+      #|EOF
+      #|
+    ),
+  )
+
+  assert_compat_case(
+    "analytics-batch-q-quoted-here-doc-overrides-pipe",
+    (
+      #|#!/bin/bash
+      #|echo World | cat << 'EOF'
+      #|hello $(cat)
+      #|EOF
+      #|
+    ),
+    [
+      compat_error(
+        2259, 2, 21, 26, "This redirection overrides piped input. To use both, merge or pass filenames.",
+      ),
+    ],
+  )
+
+  assert_no_compat_case(
+    "analytics-batch-q-command-exceptions-and-fd-dup",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2035
+      #|find . -print0 | du --files0-from=/dev/stdin
+      #|find . | du --exclude-from=/dev/fd/0
+      #|yes | cp -Ri foo/* bar
+      #|yes | rm --interactive *
+      #|ls 1>&3 3>&1 3>&-
+      #|
+    ),
+  )
+
+  assert_compat_case(
+    "legacy-cp-recursive-flag",
+    (
+      #|#!/bin/bash
+      #|cp -r foo bar
+      #|
+    ),
+    [compat_warning(2336, 2, 4, 6, "cp -r behavior is implementation-defined")],
+  )
+
+  assert_compat_case(
+    "legacy-unary-test-a-with-negation",
+    (
+      #|#!/bin/bash
+      #|[ ! -a file ]
+      #|
+    ),
+    [
+      compat_error(
+        2332, 2, 3, 4, "[ ! -a file ] is always true because -a becomes logical AND. Use -e instead.",
+      ),
+      compat_style(
+        2331, 2, 5, 7, "For file existence, prefer standard -e over legacy -a.",
+      ),
+    ],
   )
 }

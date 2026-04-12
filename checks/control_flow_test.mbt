@@ -19,6 +19,83 @@ test "control flow checks flag unreachable commands" {
 }
 
 ///|
+test "control flow checks flag unreachable functions" {
+  let diagnostics = check_source_extended(
+    (
+      #|f() { echo hidden; }
+      #|exit
+      #|
+    ),
+  )
+
+  assert_true(has_code(diagnostics, 2329))
+  assert_true(!has_code(diagnostics, 2317))
+}
+
+///|
+test "control flow checks only flag functions that are never invoked" {
+  let dead_case = check_source_extended(
+    (
+      #|f() { echo hidden; }
+      #|exit
+      #|
+    ),
+  )
+  let live_case = check_source_extended(
+    (
+      #|f() { echo live; }
+      #|f
+      #|
+    ),
+  )
+
+  assert_true(has_code(dead_case, 2329))
+  assert_true(!has_code(live_case, 2329))
+}
+
+///|
+test "control flow checks ignore functions that are invoked" {
+  let diagnostics = check_source_extended(
+    (
+      #|f() { echo live; }
+      #|f
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2329))
+}
+
+///|
+test "control flow checks keep maybe-sourced function definitions quiet" {
+  let diagnostics = check_source_extended(
+    (
+      #|f() { echo hidden; }
+      #|echo live
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2329))
+}
+
+///|
+test "control flow checks ignore redirect-only function bodies" {
+  let diagnostics = check_source_extended(
+    (
+      #|#!/bin/bash
+      #|fun() {
+      #|# shellcheck disable=SC2188
+      #|> /dev/null
+      #|}
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2329))
+}
+
+///|
 test "control flow checks flag maybe-unset reads" {
   let diagnostics = check_source_extended(
     (
@@ -70,6 +147,21 @@ test "control flow checks suppress guards that explicitly allow unset parameters
   assert_true(!has_code(default_value, 2154))
   assert_true(!has_code(error_value, 2154))
   assert_true(!has_code(alternate_value, 2154))
+}
+
+///|
+test "control flow checks ignore nested reads inside parameter expansion payloads" {
+  let diagnostics = check_source_extended(
+    (
+      #|echo ${var#$x}
+      #|echo ${arr[$x]}
+      #|echo ${foo:-$bar}
+      #|echo ${foo:-${bar}}
+      #|
+    ),
+  )
+
+  assert_eq(count_code(diagnostics, 2154), 2)
 }
 
 ///|

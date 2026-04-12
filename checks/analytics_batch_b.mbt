@@ -518,7 +518,7 @@ fn visit_condition_binaries(
   visit : (String, @parser.Word, @parser.Word) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(op, lhs, rhs) => visit(op, lhs, rhs)
+    @parser.ConditionExpr::Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_condition_binaries(inner, visit)
     @parser.ConditionExpr::And(lhs, rhs)

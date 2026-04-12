@@ -62,6 +62,36 @@ fn apply_fixes(fixes : Array[Fix], source : String) -> String? {
 }
 
 ///|
+fn apply_fix_with_cumulative_shifts(fix : Fix, source : String) -> String? {
+  let merged = match merge_fixes([fix]) {
+    Some(merged) => merged
+    None => return None
+  }
+  if merged.replacements.length() == 0 {
+    return Some(source)
+  }
+  let first_file = merged.replacements[0].filename
+  let mut current = source
+  let mut shift = 0
+  for replacement in merged.replacements {
+    if replacement.filename != first_file {
+      return None
+    }
+    let start = replacement.start.offset + shift
+    let end_ = replacement.end.offset + shift
+    if start < 0 || end_ < start || end_ > current.length() {
+      return None
+    }
+    current = current.view(end_offset=start).to_string() +
+      replacement.text +
+      current.view(start_offset=end_).to_string()
+    shift += replacement.text.length() -
+      (replacement.end.offset - replacement.start.offset)
+  }
+  Some(current)
+}
+
+///|
 fn test_fixes(expected : String, original : String, fixes : Array[Fix]) -> Bool {
   apply_fixes(fixes, original) == Some(expected)
 }
@@ -111,6 +141,57 @@ fn ordered_pair(lhs : Int, rhs : Int) -> (Int, Int) {
   } else {
     (rhs, lhs)
   }
+}
+
+///|
+fn bounded_offset(value : Int, limit : Int) -> Int {
+  if limit <= 0 {
+    return 0
+  }
+  let offset = value % limit
+  if offset < 0 {
+    offset + limit
+  } else {
+    offset
+  }
+}
+
+///|
+fn compat_shift_text(seed : Int) -> String {
+  let width = bounded_offset(seed, 3) + 1
+  let ch = match bounded_offset(seed, 3) {
+    0 => 'x'
+    1 => 'y'
+    _ => 'z'
+  }
+  let builder = StringBuilder::new()
+  let mut i = 0
+  while i < width {
+    builder.write_char(ch)
+    i += 1
+  }
+  builder.to_string()
+}
+
+///|
+fn pstree_compat_fix(offsets : Array[Int], source : String) -> Fix {
+  let replacements : Array[Replacement] = []
+  let mut i = 0
+  let limit = source.length() + 1
+  while i < offsets.length() && i < 8 {
+    let offset = bounded_offset(offsets[i], limit)
+    replacements.push(
+      compat_replacement(
+        offset,
+        offset,
+        compat_shift_text(i + offset),
+        i,
+        InsertionPoint::after(),
+      ),
+    )
+    i += 1
+  }
+  Fix::from_replacements(replacements)
 }
 
 ///|
@@ -256,6 +337,21 @@ test "shellcheck fixer quickcheck overlap commutes" {
       )
       detect_overlap(left, right) == detect_overlap(right, left)
     }),
+    max_success=200,
+  )
+}
+
+///|
+/// Adapted upstream coverage: bashcheck no longer has ShellCheck's PSTree
+/// prefix-sum helper, so check the equivalent cumulative-shift behavior
+/// against a straightforward offset-adjusting implementation.
+test "shellcheck fixer adapted pstree sums correctly" {
+  @qc.quick_check_fn(
+    fn(offsets : Array[Int]) {
+      let source = "0123456789"
+      let fix = pstree_compat_fix(offsets, source)
+      apply_fix(fix, source) == apply_fix_with_cumulative_shifts(fix, source)
+    },
     max_success=200,
   )
 }

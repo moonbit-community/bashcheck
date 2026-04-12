@@ -149,6 +149,22 @@ fn analytics_descriptions() -> Array[CheckDescription] {
   append_analytics_batch_a_descriptions(descriptions)
   append_analytics_batch_b_descriptions(descriptions)
   append_analytics_batch_c_descriptions(descriptions)
+  append_analytics_batch_d_descriptions(descriptions)
+  append_analytics_batch_e_descriptions(descriptions)
+  append_analytics_batch_f_descriptions(descriptions)
+  append_analytics_batch_g_descriptions(descriptions)
+  append_analytics_batch_h_descriptions(descriptions)
+  append_analytics_batch_i_descriptions(descriptions)
+  append_analytics_batch_j_descriptions(descriptions)
+  append_analytics_batch_k_descriptions(descriptions)
+  append_analytics_batch_l_descriptions(descriptions)
+  append_analytics_batch_m_descriptions(descriptions)
+  append_analytics_batch_n_descriptions(descriptions)
+  append_analytics_batch_o_descriptions(descriptions)
+  append_analytics_batch_p_descriptions(descriptions)
+  append_analytics_batch_q_descriptions(descriptions)
+  append_analytics_batch_r_descriptions(descriptions)
+  append_analytics_batch_s_descriptions(descriptions)
   descriptions
 }
 
@@ -360,6 +376,22 @@ fn run_analytics_checks(
   run_analytics_batch_a_checks(script, shell, diagnostics)
   run_analytics_batch_b_checks(script, shell, diagnostics)
   run_analytics_batch_c_checks(script, shell, diagnostics)
+  run_analytics_batch_d_checks(script, shell, diagnostics)
+  run_analytics_batch_e_checks(script, shell, diagnostics)
+  run_analytics_batch_f_checks(script, shell, diagnostics)
+  run_analytics_batch_g_checks(script, shell, diagnostics)
+  run_analytics_batch_h_checks(script, shell, diagnostics)
+  run_analytics_batch_i_checks(script, shell, diagnostics)
+  run_analytics_batch_j_checks(script, shell, diagnostics)
+  run_analytics_batch_k_checks(script, shell, diagnostics)
+  run_analytics_batch_l_checks(script, shell, diagnostics)
+  run_analytics_batch_m_checks(script, shell, diagnostics)
+  run_analytics_batch_n_checks(script, shell, diagnostics)
+  run_analytics_batch_o_checks(script, shell, diagnostics)
+  run_analytics_batch_p_checks(script, shell, diagnostics)
+  run_analytics_batch_q_checks(script, shell, diagnostics)
+  run_analytics_batch_r_checks(script, shell, diagnostics)
+  run_analytics_batch_s_checks(script, shell, diagnostics)
 }
 
 ///|
@@ -1344,7 +1376,7 @@ fn braced_parameter_is_unquoted_array_expansion(
 ///|
 fn condition_has_binary_op(expr : @parser.ConditionExpr, op : String) -> Bool {
   match expr {
-    @parser.ConditionExpr::Binary(current, _, _) => current == op
+    @parser.ConditionExpr::Binary(current, _, _, _) => current == op
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       condition_has_binary_op(inner, op)
     @parser.ConditionExpr::And(lhs, rhs)
@@ -1572,7 +1604,7 @@ fn visit_condition_binary_rhs(
   visit : (@parser.Word) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(current, _, rhs) =>
+    @parser.ConditionExpr::Binary(current, _, _, rhs) =>
       if current == op {
         visit(rhs)
       }

@@ -147,6 +147,565 @@ fn translate_parse_error(base : Position, err : ParseError) -> ParseError {
 }
 
 ///|
+fn translate_script(base : Position, script : Script) -> Script {
+  let items : Array[ListItem] = []
+  for item in script.items {
+    items.push(translate_list_item(base, item))
+  }
+  { ..script, span: translate_span(base, script.span), items }
+}
+
+///|
+fn translate_list_item(base : Position, item : ListItem) -> ListItem {
+  {
+    ..item,
+    span: translate_span(base, item.span),
+    and_or: translate_and_or_list(base, item.and_or),
+  }
+}
+
+///|
+fn translate_and_or_list(base : Position, list : AndOrList) -> AndOrList {
+  let tail : Array[(AndOrOperator, Pipeline)] = []
+  for pair in list.tail {
+    tail.push((pair.0, translate_pipeline(base, pair.1)))
+  }
+  {
+    span: translate_span(base, list.span),
+    head: translate_pipeline(base, list.head),
+    tail,
+  }
+}
+
+///|
+fn translate_pipeline(base : Position, pipeline : Pipeline) -> Pipeline {
+  let segments : Array[PipelineSegment] = []
+  for segment in pipeline.segments {
+    segments.push(translate_pipeline_segment(base, segment))
+  }
+  { ..pipeline, span: translate_span(base, pipeline.span), segments }
+}
+
+///|
+fn translate_pipeline_segment(
+  base : Position,
+  segment : PipelineSegment,
+) -> PipelineSegment {
+  {
+    ..segment,
+    span: translate_span(base, segment.span),
+    command: translate_command(base, segment.command),
+  }
+}
+
+///|
+fn translate_command(base : Position, command : Command) -> Command {
+  {
+    span: translate_span(base, command.span),
+    kind: translate_command_kind(base, command.kind),
+    redirects: translate_redirections(base, command.redirects),
+  }
+}
+
+///|
+fn translate_command_kind(base : Position, kind : CommandKind) -> CommandKind {
+  match kind {
+    CommandKind::Simple(simple) =>
+      CommandKind::Simple(translate_simple_command(base, simple))
+    CommandKind::Source(source) =>
+      CommandKind::Source(translate_source_command(base, source))
+    CommandKind::Time(clause) =>
+      CommandKind::Time(translate_time_clause(base, clause))
+    CommandKind::Subshell(script) =>
+      CommandKind::Subshell(translate_script(base, script))
+    CommandKind::BraceGroup(script) =>
+      CommandKind::BraceGroup(translate_script(base, script))
+    CommandKind::If(clause) =>
+      CommandKind::If(translate_if_clause(base, clause))
+    CommandKind::While(clause) =>
+      CommandKind::While(translate_loop_clause(base, clause))
+    CommandKind::Until(clause) =>
+      CommandKind::Until(translate_loop_clause(base, clause))
+    CommandKind::ForIn(clause) =>
+      CommandKind::ForIn(translate_for_clause(base, clause))
+    CommandKind::ForArithmetic(clause) =>
+      CommandKind::ForArithmetic(translate_arithmetic_for_clause(base, clause))
+    CommandKind::Select(clause) =>
+      CommandKind::Select(translate_select_clause(base, clause))
+    CommandKind::Case(clause) =>
+      CommandKind::Case(translate_case_clause(base, clause))
+    CommandKind::Condition(condition) =>
+      CommandKind::Condition(translate_condition_command(base, condition))
+    CommandKind::Arithmetic(command) =>
+      CommandKind::Arithmetic(translate_arithmetic_command(base, command))
+    CommandKind::Function(function_) =>
+      CommandKind::Function(translate_function_def(base, function_))
+    CommandKind::CoProc(clause) =>
+      CommandKind::CoProc(translate_co_proc_clause(base, clause))
+    CommandKind::BatsTest(clause) =>
+      CommandKind::BatsTest(translate_bats_test_clause(base, clause))
+  }
+}
+
+///|
+fn translate_simple_command(
+  base : Position,
+  simple : SimpleCommand,
+) -> SimpleCommand {
+  {
+    assignments: translate_assignments(base, simple.assignments),
+    words: translate_words(base, simple.words),
+  }
+}
+
+///|
+fn translate_source_command(
+  base : Position,
+  source : SourceCommand,
+) -> SourceCommand {
+  {
+    ..source,
+    assignments: translate_assignments(base, source.assignments),
+    options: translate_words(base, source.options),
+    path: translate_word(base, source.path),
+    args: translate_words(base, source.args),
+    included: match source.included {
+      Some(script) => Some(translate_script(base, script))
+      None => None
+    },
+  }
+}
+
+///|
+fn translate_time_clause(base : Position, clause : TimeClause) -> TimeClause {
+  {
+    flags: translate_words(base, clause.flags),
+    body: translate_pipeline(base, clause.body),
+  }
+}
+
+///|
+fn translate_assignments(
+  base : Position,
+  assignments : Array[Assignment],
+) -> Array[Assignment] {
+  let translated : Array[Assignment] = []
+  for assignment in assignments {
+    translated.push(translate_assignment(base, assignment))
+  }
+  translated
+}
+
+///|
+fn translate_assignment(base : Position, assignment : Assignment) -> Assignment {
+  {
+    ..assignment,
+    span: translate_span(base, assignment.span),
+    indexes: translate_array_indices(base, assignment.indexes),
+    value: translate_assignment_value(base, assignment.value),
+  }
+}
+
+///|
+fn translate_assignment_value(
+  base : Position,
+  value : AssignmentValue,
+) -> AssignmentValue {
+  match value {
+    AssignmentValue::Empty => AssignmentValue::Empty
+    AssignmentValue::Word(word) =>
+      AssignmentValue::Word(translate_word(base, word))
+    AssignmentValue::ArrayLiteral(elements) =>
+      AssignmentValue::ArrayLiteral(translate_array_elements(base, elements))
+  }
+}
+
+///|
+fn translate_array_elements(
+  base : Position,
+  elements : Array[ArrayElement],
+) -> Array[ArrayElement] {
+  let translated : Array[ArrayElement] = []
+  for element in elements {
+    translated.push(translate_array_element(base, element))
+  }
+  translated
+}
+
+///|
+fn translate_array_element(
+  base : Position,
+  element : ArrayElement,
+) -> ArrayElement {
+  {
+    ..element,
+    indexes: translate_array_indices(base, element.indexes),
+    value: translate_assignment_value(base, element.value),
+  }
+}
+
+///|
+fn translate_if_clause(base : Position, clause : IfClause) -> IfClause {
+  let arms : Array[IfArm] = []
+  for arm in clause.arms {
+    arms.push(translate_if_arm(base, arm))
+  }
+  {
+    arms,
+    else_body: match clause.else_body {
+      Some(script) => Some(translate_script(base, script))
+      None => None
+    },
+  }
+}
+
+///|
+fn translate_if_arm(base : Position, arm : IfArm) -> IfArm {
+  {
+    condition: translate_script(base, arm.condition),
+    body: translate_script(base, arm.body),
+  }
+}
+
+///|
+fn translate_loop_clause(base : Position, clause : LoopClause) -> LoopClause {
+  {
+    condition: translate_script(base, clause.condition),
+    body: translate_script(base, clause.body),
+  }
+}
+
+///|
+fn translate_for_clause(base : Position, clause : ForClause) -> ForClause {
+  {
+    ..clause,
+    values: translate_words(base, clause.values),
+    body: translate_script(base, clause.body),
+  }
+}
+
+///|
+fn translate_arithmetic_for_clause(
+  base : Position,
+  clause : ArithmeticForClause,
+) -> ArithmeticForClause {
+  {
+    init: translate_arithmetic_expr(base, clause.init),
+    condition: translate_arithmetic_expr(base, clause.condition),
+    step: translate_arithmetic_expr(base, clause.step),
+    body: translate_script(base, clause.body),
+  }
+}
+
+///|
+fn translate_select_clause(
+  base : Position,
+  clause : SelectClause,
+) -> SelectClause {
+  {
+    ..clause,
+    values: translate_words(base, clause.values),
+    body: translate_script(base, clause.body),
+  }
+}
+
+///|
+fn translate_case_clause(base : Position, clause : CaseClause) -> CaseClause {
+  let items : Array[CaseItem] = []
+  for item in clause.items {
+    items.push(translate_case_item(base, item))
+  }
+  { word: translate_word(base, clause.word), items }
+}
+
+///|
+fn translate_case_item(base : Position, item : CaseItem) -> CaseItem {
+  {
+    ..item,
+    patterns: translate_words(base, item.patterns),
+    body: translate_script(base, item.body),
+  }
+}
+
+///|
+fn translate_condition_command(
+  base : Position,
+  condition : ConditionCommand,
+) -> ConditionCommand {
+  { ..condition, expr: translate_condition_expr(base, condition.expr) }
+}
+
+///|
+fn translate_condition_expr(
+  base : Position,
+  expr : ConditionExpr,
+) -> ConditionExpr {
+  match expr {
+    ConditionExpr::Empty => ConditionExpr::Empty
+    ConditionExpr::Word(word) => ConditionExpr::Word(translate_word(base, word))
+    ConditionExpr::Unary(op, span, word) =>
+      ConditionExpr::Unary(
+        op,
+        translate_span(base, span),
+        translate_word(base, word),
+      )
+    ConditionExpr::Binary(op, span, lhs, rhs) =>
+      ConditionExpr::Binary(
+        op,
+        translate_span(base, span),
+        translate_word(base, lhs),
+        translate_word(base, rhs),
+      )
+    ConditionExpr::Group(inner) =>
+      ConditionExpr::Group(translate_condition_expr(base, inner))
+    ConditionExpr::Not(inner) =>
+      ConditionExpr::Not(translate_condition_expr(base, inner))
+    ConditionExpr::And(lhs, rhs) =>
+      ConditionExpr::And(
+        translate_condition_expr(base, lhs),
+        translate_condition_expr(base, rhs),
+      )
+    ConditionExpr::Or(lhs, rhs) =>
+      ConditionExpr::Or(
+        translate_condition_expr(base, lhs),
+        translate_condition_expr(base, rhs),
+      )
+  }
+}
+
+///|
+fn translate_arithmetic_command(
+  base : Position,
+  command : ArithmeticCommand,
+) -> ArithmeticCommand {
+  { ..command, expr: translate_arithmetic_expr(base, command.expr) }
+}
+
+///|
+fn translate_co_proc_clause(
+  base : Position,
+  clause : CoProcClause,
+) -> CoProcClause {
+  {
+    name: match clause.name {
+      Some(name) => Some(translate_word(base, name))
+      None => None
+    },
+    body: translate_command(base, clause.body),
+  }
+}
+
+///|
+fn translate_bats_test_clause(
+  base : Position,
+  clause : BatsTestClause,
+) -> BatsTestClause {
+  { ..clause, body: translate_script(base, clause.body) }
+}
+
+///|
+fn translate_function_def(
+  base : Position,
+  function_ : FunctionDef,
+) -> FunctionDef {
+  { ..function_, body: translate_command(base, function_.body) }
+}
+
+///|
+fn translate_redirections(
+  base : Position,
+  redirects : Array[Redirection],
+) -> Array[Redirection] {
+  let translated : Array[Redirection] = []
+  for redirect in redirects {
+    translated.push(translate_redirection(base, redirect))
+  }
+  translated
+}
+
+///|
+fn translate_redirection(
+  base : Position,
+  redirect : Redirection,
+) -> Redirection {
+  {
+    ..redirect,
+    span: translate_span(base, redirect.span),
+    target: translate_redirection_target(base, redirect.target),
+  }
+}
+
+///|
+fn translate_redirection_target(
+  base : Position,
+  target : RedirectionTarget,
+) -> RedirectionTarget {
+  match target {
+    RedirectionTarget::Word(word) =>
+      RedirectionTarget::Word(translate_word(base, word))
+    RedirectionTarget::HereDoc(doc) =>
+      RedirectionTarget::HereDoc(translate_here_doc(base, doc))
+  }
+}
+
+///|
+fn translate_here_doc(base : Position, doc : HereDoc) -> HereDoc {
+  {
+    ..doc,
+    parts: match doc.parts {
+      Some(parts) => Some(translate_word_parts(base, parts))
+      None => None
+    },
+  }
+}
+
+///|
+fn translate_words(base : Position, words : Array[Word]) -> Array[Word] {
+  let translated : Array[Word] = []
+  for word in words {
+    translated.push(translate_word(base, word))
+  }
+  translated
+}
+
+///|
+fn translate_word(base : Position, word : Word) -> Word {
+  {
+    ..word,
+    span: translate_span(base, word.span),
+    parts: translate_word_parts(base, word.parts),
+  }
+}
+
+///|
+fn translate_word_parts(
+  base : Position,
+  parts : Array[WordPart],
+) -> Array[WordPart] {
+  let translated : Array[WordPart] = []
+  for part in parts {
+    translated.push(translate_word_part(base, part))
+  }
+  translated
+}
+
+///|
+fn translate_word_part(base : Position, part : WordPart) -> WordPart {
+  match part {
+    WordPart::Literal(_)
+    | WordPart::SingleQuoted(_)
+    | WordPart::DollarSingleQuoted(_)
+    | WordPart::Parameter(_)
+    | WordPart::SpecialParameter(_)
+    | WordPart::Glob(_) => part
+    WordPart::DoubleQuoted(parts) =>
+      WordPart::DoubleQuoted(translate_word_parts(base, parts))
+    WordPart::DollarDoubleQuoted(parts) =>
+      WordPart::DollarDoubleQuoted(translate_word_parts(base, parts))
+    WordPart::BracedParameter(expansion) =>
+      WordPart::BracedParameter(translate_parameter_expansion(base, expansion))
+    WordPart::BraceCommandSubstitution(piped, script) =>
+      WordPart::BraceCommandSubstitution(piped, translate_script(base, script))
+    WordPart::CommandSubstitution(script) =>
+      WordPart::CommandSubstitution(translate_script(base, script))
+    WordPart::BackQuoted(script) =>
+      WordPart::BackQuoted(translate_script(base, script))
+    WordPart::ArithmeticExpansion(expr) =>
+      WordPart::ArithmeticExpansion(translate_arithmetic_expr(base, expr))
+    WordPart::DollarBracket(expr) =>
+      WordPart::DollarBracket(translate_arithmetic_expr(base, expr))
+    WordPart::ExtGlob(pattern) =>
+      WordPart::ExtGlob(translate_extglob_pattern(base, pattern))
+    WordPart::ProcessSubstitution(kind, script) =>
+      WordPart::ProcessSubstitution(kind, translate_script(base, script))
+    WordPart::BraceExpansion(expansion) =>
+      WordPart::BraceExpansion(translate_brace_expansion(base, expansion))
+  }
+}
+
+///|
+fn translate_parameter_expansion(
+  base : Position,
+  expansion : ParameterExpansion,
+) -> ParameterExpansion {
+  {
+    ..expansion,
+    index: match expansion.index {
+      Some(index) => Some(translate_array_index(base, index))
+      None => None
+    },
+  }
+}
+
+///|
+fn translate_extglob_pattern(
+  base : Position,
+  pattern : ExtGlobPattern,
+) -> ExtGlobPattern {
+  { ..pattern, alternatives: translate_words(base, pattern.alternatives) }
+}
+
+///|
+fn translate_brace_expansion(
+  base : Position,
+  expansion : BraceExpansion,
+) -> BraceExpansion {
+  { ..expansion, elements: translate_words(base, expansion.elements) }
+}
+
+///|
+fn translate_arithmetic_expr(
+  base : Position,
+  expr : ArithmeticExpr,
+) -> ArithmeticExpr {
+  let tokens : Array[ArithmeticToken] = []
+  for token in expr.tokens {
+    tokens.push(translate_arithmetic_token(base, token))
+  }
+  { ..expr, tokens, }
+}
+
+///|
+fn translate_arithmetic_token(
+  base : Position,
+  token : ArithmeticToken,
+) -> ArithmeticToken {
+  match token {
+    ArithmeticToken::Literal(_) | ArithmeticToken::Operator(_) => token
+    ArithmeticToken::Variable(name, indexes) =>
+      ArithmeticToken::Variable(name, translate_array_indices(base, indexes))
+    ArithmeticToken::Expansion(word) =>
+      ArithmeticToken::Expansion(translate_word(base, word))
+    ArithmeticToken::Group(inner) =>
+      ArithmeticToken::Group(translate_arithmetic_expr(base, inner))
+  }
+}
+
+///|
+fn translate_array_indices(
+  base : Position,
+  indexes : Array[ArrayIndex],
+) -> Array[ArrayIndex] {
+  let translated : Array[ArrayIndex] = []
+  for index in indexes {
+    translated.push(translate_array_index(base, index))
+  }
+  translated
+}
+
+///|
+fn translate_array_index(base : Position, index : ArrayIndex) -> ArrayIndex {
+  {
+    ..index,
+    parts: translate_word_parts(base, index.parts),
+    arithmetic: match index.arithmetic {
+      Some(expr) => Some(translate_arithmetic_expr(base, expr))
+      None => None
+    },
+  }
+}
+
+///|
 fn parse_error_position(err : ParseError) -> Position {
   match err {
     ParseError::UnexpectedEnd(pos~, ..) => pos
@@ -989,6 +1548,10 @@ fn Parser::is_at_stop(
 ///|
 fn Parser::ensure_no_pending_heredocs(self : Parser) -> Unit raise ParseError {
   if self.pending_heredocs.length() > 0 {
+    if self.eof() {
+      self.read_pending_heredocs()
+      return
+    }
     raise ParseError::Message(
       pos=self.position(),
       message="missing here-document body",
@@ -3434,6 +3997,25 @@ fn is_unary_condition_operator(text : String) -> Bool {
 }
 
 ///|
+fn is_condition_operator_like_unknown_unary(text : String) -> Bool {
+  if is_unary_condition_operator(text) || !text.has_prefix("-") {
+    return false
+  }
+  let view = text[:]
+  if view.length() < 2 {
+    return false
+  }
+  let mut i = 1
+  while i < view.length() {
+    if !is_ascii_alpha(view[i]) {
+      return false
+    }
+    i += 1
+  }
+  true
+}
+
+///|
 fn is_binary_condition_operator(text : String) -> Bool {
   match text {
     "="
@@ -3455,6 +4037,28 @@ fn is_binary_condition_operator(text : String) -> Bool {
     | "-ef" => true
     _ => false
   }
+}
+
+///|
+fn is_condition_operator_like_unknown_binary(text : String) -> Bool {
+  if is_binary_condition_operator(text) ||
+    text == "-a" ||
+    text == "-o" ||
+    !text.has_prefix("-") {
+    return false
+  }
+  let view = text[:]
+  if view.length() < 2 {
+    return false
+  }
+  let mut i = 1
+  while i < view.length() {
+    if !is_ascii_alpha(view[i]) {
+      return false
+    }
+    i += 1
+  }
+  true
 }
 
 ///|
@@ -4061,14 +4665,19 @@ fn parse_condition_primary(
       )
   }
   match word_plain_text(word) {
-    Some(op) if is_unary_condition_operator(op) =>
-      match parse_condition_word_token(cursor) {
-        Some(operand) => ConditionExpr::Unary(op, operand)
-        None =>
-          raise ParseError::Message(
-            pos=fallback,
-            message=condition_internal_message("1019"),
-          )
+    Some(op) =>
+      if is_unary_condition_operator(op) ||
+        is_condition_operator_like_unknown_unary(op) {
+        match parse_condition_word_token(cursor) {
+          Some(operand) => ConditionExpr::Unary(op, word.span, operand)
+          None =>
+            raise ParseError::Message(
+              pos=fallback,
+              message=condition_internal_message("1019"),
+            )
+        }
+      } else {
+        ConditionExpr::Word(word)
       }
     _ => ConditionExpr::Word(word)
   }
@@ -4085,17 +4694,22 @@ fn parse_condition_comparison(
       match cursor.peek() {
         Some(ConditionToken::Word(op_word)) =>
           match word_literal_text(op_word) {
-            Some(op) if is_binary_condition_operator(op) => {
-              ignore(cursor.advance())
-              match parse_condition_word_token(cursor) {
-                Some(right) => ConditionExpr::Binary(op, word, right)
-                None =>
-                  raise ParseError::Message(
-                    pos=op_word.span.start,
-                    message=condition_internal_message("1027"),
-                  )
+            Some(op) =>
+              if is_binary_condition_operator(op) ||
+                is_condition_operator_like_unknown_binary(op) {
+                ignore(cursor.advance())
+                match parse_condition_word_token(cursor) {
+                  Some(right) =>
+                    ConditionExpr::Binary(op, op_word.span, word, right)
+                  None =>
+                    raise ParseError::Message(
+                      pos=op_word.span.start,
+                      message=condition_internal_message("1027"),
+                    )
+                }
+              } else {
+                left
               }
-            }
             _ => left
           }
         _ => left
@@ -7235,7 +7849,7 @@ fn Parser::read_backquoted_script(
           open_pos, "backtick expansion",
         )
       }
-      return nested.script
+      return translate_script(start, nested.script)
     }
     if ch == '\\' {
       ignore(self.advance_one())
@@ -8863,10 +9477,13 @@ fn is_dynamic_source_prefix_part(part : WordPart) -> Bool {
 
 ///|
 fn source_word_with_dynamic_prefix(word : Word) -> String? {
-  if word.parts.length() < 2 || !is_dynamic_source_prefix_part(word.parts[0]) {
+  if word.parts.length() == 0 {
     return None
   }
   let suffix = StringBuilder::new()
+  if !append_dynamic_source_prefix_part(word.parts[0], suffix) {
+    return None
+  }
   let mut i = 1
   while i < word.parts.length() {
     if !append_literal_word_part_text(word.parts[i], suffix) {
@@ -8879,6 +9496,30 @@ fn source_word_with_dynamic_prefix(word : Word) -> String? {
     Some("." + path)
   } else {
     None
+  }
+}
+
+///|
+fn append_dynamic_source_prefix_part(
+  part : WordPart,
+  buf : StringBuilder,
+) -> Bool {
+  match part {
+    WordPart::DoubleQuoted(parts) | WordPart::DollarDoubleQuoted(parts) => {
+      if parts.length() == 0 ||
+        !append_dynamic_source_prefix_part(parts[0], buf) {
+        return false
+      }
+      let mut i = 1
+      while i < parts.length() {
+        if !append_literal_word_part_text(parts[i], buf) {
+          return false
+        }
+        i += 1
+      }
+      true
+    }
+    _ => is_dynamic_source_prefix_part(part)
   }
 }
 
@@ -8991,28 +9632,41 @@ fn resolve_command_sources(
                   let report = parse_script_with_options_internal(
                     contents, nested_options, next_stack,
                   )
-                  match report.script {
-                    Some(script) => {
-                      for diagnostic in report.diagnostics {
-                        diagnostics.push(diagnostic)
+                  if nested_parse_blocks_include(report.diagnostics) {
+                    diagnostics.push({
+                      span: source_command_resolution_span(source),
+                      severity: DiagnosticSeverity::Warning,
+                      code: Some(1094),
+                      message: "source file '\{resolved_path}' could not be parsed; include was skipped",
+                    })
+                    CommandKind::Source({
+                      ..source,
+                      resolved_path: Some(resolved_path),
+                    })
+                  } else {
+                    match report.script {
+                      Some(script) => {
+                        for diagnostic in report.diagnostics {
+                          diagnostics.push(diagnostic)
+                        }
+                        CommandKind::Source({
+                          ..source,
+                          resolved_path: Some(resolved_path),
+                          included: Some(script),
+                        })
                       }
-                      CommandKind::Source({
-                        ..source,
-                        resolved_path: Some(resolved_path),
-                        included: Some(script),
-                      })
-                    }
-                    None => {
-                      diagnostics.push({
-                        span: source_command_resolution_span(source),
-                        severity: DiagnosticSeverity::Warning,
-                        code: Some(1094),
-                        message: "source file '\{resolved_path}' could not be parsed; include was skipped",
-                      })
-                      CommandKind::Source({
-                        ..source,
-                        resolved_path: Some(resolved_path),
-                      })
+                      None => {
+                        diagnostics.push({
+                          span: source_command_resolution_span(source),
+                          severity: DiagnosticSeverity::Warning,
+                          code: Some(1094),
+                          message: "source file '\{resolved_path}' could not be parsed; include was skipped",
+                        })
+                        CommandKind::Source({
+                          ..source,
+                          resolved_path: Some(resolved_path),
+                        })
+                      }
                     }
                   }
                 }
@@ -9413,9 +10067,9 @@ fn collect_associative_names_from_condition_expr(
   match expr {
     ConditionExpr::Word(word) =>
       collect_associative_names_from_word(word, names)
-    ConditionExpr::Unary(_, word) =>
+    ConditionExpr::Unary(_, _, word) =>
       collect_associative_names_from_word(word, names)
-    ConditionExpr::Binary(_, left, right) => {
+    ConditionExpr::Binary(_, _, left, right) => {
       collect_associative_names_from_word(left, names)
       collect_associative_names_from_word(right, names)
     }
@@ -9687,11 +10341,12 @@ fn normalize_condition_expr(
   match expr {
     ConditionExpr::Word(word) =>
       ConditionExpr::Word(normalize_word(word, associative_names))
-    ConditionExpr::Unary(op, word) =>
-      ConditionExpr::Unary(op, normalize_word(word, associative_names))
-    ConditionExpr::Binary(op, left, right) =>
+    ConditionExpr::Unary(op, op_span, word) =>
+      ConditionExpr::Unary(op, op_span, normalize_word(word, associative_names))
+    ConditionExpr::Binary(op, op_span, left, right) =>
       ConditionExpr::Binary(
         op,
+        op_span,
         normalize_word(left, associative_names),
         normalize_word(right, associative_names),
       )
@@ -10257,6 +10912,17 @@ fn parse_script_with_options_internal(
       { script: None, diagnostics: parser.diagnostics }
     }
   }
+}
+
+///|
+fn nested_parse_blocks_include(diagnostics : Array[Diagnostic]) -> Bool {
+  for diagnostic in diagnostics {
+    match diagnostic.code {
+      Some(1061) | Some(1062) => return true
+      _ => ()
+    }
+  }
+  false
 }
 
 ///|

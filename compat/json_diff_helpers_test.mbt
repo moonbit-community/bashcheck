@@ -58,7 +58,9 @@ async fn run_shellcheck_json_pair(
 ) -> (String, String) {
   let path = compat_diff_fixture_path(label)
   if !@fs.exists("_build/compat-diff") {
-    @fs.mkdir("_build/compat-diff", permission=0o755, recursive=true)
+    ignore(@fs.mkdir("_build/compat-diff", permission=0o755, recursive=true)) catch {
+      _ => ()
+    }
   }
   @fs.write_file(path, source, create=0o644, truncate=true)
 

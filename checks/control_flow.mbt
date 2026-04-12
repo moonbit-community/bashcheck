@@ -26,6 +26,12 @@ fn control_flow_descriptions() -> Array[CheckDescription] {
       category: "control-flow",
       summary: "Command appears to be unreachable.",
     },
+    {
+      code: 2329,
+      severity: CheckSeverity::Info,
+      category: "control-flow",
+      summary: "This function is never invoked.",
+    },
   ]
 }
 
@@ -58,6 +64,8 @@ fn run_control_flow_checks(
         check_unreachable_command(cfg, analysis, id, command, diagnostics)
         check_command_reads(cfg, analysis, id, command, false, diagnostics)
       }
+      Some(@semantics.NodeRef::FunctionDef(function_def)) =>
+        check_unreachable_function(cfg, analysis, id, function_def, diagnostics)
       Some(@semantics.NodeRef::Assignment(assignment)) =>
         check_array_scalar_conflict(cfg, analysis, id, assignment, diagnostics)
       Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
@@ -165,6 +173,8 @@ fn check_unreachable_command(
 ) -> Unit {
   guard !@cfg.command_is_reachable(analysis, id) else { return }
   guard !has_unreachable_command_ancestor(cfg, analysis, id) else { return }
+  guard !has_unreachable_function_ancestor(cfg, analysis, id) else { return }
+  guard !has_source_command_ancestor(cfg, id) else { return }
   guard command_is_reportable(command) else { return }
   push_diagnostic(
     diagnostics,
@@ -173,6 +183,122 @@ fn check_unreachable_command(
     2317,
     "Command appears to be unreachable. Check usage (or ignore if invoked indirectly).",
   )
+}
+
+///|
+fn check_unreachable_function(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+  id : @cfg.CfgAstId,
+  function_def : @parser.FunctionDef,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard !function_def_is_reachable(cfg, analysis, id) else { return }
+  guard has_reachable_terminal_script_command(cfg, analysis) else { return }
+  guard function_body_has_reportable_command(function_def.body) else { return }
+  guard !function_has_blatant_recursion(function_def.name, function_def.body) else {
+    return
+  }
+  guard !has_unreachable_command_ancestor(cfg, analysis, id) else { return }
+  guard !has_unreachable_function_ancestor(cfg, analysis, id) else { return }
+  guard !has_source_command_ancestor(cfg, id) else { return }
+  push_diagnostic(
+    diagnostics,
+    control_flow_precise_ast_span(cfg, id),
+    CheckSeverity::Info,
+    2329,
+    "This function is never invoked. Check usage (or ignored if invoked indirectly).",
+  )
+}
+
+///|
+fn function_body_has_reportable_command(body : @parser.Command) -> Bool {
+  match body.kind {
+    @parser.CommandKind::Simple(simple) =>
+      simple.words.length() > 0 || simple.assignments.length() > 0
+    @parser.CommandKind::Source(_)
+    | @parser.CommandKind::Condition(_)
+    | @parser.CommandKind::Arithmetic(_) => true
+    @parser.CommandKind::Time(clause) =>
+      pipeline_has_reportable_command(clause.body)
+    @parser.CommandKind::Subshell(script)
+    | @parser.CommandKind::BraceGroup(script)
+    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+      script_has_reportable_command(script)
+    @parser.CommandKind::If(clause) => if_clause_has_reportable_command(clause)
+    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+      script_has_reportable_command(clause.condition) ||
+      script_has_reportable_command(clause.body)
+    @parser.CommandKind::ForIn(clause) =>
+      script_has_reportable_command(clause.body)
+    @parser.CommandKind::ForArithmetic(clause) =>
+      script_has_reportable_command(clause.body)
+    @parser.CommandKind::Select(clause) =>
+      script_has_reportable_command(clause.body)
+    @parser.CommandKind::Case(clause) =>
+      case_clause_has_reportable_command(clause)
+    @parser.CommandKind::CoProc(clause) =>
+      function_body_has_reportable_command(clause.body)
+    @parser.CommandKind::Function(_) => false
+  }
+}
+
+///|
+fn script_has_reportable_command(script : @parser.Script) -> Bool {
+  for item in script.items {
+    if and_or_list_has_reportable_command(item.and_or) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn and_or_list_has_reportable_command(list : @parser.AndOrList) -> Bool {
+  if pipeline_has_reportable_command(list.head) {
+    return true
+  }
+  for pair in list.tail {
+    let (_, pipeline) = pair
+    if pipeline_has_reportable_command(pipeline) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn pipeline_has_reportable_command(pipeline : @parser.Pipeline) -> Bool {
+  for segment in pipeline.segments {
+    if function_body_has_reportable_command(segment.command) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn if_clause_has_reportable_command(clause : @parser.IfClause) -> Bool {
+  for arm in clause.arms {
+    if script_has_reportable_command(arm.condition) ||
+      script_has_reportable_command(arm.body) {
+      return true
+    }
+  }
+  match clause.else_body {
+    Some(body) => script_has_reportable_command(body)
+    None => false
+  }
+}
+
+///|
+fn case_clause_has_reportable_command(clause : @parser.CaseClause) -> Bool {
+  for item in clause.items {
+    if script_has_reportable_command(item.body) {
+      return true
+    }
+  }
+  false
 }
 
 ///|
@@ -196,6 +322,125 @@ fn has_unreachable_command_ancestor(
         }
       None => ()
     }
+  }
+  false
+}
+
+///|
+fn has_unreachable_function_ancestor(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+  id : @cfg.CfgAstId,
+) -> Bool {
+  let mut current = @cfg.ast_parent_of(cfg, id)
+  while current is Some(_) {
+    let parent = match current {
+      Some(parent) => parent
+      None => break
+    }
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(@semantics.NodeRef::FunctionDef(_)) =>
+        if !function_def_is_reachable(cfg, analysis, parent) {
+          return true
+        }
+      _ => ()
+    }
+    current = @cfg.ast_parent_of(cfg, parent)
+  }
+  false
+}
+
+///|
+fn function_def_is_reachable(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+  id : @cfg.CfgAstId,
+) -> Bool {
+  match function_def_body_command_id(cfg, id) {
+    Some(body_id) => @cfg.command_is_reachable(analysis, body_id)
+    None => false
+  }
+}
+
+///|
+fn has_reachable_terminal_script_command(
+  cfg : @cfg.CFG,
+  analysis : @cfg.CfgAnalysis,
+) -> Bool {
+  for id in @cfg.ast_ids(cfg) {
+    guard @cfg.command_is_reachable(analysis, id) else { continue }
+    guard command_is_top_level_script_command(cfg, id) else { continue }
+    match @cfg.ast_ref_of(cfg, id) {
+      Some(@semantics.NodeRef::Command(command)) =>
+        if command_is_terminal_for_unreachable_function(command) {
+          return true
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+fn command_is_top_level_script_command(
+  cfg : @cfg.CFG,
+  id : @cfg.CfgAstId,
+) -> Bool {
+  let mut current = @cfg.ast_parent_of(cfg, id)
+  while current is Some(_) {
+    let parent = match current {
+      Some(parent) => parent
+      None => break
+    }
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(@semantics.NodeRef::FunctionDef(_))
+      | Some(@semantics.NodeRef::BatsTestClause(_))
+      | Some(@semantics.NodeRef::SourceCommand(_)) => return false
+      _ => current = @cfg.ast_parent_of(cfg, parent)
+    }
+  }
+  true
+}
+
+///|
+fn command_is_terminal_for_unreachable_function(
+  command : @parser.Command,
+) -> Bool {
+  command_matches_exact_name(command, "exit")
+}
+
+///|
+fn function_def_body_command_id(
+  cfg : @cfg.CFG,
+  id : @cfg.CfgAstId,
+) -> @cfg.CfgAstId? {
+  for child in @cfg.ast_children_of(cfg, id) {
+    match @cfg.ast_ref_of(cfg, child) {
+      Some(@semantics.NodeRef::Command(_)) => return Some(child)
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+fn has_source_command_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
+  let mut current = @cfg.ast_parent_of(cfg, id)
+  while current is Some(_) {
+    let parent = match current {
+      Some(parent) => parent
+      None => break
+    }
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(@semantics.NodeRef::SourceCommand(_)) => return true
+      Some(@semantics.NodeRef::Command(command)) =>
+        match command.kind {
+          @parser.CommandKind::Source(_) => return true
+          _ => ()
+        }
+      _ => ()
+    }
+    current = @cfg.ast_parent_of(cfg, parent)
   }
   false
 }
@@ -265,6 +510,7 @@ fn check_parameter_expansion_read(
   uppercase_only : Bool,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
+  guard !has_parameter_expansion_ancestor(cfg, id) else { return }
   guard !parameter_expansion_allows_unset(expansion) else { return }
   match expansion.name {
     Some(name) =>
@@ -284,6 +530,7 @@ fn check_unassigned_read(
   uppercase_only : Bool,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
+  guard !has_parameter_expansion_ancestor(cfg, id) else { return }
   guard should_consider_variable_name(name, uppercase_only) else { return }
   guard !read_is_guarded(cfg, id, name) else { return }
   match @cfg.incoming_state_of_ast(analysis, id) {
@@ -291,7 +538,7 @@ fn check_unassigned_read(
       if variable_is_unassigned(state, name) {
         push_diagnostic(
           diagnostics,
-          ast_effect_span(cfg, id),
+          control_flow_unassigned_read_span(cfg, id),
           CheckSeverity::Warning,
           2154,
           "\{name} is referenced but not assigned.",
@@ -299,6 +546,22 @@ fn check_unassigned_read(
       }
     _ => ()
   }
+}
+
+///|
+fn has_parameter_expansion_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
+  let mut current = @cfg.ast_parent_of(cfg, id)
+  while current is Some(_) {
+    let parent = match current {
+      Some(parent) => parent
+      None => break
+    }
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(@semantics.NodeRef::ParameterExpansion(_)) => return true
+      _ => current = @cfg.ast_parent_of(cfg, parent)
+    }
+  }
+  false
 }
 
 ///|
@@ -532,7 +795,7 @@ fn condition_expr_success_proves_defined(
   name : String,
 ) -> Bool {
   match expr {
-    @parser.ConditionExpr::Unary(op, word) =>
+    @parser.ConditionExpr::Unary(op, _, word) =>
       (op == "-v" || op == "-R") &&
       condition_test_target_name(word) == Some(name)
     @parser.ConditionExpr::Group(inner) =>
@@ -593,6 +856,36 @@ fn ast_effect_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
   match @cfg.ast_enclosing_span_of(cfg, id) {
     Some(span) => span
     None => panic()
+  }
+}
+
+///|
+fn control_flow_precise_ast_span(
+  cfg : @cfg.CFG,
+  id : @cfg.CfgAstId,
+) -> @parser.Span {
+  match @cfg.ast_span_of(cfg, id) {
+    Some(span) => span
+    None => ast_effect_span(cfg, id)
+  }
+}
+
+///|
+fn control_flow_unassigned_read_span(
+  cfg : @cfg.CFG,
+  id : @cfg.CfgAstId,
+) -> @parser.Span {
+  match @cfg.ast_ref_of(cfg, id) {
+    Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+      match parent_word_of(cfg, id) {
+        Some(word) =>
+          match word_subspan(word, "${\{expansion.raw}}") {
+            Some(span) => span
+            None => control_flow_precise_ast_span(cfg, id)
+          }
+        None => control_flow_precise_ast_span(cfg, id)
+      }
+    _ => control_flow_precise_ast_span(cfg, id)
   }
 }
 

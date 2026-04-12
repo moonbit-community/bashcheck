@@ -46,7 +46,23 @@ fn visit_pipeline_commands(
   visit : (@parser.Command) -> Unit,
 ) -> Unit {
   for segment in pipeline.segments {
-    @semantics.walk_command(segment.command, visit)
+    visit_command_and_includes(segment.command, visit)
+  }
+}
+
+///|
+fn visit_command_and_includes(
+  command : @parser.Command,
+  visit : (@parser.Command) -> Unit,
+) -> Unit {
+  @semantics.walk_command(command, visit)
+  match command.kind {
+    @parser.CommandKind::Source(source) =>
+      match source.included {
+        Some(script) => visit_script_commands(script, visit)
+        None => ()
+      }
+    _ => ()
   }
 }
 
@@ -248,8 +264,8 @@ fn visit_condition_expr_words(
   match expr {
     @parser.ConditionExpr::Empty => ()
     @parser.ConditionExpr::Word(word) => visit(word, place)
-    @parser.ConditionExpr::Unary(_, word) => visit(word, place)
-    @parser.ConditionExpr::Binary(_, lhs, rhs) => {
+    @parser.ConditionExpr::Unary(_, _, word) => visit(word, place)
+    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
       visit(lhs, place)
       visit(rhs, place)
     }

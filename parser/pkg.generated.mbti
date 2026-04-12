@@ -168,8 +168,8 @@ pub struct ConditionCommand {
 pub enum ConditionExpr {
   Empty
   Word(Word)
-  Unary(String, Word)
-  Binary(String, Word, Word)
+  Unary(String, Span, Word)
+  Binary(String, Span, Word, Word)
   Group(ConditionExpr)
   Not(ConditionExpr)
   And(ConditionExpr, ConditionExpr)
