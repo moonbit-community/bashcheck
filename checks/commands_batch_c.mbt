@@ -978,6 +978,9 @@ fn collect_word_part_reference_names(
             Some(name) => push_unique_reference_name(references, name)
             None => ()
           }
+        @parser.WordPart::ArithmeticExpansion(expr)
+        | @parser.WordPart::DollarBracket(expr) =>
+          analytics_collect_arithmetic_reference_names(expr, references)
         _ => ()
       }
     })

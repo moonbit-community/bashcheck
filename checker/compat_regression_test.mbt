@@ -1683,6 +1683,9 @@ test "compat regression covers commands batch a builtin diagnostics" {
     ),
     [
       compat_warning(
+        1091, 3, 3, 9, "source file 'script' was not provided in parse options",
+      ),
+      compat_warning(
         2240, 3, 10, 13, "The dot command does not support arguments in sh/dash. Set them as variables.",
       ),
       compat_warning(
