@@ -86,6 +86,28 @@ test "analytics batch a ignores exported used and prefixed assignments" {
 }
 
 ///|
+test "analytics batch a counts arithmetic and here-doc expansions as assignment uses" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|arith_word=1
+      #|echo $((arith_word + 1))
+      #|heredoc_param=1
+      #|cat <<EOF
+      #|$heredoc_param
+      #|EOF
+      #|heredoc_index=(a b)
+      #|cat <<EOF >> ./test
+      #| $(( 1 + heredoc_index[1] ))
+      #|EOF
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2034))
+}
+
+///|
 test "analytics batch a flags pure unquoted parameter words with shellcheck-style fixes" {
   let source =
     #|#!/bin/bash

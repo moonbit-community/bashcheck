@@ -479,6 +479,13 @@ fn analytics_collect_command_reference_names(
   visit_direct_words_in_command(command, fn(word, _) {
     collect_word_reference_names(word, references)
   })
+  for redirect in command.redirects {
+    match redirect.target {
+      @parser.RedirectionTarget::HereDoc({ parts: Some(parts), .. }) =>
+        collect_word_part_reference_names(parts, references)
+      _ => ()
+    }
+  }
   match command.kind {
     @parser.CommandKind::Simple(simple) =>
       for assignment in simple.assignments {
