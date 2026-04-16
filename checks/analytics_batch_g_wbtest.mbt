@@ -41,6 +41,24 @@ fn batch_g_diagnostics(source : String) -> Array[CheckDiagnostic] {
 }
 
 ///|
+fn check_div_before_mult_expr(
+  expr : @parser.ArithmeticExpr,
+  span : @parser.Span,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  g_maybe_push_div_before_mult_diagnostic(expr, span, diagnostics)
+}
+
+///|
+fn check_arithmetic_deref_expr(
+  expr : @parser.ArithmeticExpr,
+  span : @parser.Span,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  g_maybe_push_arithmetic_deref_diagnostic(expr, span, diagnostics)
+}
+
+///|
 test "analytics batch g flags div-before-mult from arithmetic expressions" {
   let diagnostics : Array[CheckDiagnostic] = []
   let expr = @parser.parse_arithmetic_expr("3 / 2 * 100")

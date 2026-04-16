@@ -380,24 +380,6 @@ fn check_div_before_mult(
 }
 
 ///|
-fn check_div_before_mult_expr(
-  expr : @parser.ArithmeticExpr,
-  span : @parser.Span,
-  diagnostics : Array[CheckDiagnostic],
-) -> Unit {
-  g_maybe_push_div_before_mult_diagnostic(expr, span, diagnostics)
-}
-
-///|
-fn check_arithmetic_deref_expr(
-  expr : @parser.ArithmeticExpr,
-  span : @parser.Span,
-  diagnostics : Array[CheckDiagnostic],
-) -> Unit {
-  g_maybe_push_arithmetic_deref_diagnostic(expr, span, diagnostics)
-}
-
-///|
 fn g_visit_command_arithmetic_exprs(
   command : @parser.Command,
   visit : (@parser.ArithmeticExpr, @parser.Span) -> Unit,
