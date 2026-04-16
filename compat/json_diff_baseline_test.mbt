@@ -539,6 +539,77 @@ async test "phase 4 dynamic json diff aligns analytics batch q redirect and pipe
 }
 
 ///|
+async test "phase 4 dynamic json diff aligns analytics batch t command misuse diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2007",
+    (
+      #|#!/bin/bash
+      #|echo $[1+2]
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2084",
+    (
+      #|#!/bin/bash
+      #|$((i++))
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2091",
+    (
+      #|#!/bin/bash
+      #|$(foo)
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2092",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2006
+      #|`foo`
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2093",
+    (
+      #|#!/bin/bash
+      #|exec foo; true
+      #|for f in *; do exec "$f"; done
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2094",
+    (
+      #|#!/bin/bash
+      #|cat foo > foo
+      #|cat lol | sed -e 's/a/b/g' > lol
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2209",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|out=cat foo
+      #|here=pwd
+      #|
+    ),
+  )
+}
+
+///|
 async test "phase 5 dynamic json diff aligns legacy unary test diagnostics" {
   assert_shellcheck_json_matches(
     "SC2331",

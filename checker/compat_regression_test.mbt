@@ -1934,7 +1934,7 @@ test "compat regression keeps analytics negatives quiet" {
       #|# shellcheck disable=SC2034
       #|cow=moo
       #|bar=moo
-      #|foo=cat
+      #|foo="cat"
       #|dir=src
       #|cmd() { printf '%s\n' ok; }
       #|f() { true; }
@@ -2464,6 +2464,64 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
       ),
       compat_style(
         2331, 2, 5, 7, "For file existence, prefer standard -e over legacy -a.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-t-command-misuse",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|echo $[1+2]
+      #|$((i++))
+      #|$(foo)
+      #|`foo`
+      #|exec foo; true
+      #|for f in *; do exec "$f"; done
+      #|cat foo > foo
+      #|cat lol | sed -e 's/a/b/g' > lol
+      #|out=cat foo
+      #|here=pwd
+      #|
+    ),
+    [
+      compat_style(2007, 3, 6, 12, "Use $((..)) instead of deprecated $[..]"),
+      compat_error(
+        2084, 4, 1, 9, "Remove '$' or use '_=$((expr))' to avoid executing output.",
+      ),
+      compat_warning(
+        2091, 5, 1, 7, "Remove surrounding $() to avoid executing output (or use eval if intentional).",
+      ),
+      compat_warning(
+        2092, 6, 1, 6, "Remove backticks to avoid executing output (or use eval if intentional).",
+      ),
+      compat_style(
+        2006, 6, 1, 6, "Use $(...) notation instead of legacy backticks `...`.",
+      ),
+      compat_warning(
+        2093, 7, 1, 9, "Remove \"exec \" if script should continue after this command.",
+      ),
+      compat_warning(
+        2093, 8, 16, 25, "Remove \"exec \" if script should continue after this command.",
+      ),
+      compat_info(
+        2094, 9, 5, 8, "Make sure not to read and write the same file in the same pipeline.",
+      ),
+      compat_info(
+        2094, 9, 11, 14, "Make sure not to read and write the same file in the same pipeline.",
+      ),
+      compat_info(
+        2094, 10, 5, 8, "Make sure not to read and write the same file in the same pipeline.",
+      ),
+      compat_info(
+        2094, 10, 30, 33, "Make sure not to read and write the same file in the same pipeline.",
+      ),
+      compat_warning(
+        2209, 11, 1, 12, "Use var=$(command) to assign output (or quote to assign string).",
+      ),
+      compat_warning(
+        2209, 12, 1, 5, "Use var=$(command) to assign output (or quote to assign string).",
       ),
     ],
   )

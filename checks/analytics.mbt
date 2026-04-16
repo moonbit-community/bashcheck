@@ -165,6 +165,7 @@ fn analytics_descriptions() -> Array[CheckDescription] {
   append_analytics_batch_q_descriptions(descriptions)
   append_analytics_batch_r_descriptions(descriptions)
   append_analytics_batch_s_descriptions(descriptions)
+  append_analytics_batch_t_descriptions(descriptions)
   descriptions
 }
 
@@ -392,6 +393,7 @@ fn run_analytics_checks(
   run_analytics_batch_q_checks(script, shell, diagnostics)
   run_analytics_batch_r_checks(script, shell, diagnostics)
   run_analytics_batch_s_checks(script, shell, diagnostics)
+  run_analytics_batch_t_checks(script, shell, diagnostics)
 }
 
 ///|
