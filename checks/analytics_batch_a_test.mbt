@@ -24,6 +24,26 @@ test "analytics batch a checks flag single quotes constant tests tilde quotes an
 }
 
 ///|
+test "analytics batch a flags quoted fragment gaps without tripping quote-safe joins" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC1011,SC2086,SC2154
+      #|echo 'foo'bar
+      #|echo "a"$b"c"
+      #|echo "VALUES ("id")"
+      #|echo "$dir"/"$file"
+      #|echo "$dir"some_stuff"$file"
+      #|
+    ),
+  )
+
+  assert_eq(count_code(diagnostics, 2026), 1)
+  assert_eq(count_code(diagnostics, 2027), 1)
+  assert_eq(count_code(diagnostics, 2140), 1)
+}
+
+///|
 test "analytics batch a checks avoid quoted-expression false positives in known contexts" {
   let diagnostics = check_source(
     (

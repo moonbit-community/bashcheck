@@ -35,6 +35,25 @@ test "analytics batch t flags spurious exec and command-like assignments" {
 }
 
 ///|
+test "analytics batch t flags useless echo in command substitutions and skips exceptions" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2046,SC2006,SC2154
+      #|cmd $(echo foo)
+      #|cmd `echo bar`
+      #|cmd "$(echo "$var")"
+      #|cmd $(echo *.c)
+      #|cmd $(echo -n foo)
+      #|cmd $(echo "$(date)")
+      #|
+    ),
+  )
+
+  assert_eq(count_code(diagnostics, 2116), 3)
+}
+
+///|
 test "analytics batch t flags redirecting through the same file in a pipeline" {
   let diagnostics = check_source(
     (

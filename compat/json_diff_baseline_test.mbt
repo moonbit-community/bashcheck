@@ -199,6 +199,29 @@ async test "phase 1 dynamic json diff aligns analytics batch a syntax gaps" {
 }
 
 ///|
+async test "phase 1 dynamic json diff aligns analytics quoted fragment diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2026",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC1011
+      #|echo 'foo'bar
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2027",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2086,SC2154
+      #|echo "a"$b"c"
+      #|
+    ),
+  )
+}
+
+///|
 async test "phase 1 dynamic json diff aligns analytics bad parameter substitutions" {
   assert_shellcheck_json_matches(
     "analytics bad parameter substitutions",
@@ -604,6 +627,16 @@ async test "phase 4 dynamic json diff aligns analytics batch t command misuse di
       #|# shellcheck disable=SC2034
       #|out=cat foo
       #|here=pwd
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2116",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2046
+      #|cmd $(echo foo)
       #|
     ),
   )

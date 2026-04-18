@@ -535,6 +535,32 @@ test "compat regression covers analytics condition diagnostics" {
 }
 
 ///|
+test "compat regression covers analytics quoted fragment diagnostics" {
+  assert_compat_case(
+    "analytics-batch-a-quoted-fragments",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC1011,SC2086,SC2154
+      #|echo 'foo'bar
+      #|echo "a"$b"c"
+      #|echo "VALUES ("id")"
+      #|
+    ),
+    [
+      compat_info(
+        2026, 3, 11, 14, "This word is outside of quotes. Did you intend to 'nest '\"'single quotes'\"' instead'? ",
+      ),
+      compat_warning(
+        2027, 4, 9, 11, "The surrounding quotes actually unquote this. Remove or escape them.",
+      ),
+      compat_warning(
+        2140, 5, 16, 18, "Word is of the form \"A\"B\"C\" (B indicated). Did you mean \"ABC\" or \"A\\\"B\\\"C\"?",
+      ),
+    ],
+  )
+}
+
+///|
 test "compat regression covers unknown condition operators once parser preserves them" {
   assert_compat_case(
     "analytics-batch-g-valid-cond-ops",
@@ -2472,7 +2498,7 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
     "analytics-batch-t-command-misuse",
     (
       #|#!/bin/bash
-      #|# shellcheck disable=SC2034
+      #|# shellcheck disable=SC2034,SC2046
       #|echo $[1+2]
       #|$((i++))
       #|$(foo)
@@ -2483,6 +2509,7 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
       #|cat lol | sed -e 's/a/b/g' > lol
       #|out=cat foo
       #|here=pwd
+      #|cmd $(echo foo)
       #|
     ),
     [
@@ -2522,6 +2549,9 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
       ),
       compat_warning(
         2209, 12, 1, 5, "Use var=$(command) to assign output (or quote to assign string).",
+      ),
+      compat_style(
+        2116, 13, 5, 16, "Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'.",
       ),
     ],
   )

@@ -17,6 +17,18 @@ fn analytics_batch_a_descriptions() -> Array[CheckDescription] {
       summary: "Expressions don't expand in single quotes.",
     },
     {
+      code: 2026,
+      severity: CheckSeverity::Info,
+      category: "analytics",
+      summary: "A word fragment after single quotes is outside the quotes.",
+    },
+    {
+      code: 2027,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "Adjacent quotes actually unquote the expansion between them.",
+    },
+    {
       code: 2034,
       severity: CheckSeverity::Warning,
       category: "analytics",
@@ -110,7 +122,7 @@ fn run_analytics_batch_a_checks(
   check_constant_conditions(script, diagnostics)
   check_unquoted_parameter_expansions(script, shell, diagnostics)
   check_tilde_in_quotes(script, diagnostics)
-  check_inexplicably_unquoted_literals(script, diagnostics)
+  check_inexplicably_unquoted_parts(script, diagnostics)
   check_for_in_trailing_commas(script, diagnostics)
 }
 
@@ -693,13 +705,13 @@ fn analytics_quote_targets_2086(
   let targets : Array[Analytics2086Target] = []
   let mut offset = 0
   for part in word.parts {
-    let remaining = word.source.view(start_offset=offset).to_string()
+    let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
     let fragment_offset = match analytics_string_offset(remaining, fragment) {
       Some(inner) => offset + inner
       None => offset
     }
-    let remaining_width = word.source.length() - fragment_offset
+    let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
       fragment.length()
     } else {
@@ -722,13 +734,13 @@ fn analytics_quote_safe_targets(
   let targets : Array[AnalyticsQuoteSafeTarget] = []
   let mut offset = 0
   for part in word.parts {
-    let remaining = word.source.view(start_offset=offset).to_string()
+    let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
     let fragment_offset = match analytics_string_offset(remaining, fragment) {
       Some(inner) => offset + inner
       None => offset
     }
-    let remaining_width = word.source.length() - fragment_offset
+    let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
       fragment.length()
     } else {
@@ -1061,11 +1073,11 @@ fn analytics_bad_parameter_part_fragment(
     @parser.WordPart::DollarSingleQuoted(text) => "$'" + text + "'"
     @parser.WordPart::DoubleQuoted(parts) =>
       "\"" +
-      analytics_word_parts_raw_text(parts, raw.view(start_offset=1).to_string()) +
+      analytics_word_parts_raw_text(parts, analytics_skip_prefix(raw, 1)) +
       "\""
     @parser.WordPart::DollarDoubleQuoted(parts) =>
       "$\"" +
-      analytics_word_parts_raw_text(parts, raw.view(start_offset=2).to_string()) +
+      analytics_word_parts_raw_text(parts, analytics_skip_prefix(raw, 2)) +
       "\""
     @parser.WordPart::Parameter(name)
     | @parser.WordPart::SpecialParameter(name) => "$" + name
@@ -1082,6 +1094,39 @@ fn analytics_bad_parameter_part_fragment(
     @parser.WordPart::DollarBracket(expr) => "$[" + expr.raw + "]"
     _ => raw
   }
+}
+
+///|
+fn analytics_word_remaining_text(word : @parser.Word, offset : Int) -> String {
+  if offset <= 0 {
+    return word.source
+  }
+  if offset >= word.source.length() {
+    return ""
+  }
+  word.source.view(start_offset=offset).to_string()
+}
+
+///|
+fn analytics_remaining_word_width(word : @parser.Word, offset : Int) -> Int {
+  if offset >= word.source.length() {
+    0
+  } else if offset <= 0 {
+    word.source.length()
+  } else {
+    word.source.length() - offset
+  }
+}
+
+///|
+fn analytics_skip_prefix(text : String, width : Int) -> String {
+  if width <= 0 {
+    return text
+  }
+  if width >= text.length() {
+    return ""
+  }
+  text.view(start_offset=width).to_string()
 }
 
 ///|
@@ -1619,7 +1664,7 @@ fn analytics_quoted_tilde_text(word : @parser.Word) -> String? {
 }
 
 ///|
-fn check_inexplicably_unquoted_literals(
+fn check_inexplicably_unquoted_parts(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -1629,29 +1674,80 @@ fn check_inexplicably_unquoted_literals(
         return
       }
       let mut i = 0
+      while i + 1 < word.parts.length() {
+        match (word.parts[i], word.parts[i + 1]) {
+          (@parser.WordPart::SingleQuoted(_), @parser.WordPart::Literal(text)) =>
+            if analytics_string_is_alnum(text) {
+              push_diagnostic(
+                diagnostics,
+                analytics_span_for_word_text(word, text),
+                CheckSeverity::Info,
+                2026,
+                "This word is outside of quotes. Did you intend to 'nest '\"'single quotes'\"' instead'? ",
+              )
+            }
+          _ => ()
+        }
+        i += 1
+      }
+
+      i = 0
       while i + 2 < word.parts.length() {
         match (word.parts[i], word.parts[i + 1], word.parts[i + 2]) {
           (
             @parser.WordPart::DoubleQuoted(lhs),
-            @parser.WordPart::Literal(text),
+            middle,
             @parser.WordPart::DoubleQuoted(rhs),
           ) =>
-            if analytics_should_warn_inexplicably_unquoted(text, lhs, rhs) {
-              push_diagnostic(
-                diagnostics,
-                analytics_span_for_word_text(word, text),
-                CheckSeverity::Warning,
-                2140,
-                "Word is of the form \"A\"B\"C\" (B indicated). Did you mean \"ABC\" or \"A\\\"B\\\"C\"?",
-              )
-              return
-            }
+            analytics_warn_inexplicably_unquoted_middle(
+              word, lhs, middle, rhs, diagnostics,
+            )
           _ => ()
         }
         i += 1
       }
     })
   })
+}
+
+///|
+fn analytics_warn_inexplicably_unquoted_middle(
+  word : @parser.Word,
+  lhs : Array[@parser.WordPart],
+  middle : @parser.WordPart,
+  rhs : Array[@parser.WordPart],
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match middle {
+    @parser.WordPart::Parameter(name)
+    | @parser.WordPart::SpecialParameter(name) =>
+      push_diagnostic(
+        diagnostics,
+        analytics_span_for_word_text(word, "$\{name}"),
+        CheckSeverity::Warning,
+        2027,
+        "The surrounding quotes actually unquote this. Remove or escape them.",
+      )
+    @parser.WordPart::BracedParameter(expansion) =>
+      push_diagnostic(
+        diagnostics,
+        analytics_span_for_word_text(word, "${\{expansion.raw}}"),
+        CheckSeverity::Warning,
+        2027,
+        "The surrounding quotes actually unquote this. Remove or escape them.",
+      )
+    @parser.WordPart::Literal(text) =>
+      if analytics_should_warn_inexplicably_unquoted(text, lhs, rhs) {
+        push_diagnostic(
+          diagnostics,
+          analytics_span_for_word_text(word, text),
+          CheckSeverity::Warning,
+          2140,
+          "Word is of the form \"A\"B\"C\" (B indicated). Did you mean \"ABC\" or \"A\\\"B\\\"C\"?",
+        )
+      }
+    _ => ()
+  }
 }
 
 ///|
