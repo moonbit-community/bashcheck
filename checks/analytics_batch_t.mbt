@@ -47,6 +47,12 @@ fn analytics_batch_t_descriptions() -> Array[CheckDescription] {
       summary: "Avoid reading and writing the same file in one pipeline.",
     },
     {
+      code: 2116,
+      severity: CheckSeverity::Style,
+      category: "analytics",
+      summary: "Avoid echo inside command substitutions when plain words suffice.",
+    },
+    {
       code: 2209,
       severity: CheckSeverity::Warning,
       category: "analytics",
@@ -65,6 +71,7 @@ fn run_analytics_batch_t_checks(
   check_spurious_expansion_commands(script, diagnostics)
   check_spurious_exec(script, shell, diagnostics)
   check_redirect_to_same_file(script, diagnostics)
+  check_useless_echo_substitutions(script, diagnostics)
   check_command_like_assignments(script, diagnostics)
 }
 
@@ -457,6 +464,158 @@ fn batch_t_redirect_conflict(
     return false
   }
   true
+}
+
+///|
+fn check_useless_echo_substitutions(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    visit_direct_words_in_command(command, fn(word, _) {
+      walk_word_deep(word, fn(part) {
+        match part {
+          @parser.WordPart::CommandSubstitution(subscript)
+          | @parser.WordPart::BackQuoted(subscript) =>
+            batch_t_maybe_warn_useless_echo(word, part, subscript, diagnostics)
+          _ => ()
+        }
+      })
+    })
+  })
+}
+
+///|
+fn batch_t_maybe_warn_useless_echo(
+  word : @parser.Word,
+  part : @parser.WordPart,
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let command = match batch_t_single_substitution_command(script) {
+    Some(command) => command
+    None => return
+  }
+  guard command_matches_exact_name(command, "echo") else { return }
+  let arguments = @semantics.command_arguments(command)
+  guard arguments.length() > 0 else { return }
+  guard !batch_t_echo_just_wraps_command_output(arguments) else { return }
+  guard !batch_t_echo_argument_looks_like_flag(arguments[0]) else { return }
+  guard arguments.all(batch_t_echo_argument_can_be_inlined) else { return }
+  push_diagnostic(
+    diagnostics,
+    batch_t_substitution_span(word, part),
+    CheckSeverity::Style,
+    2116,
+    "Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'.",
+  )
+}
+
+///|
+fn batch_t_single_substitution_command(
+  script : @parser.Script,
+) -> @parser.Command? {
+  match script.items {
+    [item] if item.and_or.tail.length() == 0 => {
+      let pipeline = item.and_or.head
+      match pipeline.segments {
+        [segment] => Some(segment.command)
+        _ => None
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+fn batch_t_echo_just_wraps_command_output(
+  arguments : Array[@parser.Word],
+) -> Bool {
+  match arguments {
+    [first] => word_is_just_command_output(first)
+    _ => false
+  }
+}
+
+///|
+fn batch_t_echo_argument_looks_like_flag(word : @parser.Word) -> Bool {
+  match @semantics.literal_text(word) {
+    Some(text) => text.has_prefix("-")
+    None => false
+  }
+}
+
+///|
+fn batch_t_echo_argument_can_be_inlined(word : @parser.Word) -> Bool {
+  batch_t_word_parts_can_be_inlined(word.parts)
+}
+
+///|
+fn batch_t_word_parts_can_be_inlined(parts : Array[@parser.WordPart]) -> Bool {
+  for part in parts {
+    match part {
+      @parser.WordPart::Glob(_)
+      | @parser.WordPart::ExtGlob(_)
+      | @parser.WordPart::BraceExpansion(_) => return false
+      @parser.WordPart::DoubleQuoted(nested)
+      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+        if !batch_t_word_parts_can_be_inlined(nested) {
+          return false
+        }
+      _ => ()
+    }
+  }
+  true
+}
+
+///|
+fn batch_t_substitution_span(
+  word : @parser.Word,
+  part : @parser.WordPart,
+) -> @parser.Span {
+  match batch_t_substitution_fragment(word.source, part) {
+    Some(fragment) =>
+      match batch_t_string_offset(word.source, fragment) {
+        Some(offset) =>
+          batch_t_span_offset(word.span, offset, fragment.length())
+        None => word.span
+      }
+    None => word.span
+  }
+}
+
+///|
+fn batch_t_substitution_fragment(
+  raw : String,
+  part : @parser.WordPart,
+) -> String? {
+  match part {
+    @parser.WordPart::CommandSubstitution(_) =>
+      match batch_t_string_offset(raw, "$(") {
+        Some(offset) => {
+          let fragment = raw.view(start_offset=offset).to_string()
+          Some(
+            fragment
+            .view(end_offset=analytics_command_substitution_width(fragment))
+            .to_string(),
+          )
+        }
+        None => None
+      }
+    @parser.WordPart::BackQuoted(_) =>
+      match batch_t_string_offset(raw, "`") {
+        Some(offset) => {
+          let fragment = raw.view(start_offset=offset).to_string()
+          Some(
+            fragment
+            .view(end_offset=analytics_backquoted_width(fragment))
+            .to_string(),
+          )
+        }
+        None => None
+      }
+    _ => None
+  }
 }
 
 ///|
