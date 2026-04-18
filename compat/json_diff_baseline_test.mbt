@@ -610,6 +610,37 @@ async test "phase 4 dynamic json diff aligns analytics batch t command misuse di
 }
 
 ///|
+async test "phase 5 dynamic json diff aligns analytics batch u pipeline diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2009-SC2013-SC2038-SC2126",
+    (
+      #|#!/bin/bash
+      #|ps aux | grep foo
+      #|ls | grep foo
+      #|ls | xargs rm
+      #|ls | sort
+      #|for f in $(cat foo); do printf '%s\n' "$f"; done
+      #|find . | xargs rm
+      #|grep foo file | wc -l
+      #|
+    ),
+  )
+}
+
+///|
+async test "phase 5 dynamic json diff aligns analytics batch u find-exec diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2014-SC2067",
+    (
+      #|#!/bin/bash
+      #|find . -exec echo $(date) \;
+      #|find . -name '*.php' -exec rm {};
+      #|
+    ),
+  )
+}
+
+///|
 async test "phase 5 dynamic json diff aligns legacy unary test diagnostics" {
   assert_shellcheck_json_matches(
     "SC2331",
