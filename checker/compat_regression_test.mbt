@@ -2525,4 +2525,61 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
       ),
     ],
   )
+
+  assert_compat_case(
+    "analytics-batch-u-pipelines",
+    (
+      #|#!/bin/bash
+      #|ps aux | grep foo
+      #|ls | grep foo
+      #|ls | xargs rm
+      #|ls | sort
+      #|for f in $(cat foo); do printf '%s\n' "$f"; done
+      #|find . | xargs rm
+      #|grep foo file | wc -l
+      #|
+    ),
+    [
+      compat_info(
+        2009, 2, 1, 7, "Consider using pgrep instead of grepping ps output.",
+      ),
+      compat_warning(
+        2010, 3, 1, 3, "Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.",
+      ),
+      compat_warning(
+        2011, 4, 1, 3, "Use 'find .. -print0 | xargs -0 ..' or 'find .. -exec .. +' to allow non-alphanumeric filenames.",
+      ),
+      compat_info(
+        2012, 5, 1, 3, "Use find instead of ls to better handle non-alphanumeric filenames.",
+      ),
+      compat_info(
+        2013, 6, 10, 20, "To read lines rather than words, pipe/redirect to a 'while read' loop.",
+      ),
+      compat_warning(
+        2038, 7, 1, 7, "Use 'find .. -print0 | xargs -0 ..' or 'find .. -exec .. +' to allow non-alphanumeric filenames.",
+      ),
+      compat_style(
+        2126, 8, 1, 14, "Consider using 'grep -c' instead of 'grep|wc -l'.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-batch-u-find-exec",
+    (
+      #|#!/bin/bash
+      #|find . -exec echo $(date) \;
+      #|find . -name '*.php' -exec rm {};
+      #|
+    ),
+    [
+      compat_warning(2046, 2, 19, 26, "Quote this to prevent word splitting."),
+      compat_info(
+        2014, 2, 19, 26, "This will expand once before find runs, not per file found.",
+      ),
+      compat_error(
+        2067, 3, 31, 33, "Missing ';' or + terminating -exec. You can't use |/||/&&, and ';' has to be a separate, quoted argument.",
+      ),
+    ],
+  )
 }
