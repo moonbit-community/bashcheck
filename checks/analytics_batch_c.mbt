@@ -171,8 +171,8 @@ fn visit_exit_code_condition_expr(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_exit_code_condition_expr(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_exit_code_condition_expr(lhs, diagnostics)
       visit_exit_code_condition_expr(rhs, diagnostics)
     }

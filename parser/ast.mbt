@@ -375,6 +375,13 @@ pub struct ConditionCommand {
 } derive(Eq, Debug)
 
 ///|
+/// One logical operator inside a condition expression.
+pub struct ConditionLogicalOperator {
+  text : String
+  span : Span
+} derive(Eq, Debug)
+
+///|
 /// The expression tree produced for a condition command.
 pub enum ConditionExpr {
   Empty
@@ -383,8 +390,8 @@ pub enum ConditionExpr {
   Binary(String, Span, Word, Word)
   Group(ConditionExpr)
   Not(ConditionExpr)
-  And(ConditionExpr, ConditionExpr)
-  Or(ConditionExpr, ConditionExpr)
+  And(ConditionLogicalOperator, ConditionExpr, ConditionExpr)
+  Or(ConditionLogicalOperator, ConditionExpr, ConditionExpr)
 } derive(Eq, Debug)
 
 ///|

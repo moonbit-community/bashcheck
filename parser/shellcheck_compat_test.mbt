@@ -180,6 +180,10 @@ test "shellcheck compatibility case and condition samples" {
   )
   assert_ok("double bracket regex alternation", "[[ $l =~ ogg|flac ]]")
   assert_ok("single bracket and file test", "[ foo -a -f bar ]")
+  assert_ok("single bracket logical and", "[ foo && bar ]")
+  assert_ok("double bracket legacy and", "[[ foo -a bar ]]")
+  assert_ok("single bracket logical or", "[ foo || bar ]")
+  assert_ok("double bracket legacy or", "[[ foo -o bar ]]")
   assert_ok(
     "double bracket multiline lhs and rhs",
     (

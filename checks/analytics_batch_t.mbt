@@ -899,8 +899,8 @@ fn batch_t_check_quote_literals_condition_expr(
       batch_t_check_quote_literals_condition_expr(
         inner, kind, command, shell, quoted_assignments, reported_origins, diagnostics,
       )
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       batch_t_check_quote_literals_condition_expr(
         lhs, kind, command, shell, quoted_assignments, reported_origins, diagnostics,
       )

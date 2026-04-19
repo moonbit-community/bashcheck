@@ -683,8 +683,8 @@ fn traverse_condition_expr(
       traverse_condition_expr(
         inner, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       traverse_condition_expr(
         lhs, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )

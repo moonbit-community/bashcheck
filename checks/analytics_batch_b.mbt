@@ -746,8 +746,8 @@ fn visit_condition_binaries(
     @parser.ConditionExpr::Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_condition_binaries(inner, visit)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_condition_binaries(lhs, visit)
       visit_condition_binaries(rhs, visit)
     }

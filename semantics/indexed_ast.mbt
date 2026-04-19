@@ -852,11 +852,11 @@ fn IndexBuilder::visit_condition_expr(
     @parser.ConditionExpr::Not(inner) => {
       let _ = self.visit_condition_expr(inner, fallback_span)
     }
-    @parser.ConditionExpr::And(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs) => {
       let _ = self.visit_condition_expr(lhs, fallback_span)
       let _ = self.visit_condition_expr(rhs, fallback_span)
     }
-    @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::Or(_, lhs, rhs) => {
       let _ = self.visit_condition_expr(lhs, fallback_span)
       let _ = self.visit_condition_expr(rhs, fallback_span)
     }

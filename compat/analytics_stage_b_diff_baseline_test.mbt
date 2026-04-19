@@ -30,3 +30,18 @@ async test "phase b dynamic json diff aligns loop keyword scope analytics diagno
     ),
   )
 }
+
+///|
+async test "phase b dynamic json diff aligns bad test logical operator analytics diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2107-SC2108-SC2109-SC2110",
+    (
+      #|#!/bin/bash
+      #|[ "$1" && "$2" ]
+      #|[[ "$1" -a "$2" ]]
+      #|[ "$1" || "$2" ]
+      #|[[ "$1" -o "$2" ]]
+      #|
+    ),
+  )
+}

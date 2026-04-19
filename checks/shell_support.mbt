@@ -1632,8 +1632,8 @@ fn check_shell_support_condition_expr(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       check_shell_support_condition_expr(inner, span, shell, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       check_shell_support_condition_expr(lhs, span, shell, diagnostics)
       check_shell_support_condition_expr(rhs, span, shell, diagnostics)
     }

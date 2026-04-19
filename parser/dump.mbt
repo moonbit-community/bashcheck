@@ -458,10 +458,10 @@ fn dump_condition_expr(expr : ConditionExpr) -> String {
       "binary(\{dump_quoted(op)}, \{dump_word(left)}, \{dump_word(right)})"
     ConditionExpr::Group(inner) => "group(\{dump_condition_expr(inner)})"
     ConditionExpr::Not(inner) => "not(\{dump_condition_expr(inner)})"
-    ConditionExpr::And(left, right) =>
-      "and(\{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
-    ConditionExpr::Or(left, right) =>
-      "or(\{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
+    ConditionExpr::And(op, left, right) =>
+      "and(\{dump_quoted(op.text)}, \{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
+    ConditionExpr::Or(op, left, right) =>
+      "or(\{dump_quoted(op.text)}, \{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
   }
 }
 

@@ -63,8 +63,8 @@ fn r_visit_condition_unary_test_a(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       r_visit_condition_unary_test_a(inner, nesting_depth + 1, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       r_visit_condition_unary_test_a(lhs, nesting_depth + 1, diagnostics)
       r_visit_condition_unary_test_a(rhs, nesting_depth + 1, diagnostics)
     }

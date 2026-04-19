@@ -295,8 +295,8 @@ fn check_unnecessarily_inverted_condition_expr(
       check_unnecessarily_inverted_condition_expr(
         kind, inner, span, diagnostics,
       )
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       check_unnecessarily_inverted_condition_expr(kind, lhs, span, diagnostics)
       check_unnecessarily_inverted_condition_expr(kind, rhs, span, diagnostics)
     }
@@ -913,8 +913,8 @@ fn collect_condition_masked_commands(
     }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       collect_condition_masked_commands(inner, masked)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       collect_condition_masked_commands(lhs, masked)
       collect_condition_masked_commands(rhs, masked)
     }
