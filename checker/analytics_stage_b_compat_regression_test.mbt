@@ -55,3 +55,24 @@ test "compat regression covers phase b loop keyword scope analytics diagnostics"
     ],
   )
 }
+
+///|
+test "compat regression covers phase b bad test logical operator analytics diagnostics" {
+  assert_compat_case(
+    "phase-b-bad-test-logical-operator-analytics",
+    (
+      #|#!/bin/bash
+      #|[ "$1" && "$2" ]
+      #|[[ "$1" -a "$2" ]]
+      #|[ "$1" || "$2" ]
+      #|[[ "$1" -o "$2" ]]
+      #|
+    ),
+    [
+      compat_error(2107, 2, 8, 10, "Instead of [ a && b ], use [ a ] && [ b ]."),
+      compat_error(2108, 3, 9, 11, "In [[..]], use && instead of -a."),
+      compat_error(2109, 4, 8, 10, "Instead of [ a || b ], use [ a ] || [ b ]."),
+      compat_error(2110, 5, 9, 11, "In [[..]], use || instead of -o."),
+    ],
+  )
+}

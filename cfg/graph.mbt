@@ -1652,7 +1652,7 @@ fn GraphBuilder::build_condition_expr(
       self.sequence_ids(self.children_with_kind(id, AstTag::Word))
     @parser.ConditionExpr::Group(_) | @parser.ConditionExpr::Not(_) =>
       self.sequence_ids(self.children_of(id))
-    @parser.ConditionExpr::And(_, _) | @parser.ConditionExpr::Or(_, _) => {
+    @parser.ConditionExpr::And(_, _, _) | @parser.ConditionExpr::Or(_, _, _) => {
       let children = self.children_with_kind(id, AstTag::ConditionExpr)
       if children.length() < 2 {
         return self.sequence_ids(children)

@@ -172,13 +172,18 @@ pub enum ConditionExpr {
   Binary(String, Span, Word, Word)
   Group(ConditionExpr)
   Not(ConditionExpr)
-  And(ConditionExpr, ConditionExpr)
-  Or(ConditionExpr, ConditionExpr)
+  And(ConditionLogicalOperator, ConditionExpr, ConditionExpr)
+  Or(ConditionLogicalOperator, ConditionExpr, ConditionExpr)
 } derive(Eq, @debug.Debug)
 
 pub enum ConditionKind {
   SingleBracket
   DoubleBracket
+} derive(Eq, @debug.Debug)
+
+pub struct ConditionLogicalOperator {
+  text : String
+  span : Span
 } derive(Eq, @debug.Debug)
 
 pub struct ConfigParseReport {

@@ -271,8 +271,8 @@ fn visit_condition_expr_words(
     }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_condition_expr_words(inner, kind, visit)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_condition_expr_words(lhs, kind, visit)
       visit_condition_expr_words(rhs, kind, visit)
     }

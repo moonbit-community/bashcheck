@@ -1411,8 +1411,8 @@ fn condition_binary_op_span(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       condition_binary_op_span(inner, op)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) =>
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) =>
       match condition_binary_op_span(lhs, op) {
         Some(span) => Some(span)
         None => condition_binary_op_span(rhs, op)
@@ -1611,10 +1611,10 @@ fn braced_parameter_is_plain_name_reference(
 ///|
 fn condition_expr_has_and(expr : @parser.ConditionExpr) -> Bool {
   match expr {
-    @parser.ConditionExpr::And(_, _) => true
+    @parser.ConditionExpr::And(_, _, _) => true
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       condition_expr_has_and(inner)
-    @parser.ConditionExpr::Or(lhs, rhs) =>
+    @parser.ConditionExpr::Or(_, lhs, rhs) =>
       condition_expr_has_and(lhs) || condition_expr_has_and(rhs)
     _ => false
   }
@@ -1623,10 +1623,10 @@ fn condition_expr_has_and(expr : @parser.ConditionExpr) -> Bool {
 ///|
 fn condition_expr_has_or(expr : @parser.ConditionExpr) -> Bool {
   match expr {
-    @parser.ConditionExpr::Or(_, _) => true
+    @parser.ConditionExpr::Or(_, _, _) => true
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       condition_expr_has_or(inner)
-    @parser.ConditionExpr::And(lhs, rhs) =>
+    @parser.ConditionExpr::And(_, lhs, rhs) =>
       condition_expr_has_or(lhs) || condition_expr_has_or(rhs)
     _ => false
   }
@@ -1645,8 +1645,8 @@ fn visit_condition_binary_rhs(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_condition_binary_rhs(inner, op, visit)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_condition_binary_rhs(lhs, op, visit)
       visit_condition_binary_rhs(rhs, op, visit)
     }

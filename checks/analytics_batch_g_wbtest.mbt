@@ -152,6 +152,25 @@ test "analytics batch g flags unknown condition operators after parser preserves
 }
 
 ///|
+test "analytics batch g flags bad logical operators inside test expressions" {
+  let diagnostics = batch_g_diagnostics(
+    (
+      #|#!/bin/bash
+      #|[ "$a" && "$b" ]
+      #|[[ "$a" -a "$b" ]]
+      #|[ "$a" || "$b" ]
+      #|[[ "$a" -o "$b" ]]
+      #|
+    ),
+  )
+
+  assert_eq(batch_g_count_code(diagnostics, 2107), 1)
+  assert_eq(batch_g_count_code(diagnostics, 2108), 1)
+  assert_eq(batch_g_count_code(diagnostics, 2109), 1)
+  assert_eq(batch_g_count_code(diagnostics, 2110), 1)
+}
+
+///|
 test "analytics batch g ignores dash-prefixed non-operators" {
   let diagnostics = batch_g_diagnostics(
     (
@@ -175,6 +194,10 @@ test "analytics batch g avoids false positives for safe forms" {
       #|[[ foo == bar ]]
       #|[[ a != x || b != y ]]
       #|[[ a = x && b = y ]]
+      #|[[ "$a" && "$b" ]]
+      #|[[ "$a" || "$b" ]]
+      #|[ "$a" -a "$b" ]
+      #|[ "$a" -o "$b" ]
       #|[ foo = bar ] && [ baz = qux ]
       #|
     ),
@@ -183,6 +206,10 @@ test "analytics batch g avoids false positives for safe forms" {
   assert_true(!batch_g_has_code(diagnostics, 2071))
   assert_true(!batch_g_has_code(diagnostics, 2072))
   assert_true(!batch_g_has_code(diagnostics, 2073))
+  assert_true(!batch_g_has_code(diagnostics, 2107))
+  assert_true(!batch_g_has_code(diagnostics, 2108))
+  assert_true(!batch_g_has_code(diagnostics, 2109))
+  assert_true(!batch_g_has_code(diagnostics, 2110))
   assert_true(!batch_g_has_code(diagnostics, 2122))
   assert_true(!batch_g_has_code(diagnostics, 2170))
   assert_true(!batch_g_has_code(diagnostics, 2254))

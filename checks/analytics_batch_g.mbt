@@ -41,6 +41,30 @@ fn analytics_batch_g_descriptions() -> Array[CheckDescription] {
       summary: "Escape < and > in [ ] comparisons so they are not treated as redirections.",
     },
     {
+      code: 2107,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Use separate [ ] tests instead of && inside a single-bracket condition.",
+    },
+    {
+      code: 2108,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Use && instead of -a inside a double-bracket condition.",
+    },
+    {
+      code: 2109,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Use separate [ ] tests instead of || inside a single-bracket condition.",
+    },
+    {
+      code: 2110,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Use || instead of -o inside a double-bracket condition.",
+    },
+    {
       code: 2122,
       severity: CheckSeverity::Error,
       category: "analytics",
@@ -146,11 +170,96 @@ fn run_analytics_batch_g_checks(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   check_valid_cond_ops(script, diagnostics)
+  check_bad_conditional_and_or_ops(script, diagnostics)
   check_number_comparisons(script, shell, diagnostics)
   check_condition_operand_splitting(script, shell, diagnostics)
   check_div_before_mult(script, diagnostics)
   check_arithmetic_deref(script, diagnostics)
   check_case_against_glob(script, diagnostics)
+}
+
+///|
+fn check_bad_conditional_and_or_ops(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    match command.kind {
+      @parser.CommandKind::Condition(condition) =>
+        g_visit_bad_conditional_and_or_ops(
+          condition.kind,
+          condition.expr,
+          diagnostics,
+        )
+      _ => ()
+    }
+  })
+}
+
+///|
+fn g_visit_bad_conditional_and_or_ops(
+  kind : @parser.ConditionKind,
+  expr : @parser.ConditionExpr,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match expr {
+    @parser.ConditionExpr::And(op, lhs, rhs) => {
+      g_maybe_push_bad_conditional_and_or_op(kind, op, diagnostics)
+      g_visit_bad_conditional_and_or_ops(kind, lhs, diagnostics)
+      g_visit_bad_conditional_and_or_ops(kind, rhs, diagnostics)
+    }
+    @parser.ConditionExpr::Or(op, lhs, rhs) => {
+      g_maybe_push_bad_conditional_and_or_op(kind, op, diagnostics)
+      g_visit_bad_conditional_and_or_ops(kind, lhs, diagnostics)
+      g_visit_bad_conditional_and_or_ops(kind, rhs, diagnostics)
+    }
+    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+      g_visit_bad_conditional_and_or_ops(kind, inner, diagnostics)
+    _ => ()
+  }
+}
+
+///|
+fn g_maybe_push_bad_conditional_and_or_op(
+  kind : @parser.ConditionKind,
+  op : @parser.ConditionLogicalOperator,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match (kind, op.text) {
+    (@parser.ConditionKind::SingleBracket, "&&") =>
+      push_diagnostic(
+        diagnostics,
+        op.span,
+        CheckSeverity::Error,
+        2107,
+        "Instead of [ a && b ], use [ a ] && [ b ].",
+      )
+    (@parser.ConditionKind::DoubleBracket, "-a") =>
+      push_diagnostic(
+        diagnostics,
+        op.span,
+        CheckSeverity::Error,
+        2108,
+        "In [[..]], use && instead of -a.",
+      )
+    (@parser.ConditionKind::SingleBracket, "||") =>
+      push_diagnostic(
+        diagnostics,
+        op.span,
+        CheckSeverity::Error,
+        2109,
+        "Instead of [ a || b ], use [ a ] || [ b ].",
+      )
+    (@parser.ConditionKind::DoubleBracket, "-o") =>
+      push_diagnostic(
+        diagnostics,
+        op.span,
+        CheckSeverity::Error,
+        2110,
+        "In [[..]], use || instead of -o.",
+      )
+    _ => ()
+  }
 }
 
 ///|
@@ -197,8 +306,8 @@ fn g_visit_condition_ops(
     }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       g_visit_condition_ops(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       g_visit_condition_ops(lhs, diagnostics)
       g_visit_condition_ops(rhs, diagnostics)
     }
@@ -250,8 +359,8 @@ fn g_visit_condition_binaries(
     @parser.ConditionExpr::Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       g_visit_condition_binaries(inner, visit)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       g_visit_condition_binaries(lhs, visit)
       g_visit_condition_binaries(rhs, visit)
     }
@@ -476,8 +585,8 @@ fn g_visit_condition_operand_splitting(
       )
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       g_visit_condition_operand_splitting(kind, inner, shell, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       g_visit_condition_operand_splitting(kind, lhs, shell, diagnostics)
       g_visit_condition_operand_splitting(kind, rhs, shell, diagnostics)
     }
@@ -851,8 +960,8 @@ fn g_visit_condition_expr_words(
     }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       g_visit_condition_expr_words(inner, kind, visit)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       g_visit_condition_expr_words(lhs, kind, visit)
       g_visit_condition_expr_words(rhs, kind, visit)
     }

@@ -1244,7 +1244,8 @@ test "condition expressions capture grouping and boolean operators" {
   match first_command(script).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Or(left, right) => {
+        @parser.ConditionExpr::Or(op, left, right) => {
+          assert_eq(op.text, "||")
           match left {
             @parser.ConditionExpr::Group(inner) =>
               match inner {
@@ -1271,6 +1272,81 @@ test "condition expressions capture grouping and boolean operators" {
           }
         }
         _ => fail("expected boolean condition expression")
+      }
+    _ => fail("expected condition command")
+  }
+}
+
+///|
+test "condition parser preserves logical operator spellings across bracket styles" {
+  let single_and = parse_report("[ \"$a\" && \"$b\" ]")
+  assert_true(!report_has_code(single_and, 1073))
+  match first_command(report_script(single_and)).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::And(op, left, right) => {
+          assert_eq(op.text, "&&")
+          assert_eq(op.span.start.column, 8)
+          assert_eq(op.span.end.column, 10)
+          match left {
+            @parser.ConditionExpr::Word(word) =>
+              assert_eq(word.source, "\"$a\"")
+            _ => fail("expected single-bracket logical-and lhs word")
+          }
+          match right {
+            @parser.ConditionExpr::Word(word) =>
+              assert_eq(word.source, "\"$b\"")
+            _ => fail("expected single-bracket logical-and rhs word")
+          }
+        }
+        _ => fail("expected single-bracket logical and expression")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let double_and = parse_report("[[ \"$a\" -a \"$b\" ]]")
+  assert_true(!report_has_code(double_and, 1073))
+  match first_command(report_script(double_and)).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::And(op, left, right) => {
+          assert_eq(op.text, "-a")
+          assert_eq(op.span.start.column, 9)
+          assert_eq(op.span.end.column, 11)
+          match left {
+            @parser.ConditionExpr::Word(word) =>
+              assert_eq(word.source, "\"$a\"")
+            _ => fail("expected double-bracket legacy-and lhs word")
+          }
+          match right {
+            @parser.ConditionExpr::Word(word) =>
+              assert_eq(word.source, "\"$b\"")
+            _ => fail("expected double-bracket legacy-and rhs word")
+          }
+        }
+        _ => fail("expected double-bracket legacy and expression")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let single_or = parse_report("[ \"$a\" || \"$b\" ]")
+  assert_true(!report_has_code(single_or, 1073))
+  match first_command(report_script(single_or)).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Or(op, _, _) => assert_eq(op.text, "||")
+        _ => fail("expected single-bracket logical or expression")
+      }
+    _ => fail("expected condition command")
+  }
+
+  let double_or = parse_report("[[ \"$a\" -o \"$b\" ]]")
+  assert_true(!report_has_code(double_or, 1073))
+  match first_command(report_script(double_or)).kind {
+    @parser.CommandKind::Condition(condition) =>
+      match condition.expr {
+        @parser.ConditionExpr::Or(op, _, _) => assert_eq(op.text, "-o")
+        _ => fail("expected double-bracket legacy or expression")
       }
     _ => fail("expected condition command")
   }
@@ -1308,7 +1384,8 @@ test "condition expressions support negation, escaped groups, and regex words" {
   match first_command(grouped).kind {
     @parser.CommandKind::Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::And(left, right) => {
+        @parser.ConditionExpr::And(op, left, right) => {
+          assert_eq(op.text, "-a")
           match left {
             @parser.ConditionExpr::Group(inner) =>
               match inner {

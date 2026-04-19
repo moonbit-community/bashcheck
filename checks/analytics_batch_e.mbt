@@ -117,8 +117,8 @@ fn visit_unquoted_n_nodes(
       }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_unquoted_n_nodes(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_unquoted_n_nodes(lhs, diagnostics)
       visit_unquoted_n_nodes(rhs, diagnostics)
     }
@@ -194,8 +194,8 @@ fn visit_literal_breaking_nodes(
       maybe_push_unary_literal_breaking_diagnostic(op, word, diagnostics)
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_literal_breaking_nodes(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_literal_breaking_nodes(lhs, diagnostics)
       visit_literal_breaking_nodes(rhs, diagnostics)
     }
@@ -330,8 +330,8 @@ fn visit_constant_nullary_nodes(
       maybe_push_constant_nullary_diagnostic(word, diagnostics)
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       visit_constant_nullary_nodes(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       visit_constant_nullary_nodes(lhs, diagnostics)
       visit_constant_nullary_nodes(rhs, diagnostics)
     }

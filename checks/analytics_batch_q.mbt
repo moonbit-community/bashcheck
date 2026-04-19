@@ -639,8 +639,8 @@ fn q_check_condition_for_grep_q(
       }
     @parser.ConditionExpr::Group(inner) =>
       q_check_condition_for_grep_q(inner, diagnostics)
-    @parser.ConditionExpr::And(lhs, rhs)
-    | @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs)
+    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
       q_check_condition_for_grep_q(lhs, diagnostics)
       q_check_condition_for_grep_q(rhs, diagnostics)
     }

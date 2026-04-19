@@ -821,10 +821,10 @@ fn condition_expr_success_proves_defined(
       condition_test_target_name(word) == Some(name)
     @parser.ConditionExpr::Group(inner) =>
       condition_expr_success_proves_defined(inner, name)
-    @parser.ConditionExpr::And(lhs, rhs) =>
+    @parser.ConditionExpr::And(_, lhs, rhs) =>
       condition_expr_success_proves_defined(lhs, name) ||
       condition_expr_success_proves_defined(rhs, name)
-    @parser.ConditionExpr::Or(lhs, rhs) =>
+    @parser.ConditionExpr::Or(_, lhs, rhs) =>
       condition_expr_success_proves_defined(lhs, name) &&
       condition_expr_success_proves_defined(rhs, name)
     _ => false

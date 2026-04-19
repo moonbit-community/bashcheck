@@ -603,14 +603,14 @@ fn analytics_check_condition_neq_expr(
   match expr {
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
       analytics_check_condition_neq_expr(kind, inner, is_or, diagnostics)
-    @parser.ConditionExpr::Or(lhs, rhs) => {
+    @parser.ConditionExpr::Or(_, lhs, rhs) => {
       if is_or {
         analytics_maybe_push_condition_or_neq(kind, lhs, rhs, diagnostics)
       }
       analytics_check_condition_neq_expr(kind, lhs, is_or, diagnostics)
       analytics_check_condition_neq_expr(kind, rhs, is_or, diagnostics)
     }
-    @parser.ConditionExpr::And(lhs, rhs) => {
+    @parser.ConditionExpr::And(_, lhs, rhs) => {
       if !is_or {
         analytics_maybe_push_condition_and_eq(kind, lhs, rhs, diagnostics)
       }

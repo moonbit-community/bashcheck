@@ -10,8 +10,8 @@ priv enum ConditionToken {
   Word(Word)
   LParen
   RParen
-  And
-  Or
+  And(ConditionLogicalOperator)
+  Or(ConditionLogicalOperator)
 }
 
 ///|
@@ -436,6 +436,14 @@ fn translate_condition_command(
 }
 
 ///|
+fn translate_condition_logical_operator(
+  base : Position,
+  op : ConditionLogicalOperator,
+) -> ConditionLogicalOperator {
+  { ..op, span: translate_span(base, op.span) }
+}
+
+///|
 fn translate_condition_expr(
   base : Position,
   expr : ConditionExpr,
@@ -460,13 +468,15 @@ fn translate_condition_expr(
       ConditionExpr::Group(translate_condition_expr(base, inner))
     ConditionExpr::Not(inner) =>
       ConditionExpr::Not(translate_condition_expr(base, inner))
-    ConditionExpr::And(lhs, rhs) =>
+    ConditionExpr::And(op, lhs, rhs) =>
       ConditionExpr::And(
+        translate_condition_logical_operator(base, op),
         translate_condition_expr(base, lhs),
         translate_condition_expr(base, rhs),
       )
-    ConditionExpr::Or(lhs, rhs) =>
+    ConditionExpr::Or(op, lhs, rhs) =>
       ConditionExpr::Or(
+        translate_condition_logical_operator(base, op),
         translate_condition_expr(base, lhs),
         translate_condition_expr(base, rhs),
       )
@@ -4312,12 +4322,24 @@ fn Parser::read_condition_tokens(
       self.advance_n(2)
       group_depth -= 1
       tokens.push(ConditionToken::RParen)
-    } else if double_bracket && self.starts_with("&&") {
+    } else if self.starts_with("&&") {
+      let start = self.position()
       self.advance_n(2)
-      tokens.push(ConditionToken::And)
-    } else if double_bracket && self.starts_with("||") {
+      tokens.push(
+        ConditionToken::And({
+          text: "&&",
+          span: make_span(start, self.position()),
+        }),
+      )
+    } else if self.starts_with("||") {
+      let start = self.position()
       self.advance_n(2)
-      tokens.push(ConditionToken::Or)
+      tokens.push(
+        ConditionToken::Or({
+          text: "||",
+          span: make_span(start, self.position()),
+        }),
+      )
     } else if double_bracket && self.peek() == Some('(') {
       ignore(self.advance_one())
       group_depth += 1
@@ -4494,6 +4516,8 @@ fn condition_token_position(
 ) -> Position {
   match token {
     Some(ConditionToken::Word(word)) => word.span.start
+    Some(ConditionToken::And(op)) | Some(ConditionToken::Or(op)) =>
+      op.span.start
     _ => fallback
   }
 }
@@ -4565,10 +4589,9 @@ fn is_condition_arithmetic_operator(text : String) -> Bool {
 ///|
 fn next_condition_is_logical_and(cursor : ConditionCursor) -> Bool {
   match cursor.peek() {
-    Some(ConditionToken::And) => true
-    Some(ConditionToken::Word(word)) if cursor.kind ==
-      ConditionKind::SingleBracket &&
-      word_plain_text(word) == Some("-a") => true
+    Some(ConditionToken::And(_)) => true
+    Some(ConditionToken::Word(word)) if word_plain_text(word) == Some("-a") =>
+      true
     _ => false
   }
 }
@@ -4576,10 +4599,9 @@ fn next_condition_is_logical_and(cursor : ConditionCursor) -> Bool {
 ///|
 fn next_condition_is_logical_or(cursor : ConditionCursor) -> Bool {
   match cursor.peek() {
-    Some(ConditionToken::Or) => true
-    Some(ConditionToken::Word(word)) if cursor.kind ==
-      ConditionKind::SingleBracket &&
-      word_plain_text(word) == Some("-o") => true
+    Some(ConditionToken::Or(_)) => true
+    Some(ConditionToken::Word(word)) if word_plain_text(word) == Some("-o") =>
+      true
     _ => false
   }
 }
@@ -4588,10 +4610,18 @@ fn next_condition_is_logical_or(cursor : ConditionCursor) -> Bool {
 fn consume_condition_logical(
   cursor : ConditionCursor,
   fallback : Position,
-) -> Position {
-  let pos = condition_token_position(cursor.peek(), fallback)
-  ignore(cursor.advance())
-  pos
+) -> ConditionLogicalOperator {
+  match cursor.advance() {
+    Some(ConditionToken::And(op)) | Some(ConditionToken::Or(op)) => op
+    Some(ConditionToken::Word(word)) => {
+      let text = match word_literal_text(word) {
+        Some(text) => text
+        None => word.source
+      }
+      { text, span: word.span }
+    }
+    _ => { text: "", span: span_at(fallback) }
+  }
 }
 
 ///|
@@ -4739,9 +4769,9 @@ fn parse_condition_and_expr(
 ) -> ConditionExpr raise ParseError {
   let mut expr = parse_condition_negation(cursor, fallback)
   while next_condition_is_logical_and(cursor) {
-    let op_pos = consume_condition_logical(cursor, fallback)
-    let right = parse_condition_negation(cursor, op_pos)
-    expr = ConditionExpr::And(expr, right)
+    let op = consume_condition_logical(cursor, fallback)
+    let right = parse_condition_negation(cursor, op.span.start)
+    expr = ConditionExpr::And(op, expr, right)
   }
   expr
 }
@@ -4753,9 +4783,9 @@ fn parse_condition_or_expr(
 ) -> ConditionExpr raise ParseError {
   let mut expr = parse_condition_and_expr(cursor, fallback)
   while next_condition_is_logical_or(cursor) {
-    let op_pos = consume_condition_logical(cursor, fallback)
-    let right = parse_condition_and_expr(cursor, op_pos)
-    expr = ConditionExpr::Or(expr, right)
+    let op = consume_condition_logical(cursor, fallback)
+    let right = parse_condition_and_expr(cursor, op.span.start)
+    expr = ConditionExpr::Or(op, expr, right)
   }
   expr
 }
@@ -10075,7 +10105,7 @@ fn collect_associative_names_from_condition_expr(
     }
     ConditionExpr::Group(inner) | ConditionExpr::Not(inner) =>
       collect_associative_names_from_condition_expr(inner, names)
-    ConditionExpr::And(left, right) | ConditionExpr::Or(left, right) => {
+    ConditionExpr::And(_, left, right) | ConditionExpr::Or(_, left, right) => {
       collect_associative_names_from_condition_expr(left, names)
       collect_associative_names_from_condition_expr(right, names)
     }
@@ -10354,13 +10384,15 @@ fn normalize_condition_expr(
       ConditionExpr::Group(normalize_condition_expr(inner, associative_names))
     ConditionExpr::Not(inner) =>
       ConditionExpr::Not(normalize_condition_expr(inner, associative_names))
-    ConditionExpr::And(left, right) =>
+    ConditionExpr::And(op, left, right) =>
       ConditionExpr::And(
+        op,
         normalize_condition_expr(left, associative_names),
         normalize_condition_expr(right, associative_names),
       )
-    ConditionExpr::Or(left, right) =>
+    ConditionExpr::Or(op, left, right) =>
       ConditionExpr::Or(
+        op,
         normalize_condition_expr(left, associative_names),
         normalize_condition_expr(right, associative_names),
       )
