@@ -54,6 +54,18 @@ fn analytics_batch_b_descriptions() -> Array[CheckDescription] {
       summary: "Use $((..)) for arithmetic-looking assignments.",
     },
     {
+      code: 2101,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "Named POSIX character classes need the outer [[:class:]] brackets.",
+    },
+    {
+      code: 2102,
+      severity: CheckSeverity::Info,
+      category: "analytics",
+      summary: "Bracket ranges only match single characters.",
+    },
+    {
       code: 2210,
       severity: CheckSeverity::Warning,
       category: "analytics",
@@ -76,6 +88,12 @@ fn analytics_batch_b_descriptions() -> Array[CheckDescription] {
       severity: CheckSeverity::Warning,
       category: "analytics",
       summary: "A flag at command position is usually a bad line break or missing test brackets.",
+    },
+    {
+      code: 2171,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "A trailing ] or ]] outside test syntax usually means malformed test brackets.",
     },
     {
       code: 2238,
@@ -134,6 +152,7 @@ fn run_analytics_batch_b_checks(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
+  check_char_range_glob(script, diagnostics)
   check_globbed_regex(script, diagnostics)
   check_comparison_against_glob(script, shell, diagnostics)
   check_test_redirects(script, diagnostics)
@@ -144,9 +163,170 @@ fn run_analytics_batch_b_checks(
   check_glob_as_command(script, diagnostics)
   check_flag_as_command(script, diagnostics)
   check_empty_condition(script, diagnostics)
+  check_trailing_bracket(script, diagnostics)
   check_redirection_to_command(script, diagnostics)
   check_command_with_trailing_symbol(script, diagnostics)
   check_expansion_with_redirection(script, diagnostics)
+}
+
+///|
+fn check_char_range_glob(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    if command_matches_basename(command, "tr") ||
+      command_matches_basename(command, "read") {
+      return
+    }
+    visit_direct_words_in_command(command, fn(word, _) {
+      b_check_char_range_word(word, diagnostics)
+    })
+  })
+}
+
+///|
+fn b_check_char_range_word(
+  word : @parser.Word,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let mut offset = 0
+  for part in word.parts {
+    let remaining = analytics_word_remaining_text(word, offset)
+    let fragment = analytics_bad_parameter_part_fragment(part, remaining)
+    let fragment_offset = match analytics_string_offset(remaining, fragment) {
+      Some(inner) => offset + inner
+      None => offset
+    }
+    let remaining_width = analytics_remaining_word_width(word, fragment_offset)
+    let fragment_width = if fragment.length() <= remaining_width {
+      fragment.length()
+    } else {
+      remaining_width
+    }
+    match part {
+      @parser.WordPart::Glob(text) => {
+        b_maybe_warn_named_char_class(word, fragment_offset, text, diagnostics)
+        b_maybe_warn_duplicate_char_range(
+          word, fragment_offset, text, diagnostics,
+        )
+      }
+      _ => ()
+    }
+    offset = fragment_offset + fragment_width
+  }
+}
+
+///|
+fn b_maybe_warn_named_char_class(
+  word : @parser.Word,
+  word_offset : Int,
+  text : String,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match b_named_char_class_offset(text) {
+    Some(offset) => {
+      let fragment = b_named_char_class_fragment(text, offset)
+      push_diagnostic(
+        diagnostics,
+        analytics_span_offset(
+          word.span,
+          word_offset + offset,
+          fragment.length(),
+        ),
+        CheckSeverity::Warning,
+        2101,
+        "Named class needs outer [], e.g. [[:digit:]].",
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn b_named_char_class_offset(text : String) -> Int? {
+  let view = text[:]
+  let mut i = 0
+  while i + 3 < view.length() {
+    if view[i] == '[' && view[i + 1] == ':' {
+      let mut j = i + 2
+      while j + 1 < view.length() {
+        if view[j] == ':' && view[j + 1] == ']' {
+          let prev = if i > 0 { Some(view[i - 1]) } else { None }
+          let next = if j + 2 < view.length() {
+            Some(view[j + 2])
+          } else {
+            None
+          }
+          if !(prev == Some('[') && next == Some(']')) && j > i + 2 {
+            return Some(i)
+          }
+          break
+        }
+        j += 1
+      }
+    }
+    i += 1
+  }
+  None
+}
+
+///|
+fn b_named_char_class_fragment(text : String, offset : Int) -> String {
+  let view = text[:]
+  let mut end_ = offset + 2
+  while end_ + 1 < view.length() {
+    if view[end_] == ':' && view[end_ + 1] == ']' {
+      return text.view(start_offset=offset, end_offset=end_ + 2).to_string()
+    }
+    end_ += 1
+  }
+  text.view(start_offset=offset).to_string()
+}
+
+///|
+fn b_maybe_warn_duplicate_char_range(
+  word : @parser.Word,
+  word_offset : Int,
+  text : String,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard b_glob_text_has_duplicate_char_range(text) else { return }
+  push_diagnostic(
+    diagnostics,
+    analytics_span_offset(word.span, word_offset, text.length()),
+    CheckSeverity::Info,
+    2102,
+    "Ranges can only match single chars (mentioned due to duplicates).",
+  )
+}
+
+///|
+fn b_glob_text_has_duplicate_char_range(text : String) -> Bool {
+  guard text.has_prefix("[") && text.has_suffix("]") else { return false }
+  let inner = text
+    .view(start_offset=1, end_offset=text.length() - 1)
+    .to_string()
+  let contents = match inner[:] {
+    ['!', ..] | ['^', ..] => inner.view(start_offset=1).to_string()
+    _ => inner
+  }
+  guard !contents.contains("[") else { return false }
+  let view = contents[:]
+  let mut i = 0
+  while i < view.length() {
+    if view[i] != '-' {
+      let mut j = i + 1
+      while j < view.length() {
+        if view[j] != '-' && view[j] == view[i] {
+          return true
+        }
+        j += 1
+      }
+    }
+    i += 1
+  }
+  false
 }
 
 ///|
@@ -440,6 +620,51 @@ fn check_empty_condition(
       _ => ()
     }
   })
+}
+
+///|
+fn check_trailing_bracket(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    match command.kind {
+      @parser.CommandKind::Simple(simple) =>
+        match simple.words {
+          [.., last] =>
+            match word_single_literal_text(last) {
+              Some(text) if text == "]" || text == "]]" =>
+                if !b_command_has_matching_test_opener(simple.words, text) {
+                  let opposite = if text == "]]" { "[[" } else { "[" }
+                  push_diagnostic(
+                    diagnostics,
+                    last.span,
+                    CheckSeverity::Warning,
+                    2171,
+                    "Found trailing \{text} outside test. Add missing \{opposite} or quote if intentional.",
+                  )
+                }
+              _ => ()
+            }
+          [] => ()
+        }
+      _ => ()
+    }
+  })
+}
+
+///|
+fn b_command_has_matching_test_opener(
+  words : Array[@parser.Word],
+  bracket : String,
+) -> Bool {
+  let opposite = if bracket == "]]" { "[[" } else { "[" }
+  for word in words {
+    if word_literal_or_glob_text(word) == Some(opposite) {
+      return true
+    }
+  }
+  false
 }
 
 ///|

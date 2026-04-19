@@ -2714,6 +2714,20 @@ test "array literal supports indexed and nested elements" {
 }
 
 ///|
+test "comma-separated associative array elements keep comma tokens in value words" {
+  let script = parse_ok("arr=([a]=b,[c]=d,[e]=f)")
+  let (_, simple) = first_simple(script)
+  match simple.assignments[0].value {
+    @parser.AssignmentValue::ArrayLiteral(elements) => {
+      assert_eq(elements.length(), 1)
+      assert_eq(index_raw(elements[0].indexes[0]), "a")
+      assert_eq(assignment_word(elements[0].value).source, "b,[c]=d,[e]=f")
+    }
+    _ => fail("expected structured associative array literal")
+  }
+}
+
+///|
 test "backquoted and heredoc escapes preserve backslashes" {
   let backquoted = parse_ok("echo `printf \\q`")
   let (_, simple) = first_simple(backquoted)

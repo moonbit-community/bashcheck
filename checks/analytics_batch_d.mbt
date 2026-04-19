@@ -29,10 +29,70 @@ fn analytics_batch_d_descriptions() -> Array[CheckDescription] {
       summary: "Calls without arguments should pass \"$@\" when the function reads positional parameters.",
     },
     {
+      code: 2096,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Most shebang implementations only allow one interpreter argument.",
+    },
+    {
+      code: 2104,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Functions should use return instead of break/continue outside loops.",
+    },
+    {
+      code: 2105,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "break and continue are only valid in loops.",
+    },
+    {
+      code: 2106,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "break/continue in subshell-like contexts only affect that subshell.",
+    },
+    {
+      code: 2111,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "ksh does not allow the function keyword together with parentheses.",
+    },
+    {
+      code: 2112,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "The function keyword is non-standard when used with parentheses.",
+    },
+    {
+      code: 2113,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "The function keyword is non-standard without parentheses.",
+    },
+    {
+      code: 2118,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "ksh does not support |& pipelines.",
+    },
+    {
       code: 2120,
       severity: CheckSeverity::Warning,
       category: "analytics",
       summary: "Function references positional parameters but is only invoked without arguments.",
+    },
+    {
+      code: 2127,
+      severity: CheckSeverity::Error,
+      category: "analytics",
+      summary: "Shell-specific syntax needs an explicit shell that supports it.",
+    },
+    {
+      code: 2103,
+      severity: CheckSeverity::Info,
+      category: "analytics",
+      summary: "Prefer a subshell over manually cd'ing back afterward.",
     },
     {
       code: 2164,
@@ -85,9 +145,14 @@ fn run_analytics_batch_d_checks(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  ignore(shell)
+  check_shebang_parameters_d(script, diagnostics)
+  check_loop_keyword_scope(script, shell, diagnostics)
+  check_function_declarations(script, shell, diagnostics)
+  check_stderr_pipe_ksh(script, shell, diagnostics)
+  check_unsupported_features_d(script, shell, diagnostics)
   check_functions_used_externally(script, diagnostics)
   check_unpassed_in_functions(script, diagnostics)
+  check_cd_and_back(script, diagnostics)
   check_unchecked_cd_pushd_popd(script, diagnostics)
   check_loop_variable_reassignment(script, diagnostics)
   check_alias_used_in_same_parsing_unit(script, diagnostics)
@@ -97,6 +162,502 @@ fn run_analytics_batch_d_checks(
 ///|
 priv struct AnalyticsFunctionInfo {
   declaration_span : @parser.Span
+}
+
+///|
+priv enum DLoopKeywordScopeKind {
+  Loop
+  Function
+  Subshell(String)
+}
+
+///|
+fn check_shebang_parameters_d(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match script.shebang {
+    Some(shebang) =>
+      if d_shebang_has_multiple_parameters(shebang) {
+        push_diagnostic(
+          diagnostics,
+          d_shebang_span(script, shebang),
+          CheckSeverity::Error,
+          2096,
+          "On most OS, shebangs can only specify a single parameter.",
+        )
+      }
+    None => ()
+  }
+}
+
+///|
+fn d_shebang_has_multiple_parameters(shebang : String) -> Bool {
+  let words = d_split_shell_words(d_shebang_command_text(shebang))
+  words.length() > 2 && !d_shebang_uses_env_split_string(words)
+}
+
+///|
+fn d_shebang_uses_env_split_string(words : Array[String]) -> Bool {
+  match words.get(0) {
+    Some(first) if analytics_path_basename(d_unquote_shebang_word(first)) ==
+      "env" => {
+      let mut i = 1
+      while i < words.length() {
+        let arg = d_unquote_shebang_word(words[i])
+        if arg == "-S" ||
+          arg == "--split-string" ||
+          arg.has_prefix("--split-string=") {
+          return true
+        }
+        i += 1
+      }
+      false
+    }
+    _ => false
+  }
+}
+
+///|
+fn d_shebang_span(script : @parser.Script, shebang : String) -> @parser.Span {
+  let start = if script.has_bom {
+    @parser.Position::new(1, 1, 2)
+  } else {
+    @parser.Position::new(0, 1, 1)
+  }
+  @parser.Span::new(
+    start,
+    @parser.Position::new(
+      start.offset + shebang.length(),
+      1,
+      start.column + shebang.length(),
+    ),
+  )
+}
+
+///|
+fn d_shebang_command_text(shebang : String) -> String {
+  if shebang.has_prefix("#!") {
+    d_trim_ascii_space(shebang.view(start_offset=2).to_string())
+  } else {
+    d_trim_ascii_space(shebang)
+  }
+}
+
+///|
+fn d_trim_ascii_space(text : String) -> String {
+  let view = text[:]
+  let mut start = 0
+  while start < view.length() &&
+        (view[start] == ' ' || view[start] == '\t' || view[start] == '\r') {
+    start += 1
+  }
+  let mut end_ = view.length()
+  while end_ > start &&
+        (
+          view[end_ - 1] == ' ' ||
+          view[end_ - 1] == '\t' ||
+          view[end_ - 1] == '\r'
+        ) {
+    end_ -= 1
+  }
+  text.view(start_offset=start, end_offset=end_).to_string()
+}
+
+///|
+fn d_split_shell_words(text : String) -> Array[String] {
+  let values : Array[String] = []
+  let current = StringBuilder::new()
+  let view = text[:]
+  let mut i = 0
+  let mut quote : UInt16? = None
+  while i < view.length() {
+    let ch = view[i]
+    match quote {
+      Some(current_quote) => {
+        current.write_char(ch.unsafe_to_char())
+        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+          i += 1
+          current.write_char(view[i].unsafe_to_char())
+        } else if ch == current_quote {
+          quote = None
+        }
+      }
+      None =>
+        if ch == ' ' || ch == '\t' {
+          let item = current.to_string()
+          if item != "" {
+            values.push(item)
+            current.reset()
+          }
+        } else {
+          current.write_char(ch.unsafe_to_char())
+          if ch == '\\' && i + 1 < view.length() {
+            i += 1
+            current.write_char(view[i].unsafe_to_char())
+          } else if ch == '\'' || ch == '"' {
+            quote = Some(ch)
+          }
+        }
+    }
+    i += 1
+  }
+  let tail = current.to_string()
+  if tail != "" {
+    values.push(tail)
+  }
+  values
+}
+
+///|
+fn d_unquote_shebang_word(raw : String) -> String {
+  let view = raw[:]
+  if view.length() >= 2 &&
+    (
+      (view[0] == '\'' && view[view.length() - 1] == '\'') ||
+      (view[0] == '"' && view[view.length() - 1] == '"')
+    ) {
+    raw.view(start_offset=1, end_offset=view.length() - 1).to_string()
+  } else {
+    raw
+  }
+}
+
+///|
+fn check_loop_keyword_scope(
+  script : @parser.Script,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let indexed = @semantics.build_index(script)
+  let lastpipe = @semantics.has_lastpipe(script, shell)
+  for id in indexed_all_node_ids(indexed) {
+    match @semantics.node_ref_of(indexed, id) {
+      Some(@semantics.NodeRef::Command(command)) =>
+        match d_loop_keyword_name(command) {
+          Some(name) =>
+            d_check_loop_keyword_command(
+              indexed, id, command, name, lastpipe, diagnostics,
+            )
+          None => ()
+        }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn d_loop_keyword_name(command : @parser.Command) -> String? {
+  match command.kind {
+    @parser.CommandKind::Simple(simple) =>
+      match simple.words.get(0) {
+        Some(word) =>
+          match word_single_literal_text(word) {
+            Some(name) if name == "break" || name == "continue" => Some(name)
+            _ => None
+          }
+        None => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn d_check_loop_keyword_command(
+  indexed : @semantics.IndexedScript,
+  id : @semantics.NodeId,
+  command : @parser.Command,
+  name : String,
+  lastpipe : Bool,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let scopes = d_collect_loop_keyword_scopes(indexed, id, lastpipe)
+  if d_loop_keyword_scopes_have_loop(scopes) {
+    match d_first_loop_keyword_subshell_scope(scopes) {
+      Some(reason) =>
+        push_diagnostic(
+          diagnostics,
+          command.span,
+          CheckSeverity::Warning,
+          2106,
+          "This only exits the subshell caused by the \{reason}.",
+        )
+      None => ()
+    }
+    return
+  }
+
+  match scopes.get(0) {
+    Some(DLoopKeywordScopeKind::Function) =>
+      push_diagnostic(
+        diagnostics,
+        command.span,
+        CheckSeverity::Error,
+        2104,
+        "In functions, use return instead of \{name}.",
+      )
+    _ =>
+      push_diagnostic(
+        diagnostics,
+        command.span,
+        CheckSeverity::Error,
+        2105,
+        "\{name} is only valid in loops.",
+      )
+  }
+}
+
+///|
+fn d_collect_loop_keyword_scopes(
+  indexed : @semantics.IndexedScript,
+  id : @semantics.NodeId,
+  lastpipe : Bool,
+) -> Array[DLoopKeywordScopeKind] {
+  let scopes : Array[DLoopKeywordScopeKind] = []
+  for ancestor in @semantics.find_ancestors(indexed, id) {
+    match d_loop_keyword_scope_kind_for_ancestor(indexed, ancestor, lastpipe) {
+      Some(scope) => scopes.push(scope)
+      None => ()
+    }
+  }
+  scopes
+}
+
+///|
+fn d_loop_keyword_scope_kind_for_ancestor(
+  indexed : @semantics.IndexedScript,
+  id : @semantics.NodeId,
+  lastpipe : Bool,
+) -> DLoopKeywordScopeKind? {
+  match @semantics.node_ref_of(indexed, id) {
+    Some(@semantics.NodeRef::ListItem(item)) =>
+      match item.terminator {
+        Some(@parser.Terminator::Background) =>
+          Some(DLoopKeywordScopeKind::Subshell("backgrounding &"))
+        _ => None
+      }
+    Some(@semantics.NodeRef::FunctionDef(_)) =>
+      Some(DLoopKeywordScopeKind::Function)
+    Some(@semantics.NodeRef::LoopClause(_))
+    | Some(@semantics.NodeRef::ForClause(_))
+    | Some(@semantics.NodeRef::ArithmeticForClause(_))
+    | Some(@semantics.NodeRef::SelectClause(_)) =>
+      Some(DLoopKeywordScopeKind::Loop)
+    Some(@semantics.NodeRef::CoProcClause(_)) =>
+      Some(DLoopKeywordScopeKind::Subshell("coproc"))
+    Some(@semantics.NodeRef::BatsTestClause(_)) =>
+      Some(DLoopKeywordScopeKind::Subshell("@bats test"))
+    Some(@semantics.NodeRef::Command(command)) =>
+      match command.kind {
+        @parser.CommandKind::Function(_) =>
+          Some(DLoopKeywordScopeKind::Function)
+        @parser.CommandKind::While(_)
+        | @parser.CommandKind::Until(_)
+        | @parser.CommandKind::ForIn(_)
+        | @parser.CommandKind::ForArithmetic(_)
+        | @parser.CommandKind::Select(_) => Some(DLoopKeywordScopeKind::Loop)
+        @parser.CommandKind::Subshell(_) =>
+          Some(DLoopKeywordScopeKind::Subshell("(..) group"))
+        @parser.CommandKind::BatsTest(_) =>
+          Some(DLoopKeywordScopeKind::Subshell("@bats test"))
+        _ =>
+          if d_command_is_coproc_body(indexed, id) {
+            Some(DLoopKeywordScopeKind::Subshell("coproc"))
+          } else if d_command_is_pipeline_subshell(indexed, id, lastpipe) {
+            Some(DLoopKeywordScopeKind::Subshell("pipeline"))
+          } else {
+            None
+          }
+      }
+    Some(@semantics.NodeRef::WordPart(@parser.WordPart::CommandSubstitution(_)))
+    | Some(
+      @semantics.NodeRef::WordPart(
+        @parser.WordPart::BraceCommandSubstitution(_, _)
+      )
+    ) => Some(DLoopKeywordScopeKind::Subshell("$(..) expansion"))
+    Some(@semantics.NodeRef::WordPart(@parser.WordPart::BackQuoted(_))) =>
+      Some(DLoopKeywordScopeKind::Subshell("`..` expansion"))
+    _ => None
+  }
+}
+
+///|
+fn d_loop_keyword_scopes_have_loop(
+  scopes : Array[DLoopKeywordScopeKind],
+) -> Bool {
+  scopes.any(fn(scope) {
+    match scope {
+      DLoopKeywordScopeKind::Loop => true
+      _ => false
+    }
+  })
+}
+
+///|
+fn d_first_loop_keyword_subshell_scope(
+  scopes : Array[DLoopKeywordScopeKind],
+) -> String? {
+  for scope in scopes {
+    match scope {
+      DLoopKeywordScopeKind::Subshell(reason) => return Some(reason)
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+fn d_command_is_coproc_body(
+  indexed : @semantics.IndexedScript,
+  id : @semantics.NodeId,
+) -> Bool {
+  match @semantics.parent_of(indexed, id) {
+    Some(parent) =>
+      match @semantics.node_ref_of(indexed, parent) {
+        Some(@semantics.NodeRef::CoProcClause(_)) => true
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+fn d_command_is_pipeline_subshell(
+  indexed : @semantics.IndexedScript,
+  id : @semantics.NodeId,
+  lastpipe : Bool,
+) -> Bool {
+  let segment_id = match @semantics.parent_of(indexed, id) {
+    Some(parent) =>
+      match @semantics.node_ref_of(indexed, parent) {
+        Some(@semantics.NodeRef::PipelineSegment(_)) => parent
+        _ => return false
+      }
+    None => return false
+  }
+  let pipeline_id = match @semantics.parent_of(indexed, segment_id) {
+    Some(parent) =>
+      match @semantics.node_ref_of(indexed, parent) {
+        Some(@semantics.NodeRef::Pipeline(pipeline)) =>
+          if pipeline.segments.length() > 1 {
+            parent
+          } else {
+            return false
+          }
+        _ => return false
+      }
+    None => return false
+  }
+  if !lastpipe {
+    return true
+  }
+  let segment_ids = d_pipeline_segment_ids(indexed, pipeline_id)
+  match segment_ids.get(segment_ids.length() - 1) {
+    Some(last_segment) => last_segment != segment_id
+    None => false
+  }
+}
+
+///|
+fn d_pipeline_segment_ids(
+  indexed : @semantics.IndexedScript,
+  pipeline_id : @semantics.NodeId,
+) -> Array[@semantics.NodeId] {
+  let ids : Array[@semantics.NodeId] = []
+  for child in @semantics.children_of(indexed, pipeline_id) {
+    match @semantics.node_ref_of(indexed, child) {
+      Some(@semantics.NodeRef::PipelineSegment(_)) => ids.push(child)
+      _ => ()
+    }
+  }
+  ids
+}
+
+///|
+fn check_function_declarations(
+  script : @parser.Script,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    match command.kind {
+      @parser.CommandKind::Function(function_) =>
+        d_maybe_warn_function_declaration(
+          command, function_, shell, diagnostics,
+        )
+      _ => ()
+    }
+  })
+}
+
+///|
+fn d_maybe_warn_function_declaration(
+  command : @parser.Command,
+  function_ : @parser.FunctionDef,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  if !function_.uses_keyword {
+    return
+  }
+  if shell == @semantics.ShellDialect::Ksh {
+    if function_.has_parentheses {
+      push_diagnostic(
+        diagnostics,
+        command.span,
+        CheckSeverity::Error,
+        2111,
+        "ksh does not allow 'function' keyword and '()' at the same time.",
+      )
+    }
+    return
+  }
+  if !shell_is_posix_sh(shell) {
+    return
+  }
+  if function_.has_parentheses {
+    push_diagnostic(
+      diagnostics,
+      command.span,
+      CheckSeverity::Warning,
+      2112,
+      "'function' keyword is non-standard. Delete it.",
+    )
+  } else {
+    push_diagnostic(
+      diagnostics,
+      command.span,
+      CheckSeverity::Warning,
+      2113,
+      "'function' keyword is non-standard. Use 'foo()' instead of 'function foo'.",
+    )
+  }
+}
+
+///|
+fn check_stderr_pipe_ksh(
+  script : @parser.Script,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard shell == @semantics.ShellDialect::Ksh else { return }
+  visit_script_pipelines(script, fn(pipeline) {
+    let mut i = 0
+    while i < pipeline.operators.length() {
+      match pipeline.operators[i] {
+        @parser.PipeOperator::PipeAndStderr =>
+          push_diagnostic(
+            diagnostics,
+            pipe_operator_span(pipeline, i, 2),
+            CheckSeverity::Error,
+            2118,
+            "Ksh does not support |&. Use 2>&1 |.",
+          )
+        _ => ()
+      }
+      i += 1
+    }
+  })
 }
 
 ///|
@@ -553,6 +1114,154 @@ fn check_unchecked_cd_pushd_popd(
     return
   }
   analytics_visit_script_for_cd_guards(script, false, diagnostics)
+}
+
+///|
+priv struct AnalyticsCdBackCandidate {
+  command : @parser.Command
+  reverts : Bool
+}
+
+///|
+fn check_cd_and_back(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  if @semantics.has_set_e(script) {
+    return
+  }
+  d_visit_script_for_cd_back(script, diagnostics)
+}
+
+///|
+fn d_visit_script_for_cd_back(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let candidates : Array[AnalyticsCdBackCandidate] = []
+  for item in script.items {
+    match d_cd_back_candidate(item) {
+      Some(candidate) => candidates.push(candidate)
+      None => ()
+    }
+  }
+  d_emit_cd_back_warning(candidates, diagnostics)
+
+  for item in script.items {
+    d_visit_and_or_for_cd_back(item.and_or, diagnostics)
+  }
+}
+
+///|
+fn d_cd_back_candidate(item : @parser.ListItem) -> AnalyticsCdBackCandidate? {
+  guard item.and_or.tail.length() == 0 else { return None }
+  let pipeline = item.and_or.head
+  guard pipeline.segments.length() == 1 else { return None }
+  let command = pipeline.segments[0].command
+  guard @semantics.effective_command_name(command) == Some("cd") else {
+    return None
+  }
+  Some({ command, reverts: d_cd_command_is_revert(command) })
+}
+
+///|
+fn d_cd_command_is_revert(command : @parser.Command) -> Bool {
+  let args = @semantics.effective_command_arguments(command)
+  guard args.length() == 1 else { return false }
+  match @semantics.literal_text(args[0]) {
+    Some("..") | Some("-") => true
+    _ => false
+  }
+}
+
+///|
+fn d_emit_cd_back_warning(
+  candidates : Array[AnalyticsCdBackCandidate],
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  let mut i = 1
+  while i < candidates.length() {
+    if candidates[i].reverts && !candidates[i - 1].reverts {
+      push_diagnostic(
+        diagnostics,
+        candidates[i].command.span,
+        CheckSeverity::Info,
+        2103,
+        "Use a ( subshell ) to avoid having to cd back.",
+      )
+      return
+    }
+    i += 1
+  }
+}
+
+///|
+fn d_visit_and_or_for_cd_back(
+  list : @parser.AndOrList,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  d_visit_pipeline_for_cd_back(list.head, diagnostics)
+  for pair in list.tail {
+    let (_, pipeline) = pair
+    d_visit_pipeline_for_cd_back(pipeline, diagnostics)
+  }
+}
+
+///|
+fn d_visit_pipeline_for_cd_back(
+  pipeline : @parser.Pipeline,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  for segment in pipeline.segments {
+    d_visit_command_for_cd_back(segment.command, diagnostics)
+  }
+}
+
+///|
+fn d_visit_command_for_cd_back(
+  command : @parser.Command,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match command.kind {
+    @parser.CommandKind::Time(clause) =>
+      d_visit_pipeline_for_cd_back(clause.body, diagnostics)
+    @parser.CommandKind::Subshell(script)
+    | @parser.CommandKind::BraceGroup(script)
+    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+      d_visit_script_for_cd_back(script, diagnostics)
+    @parser.CommandKind::If(clause) => {
+      for arm in clause.arms {
+        d_visit_script_for_cd_back(arm.condition, diagnostics)
+        d_visit_script_for_cd_back(arm.body, diagnostics)
+      }
+      match clause.else_body {
+        Some(body) => d_visit_script_for_cd_back(body, diagnostics)
+        None => ()
+      }
+    }
+    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+      d_visit_script_for_cd_back(clause.condition, diagnostics)
+      d_visit_script_for_cd_back(clause.body, diagnostics)
+    }
+    @parser.CommandKind::ForIn(clause) =>
+      d_visit_script_for_cd_back(clause.body, diagnostics)
+    @parser.CommandKind::ForArithmetic(clause) =>
+      d_visit_script_for_cd_back(clause.body, diagnostics)
+    @parser.CommandKind::Select(clause) =>
+      d_visit_script_for_cd_back(clause.body, diagnostics)
+    @parser.CommandKind::Case(clause) =>
+      for item in clause.items {
+        d_visit_script_for_cd_back(item.body, diagnostics)
+      }
+    @parser.CommandKind::Function(function_) =>
+      d_visit_command_for_cd_back(function_.body, diagnostics)
+    @parser.CommandKind::CoProc(clause) =>
+      d_visit_command_for_cd_back(clause.body, diagnostics)
+    @parser.CommandKind::Simple(_)
+    | @parser.CommandKind::Source(_)
+    | @parser.CommandKind::Condition(_)
+    | @parser.CommandKind::Arithmetic(_) => ()
+  }
 }
 
 ///|
@@ -1555,4 +2264,225 @@ fn analytics_trim_ascii_space(text : String) -> String {
     end_ -= 1
   }
   text.view(start_offset=start, end_offset=end_).to_string()
+}
+
+///|
+fn check_unsupported_features_d(
+  script : @parser.Script,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    d_check_unsupported_case_feature(command, shell, diagnostics)
+    d_check_unsupported_brace_command_expansions(command, shell, diagnostics)
+  })
+}
+
+///|
+fn d_check_unsupported_case_feature(
+  command : @parser.Command,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  match command.kind {
+    @parser.CommandKind::Case(clause) =>
+      match d_case_feature_support(clause.items) {
+        Some((feature, supported)) =>
+          if !d_shell_is_supported(shell, supported) {
+            push_diagnostic(
+              diagnostics,
+              command.span,
+              CheckSeverity::Error,
+              2127,
+              d_unsupported_feature_message(feature, supported),
+            )
+          }
+        None => ()
+      }
+    _ => ()
+  }
+}
+
+///|
+fn d_case_feature_support(
+  items : Array[@parser.CaseItem],
+) -> (String, Array[@semantics.ShellDialect])? {
+  let mut has_continue = false
+  let mut has_fallthrough = false
+  for item in items {
+    match item.separator {
+      @parser.CaseSeparator::Continue => has_continue = true
+      @parser.CaseSeparator::FallThrough => has_fallthrough = true
+      @parser.CaseSeparator::Break => ()
+    }
+  }
+  if has_continue {
+    return Some(("cases with ;;&", [@semantics.ShellDialect::Bash]))
+  }
+  if has_fallthrough {
+    return Some(
+      (
+        "cases with ;&",
+        [@semantics.ShellDialect::Bash, @semantics.ShellDialect::Ksh],
+      ),
+    )
+  }
+  None
+}
+
+///|
+fn d_check_unsupported_brace_command_expansions(
+  command : @parser.Command,
+  shell : @semantics.ShellDialect,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  if d_shell_is_supported(shell, [
+      @semantics.ShellDialect::Bash,
+      @semantics.ShellDialect::Ksh,
+    ]) {
+    return
+  }
+  let message = d_unsupported_feature_message("${ ..; } command expansion", [
+    @semantics.ShellDialect::Bash,
+    @semantics.ShellDialect::Ksh,
+  ])
+  visit_direct_words_in_command(command, fn(word, _) {
+    if d_word_has_brace_command_expansion(word) {
+      push_diagnostic(
+        diagnostics,
+        d_brace_command_expansion_span(word),
+        CheckSeverity::Error,
+        2127,
+        message,
+      )
+    }
+  })
+  for redirect in command.redirects {
+    match redirect.target {
+      @parser.RedirectionTarget::HereDoc(doc) =>
+        match doc.parts {
+          Some(parts) =>
+            if d_here_doc_has_brace_command_expansion(parts) {
+              push_diagnostic(
+                diagnostics,
+                redirect.span,
+                CheckSeverity::Error,
+                2127,
+                message,
+              )
+            }
+          None => ()
+        }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn d_word_has_brace_command_expansion(word : @parser.Word) -> Bool {
+  let mut found = false
+  walk_word_deep(word, fn(part) {
+    match part {
+      @parser.WordPart::BraceCommandSubstitution(_, _) => found = true
+      _ => ()
+    }
+  })
+  found
+}
+
+///|
+fn d_here_doc_has_brace_command_expansion(
+  parts : Array[@parser.WordPart],
+) -> Bool {
+  let mut found = false
+  for part in parts {
+    walk_word_part_deep(part, fn(nested) {
+      match nested {
+        @parser.WordPart::BraceCommandSubstitution(_, _) => found = true
+        _ => ()
+      }
+    })
+  }
+  found
+}
+
+///|
+fn d_brace_command_expansion_span(word : @parser.Word) -> @parser.Span {
+  match word.parts {
+    [@parser.WordPart::BraceCommandSubstitution(_, _)] => word.span
+    [
+      @parser.WordPart::DoubleQuoted(
+        [@parser.WordPart::BraceCommandSubstitution(_, _)]
+      ),
+    ]
+    | [
+      @parser.WordPart::DollarDoubleQuoted(
+        [@parser.WordPart::BraceCommandSubstitution(_, _)]
+      ),
+    ] => d_span_offset(word.span, 1, word.source.length() - 2)
+    _ => word.span
+  }
+}
+
+///|
+fn d_span_offset(
+  span : @parser.Span,
+  offset : Int,
+  width : Int,
+) -> @parser.Span {
+  @parser.Span::new(
+    @parser.Position::new(
+      span.start.offset + offset,
+      span.start.line,
+      span.start.column + offset,
+    ),
+    @parser.Position::new(
+      span.start.offset + offset + width,
+      span.start.line,
+      span.start.column + offset + width,
+    ),
+  )
+}
+
+///|
+fn d_shell_is_supported(
+  shell : @semantics.ShellDialect,
+  supported : Array[@semantics.ShellDialect],
+) -> Bool {
+  supported.any(fn(current) { current == shell })
+}
+
+///|
+fn d_unsupported_feature_message(
+  feature : String,
+  supported : Array[@semantics.ShellDialect],
+) -> String {
+  "To use \{feature}, specify #!/usr/bin/env \{d_supported_shell_names(supported)}"
+}
+
+///|
+fn d_supported_shell_names(
+  supported : Array[@semantics.ShellDialect],
+) -> String {
+  let builder = StringBuilder::new()
+  let mut i = 0
+  while i < supported.length() {
+    if i > 0 {
+      builder.write_string(" or ")
+    }
+    builder.write_string(d_shell_env_name(supported[i]))
+    i += 1
+  }
+  builder.to_string()
+}
+
+///|
+fn d_shell_env_name(shell : @semantics.ShellDialect) -> String {
+  match shell {
+    @semantics.ShellDialect::Sh => "sh"
+    @semantics.ShellDialect::Bash => "bash"
+    @semantics.ShellDialect::Dash => "dash"
+    @semantics.ShellDialect::Ksh => "ksh"
+    @semantics.ShellDialect::BusyboxSh => "busybox sh"
+  }
 }

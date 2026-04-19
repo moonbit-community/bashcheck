@@ -224,6 +224,20 @@ test "analytics checks flag conditional operator misuse and quoted regexes" {
 }
 
 ///|
+test "analytics checks allow split [ ] conditions and native [[ ]] and ors" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|[ a ] && [ b ]
+      #|[ a ] || [ b ]
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2166))
+}
+
+///|
 test "analytics checks keep quoted =~ literals quiet" {
   let diagnostics = check_source(
     (

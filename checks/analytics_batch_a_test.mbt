@@ -69,6 +69,38 @@ test "analytics batch a checks avoid quoted-expression false positives in known 
 }
 
 ///|
+test "analytics batch a flags impossible equality comparisons without replacing SC2050" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2203
+      #|[[ *.png == [a-z] ]]
+      #|[[ x == y ]]
+      #|
+    ),
+  )
+
+  assert_eq(count_code(diagnostics, 2193), 1)
+  assert_eq(count_code(diagnostics, 2050), 1)
+}
+
+///|
+test "analytics batch a avoids impossible-comparison false positives on overlapping words" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|[[ $n == $n ]]
+      #|[[ ~me == ~+ ]]
+      #|[[ ~ == ~+ ]]
+      #|
+    ),
+  )
+
+  assert_true(!has_code(diagnostics, 2193))
+}
+
+///|
 test "analytics batch a flags simple and declaration-style unused assignments" {
   let diagnostics = check_source(
     (

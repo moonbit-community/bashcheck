@@ -46,7 +46,12 @@ fn check_div_before_mult_expr(
   span : @parser.Span,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  g_maybe_push_div_before_mult_diagnostic(expr, span, diagnostics)
+  g_maybe_push_div_before_mult_diagnostic(
+    expr,
+    span,
+    Some(expr.raw),
+    diagnostics,
+  )
 }
 
 ///|
@@ -55,7 +60,12 @@ fn check_arithmetic_deref_expr(
   span : @parser.Span,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  g_maybe_push_arithmetic_deref_diagnostic(expr, span, diagnostics)
+  g_maybe_push_arithmetic_deref_diagnostic(
+    expr,
+    span,
+    Some(expr.raw),
+    diagnostics,
+  )
 }
 
 ///|

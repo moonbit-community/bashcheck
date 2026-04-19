@@ -640,6 +640,27 @@ async test "phase 4 dynamic json diff aligns analytics batch t command misuse di
       #|
     ),
   )
+
+  assert_shellcheck_json_matches(
+    "SC2089-SC2090-bash",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2086,SC2154
+      #|param='--foo="bar"'; app $param
+      #|other='my\ file'; cmd="rm $other"; $cmd
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2089-SC2090-sh",
+    (
+      #|#!/bin/sh
+      #|# shellcheck disable=SC2034,SC2086,SC2154
+      #|param='--foo="bar"'; app $param
+      #|
+    ),
+  )
 }
 
 ///|
@@ -680,6 +701,83 @@ async test "phase 5 dynamic json diff aligns legacy unary test diagnostics" {
     (
       #|#!/bin/bash
       #|[ -a file ]
+      #|
+    ),
+  )
+}
+
+///|
+async test "phase 6 dynamic json diff aligns function declaration compatibility diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2112-SC2113",
+    (
+      #|#!/bin/sh
+      #|function foo() { true; }
+      #|function bar { true; }
+      #|
+    ),
+  )
+
+  assert_shellcheck_json_matches(
+    "SC2111",
+    (
+      #|#!/bin/ksh
+      #|function foo() { true; }
+      #|
+    ),
+  )
+}
+
+///|
+async test "phase 6 dynamic json diff aligns PATH override diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2123",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|PATH="$var/$foo"
+      #|PATH="mydir"
+      #|PATH=/cow/foo
+      #|PATH='/bin:/sbin'
+      #|PATH=$OLDPATH
+      #|PATH=$PATH:/stuff
+      #|PATH="$var/$foo" cmd
+      #|
+    ),
+  )
+}
+
+///|
+async test "phase 6 dynamic json diff aligns comma-separated array diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2054",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|a=(1, 2)
+      #|a+=(1,2,3)
+      #|a=(1 "foo,bar" 3)
+      #|a=('one,' 'two')
+      #|a=([a]=b,[c]=d,[e]=f)
+      #|
+    ),
+  )
+}
+
+///|
+async test "phase 6 dynamic json diff aligns array index assignment diagnostics" {
+  assert_shellcheck_json_matches(
+    "SC2190-SC2192",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2102,SC2154,SC2206
+      #|declare -A foo; foo=(bar)
+      #|arr=( [foo]= bar )
+      #|declare -A map; map=( var=value )
+      #|arr=( 1=value )
+      #|arr=( $a=value )
+      #|arr=( $((1+1))=value )
+      #|arr=( [foo] = bar )
       #|
     ),
   )

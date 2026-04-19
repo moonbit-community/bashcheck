@@ -965,6 +965,9 @@ test "compat regression covers analytics batch b command diagnostics" {
         2100, 4, 3, 6, "Use $((..)) for arithmetics, e.g. i=$((i * 2))",
       ),
       compat_warning(
+        2125, 4, 3, 6, "Brace expansions and globs are literal in assignments. Quote it or use an array.",
+      ),
+      compat_warning(
         2211, 5, 1, 5, "This is a glob used as a command name. Was it supposed to be in ${..}, array, or is it missing quoting?",
       ),
       compat_warning(
@@ -2557,6 +2560,48 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
   )
 
   assert_compat_case(
+    "analytics-batch-t-quoted-literal-scalars",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2086,SC2154
+      #|param='--foo="bar"'; app $param
+      #|other='my\ file'; cmd="rm $other"; $cmd
+      #|
+    ),
+    [
+      compat_warning(
+        2089, 3, 7, 20, "Quotes/backslashes will be treated literally. Use an array.",
+      ),
+      compat_warning(
+        2090, 3, 26, 32, "Quotes/backslashes in this variable will not be respected.",
+      ),
+      compat_warning(
+        2089, 4, 7, 17, "Quotes/backslashes will be treated literally. Use an array.",
+      ),
+      compat_warning(
+        2090, 4, 36, 40, "Quotes/backslashes in this variable will not be respected.",
+      ),
+    ],
+  )
+
+  assert_compat_case_with_spec(
+    "analytics-batch-t-quoted-literal-scalars-sh",
+    (
+      #|param='--foo="bar"'; app $param
+      #|
+    ),
+    [
+      compat_warning(
+        2089, 1, 7, 20, "Quotes/backslashes will be treated literally. Rewrite using set/\"$@\" or functions.",
+      ),
+      compat_warning(
+        2090, 1, 26, 32, "Quotes/backslashes in this variable will not be respected.",
+      ),
+    ],
+    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
+  )
+
+  assert_compat_case(
     "analytics-batch-u-pipelines",
     (
       #|#!/bin/bash
@@ -2609,6 +2654,129 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
       ),
       compat_error(
         2067, 3, 31, 33, "Missing ';' or + terminating -exec. You can't use |/||/&&, and ';' has to be a separate, quoted argument.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-function-declarations-sh",
+    (
+      #|#!/bin/sh
+      #|function foo() { true; }
+      #|function bar { true; }
+      #|
+    ),
+    [
+      compat_warning(
+        2112, 2, 1, 25, "'function' keyword is non-standard. Delete it.",
+      ),
+      compat_warning(
+        2113, 3, 1, 23, "'function' keyword is non-standard. Use 'foo()' instead of 'function foo'.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-function-declarations-ksh",
+    (
+      #|#!/bin/ksh
+      #|function foo() { true; }
+      #|
+    ),
+    [
+      compat_error(
+        2111, 2, 1, 25, "ksh does not allow 'function' keyword and '()' at the same time.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-overriding-path",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|PATH="$var/$foo"
+      #|PATH="mydir"
+      #|PATH=/cow/foo
+      #|PATH='/bin:/sbin'
+      #|PATH=$OLDPATH
+      #|PATH=$PATH:/stuff
+      #|PATH="$var/$foo" cmd
+      #|
+    ),
+    [
+      compat_warning(
+        2123, 3, 1, 5, "PATH is the shell search path. Use another name.",
+      ),
+      compat_warning(
+        2123, 4, 1, 5, "PATH is the shell search path. Use another name.",
+      ),
+      compat_warning(
+        2123, 5, 1, 5, "PATH is the shell search path. Use another name.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-comma-arrays",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|a=(1, 2)
+      #|a+=(1,2,3)
+      #|a=(1 "foo,bar" 3)
+      #|a=('one,' 'two')
+      #|a=([a]=b,[c]=d,[e]=f)
+      #|
+    ),
+    [
+      compat_warning(
+        2054, 3, 3, 9, "Use spaces, not commas, to separate array elements.",
+      ),
+      compat_warning(
+        2054, 4, 4, 11, "Use spaces, not commas, to separate array elements.",
+      ),
+      compat_warning(
+        2054, 7, 3, 22, "Use spaces, not commas, to separate array elements.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "analytics-array-index-assignment-confusion",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2102,SC2154,SC2206
+      #|declare -A foo; foo=(bar)
+      #|arr=( [foo]= bar )
+      #|declare -A map; map=( var=value )
+      #|arr=( 1=value )
+      #|arr=( $a=value )
+      #|arr=( $((1+1))=value )
+      #|arr=( [foo] = bar )
+      #|
+    ),
+    [
+      compat_warning(
+        2190, 3, 22, 25, "Elements in associative arrays need index, e.g. array=( [index]=value ) .",
+      ),
+      compat_warning(
+        2192, 4, 13, 13, "This array element has no value. Remove spaces after = or use \"\" for empty string.",
+      ),
+      compat_warning(
+        2190, 5, 23, 32, "Elements in associative arrays need index, e.g. array=( [index]=value ) .",
+      ),
+      compat_warning(
+        2191, 6, 7, 14, "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
+      ),
+      compat_warning(
+        2191, 7, 9, 15, "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
+      ),
+      compat_warning(
+        2191, 8, 15, 21, "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
+      ),
+      compat_warning(
+        2191, 9, 13, 14, "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
       ),
     ],
   )

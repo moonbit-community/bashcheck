@@ -50,32 +50,38 @@ fn run_control_flow_checks(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
+  let lastpipe = @semantics.has_lastpipe(script, shell)
   let cfg = @cfg.build_cfg(
     script,
-    @cfg.CfgParameters::new(
-      @semantics.has_lastpipe(script, shell),
-      @semantics.has_pipefail(script),
-    ),
+    @cfg.CfgParameters::new(lastpipe, @semantics.has_pipefail(script)),
   )
   let analysis = @cfg.analyze_control_flow(cfg)
+  let dead_subshell_reads = batch_v_dead_read_ids(cfg, lastpipe)
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
       Some(@semantics.NodeRef::Command(command)) => {
         check_unreachable_command(cfg, analysis, id, command, diagnostics)
-        check_command_reads(cfg, analysis, id, command, false, diagnostics)
+        check_command_reads(
+          cfg, analysis, id, command, false, dead_subshell_reads, diagnostics,
+        )
       }
       Some(@semantics.NodeRef::FunctionDef(function_def)) =>
         check_unreachable_function(cfg, analysis, id, function_def, diagnostics)
       Some(@semantics.NodeRef::Assignment(assignment)) =>
         check_array_scalar_conflict(cfg, analysis, id, assignment, diagnostics)
       Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
-        check_unassigned_read(cfg, analysis, id, name, false, diagnostics)
+        check_unassigned_read(
+          cfg, analysis, id, name, false, dead_subshell_reads, diagnostics,
+        )
       Some(
         @semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter(name))
-      ) => check_unassigned_read(cfg, analysis, id, name, false, diagnostics)
+      ) =>
+        check_unassigned_read(
+          cfg, analysis, id, name, false, dead_subshell_reads, diagnostics,
+        )
       Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
         check_parameter_expansion_read(
-          cfg, analysis, id, expansion, false, diagnostics,
+          cfg, analysis, id, expansion, false, dead_subshell_reads, diagnostics,
         )
       _ => ()
     }
@@ -88,26 +94,32 @@ fn run_unassigned_uppercase_optional_check(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
+  let lastpipe = @semantics.has_lastpipe(script, shell)
   let cfg = @cfg.build_cfg(
     script,
-    @cfg.CfgParameters::new(
-      @semantics.has_lastpipe(script, shell),
-      @semantics.has_pipefail(script),
-    ),
+    @cfg.CfgParameters::new(lastpipe, @semantics.has_pipefail(script)),
   )
   let analysis = @cfg.analyze_control_flow(cfg)
+  let dead_subshell_reads = batch_v_dead_read_ids(cfg, lastpipe)
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
       Some(@semantics.NodeRef::Command(command)) =>
-        check_command_reads(cfg, analysis, id, command, true, diagnostics)
+        check_command_reads(
+          cfg, analysis, id, command, true, dead_subshell_reads, diagnostics,
+        )
       Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
-        check_unassigned_read(cfg, analysis, id, name, true, diagnostics)
+        check_unassigned_read(
+          cfg, analysis, id, name, true, dead_subshell_reads, diagnostics,
+        )
       Some(
         @semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter(name))
-      ) => check_unassigned_read(cfg, analysis, id, name, true, diagnostics)
+      ) =>
+        check_unassigned_read(
+          cfg, analysis, id, name, true, dead_subshell_reads, diagnostics,
+        )
       Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
         check_parameter_expansion_read(
-          cfg, analysis, id, expansion, true, diagnostics,
+          cfg, analysis, id, expansion, true, dead_subshell_reads, diagnostics,
         )
       _ => ()
     }
@@ -121,6 +133,7 @@ fn check_command_reads(
   id : @cfg.CfgAstId,
   command : @parser.Command,
   uppercase_only : Bool,
+  dead_subshell_reads : Array[@cfg.CfgAstId],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
@@ -131,6 +144,7 @@ fn check_command_reads(
         id,
         arithmetic.expr,
         uppercase_only,
+        dead_subshell_reads,
         diagnostics,
       )
     @parser.CommandKind::ForArithmetic(clause) => {
@@ -140,6 +154,7 @@ fn check_command_reads(
         id,
         clause.init,
         uppercase_only,
+        dead_subshell_reads,
         diagnostics,
       )
       check_arithmetic_expr_reads(
@@ -148,6 +163,7 @@ fn check_command_reads(
         id,
         clause.condition,
         uppercase_only,
+        dead_subshell_reads,
         diagnostics,
       )
       check_arithmetic_expr_reads(
@@ -156,6 +172,7 @@ fn check_command_reads(
         id,
         clause.step,
         uppercase_only,
+        dead_subshell_reads,
         diagnostics,
       )
     }
@@ -508,6 +525,7 @@ fn check_parameter_expansion_read(
   id : @cfg.CfgAstId,
   expansion : @parser.ParameterExpansion,
   uppercase_only : Bool,
+  dead_subshell_reads : Array[@cfg.CfgAstId],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard !has_parameter_expansion_ancestor(cfg, id) else { return }
@@ -515,7 +533,7 @@ fn check_parameter_expansion_read(
   match expansion.name {
     Some(name) =>
       check_unassigned_read(
-        cfg, analysis, id, name, uppercase_only, diagnostics,
+        cfg, analysis, id, name, uppercase_only, dead_subshell_reads, diagnostics,
       )
     None => ()
   }
@@ -528,11 +546,13 @@ fn check_unassigned_read(
   id : @cfg.CfgAstId,
   name : String,
   uppercase_only : Bool,
+  dead_subshell_reads : Array[@cfg.CfgAstId],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard !has_parameter_expansion_ancestor(cfg, id) else { return }
   guard should_consider_variable_name(name, uppercase_only) else { return }
   guard !read_is_guarded(cfg, id, name) else { return }
+  guard !batch_v_has_ast_id(dead_subshell_reads, id) else { return }
   match @cfg.incoming_state_of_ast(analysis, id) {
     Some(state) if state.state_is_reachable =>
       if variable_is_unassigned(state, name) {
@@ -737,6 +757,7 @@ fn check_arithmetic_expr_reads(
   id : @cfg.CfgAstId,
   expr : @parser.ArithmeticExpr,
   uppercase_only : Bool,
+  dead_subshell_reads : Array[@cfg.CfgAstId],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   let mut i = 0
@@ -745,12 +766,12 @@ fn check_arithmetic_expr_reads(
       @parser.ArithmeticToken::Variable(name, _) =>
         if arithmetic_token_needs_read(expr.tokens, i) {
           check_unassigned_read(
-            cfg, analysis, id, name, uppercase_only, diagnostics,
+            cfg, analysis, id, name, uppercase_only, dead_subshell_reads, diagnostics,
           )
         }
       @parser.ArithmeticToken::Group(inner) =>
         check_arithmetic_expr_reads(
-          cfg, analysis, id, inner, uppercase_only, diagnostics,
+          cfg, analysis, id, inner, uppercase_only, dead_subshell_reads, diagnostics,
         )
       _ => ()
     }
