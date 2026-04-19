@@ -478,7 +478,7 @@ fn check_find_redirections(
       if redirect.span.start.offset < last_word.span.end.offset {
         push_diagnostic(
           diagnostics,
-          redirect_operator_span(redirect),
+          redirect.span,
           CheckSeverity::Warning,
           2227,
           "Redirection applies to the find command itself. Rewrite to work per action (or move to end).",
@@ -545,7 +545,7 @@ fn check_expr_usage(
         expr_check_op_replacement(first, diagnostics)
         push_diagnostic(
           diagnostics,
-          effective_command_span(command),
+          command.span,
           CheckSeverity::Warning,
           2307,
           "'expr' expects 3+ arguments, but sees 2. Make sure each operator/operand is a separate argument, and escape <>&|.",

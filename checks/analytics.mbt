@@ -167,6 +167,8 @@ fn analytics_descriptions() -> Array[CheckDescription] {
   append_analytics_batch_s_descriptions(descriptions)
   append_analytics_batch_t_descriptions(descriptions)
   append_analytics_batch_u_descriptions(descriptions)
+  append_analytics_batch_v_descriptions(descriptions)
+  append_analytics_batch_w_descriptions(descriptions)
   descriptions
 }
 
@@ -396,6 +398,8 @@ fn run_analytics_checks(
   run_analytics_batch_s_checks(script, shell, diagnostics)
   run_analytics_batch_t_checks(script, shell, diagnostics)
   run_analytics_batch_u_checks(script, shell, diagnostics)
+  run_analytics_batch_v_checks(script, shell, diagnostics)
+  run_analytics_batch_w_checks(script, shell, diagnostics)
 }
 
 ///|
@@ -721,14 +725,16 @@ fn check_single_bracket_operators(
       @parser.CommandKind::Condition(condition) =>
         match condition.kind {
           @parser.ConditionKind::SingleBracket =>
-            if condition_has_binary_op(condition.expr, "=~") {
-              push_diagnostic(
-                diagnostics,
-                command.span,
-                CheckSeverity::Error,
-                2074,
-                "Can't use =~ in [ ]. Use [[..]] instead.",
-              )
+            match condition_binary_op_span(condition.expr, "=~") {
+              Some(op_span) =>
+                push_diagnostic(
+                  diagnostics,
+                  op_span,
+                  CheckSeverity::Error,
+                  2074,
+                  "Can't use =~ in [ ]. Use [[..]] instead.",
+                )
+              None => ()
             }
           _ => ()
         }
@@ -747,18 +753,28 @@ fn check_double_bracket_operators(
       @parser.CommandKind::Condition(condition) =>
         match condition.kind {
           @parser.ConditionKind::DoubleBracket =>
-            if (
-                condition_has_binary_op(condition.expr, "<") ||
-                condition_has_binary_op(condition.expr, ">")
-              ) &&
-              condition_raw_has_escaped_angle_operator(condition.raw) {
-              push_diagnostic(
-                diagnostics,
-                command.span,
-                CheckSeverity::Error,
-                2075,
-                "Escaping \\< or \\> is required in [..], but invalid in [[..]]",
-              )
+            match condition_raw_escaped_angle_operator(condition.raw) {
+              Some(escaped_op) =>
+                match
+                  condition_binary_op_span(
+                    condition.expr,
+                    if escaped_op == "\\<" {
+                      "<"
+                    } else {
+                      ">"
+                    },
+                  ) {
+                  Some(op_span) =>
+                    push_diagnostic(
+                      diagnostics,
+                      op_span,
+                      CheckSeverity::Error,
+                      2075,
+                      "Escaping \{escaped_op} is required in [..], but invalid in [[..]]",
+                    )
+                  None => ()
+                }
+              None => ()
             }
           _ => ()
         }
@@ -1078,7 +1094,7 @@ fn check_subshell_as_test(
 }
 
 ///|
-fn condition_raw_has_escaped_angle_operator(raw : String) -> Bool {
+fn condition_raw_escaped_angle_operator(raw : String) -> String? {
   let view = raw[:]
   let mut token = ""
   let mut i = 0
@@ -1121,7 +1137,7 @@ fn condition_raw_has_escaped_angle_operator(raw : String) -> Bool {
     }
     if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
       if token == "\\<" || token == "\\>" {
-        return true
+        return Some(token)
       }
       token = ""
       i += 1
@@ -1136,7 +1152,11 @@ fn condition_raw_has_escaped_angle_operator(raw : String) -> Bool {
     token += uint16_to_string(ch)
     i += 1
   }
-  token == "\\<" || token == "\\>"
+  if token == "\\<" || token == "\\>" {
+    Some(token)
+  } else {
+    None
+  }
 }
 
 ///|
@@ -1378,15 +1398,26 @@ fn braced_parameter_is_unquoted_array_expansion(
 }
 
 ///|
-fn condition_has_binary_op(expr : @parser.ConditionExpr, op : String) -> Bool {
+fn condition_binary_op_span(
+  expr : @parser.ConditionExpr,
+  op : String,
+) -> @parser.Span? {
   match expr {
-    @parser.ConditionExpr::Binary(current, _, _, _) => current == op
+    @parser.ConditionExpr::Binary(current, op_span, _, _) =>
+      if current == op {
+        Some(op_span)
+      } else {
+        None
+      }
     @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      condition_has_binary_op(inner, op)
+      condition_binary_op_span(inner, op)
     @parser.ConditionExpr::And(lhs, rhs)
     | @parser.ConditionExpr::Or(lhs, rhs) =>
-      condition_has_binary_op(lhs, op) || condition_has_binary_op(rhs, op)
-    _ => false
+      match condition_binary_op_span(lhs, op) {
+        Some(span) => Some(span)
+        None => condition_binary_op_span(rhs, op)
+      }
+    _ => None
   }
 }
 

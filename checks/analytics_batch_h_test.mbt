@@ -31,6 +31,26 @@ test "analytics batch h flags suspicious IFS values" {
 }
 
 ///|
+test "analytics batch h flags overriding PATH assignments" {
+  let diagnostics = check_source(
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154
+      #|PATH="$var/$foo"
+      #|PATH="mydir"
+      #|PATH=/cow/foo
+      #|PATH='/bin:/sbin'
+      #|PATH=$OLDPATH
+      #|PATH=$PATH:/stuff
+      #|PATH="$var/$foo" cmd
+      #|
+    ),
+  )
+
+  assert_eq(count_code(diagnostics, 2123), 3)
+}
+
+///|
 test "analytics batch h flags quoted tildes in PATH" {
   let diagnostics = check_source(
     (

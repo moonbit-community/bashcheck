@@ -240,20 +240,22 @@ fn check_shell_support_pipeline(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  if shell_is_posix_sh(shell) &&
-    pipeline.operators.any(fn(op) {
-      match op {
-        @parser.PipeOperator::PipeAndStderr => true
-        _ => false
+  if shell_is_posix_sh(shell) {
+    let mut i = 0
+    while i < pipeline.operators.length() {
+      match pipeline.operators[i] {
+        @parser.PipeOperator::PipeAndStderr =>
+          push_shell_support_diagnostic(
+            diagnostics,
+            shell,
+            pipe_operator_span(pipeline, i, 2),
+            3029,
+            "|& in place of 2>&1 | is",
+          )
+        _ => ()
       }
-    }) {
-    push_shell_support_diagnostic(
-      diagnostics,
-      shell,
-      pipeline.span,
-      3029,
-      "|& in place of 2>&1 | is",
-    )
+      i += 1
+    }
   }
   if shell_is_posix_sh(shell) {
     for segment in pipeline.segments {
@@ -285,6 +287,26 @@ fn check_shell_support_pipeline(
     }
   }
   check_shell_support_echo_sed_pipeline(pipeline, shell, diagnostics)
+}
+
+///|
+fn pipe_operator_span(
+  pipeline : @parser.Pipeline,
+  operator_index : Int,
+  width : Int,
+) -> @parser.Span {
+  match pipeline.segments.get(operator_index + 1) {
+    Some(next_segment) => {
+      let end_ = next_segment.span.start
+      let start = @parser.Position::new(
+        end_.offset - width,
+        end_.line,
+        end_.column - width,
+      )
+      @parser.Span::new(start, end_)
+    }
+    None => pipeline.span
+  }
 }
 
 ///|
@@ -604,7 +626,7 @@ fn check_shell_support_simple_command(
       push_shell_support_diagnostic(
         diagnostics,
         shell,
-        effective_command_span(command),
+        command.span,
         3039,
         "'let' is",
       )
@@ -817,7 +839,7 @@ fn check_shell_support_set_command(
             push_shell_support_diagnostic(
               diagnostics,
               shell,
-              short_flag_span(flag_word, j),
+              flag_word.span,
               3041,
               "set flag -\{uint16_to_string(flag)} is",
             )

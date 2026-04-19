@@ -23,6 +23,12 @@ fn analytics_batch_h_descriptions() -> Array[CheckDescription] {
       summary: "Suspicious IFS values are usually meant to use escapes or literal whitespace.",
     },
     {
+      code: 2123,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "PATH is the shell search path and should not be repurposed as a local variable.",
+    },
+    {
       code: 2147,
       severity: CheckSeverity::Warning,
       category: "analytics",
@@ -39,6 +45,7 @@ fn run_analytics_batch_h_checks(
 ) -> Unit {
   check_globs_as_options(script, diagnostics)
   check_suspicious_ifs(script, shell, diagnostics)
+  check_overriding_path(script, diagnostics)
   check_tilde_in_path(script, diagnostics)
 }
 
@@ -227,6 +234,63 @@ fn check_tilde_in_path(
       _ => ()
     }
   })
+}
+
+///|
+fn check_overriding_path(
+  script : @parser.Script,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  visit_script_commands(script, fn(command) {
+    match command.kind {
+      @parser.CommandKind::Simple(simple) =>
+        if simple.words.length() == 0 {
+          for assignment in simple.assignments {
+            h_maybe_warn_overriding_path(assignment, diagnostics)
+          }
+        }
+      _ => ()
+    }
+  })
+}
+
+///|
+fn h_maybe_warn_overriding_path(
+  assignment : @parser.Assignment,
+  diagnostics : Array[CheckDiagnostic],
+) -> Unit {
+  guard assignment.name == "PATH" &&
+    !assignment.append &&
+    assignment.indexes.length() == 0 else {
+    return
+  }
+  let value = match assignment.value {
+    @parser.AssignmentValue::Word(value) => value
+    _ => return
+  }
+  let text = value.source
+  guard !text.contains("/bin") && !text.contains("/sbin") else { return }
+  if text.contains("/") && !text.contains(":") {
+    push_diagnostic(
+      diagnostics,
+      assignment_name_span(assignment),
+      CheckSeverity::Warning,
+      2123,
+      "PATH is the shell search path. Use another name.",
+    )
+    return
+  }
+  if @semantics.literal_text(value) is Some(_) &&
+    !text.contains(":") &&
+    !text.contains("/") {
+    push_diagnostic(
+      diagnostics,
+      assignment_name_span(assignment),
+      CheckSeverity::Warning,
+      2123,
+      "PATH is the shell search path. Use another name.",
+    )
+  }
 }
 
 ///|

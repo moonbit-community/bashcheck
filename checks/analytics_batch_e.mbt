@@ -211,9 +211,14 @@ fn maybe_push_nullary_literal_breaking_diagnostic(
 ) -> Unit {
   guard !analytics_condition_word_is_constant(word) else { return }
   if analytics_condition_parts_contain_equals(word.parts) {
+    let diagnostic_span = match string_index_of(word.source, "=") {
+      Some(offset) =>
+        analytics_span_offset(word.span, offset, word.source.length() - offset)
+      None => word.span
+    }
     push_diagnostic(
       diagnostics,
-      word.span,
+      diagnostic_span,
       CheckSeverity::Error,
       2077,
       "You need spaces around the comparison operator.",

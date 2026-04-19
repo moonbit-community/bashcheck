@@ -153,7 +153,7 @@ fn run_avoid_nullary_conditions_optional_check(
                   CheckSeverity::Style,
                   2243,
                   "Prefer explicit -n to check for output (or run command without [/[[ to check for success).",
-                  insert_before_position_fix(word.span.start, "-n "),
+                  insert_after_position_fix(word.span.start, "-n ", 7),
                 )
               None =>
                 if word_is_pure_dynamic_expansion(word) {
@@ -224,13 +224,31 @@ fn run_avoid_negated_conditions_optional_check(
           check_unnecessarily_inverted_banged_condition(
             condition.kind,
             condition.expr,
-            segment.command.span,
+            span_prefix(segment.span, 1),
             diagnostics,
           )
         _ => ()
       }
     }
   })
+}
+
+///|
+fn insert_after_position_fix(
+  position : @parser.Position,
+  text : String,
+  precedence : Int,
+) -> @fixer.Fix {
+  @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
+      "",
+      position,
+      position,
+      text,
+      precedence,
+      @fixer.InsertionPoint::after(),
+    ),
+  ])
 }
 
 ///|

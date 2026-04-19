@@ -101,6 +101,12 @@ fn analytics_batch_a_descriptions() -> Array[CheckDescription] {
       summary: "Possible uppercase variable misspelling with a close assigned match.",
     },
     {
+      code: 2193,
+      severity: CheckSeverity::Warning,
+      category: "analytics",
+      summary: "This comparison's operands can never be equal.",
+    },
+    {
       code: 2258,
       severity: CheckSeverity::Warning,
       category: "analytics",
@@ -119,7 +125,7 @@ fn run_analytics_batch_a_checks(
   check_unused_assignments(script, diagnostics)
   check_bad_parameter_substitutions(script, diagnostics)
   check_uppercase_variable_misspellings(script, diagnostics)
-  check_constant_conditions(script, diagnostics)
+  check_constant_conditions(script, shell, diagnostics)
   check_unquoted_parameter_expansions(script, shell, diagnostics)
   check_tilde_in_quotes(script, diagnostics)
   check_inexplicably_unquoted_parts(script, diagnostics)
@@ -618,7 +624,17 @@ fn check_unquoted_parameter_expansions(
       if analytics_declaration_argument_skips_2086(command, word, place) {
         return
       }
+      let default_assignment_spans = if analytics_skips_2086_for_2223(
+          command, place,
+        ) {
+        w_default_assignment_target_spans(word)
+      } else {
+        []
+      }
       for target in analytics_quote_targets_2086(word) {
+        if default_assignment_spans.any(fn(span) { span == target.span }) {
+          continue
+        }
         if quote_safe_target_spans.any(fn(span) { span == target.span }) {
           continue
         }
@@ -633,6 +649,24 @@ fn check_unquoted_parameter_expansions(
       }
     })
   })
+}
+
+///|
+fn analytics_skips_2086_for_2223(
+  command : @parser.Command,
+  place : WordPlace,
+) -> Bool {
+  if place != WordPlace::CommandArgument {
+    return false
+  }
+  match command.kind {
+    @parser.CommandKind::Simple(simple) =>
+      match simple.words.get(0) {
+        Some(first) => @semantics.literal_text(first) == Some(":")
+        None => false
+      }
+    _ => false
+  }
 }
 
 ///|
@@ -1525,6 +1559,7 @@ fn analytics_is_identifier_name(name : String) -> Bool {
 ///|
 fn check_constant_conditions(
   script : @parser.Script,
+  shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_script_commands(script, fn(command) {
@@ -1545,6 +1580,24 @@ fn check_constant_conditions(
               CheckSeverity::Warning,
               2050,
               "This expression is constant. Did you forget the $ on a variable?",
+            )
+          } else if analytics_condition_binary_is_static_equality(op) &&
+            !analytics_skips_2193_for_busybox_globs(
+              shell,
+              condition.kind,
+              lhs,
+              rhs,
+            ) &&
+            !pseudo_globs_can_overlap(
+              word_to_pseudo_glob(lhs),
+              word_to_pseudo_glob(rhs),
+            ) {
+            push_diagnostic(
+              diagnostics,
+              analytics_condition_operator_span(lhs, rhs),
+              CheckSeverity::Warning,
+              2193,
+              "The arguments to this comparison can never be equal. Make sure your syntax is correct.",
             )
           }
         })
@@ -1574,6 +1627,26 @@ fn analytics_condition_binary_is_dynamic(
     _ => false
   }) ||
   ["-nt", "-ot", "-ef"].contains(op)
+}
+
+///|
+fn analytics_condition_binary_is_static_equality(op : String) -> Bool {
+  op == "=" || op == "==" || op == "!="
+}
+
+///|
+fn analytics_skips_2193_for_busybox_globs(
+  shell : @semantics.ShellDialect,
+  kind : @parser.ConditionKind,
+  lhs : @parser.Word,
+  rhs : @parser.Word,
+) -> Bool {
+  shell == @semantics.ShellDialect::BusyboxSh &&
+  (match kind {
+    @parser.ConditionKind::DoubleBracket => true
+    @parser.ConditionKind::SingleBracket => false
+  }) &&
+  (@semantics.is_glob_word(lhs) || @semantics.is_glob_word(rhs))
 }
 
 ///|
