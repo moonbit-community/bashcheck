@@ -102,3 +102,25 @@ test "compat regression covers expr compatibility diagnostics" {
     ],
   )
 }
+
+///|
+test "compat regression covers expr glob argument diagnostics" {
+  assert_compat_case(
+    "commands-expr-glob-argument-diagnostics",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2003,SC2035
+      #|expr 1 + 2 *
+      #|expr 1 + 2 *.txt
+      #|
+    ),
+    [
+      compat_warning(
+        2306, 3, 12, 13, "Escape glob characters in arguments to expr to avoid pathname expansion.",
+      ),
+      compat_warning(
+        2306, 4, 12, 17, "Escape glob characters in arguments to expr to avoid pathname expansion.",
+      ),
+    ],
+  )
+}
