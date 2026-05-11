@@ -42,6 +42,6 @@ test "parse_config_report keeps config diagnostics on the correct line" {
 
   assert_eq(report.annotations.length(), 0)
   assert_eq(report.diagnostics.length(), 1)
-  assert_eq(report.diagnostics[0].code, Some(1125))
+  @test.assert_eq(report.diagnostics[0].code, Some(1125))
   assert_eq(report.diagnostics[0].span.start.line, 2)
 }

@@ -3,4 +3,8 @@ import {
   "moonbit-community/bashcheck/semantics" @semantics,
 }
 
+import {
+  "moonbitlang/core/test" @test,
+} for "test"
+
 supported_targets = "+native"

@@ -34,8 +34,11 @@ test "shell dialect selection respects override annotation shebang and filename"
       #|
     ),
   )
-  assert_eq(@semantics.determine_shell(annotated), @semantics.ShellDialect::Ksh)
-  assert_eq(
+  @test.assert_eq(
+    @semantics.determine_shell(annotated),
+    @semantics.ShellDialect::Ksh,
+  )
+  @test.assert_eq(
     @semantics.determine_shell(
       annotated,
       shell_override=@semantics.ShellDialect::Dash,
@@ -49,11 +52,14 @@ test "shell dialect selection respects override annotation shebang and filename"
       #|
     ),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.determine_shell(plain, filename="hooks/pre-commit.envrc"),
     @semantics.ShellDialect::Bash,
   )
-  assert_eq(@semantics.determine_shell(plain), @semantics.ShellDialect::Bash)
+  @test.assert_eq(
+    @semantics.determine_shell(plain),
+    @semantics.ShellDialect::Bash,
+  )
 }
 
 ///|
@@ -102,11 +108,11 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
       None,
     ),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.determine_shell_with_fallback(plain, None, Some(".envrc"), None),
     @semantics.ShellDialect::Bash,
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.determine_shell_with_fallback(
       plain,
       None,
@@ -127,35 +133,35 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
 
 ///|
 test "shell dialect helpers parse shebangs annotations and filenames" {
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env -S X=FOO bash -eu"),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env -S 'bash -eu'"),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang(
       "#!/usr/bin/env --split-string='X=FOO bash -eu'",
     ),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env --split-string= dash -x"),
     Some(@semantics.ShellDialect::Dash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang(
       "#!/usr/bin/env --split-string= X=FOO bash -eu",
     ),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_shebang("#!/bin/busybox ash"),
     Some(@semantics.ShellDialect::BusyboxSh),
   )
-  assert_eq(@semantics.shell_from_shebang("#!/bin/unknownsh"), None)
+  @test.assert_eq(@semantics.shell_from_shebang("#!/bin/unknownsh"), None)
 
   let annotated = parse_shell_ok(
     (
@@ -164,28 +170,28 @@ test "shell dialect helpers parse shebangs annotations and filenames" {
       #|
     ),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_annotation(annotated.annotations),
     Some(@semantics.ShellDialect::BusyboxSh),
   )
 
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_filename("script.ksh"),
     Some(@semantics.ShellDialect::Ksh),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_filename("test.bash"),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_filename("test.bats"),
     Some(@semantics.ShellDialect::Bash),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.shell_from_filename("test.dash"),
     Some(@semantics.ShellDialect::Dash),
   )
-  assert_eq(@semantics.shell_from_filename("test.sh"), None)
+  @test.assert_eq(@semantics.shell_from_filename("test.sh"), None)
 }
 
 ///|
@@ -470,15 +476,15 @@ test "shell option defaults follow shell dialect semantics" {
 
 ///|
 test "execution mode defaults to executed and sourced when requested" {
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_execution_mode(),
     @semantics.ExecutionMode::Executed,
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_execution_mode(sourced=true),
     @semantics.ExecutionMode::Sourced,
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_execution_mode(
       mode_override=@semantics.ExecutionMode::Executed,
       sourced=true,

@@ -29,7 +29,7 @@ test "analytics batch n flags bats last-command negations and shellcheck-style r
   assert_true(first_code(diagnostics, 2315).severity is CheckSeverity::Style)
   match first_code(diagnostics, 2314).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

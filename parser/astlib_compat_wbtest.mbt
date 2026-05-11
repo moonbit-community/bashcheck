@@ -12,7 +12,9 @@ fn assert_string_option(
   expected : String?,
 ) -> Unit {
   if actual != expected {
-    parser_compat_fail("\{label}: expected \{field}=\{expected}, got \{actual}")
+    parser_compat_fail(
+      "\{label}: expected \{field}=\{@debug.to_string(expected)}, got \{@debug.to_string(actual)}",
+    )
   }
 }
 

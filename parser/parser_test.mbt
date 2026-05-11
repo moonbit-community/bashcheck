@@ -1169,10 +1169,10 @@ test "command-leading braces become brace groups while literal braces still work
     _ => fail("expected brace group at command start")
   }
   assert_eq(report.diagnostics.length(), 6)
-  assert_eq(report.diagnostics[0].code, Some(1054))
+  @test.assert_eq(report.diagnostics[0].code, Some(1054))
   assert_eq(report.diagnostics[0].message, "You need a space after the '{'.")
   for i in 1..<report.diagnostics.length() {
-    assert_eq(report.diagnostics[i].code, Some(1083))
+    @test.assert_eq(report.diagnostics[i].code, Some(1083))
   }
   let command = script.items[1].and_or.head.segments[0].command
   match command.kind {
@@ -3423,7 +3423,7 @@ test "source commands keep leading assignments and path-focused diagnostics" {
   )
   let script = report_script(report)
   assert_eq(report.diagnostics.length(), 1)
-  assert_eq(report.diagnostics[0].code, Some(1091))
+  @test.assert_eq(report.diagnostics[0].code, Some(1091))
   assert_eq(report.diagnostics[0].span.start.line, 1)
   assert_eq(report.diagnostics[0].span.start.column, 16)
   match first_command(script).kind {
@@ -3623,7 +3623,7 @@ test "orphan shellcheck annotations before branch keywords become diagnostics" {
   )
   let script = report_script(report)
   assert_true(report.diagnostics.length() >= 1)
-  assert_eq(report.diagnostics[0].code, Some(1123))
+  @test.assert_eq(report.diagnostics[0].code, Some(1123))
   match first_command(script).kind {
     @parser.CommandKind::If(clause) => {
       assert_eq(clause.arms.length(), 2)

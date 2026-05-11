@@ -23,7 +23,7 @@ test "analytics batch p maps shell-specific equals-in-command diagnostics" {
     #|
   match first_code(bash_diagnostics, 2277).fix {
     Some(fix) =>
-      assert_eq(@fixer.apply_fix(fix, bash_source), Some(bash_expected))
+      @test.assert_eq(@fixer.apply_fix(fix, bash_source), Some(bash_expected))
     None => checks_fail("expected SC2277 fix")
   }
 
@@ -103,7 +103,7 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|
   match first_code(plain_diagnostics, 2281).fix {
     Some(fix) =>
-      assert_eq(@fixer.apply_fix(fix, plain_source), Some(plain_expected))
+      @test.assert_eq(@fixer.apply_fix(fix, plain_source), Some(plain_expected))
     None => checks_fail("expected plain SC2281 fix")
   }
 
@@ -120,7 +120,10 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|
   match first_code(braced_diagnostics, 2281).fix {
     Some(fix) =>
-      assert_eq(@fixer.apply_fix(fix, braced_source), Some(braced_expected))
+      @test.assert_eq(
+        @fixer.apply_fix(fix, braced_source),
+        Some(braced_expected),
+      )
     None => checks_fail("expected braced SC2281 fix")
   }
 
@@ -137,7 +140,7 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|
   match first_code(plus_diagnostics, 2281).fix {
     Some(fix) =>
-      assert_eq(@fixer.apply_fix(fix, plus_source), Some(plus_expected))
+      @test.assert_eq(@fixer.apply_fix(fix, plus_source), Some(plus_expected))
     None => checks_fail("expected plus-assignment SC2281 fix")
   }
 }

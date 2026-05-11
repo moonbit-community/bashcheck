@@ -10,7 +10,7 @@ test "analytics batch o flags blatant recursion and offers command fixups" {
   assert_eq(count_code(diagnostics, 2264), 2)
   match first_code(diagnostics, 2264).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (

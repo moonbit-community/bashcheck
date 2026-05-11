@@ -10,7 +10,7 @@ test "analytics batch j flags translated string variables and applies shellcheck
   assert_eq(count_code(diagnostics, 2256), 1)
   match first_code(diagnostics, 2256).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -38,7 +38,7 @@ test "analytics batch j flags leading x comparisons across test forms" {
   assert_eq(count_code(diagnostics, 2268), 2)
   match first_code(diagnostics, 2268).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

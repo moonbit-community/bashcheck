@@ -82,9 +82,9 @@ fn apply_fix_with_cumulative_shifts(fix : Fix, source : String) -> String? {
     if start < 0 || end_ < start || end_ > current.length() {
       return None
     }
-    current = current.view(end_offset=start).to_string() +
+    current = current.view(end_offset=start).to_owned() +
       replacement.text +
-      current.view(start_offset=end_).to_string()
+      current.view(start_offset=end_).to_owned()
     shift += replacement.text.length() -
       (replacement.end.offset - replacement.start.offset)
   }
@@ -119,9 +119,9 @@ fn do_replace(
 ) -> String {
   let start_offset = if start_column <= 0 { 0 } else { start_column - 1 }
   let end_offset = if end_column <= 0 { 0 } else { end_column - 1 }
-  original.view(end_offset=start_offset).to_string() +
+  original.view(end_offset=start_offset).to_owned() +
   replacement +
-  original.view(start_offset=end_offset).to_string()
+  original.view(start_offset=end_offset).to_owned()
 }
 
 ///|

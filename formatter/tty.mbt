@@ -245,7 +245,7 @@ fn render_fixed_excerpt(source : String, fix : @fixer.Fix) -> String? {
   let start = max_int(1, min_line)
   let end_ = min_int(max_line, lines.length())
   if start > end_ {
-    return Some(source.trim_end(chars="\n").to_string())
+    return Some(source.trim_end(chars="\n").to_owned())
   }
   Some(lines[start - 1:end_].join("\n"))
 }

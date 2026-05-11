@@ -402,8 +402,8 @@ fn split_disable_once(text : String) -> (String, String)? {
     if view[i] == '-' {
       return Some(
         (
-          text.view(end_offset=i).to_string(),
-          text.view(start_offset=i + 1).to_string(),
+          text.view(end_offset=i).to_owned(),
+          text.view(start_offset=i + 1).to_owned(),
         ),
       )
     }
@@ -415,7 +415,7 @@ fn split_disable_once(text : String) -> (String, String)? {
 ///|
 fn parse_disable_code_number(text : String) -> Int? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
-  let digits = text.view(start_offset=start).to_string()
+  let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !disable_text_is_digits(text) {
     return None
   }

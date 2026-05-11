@@ -277,11 +277,11 @@ fn b_named_char_class_fragment(text : String, offset : Int) -> String {
   let mut end_ = offset + 2
   while end_ + 1 < view.length() {
     if view[end_] == ':' && view[end_ + 1] == ']' {
-      return text.view(start_offset=offset, end_offset=end_ + 2).to_string()
+      return text.view(start_offset=offset, end_offset=end_ + 2).to_owned()
     }
     end_ += 1
   }
-  text.view(start_offset=offset).to_string()
+  text.view(start_offset=offset).to_owned()
 }
 
 ///|
@@ -304,11 +304,9 @@ fn b_maybe_warn_duplicate_char_range(
 ///|
 fn b_glob_text_has_duplicate_char_range(text : String) -> Bool {
   guard text.has_prefix("[") && text.has_suffix("]") else { return false }
-  let inner = text
-    .view(start_offset=1, end_offset=text.length() - 1)
-    .to_string()
+  let inner = text.view(start_offset=1, end_offset=text.length() - 1).to_owned()
   let contents = match inner[:] {
-    ['!', ..] | ['^', ..] => inner.view(start_offset=1).to_string()
+    ['!', ..] | ['^', ..] => inner.view(start_offset=1).to_owned()
     _ => inner
   }
   guard !contents.contains("[") else { return false }
@@ -878,7 +876,7 @@ fn leading_variable_arithmetic_op(text : String) -> (String, String)? {
   guard i + 1 < view.length() else { return None }
   let op = view[i]
   guard op == '+' || op == '-' || op == '*' || op == '/' else { return None }
-  Some((text.view(end_offset=i).to_string(), uint16_to_string(op)))
+  Some((text.view(end_offset=i).to_owned(), uint16_to_string(op)))
 }
 
 ///|

@@ -21,7 +21,7 @@ test "analytics checks attach fixes for backticks" {
 
   match diagnostic.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -530,7 +530,7 @@ test "analytics optional checks flag quote-safe variables only for clean standal
   )
   match diagnostic.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -594,7 +594,7 @@ test "analytics optional checks require braces for bare variable references" {
   let diagnostic = first_code(diagnostics, 2250)
   match diagnostic.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

@@ -1033,7 +1033,7 @@ fn batch_t_part_location(
   } else if offset >= raw.length() {
     ""
   } else {
-    raw.view(start_offset=offset).to_string()
+    raw.view(start_offset=offset).to_owned()
   }
   let fragment = analytics_bad_parameter_part_fragment(part, remaining)
   let relative_offset = match analytics_string_offset(remaining, fragment) {
@@ -1060,7 +1060,7 @@ fn batch_t_trim_outer_fragment(fragment : String, prefix_width : Int) -> String 
   }
   fragment
   .view(start_offset=prefix_width, end_offset=fragment.length() - 1)
-  .to_string()
+  .to_owned()
 }
 
 ///|
@@ -1495,11 +1495,11 @@ fn batch_t_substitution_fragment(
     @parser.WordPart::CommandSubstitution(_) =>
       match batch_t_string_offset(raw, "$(") {
         Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_string()
+          let fragment = raw.view(start_offset=offset).to_owned()
           Some(
             fragment
             .view(end_offset=analytics_command_substitution_width(fragment))
-            .to_string(),
+            .to_owned(),
           )
         }
         None => None
@@ -1507,11 +1507,11 @@ fn batch_t_substitution_fragment(
     @parser.WordPart::BackQuoted(_) =>
       match batch_t_string_offset(raw, "`") {
         Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_string()
+          let fragment = raw.view(start_offset=offset).to_owned()
           Some(
             fragment
             .view(end_offset=analytics_backquoted_width(fragment))
-            .to_string(),
+            .to_owned(),
           )
         }
         None => None

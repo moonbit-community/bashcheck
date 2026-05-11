@@ -129,7 +129,7 @@ fn trim_trailing_hyphen(text : String) -> String {
   while end > 0 && view[end - 1].unsafe_to_char() == '-' {
     end -= 1
   }
-  text.view(end_offset=end).to_string()
+  text.view(end_offset=end).to_owned()
 }
 
 ///|

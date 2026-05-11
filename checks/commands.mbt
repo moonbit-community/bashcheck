@@ -464,7 +464,7 @@ fn parse_read_options(arguments : Array[@parser.Word]) -> (Bool, Bool) {
     if !text.has_prefix("-") || text == "-" {
       break
     }
-    let option_text = text.view(start_offset=1).to_string()
+    let option_text = text.view(start_offset=1).to_owned()
     if option_text == "" {
       break
     }
@@ -480,7 +480,7 @@ fn parse_read_options(arguments : Array[@parser.Word]) -> (Bool, Bool) {
         }
         's' | 'e' => j += 1
         _ if read_flag_takes_argument(flag) => {
-          let attached = option_text.view(start_offset=j + 1).to_string()
+          let attached = option_text.view(start_offset=j + 1).to_owned()
           let value = if attached != "" {
             Some(attached)
           } else if i + 1 < arguments.length() {

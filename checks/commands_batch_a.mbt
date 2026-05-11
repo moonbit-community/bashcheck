@@ -1452,7 +1452,7 @@ fn read_variable_words(arguments : Array[@parser.Word]) -> Array[@parser.Word] {
       i += 1
       continue
     }
-    let option_text = text.view(start_offset=1).to_string()
+    let option_text = text.view(start_offset=1).to_owned()
     if option_text == "" {
       variables.push(arguments[i])
       i += 1
@@ -1464,7 +1464,7 @@ fn read_variable_words(arguments : Array[@parser.Word]) -> Array[@parser.Word] {
     while j < view.length() {
       let flag = view[j]
       if read_flag_takes_argument(flag) {
-        let attached = option_text.view(start_offset=j + 1).to_string()
+        let attached = option_text.view(start_offset=j + 1).to_owned()
         if flag == 'a' {
           if attached == "" && i + 1 < arguments.length() {
             variables.push(arguments[i + 1])

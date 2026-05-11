@@ -811,8 +811,8 @@ fn analytics_check_arithmetic_expr(
   while i < expr.tokens.length() {
     match expr.tokens[i] {
       @parser.ArithmeticToken::Operator(op) if op == logical_op => {
-        let lhs = expr.tokens[:i].to_array()
-        let rhs = expr.tokens[i + 1:].to_array()
+        let lhs = expr.tokens[:i].to_owned()
+        let rhs = expr.tokens[i + 1:].to_owned()
         analytics_maybe_push_arithmetic_logical_diagnostic(
           lhs, rhs, comparison_op, code, span, diagnostics,
         )

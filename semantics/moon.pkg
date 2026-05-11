@@ -2,4 +2,8 @@ import {
   "moonbit-community/bashcheck/parser" @parser,
 }
 
+import {
+  "moonbitlang/core/test" @test,
+} for "test"
+
 supported_targets = "+native"

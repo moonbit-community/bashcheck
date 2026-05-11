@@ -230,7 +230,7 @@ fn trim_leading_dashes_u(text : String) -> String {
   while i < view.length() && view[i] == '-' {
     i += 1
   }
-  text.view(start_offset=i).to_string()
+  text.view(start_offset=i).to_owned()
 }
 
 ///|

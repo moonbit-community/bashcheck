@@ -230,11 +230,11 @@ fn analytics_parameter_pattern_part_fragment(
     @parser.WordPart::CommandSubstitution(_) =>
       match analytics_string_offset(raw, "$(") {
         Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_string()
+          let fragment = raw.view(start_offset=offset).to_owned()
           Some(
             fragment
             .view(end_offset=analytics_command_substitution_width(fragment))
-            .to_string(),
+            .to_owned(),
           )
         }
         None => None
@@ -242,11 +242,11 @@ fn analytics_parameter_pattern_part_fragment(
     @parser.WordPart::BackQuoted(_) =>
       match analytics_string_offset(raw, "`") {
         Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_string()
+          let fragment = raw.view(start_offset=offset).to_owned()
           Some(
             fragment
             .view(end_offset=analytics_backquoted_width(fragment))
-            .to_string(),
+            .to_owned(),
           )
         }
         None => None

@@ -22,7 +22,7 @@ test "doc semantics builds an index that keeps node kinds and spans" {
   let indexed = @semantics.build_index(script)
   let root = @semantics.root_id(indexed)
 
-  assert_eq(root.to_int(), 0)
+  @test.assert_eq(root.to_int(), 0)
   assert_true(
     match @semantics.node_kind_of(indexed, root) {
       Some(@semantics.NodeKind::Script) => true
@@ -55,13 +55,13 @@ test "doc semantics exposes command-oriented helpers" {
   }
   let command = script.items[0].and_or.head.segments[0].command
 
-  assert_eq(@semantics.command_name(command), Some("command"))
-  assert_eq(@semantics.effective_command_name(command), Some("printf"))
-  assert_eq(@semantics.effective_command_arguments(command).length(), 2)
-  assert_eq(@semantics.oversimplify_command(command), [
+  @test.assert_eq(@semantics.command_name(command), Some("command"))
+  @test.assert_eq(@semantics.effective_command_name(command), Some("printf"))
+  @test.assert_eq(@semantics.effective_command_arguments(command).length(), 2)
+  @test.assert_eq(@semantics.oversimplify_command(command), [
     "command", "--", "printf", "%s", "${VAR}",
   ])
-  assert_eq(@semantics.all_redirections(command).length(), 1)
+  @test.assert_eq(@semantics.all_redirections(command).length(), 1)
 }
 ```
 
@@ -89,12 +89,15 @@ test "doc semantics infers shell settings and directives" {
     Err(err) => abort(err.to_string())
   }
 
-  assert_eq(@semantics.determine_shell(script), @semantics.ShellDialect::Dash)
+  @test.assert_eq(
+    @semantics.determine_shell(script),
+    @semantics.ShellDialect::Dash,
+  )
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
-  assert_eq(@semantics.extract_disable_directives(script), ["SC2000"])
-  assert_eq(@semantics.extract_enable_directives(script), ["quote-check"])
-  assert_eq(
+  @test.assert_eq(@semantics.extract_disable_directives(script), ["SC2000"])
+  @test.assert_eq(@semantics.extract_enable_directives(script), ["quote-check"])
+  @test.assert_eq(
     @semantics.effective_execution_mode(sourced=true),
     @semantics.ExecutionMode::Sourced,
   )

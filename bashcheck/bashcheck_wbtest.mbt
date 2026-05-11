@@ -60,7 +60,10 @@ test "cli accumulates flags and parses short options" {
 
   assert_true(config.spec.check_sourced)
   assert_true(config.spec.ignore_rc)
-  assert_eq(config.spec.shell_override, Some(@semantics.ShellDialect::Bash))
+  @test.assert_eq(
+    config.spec.shell_override,
+    Some(@semantics.ShellDialect::Bash),
+  )
   assert_true(config.spec.min_severity is @checker.DiagnosticSeverity::Warning)
   assert_eq(config.spec.include_codes, [2006, 2046])
   assert_eq(config.spec.exclude_codes, [2005])
@@ -69,7 +72,7 @@ test "cli accumulates flags and parses short options" {
     config.spec.optional_checks.contains("check-extra-masked-returns"),
   )
   assert_eq(config.spec.source_paths, ["foo", "bar"])
-  assert_eq(config.spec.config_path_override, Some("config.rc"))
+  @test.assert_eq(config.spec.config_path_override, Some("config.rc"))
   assert_true(!config.spec.extended_analysis)
   assert_true(config.spec.extended_analysis_forced)
   assert_true(config.format is @formatter.OutputFormat::Diff)

@@ -132,13 +132,13 @@ fn split_lines(source : String) -> Array[String] {
   let mut i = 0
   while i < view.length() {
     if view[i] == '\n' {
-      lines.push(source.view(start_offset=start, end_offset=i).to_string())
+      lines.push(source.view(start_offset=start, end_offset=i).to_owned())
       start = i + 1
     }
     i += 1
   }
   if start < view.length() {
-    lines.push(source.view(start_offset=start).to_string())
+    lines.push(source.view(start_offset=start).to_owned())
   }
   lines
 }
@@ -192,9 +192,9 @@ fn shorten_text(text : String, max_length : Int) -> String {
   if text.length() <= max_length {
     text
   } else if max_length <= 3 {
-    text.view(end_offset=max_length).to_string()
+    text.view(end_offset=max_length).to_owned()
   } else {
-    text.view(end_offset=max_length - 3).to_string() + "..."
+    text.view(end_offset=max_length - 3).to_owned() + "..."
   }
 }
 
