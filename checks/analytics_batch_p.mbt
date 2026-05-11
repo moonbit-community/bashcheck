@@ -627,7 +627,7 @@ fn p_text_before_equals(text : String) -> String {
   while end_ < view.length() && view[end_].unsafe_to_char() != '=' {
     end_ += 1
   }
-  text.view(end_offset=end_).to_string()
+  text.view(end_offset=end_).to_owned()
 }
 
 ///|

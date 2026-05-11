@@ -299,14 +299,14 @@ fn parse_short_options(
   let mut color : CliColorOption? = None
   let mut wiki_link_count : Int? = None
   let mut action = @driver.CliAction::Run
-  let flags = arg.view(start_offset=1).to_string()
+  let flags = arg.view(start_offset=1).to_owned()
   guard flags != "" else { return Err(usage_error("Unknown option: " + arg)) }
   let view = flags[:]
   let mut j = 0
   let mut next = index
   while j < view.length() {
     let flag = view[j]
-    let rest = flags.view(start_offset=j + 1).to_string()
+    let rest = flags.view(start_offset=j + 1).to_owned()
     match flag {
       'a' => spec = spec.with_check_sourced(true)
       'x' => spec = spec.with_external_sources(true)
@@ -455,8 +455,8 @@ fn split_flag_value(arg : String) -> (String, String?) {
   while i < view.length() {
     if view[i] == '=' {
       return (
-        arg.view(end_offset=i).to_string(),
-        Some(arg.view(start_offset=i + 1).to_string()),
+        arg.view(end_offset=i).to_owned(),
+        Some(arg.view(start_offset=i + 1).to_owned()),
       )
     }
     i += 1
@@ -592,9 +592,9 @@ fn parse_code_list(text : String) -> Result[Array[Int], CliError] {
 ///|
 /// Parses one ShellCheck code in either `1234` or `SC1234` form.
 fn parse_code(text : String) -> Int? {
-  let trimmed = text.trim().to_string()
+  let trimmed = text.trim().to_owned()
   let digits = if trimmed.has_prefix("SC") {
-    trimmed.view(start_offset=2).to_string()
+    trimmed.view(start_offset=2).to_owned()
   } else {
     trimmed
   }
@@ -632,7 +632,7 @@ fn parse_nonnegative_int(text : String) -> Result[Int, CliError] {
 fn split_csv(text : String) -> Array[String] {
   let values : Array[String] = []
   for value in text.split(",") {
-    let trimmed = value.to_string().trim().to_string()
+    let trimmed = value.to_owned().trim().to_owned()
     if trimmed != "" {
       values.push(trimmed)
     }
@@ -649,7 +649,7 @@ fn split_source_paths(text : String) -> Array[String] {
   let separator = if text.contains(";") { ";" } else { ":" }
   let values : Array[String] = []
   for value in text.split(separator) {
-    let trimmed = value.to_string().trim().to_string()
+    let trimmed = value.to_owned().trim().to_owned()
     if trimmed != "" {
       values.push(trimmed)
     }

@@ -134,7 +134,7 @@ fn config_line_text(contents : String, line : Int) -> String {
   let mut current = 1
   for raw in contents.split("\n") {
     if current == line {
-      return raw.to_string()
+      return raw.to_owned()
     }
     current += 1
   }
@@ -165,7 +165,7 @@ fn config_line_missing_equals_after_key(line : String) -> Bool {
         view[end_] != '#' {
     end_ += 1
   }
-  let token = line.view(start_offset=i, end_offset=end_).to_string()
+  let token = line.view(start_offset=i, end_offset=end_).to_owned()
   token != "" && !token.contains("=")
 }
 
@@ -174,7 +174,7 @@ fn config_line_missing_equals_after_key(line : String) -> Bool {
 /// without ending up with doubled punctuation.
 fn strip_trailing_period(text : String) -> String {
   if text.has_suffix(".") {
-    text.view(end_offset=text.length() - 1).to_string()
+    text.view(end_offset=text.length() - 1).to_owned()
   } else {
     text
   }
@@ -190,7 +190,7 @@ fn sentence_case(text : String) -> String {
   let first = view[0]
   if first >= 'a' && first <= 'z' {
     (first - ('a' - 'A')).unsafe_to_char().to_string() +
-    text.view(start_offset=1).to_string()
+    text.view(start_offset=1).to_owned()
   } else {
     text
   }
@@ -300,7 +300,7 @@ fn expand_source_path(path : String, filename : String?) -> String {
   if path.has_prefix("SCRIPTDIR/") {
     return path_join(
       scriptdir,
-      path.view(start_offset="SCRIPTDIR/".length()).to_string(),
+      path.view(start_offset="SCRIPTDIR/".length()).to_owned(),
     )
   }
   path
@@ -367,7 +367,7 @@ fn path_dirname(path : String) -> String {
   match slash {
     None => "."
     Some(0) => "/"
-    Some(index) => path.view(end_offset=index).to_string()
+    Some(index) => path.view(end_offset=index).to_owned()
   }
 }
 

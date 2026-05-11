@@ -105,7 +105,7 @@ fn assert_config_ok(label : String, source : String) -> Unit {
   let diagnostics : Array[Diagnostic] = []
   let mut line = 1
   for raw in source.split("\n") {
-    let text = raw.to_string()
+    let text = raw.to_owned()
     if is_blank_line(text) || starts_comment(text) {
       line += 1
       continue
@@ -155,7 +155,7 @@ fn is_header_line(line : String) -> Bool {
 fn shebang_status(source : String) -> String {
   let lines : Array[String] = []
   for part in source.split("\n") {
-    lines.push(part.to_string())
+    lines.push(part.to_owned())
   }
   if lines.length() == 0 {
     return status_not_ok()

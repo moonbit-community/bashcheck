@@ -847,7 +847,7 @@ fn condition_test_target_name(word : @parser.Word) -> String? {
         is_identifier_continue(view[end].unsafe_to_char()) {
     end += 1
   }
-  let name = text.view(end_offset=end).to_string()
+  let name = text.view(end_offset=end).to_owned()
   if name != "" && is_identifier_name(name) {
     Some(name)
   } else {

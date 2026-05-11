@@ -40,7 +40,7 @@ test "analytics batch r attaches a shellcheck-style fix" {
   assert_eq(count_code(diagnostics, 2331), 1)
   match first_code(diagnostics, 2331).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

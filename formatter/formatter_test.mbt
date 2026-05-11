@@ -14,7 +14,7 @@ fn count_substring(text : String, pattern : String) -> Int {
   let mut count = 0
   let mut start = 0
   while start + pattern.length() <= text.length() {
-    if text.view(start_offset=start).to_string().has_prefix(pattern) {
+    if text.view(start_offset=start).to_owned().has_prefix(pattern) {
       count += 1
       start += pattern.length()
     } else {
@@ -31,7 +31,7 @@ fn substring_index(text : String, pattern : String) -> Int? {
   }
   let mut start = 0
   while start + pattern.length() <= text.length() {
-    if text.view(start_offset=start).to_string().has_prefix(pattern) {
+    if text.view(start_offset=start).to_owned().has_prefix(pattern) {
       return Some(start)
     }
     start += 1

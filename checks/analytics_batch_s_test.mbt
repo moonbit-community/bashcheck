@@ -27,7 +27,7 @@ test "analytics batch s attaches a shellcheck-style fix" {
   assert_true(first_code(diagnostics, 2336).severity is CheckSeverity::Warning)
   match first_code(diagnostics, 2336).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

@@ -146,7 +146,7 @@ pub fn map_positions(
 pub fn realign_columns_for_tabs(fix : Fix, source : String) -> Fix {
   let lines : Array[String] = []
   for line in source.split("\n") {
-    lines.push(line.to_string())
+    lines.push(line.to_owned())
   }
   map_positions(fix, fn(position) {
     @parser.Position::new(
@@ -191,12 +191,12 @@ pub fn apply_fix(fix : Fix, source : String) -> String? {
     // Copy unchanged text between the previous replacement and this one, then
     // write the new text for the replacement itself.
     builder.write_string(
-      source.view(start_offset=current_offset, end_offset=start).to_string(),
+      source.view(start_offset=current_offset, end_offset=start).to_owned(),
     )
     builder.write_string(replacement.text)
     current_offset = end_
   }
-  builder.write_string(source.view(start_offset=current_offset).to_string())
+  builder.write_string(source.view(start_offset=current_offset).to_owned())
   Some(builder.to_string())
 }
 

@@ -537,7 +537,7 @@ fn checker_shebang_span(
 ///|
 fn checker_shebang_command_text(shebang : String) -> String {
   if shebang.has_prefix("#!") {
-    checker_trim_ascii_space(shebang.view(start_offset=2).to_string())
+    checker_trim_ascii_space(shebang.view(start_offset=2).to_owned())
   } else {
     checker_trim_ascii_space(shebang)
   }
@@ -595,7 +595,7 @@ fn checker_env_shell_from_args(args : Array[String], start : Int) -> String {
       continue
     }
     if arg.has_prefix("--split-string=") {
-      let head = arg.view(start_offset="--split-string=".length()).to_string()
+      let head = arg.view(start_offset="--split-string=".length()).to_owned()
       let split = if head != "" {
         checker_split_string_args_with_tail(
           checker_split_shell_words(head),
@@ -772,7 +772,7 @@ fn checker_trim_ascii_space(text : String) -> String {
         ) {
     end_ -= 1
   }
-  text.view(start_offset=start, end_offset=end_).to_string()
+  text.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 ///|
@@ -786,7 +786,7 @@ fn checker_basename(text : String) -> String {
     }
     i += 1
   }
-  text.view(start_offset=start).to_string()
+  text.view(start_offset=start).to_owned()
 }
 
 ///|
@@ -1021,8 +1021,8 @@ fn split_disable_once(text : String) -> (String, String)? {
     if view[i] == '-' {
       return Some(
         (
-          text.view(end_offset=i).to_string(),
-          text.view(start_offset=i + 1).to_string(),
+          text.view(end_offset=i).to_owned(),
+          text.view(start_offset=i + 1).to_owned(),
         ),
       )
     }
@@ -1035,7 +1035,7 @@ fn split_disable_once(text : String) -> (String, String)? {
 /// Parses one disable-code token in either `1234` or `SC1234` form.
 fn parse_disable_code_number(text : String) -> Int? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
-  let digits = text.view(start_offset=start).to_string()
+  let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !disable_text_is_digits(text) {
     return None
   }

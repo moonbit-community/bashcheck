@@ -371,7 +371,7 @@ fn g_visit_condition_binaries(
 ///|
 fn g_normalize_cond_op(op : String) -> String {
   if op.has_prefix("\\") {
-    op.view(start_offset=1).to_string()
+    op.view(start_offset=1).to_owned()
   } else {
     op
   }

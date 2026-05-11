@@ -920,7 +920,7 @@ fn analytics_bad_parameter_substitution(
           (
             2296,
             text,
-            "Parameter expansions can't start with \{text.view(end_offset=1).to_string()}. Double check syntax.",
+            "Parameter expansions can't start with \{text.view(end_offset=1).to_owned()}. Double check syntax.",
           ),
         )
       }
@@ -1117,13 +1117,13 @@ fn analytics_bad_parameter_part_fragment(
     | @parser.WordPart::SpecialParameter(name) => "$" + name
     @parser.WordPart::BracedParameter(expansion) => "${\{expansion.raw}}"
     @parser.WordPart::CommandSubstitution(_) =>
-      raw.view(end_offset=analytics_command_substitution_width(raw)).to_string()
+      raw.view(end_offset=analytics_command_substitution_width(raw)).to_owned()
     @parser.WordPart::BackQuoted(_) =>
-      raw.view(end_offset=analytics_backquoted_width(raw)).to_string()
+      raw.view(end_offset=analytics_backquoted_width(raw)).to_owned()
     @parser.WordPart::BraceCommandSubstitution(_, _) =>
       raw
       .view(end_offset=analytics_prefixed_balanced_width(raw, "${", '{', '}'))
-      .to_string()
+      .to_owned()
     @parser.WordPart::ArithmeticExpansion(expr) => "$((" + expr.raw + "))"
     @parser.WordPart::DollarBracket(expr) => "$[" + expr.raw + "]"
     _ => raw
@@ -1138,7 +1138,7 @@ fn analytics_word_remaining_text(word : @parser.Word, offset : Int) -> String {
   if offset >= word.source.length() {
     return ""
   }
-  word.source.view(start_offset=offset).to_string()
+  word.source.view(start_offset=offset).to_owned()
 }
 
 ///|
@@ -1160,7 +1160,7 @@ fn analytics_skip_prefix(text : String, width : Int) -> String {
   if width >= text.length() {
     return ""
   }
-  text.view(start_offset=width).to_string()
+  text.view(start_offset=width).to_owned()
 }
 
 ///|
@@ -1389,7 +1389,7 @@ fn analytics_declared_name(word : @parser.Word) -> String? {
     return Some(text)
   }
   match view[i].unsafe_to_char() {
-    '=' | '[' => Some(text.view(end_offset=i).to_string())
+    '=' | '[' => Some(text.view(end_offset=i).to_owned())
     _ => None
   }
 }
@@ -1609,7 +1609,7 @@ fn check_constant_conditions(
 ///|
 fn analytics_condition_binary_operator_is_known(op : String) -> Bool {
   let normalized = if op.has_prefix("\\") {
-    op.view(start_offset=1).to_string()
+    op.view(start_offset=1).to_owned()
   } else {
     op
   }

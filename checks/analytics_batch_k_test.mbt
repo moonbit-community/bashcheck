@@ -42,7 +42,7 @@ test "analytics batch k flags while-read pitfalls and shellcheck-style fixes" {
   assert_eq(batch_k_count_warning_code(diagnostics, 2095), 4)
   match batch_k_first_warning_code(diagnostics, 2095).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (
@@ -101,7 +101,7 @@ test "analytics batch k flags nested command substitutions inside while-read loo
   assert_eq(count_code(diagnostics, 2095), 2)
   match batch_k_first_warning_code(diagnostics, 2095).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (
@@ -140,7 +140,7 @@ test "analytics batch k keeps background spans aligned with shellcheck" {
   assert_eq(warning.span.end.column, 40)
   match warning.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (

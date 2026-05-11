@@ -572,7 +572,7 @@ fn shell_support_is_simple_sed_substitution(text : String) -> Bool {
   }
   let delimiter = view[1]
   let body = if view[view.length() - 1] == 'g' {
-    text.view(end_offset=view.length() - 1).to_string()
+    text.view(end_offset=view.length() - 1).to_owned()
   } else {
     text
   }

@@ -111,7 +111,7 @@ fn assert_effective_external_sources(
   let actual_annotation = external_sources_annotation(config.annotations)
   if actual_annotation != expected_annotation {
     compat_fail(
-      "\{label}: expected rc external-sources annotation \{expected_annotation}, got \{actual_annotation}",
+      "\{label}: expected rc external-sources annotation \{@debug.to_string(expected_annotation)}, got \{@debug.to_string(actual_annotation)}",
     )
   }
   let effective = apply_config_to_spec(spec, config.annotations)

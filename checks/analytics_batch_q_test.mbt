@@ -162,7 +162,7 @@ test "analytics batch q flags bare bangs under set -e and preserves shellcheck-s
   assert_eq(count_code(diagnostics, 2251), 4)
   match fix_diagnostic.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, fix_source),
         Some(
           (
@@ -261,7 +261,7 @@ test "analytics batch q flags mistaken background and pipe operators on test com
   assert_eq(count_code(diagnostics, 2266), 1)
   match first_code(check_source(and_fix_source), 2265).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, and_fix_source),
         Some(
           (
@@ -277,7 +277,7 @@ test "analytics batch q flags mistaken background and pipe operators on test com
   }
   match first_code(check_source(or_fix_source), 2266).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, or_fix_source),
         Some(
           (

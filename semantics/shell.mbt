@@ -290,7 +290,7 @@ fn executable_from_shebang(line : String) -> String {
 ///|
 fn shebang_words(line : String) -> Array[String] {
   let command = if line.has_prefix("#!") {
-    trim_ascii_space(line.view(start_offset=2).to_string())
+    trim_ascii_space(line.view(start_offset=2).to_owned())
   } else {
     trim_ascii_space(line)
   }
@@ -320,7 +320,7 @@ fn env_shell_from_args(args : Array[String], start : Int) -> String {
       continue
     }
     if arg.has_prefix("--split-string=") {
-      let head = arg.view(start_offset="--split-string=".length()).to_string()
+      let head = arg.view(start_offset="--split-string=".length()).to_owned()
       let split = if head != "" {
         split_string_args_with_tail(split_shell_words(head), args, i + 1)
       } else if i + 1 < args.length() {
@@ -458,7 +458,7 @@ fn env_args_enable_option(
       continue
     }
     if arg.has_prefix("--split-string=") {
-      let head = arg.view(start_offset="--split-string=".length()).to_string()
+      let head = arg.view(start_offset="--split-string=".length()).to_owned()
       let combined = if head != "" {
         split_string_args_with_tail(split_shell_words(head), args, i + 1)
       } else if i + 1 < args.length() {
@@ -859,7 +859,7 @@ fn trim_ascii_space(text : String) -> String {
         ) {
     end_ -= 1
   }
-  text.view(start_offset=start, end_offset=end_).to_string()
+  text.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 ///|
@@ -873,7 +873,7 @@ fn basename(text : String) -> String {
     }
     i += 1
   }
-  text.view(start_offset=start).to_string()
+  text.view(start_offset=start).to_owned()
 }
 
 ///|

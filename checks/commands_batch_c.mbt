@@ -201,7 +201,7 @@ fn mkdir_literal_is_single_relative_segment(text : String) -> Bool {
     consumed = true
     rest = rest
       .view(start_offset=if rest.has_prefix("../") { 3 } else { 2 })
-      .to_string()
+      .to_owned()
   }
   consumed && !rest.contains("/") && rest != ""
 }
@@ -709,7 +709,7 @@ fn rm_strip_trailing(text : String, target : Char) -> String {
   while end_ > 0 && view[end_ - 1].unsafe_to_char() == target {
     end_ -= 1
   }
-  text.view(end_offset=end_).to_string()
+  text.view(end_offset=end_).to_owned()
 }
 
 ///|

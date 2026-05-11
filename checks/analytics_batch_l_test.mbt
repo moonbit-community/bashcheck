@@ -17,7 +17,7 @@ test "analytics batch l flags arithmetic-context parentheses and indexes" {
 
   match first_code(diagnostics, 2321).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (
@@ -45,7 +45,7 @@ test "analytics batch l flags arithmetic-context parentheses and indexes" {
 
   match first_code(diagnostics, 2323).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(
           fix,
           (

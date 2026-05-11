@@ -325,7 +325,7 @@ fn m_array_assignment_equals_kind(
       @parser.WordPart::Literal(text) =>
         match m_find_char(text, '=') {
           Some(index) => {
-            let before = text.view(end_offset=index).to_string()
+            let before = text.view(end_offset=index).to_owned()
             if part_index == 0 && m_is_identifier_name(before) {
               return MArrayAssignmentEqualsKind::PlainIdentifierEquals
             }
@@ -767,7 +767,7 @@ fn word_to_pseudo_glob_impl(
       if !append_tilde_prefix(text, glob) {
         return None
       }
-      if !append_word_parts_pseudo_glob(rest.to_array(), exact, glob) {
+      if !append_word_parts_pseudo_glob(rest.to_owned(), exact, glob) {
         return None
       }
     }
@@ -948,19 +948,19 @@ fn matchable(x : Array[PseudoGlob], y : Array[PseudoGlob]) -> Bool {
     ([], _) => matchable(y, [])
     (_, []) =>
       match x {
-        [PseudoGlob::Many, .. rest] => matchable(rest.to_array(), [])
+        [PseudoGlob::Many, .. rest] => matchable(rest.to_owned(), [])
         _ => false
       }
     ([x_head, .. x_rest], [y_head, .. y_rest]) =>
       match (x_head, y_head) {
         (PseudoGlob::Many, _) =>
-          matchable(x, y_rest.to_array()) || matchable(x_rest.to_array(), y)
+          matchable(x, y_rest.to_owned()) || matchable(x_rest.to_owned(), y)
         (_, PseudoGlob::Many) =>
-          matchable(x, y_rest.to_array()) || matchable(x_rest.to_array(), y)
-        (PseudoGlob::Any, _) => matchable(x_rest.to_array(), y_rest.to_array())
-        (_, PseudoGlob::Any) => matchable(x_rest.to_array(), y_rest.to_array())
+          matchable(x, y_rest.to_owned()) || matchable(x_rest.to_owned(), y)
+        (PseudoGlob::Any, _) => matchable(x_rest.to_owned(), y_rest.to_owned())
+        (_, PseudoGlob::Any) => matchable(x_rest.to_owned(), y_rest.to_owned())
         (PseudoGlob::Char(x_char), PseudoGlob::Char(y_char)) =>
-          x_char == y_char && matchable(x_rest.to_array(), y_rest.to_array())
+          x_char == y_char && matchable(x_rest.to_owned(), y_rest.to_owned())
       }
   }
 }
@@ -977,23 +977,23 @@ fn pseudo_glob_is_superset_of(
 fn matchable_superset(x : Array[PseudoGlob], y : Array[PseudoGlob]) -> Bool {
   match (x, y) {
     ([], []) => true
-    ([PseudoGlob::Many, .. rest], []) => matchable_superset(rest.to_array(), [])
+    ([PseudoGlob::Many, .. rest], []) => matchable_superset(rest.to_owned(), [])
     ([], _) => false
     (_, []) => false
     ([x_head, .. x_rest], [y_head, .. y_rest]) =>
       match (x_head, y_head) {
         (PseudoGlob::Many, PseudoGlob::Many) =>
-          matchable_superset(x, y_rest.to_array())
+          matchable_superset(x, y_rest.to_owned())
         (PseudoGlob::Many, _) =>
-          matchable_superset(x, y_rest.to_array()) ||
-          matchable_superset(x_rest.to_array(), y)
+          matchable_superset(x, y_rest.to_owned()) ||
+          matchable_superset(x_rest.to_owned(), y)
         (_, PseudoGlob::Many) => false
         (PseudoGlob::Any, _) =>
-          matchable_superset(x_rest.to_array(), y_rest.to_array())
+          matchable_superset(x_rest.to_owned(), y_rest.to_owned())
         (_, PseudoGlob::Any) => false
         (PseudoGlob::Char(x_char), PseudoGlob::Char(y_char)) =>
           x_char == y_char &&
-          matchable_superset(x_rest.to_array(), y_rest.to_array())
+          matchable_superset(x_rest.to_owned(), y_rest.to_owned())
       }
   }
 }

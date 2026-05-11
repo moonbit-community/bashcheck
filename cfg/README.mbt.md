@@ -82,7 +82,7 @@ test "doc cfg exposes incoming and outgoing abstract state" {
   assert_true(incoming.variables_in_scope.contains("x"))
   match incoming.variables_in_scope.get("x") {
     Some(variable) => {
-      assert_eq(variable.variable_value.literal_value, Some("1"))
+      @test.assert_eq(variable.variable_value.literal_value, Some("1"))
       assert_true(!@cfg.variable_may_be_unset(incoming, "x"))
     }
     None => abort("expected tracked variable")

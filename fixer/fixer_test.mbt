@@ -61,7 +61,7 @@ test "fixer applies sorted non-overlapping replacements" {
   )
 
   let fix = Fix::from_replacements([second_replacement, first_replacement])
-  assert_eq(
+  @test.assert_eq(
     apply_fix(fix, source),
     Some(
       (

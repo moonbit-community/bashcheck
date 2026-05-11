@@ -555,11 +555,11 @@ fn long_option_name(text : String) -> (String, Bool) {
   let mut i = 2
   while i < view.length() {
     if view[i] == '=' {
-      return (text.view(start_offset=2, end_offset=i).to_string(), true)
+      return (text.view(start_offset=2, end_offset=i).to_owned(), true)
     }
     i += 1
   }
-  (text.view(start_offset=2).to_string(), false)
+  (text.view(start_offset=2).to_owned(), false)
 }
 
 ///|

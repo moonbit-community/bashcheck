@@ -1590,7 +1590,7 @@ fn q_assignment_effect_operator_at(raw : String, offset : Int) -> String? {
     }
     let fragment = raw
       .view(start_offset=offset, end_offset=offset + length)
-      .to_string()
+      .to_owned()
     if fragment == op && q_operator_is_effectful(raw, offset, op) {
       return Some(op)
     }
@@ -1611,12 +1611,12 @@ fn q_operator_is_effectful(raw : String, offset : Int, op : String) -> Bool {
     return true
   }
   let before = if offset > 0 {
-    Some(raw.view(start_offset=offset - 1, end_offset=offset).to_string())
+    Some(raw.view(start_offset=offset - 1, end_offset=offset).to_owned())
   } else {
     None
   }
   let after = if offset + 1 < raw.length() {
-    Some(raw.view(start_offset=offset + 1, end_offset=offset + 2).to_string())
+    Some(raw.view(start_offset=offset + 1, end_offset=offset + 2).to_owned())
   } else {
     None
   }

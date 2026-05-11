@@ -67,7 +67,7 @@ test "analytics batch m quotes literal equals fragments for SC2191" {
 
   match first_code(diagnostics, 2191).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

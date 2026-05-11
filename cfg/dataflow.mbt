@@ -1088,9 +1088,9 @@ fn build_context(cfg : CFG) -> AnalysisContext {
     cfg,
     flow_predecessors,
     successors,
-    cache: Ref::new(Map::new()),
-    invocations: Ref::new([]),
-    invoked_functions: Ref::new(Set::new()),
+    cache: Ref(Map::new()),
+    invocations: Ref([]),
+    invoked_functions: Ref(Set::new()),
   }
 }
 

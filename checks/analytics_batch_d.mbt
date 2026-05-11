@@ -238,7 +238,7 @@ fn d_shebang_span(script : @parser.Script, shebang : String) -> @parser.Span {
 ///|
 fn d_shebang_command_text(shebang : String) -> String {
   if shebang.has_prefix("#!") {
-    d_trim_ascii_space(shebang.view(start_offset=2).to_string())
+    d_trim_ascii_space(shebang.view(start_offset=2).to_owned())
   } else {
     d_trim_ascii_space(shebang)
   }
@@ -261,7 +261,7 @@ fn d_trim_ascii_space(text : String) -> String {
         ) {
     end_ -= 1
   }
-  text.view(start_offset=start, end_offset=end_).to_string()
+  text.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 ///|
@@ -317,7 +317,7 @@ fn d_unquote_shebang_word(raw : String) -> String {
       (view[0] == '\'' && view[view.length() - 1] == '\'') ||
       (view[0] == '"' && view[view.length() - 1] == '"')
     ) {
-    raw.view(start_offset=1, end_offset=view.length() - 1).to_string()
+    raw.view(start_offset=1, end_offset=view.length() - 1).to_owned()
   } else {
     raw
   }
@@ -756,7 +756,7 @@ fn analytics_alias_definition_name(word : @parser.Word) -> String? {
     i += 1
   }
   guard i > 0 && i < view.length() else { return None }
-  let name = word.source.view(end_offset=i).to_string()
+  let name = word.source.view(end_offset=i).to_owned()
   if analytics_is_identifier_name(name) {
     Some(name)
   } else {
@@ -830,7 +830,7 @@ fn analytics_path_basename(path : String) -> String {
     }
     i += 1
   }
-  path.view(start_offset=start).to_string()
+  path.view(start_offset=start).to_owned()
 }
 
 ///|
@@ -1482,7 +1482,7 @@ fn analytics_safe_directory_argument(path : String) -> Bool {
       if i > segment_start {
         let segment = path
           .view(start_offset=segment_start, end_offset=i)
-          .to_string()
+          .to_owned()
         if segment != "." && segment != ".." {
           return false
         }
@@ -2263,7 +2263,7 @@ fn analytics_trim_ascii_space(text : String) -> String {
         ) {
     end_ -= 1
   }
-  text.view(start_offset=start, end_offset=end_).to_string()
+  text.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 ///|

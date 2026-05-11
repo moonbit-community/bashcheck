@@ -31,7 +31,7 @@ test "command checks attach fixes for read without r" {
 
   match read_diagnostics[0].fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -46,7 +46,7 @@ test "command checks attach fixes for read without r" {
 
   match read_diagnostics[1].fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

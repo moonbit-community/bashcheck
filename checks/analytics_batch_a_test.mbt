@@ -178,7 +178,7 @@ test "analytics batch a flags pure unquoted parameter words with shellcheck-styl
   assert_eq(count_code(diagnostics, 2086), 5)
   match first_code(diagnostics, 2086).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -212,7 +212,7 @@ test "analytics batch a flags mixed unquoted parameter words with shellcheck-sty
   assert_eq(count_code(diagnostics, 2086), 1)
   match first_code(diagnostics, 2086).fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (
@@ -333,7 +333,7 @@ test "analytics batch a trailing comma diagnostics carry a delete fix" {
 
   match diagnostic.fix {
     Some(fix) =>
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
           (

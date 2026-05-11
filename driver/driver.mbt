@@ -253,7 +253,7 @@ fn path_dirname(path : String) -> String {
   match slash {
     None => "."
     Some(0) => "/"
-    Some(index) => path.view(end_offset=index).to_string()
+    Some(index) => path.view(end_offset=index).to_owned()
   }
 }
 

@@ -1576,7 +1576,7 @@ fn path_basename(path : String) -> String {
     }
     i += 1
   }
-  path.view(start_offset=start).to_string()
+  path.view(start_offset=start).to_owned()
 }
 
 ///|

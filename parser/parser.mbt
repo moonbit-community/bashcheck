@@ -961,7 +961,7 @@ fn Parser::consume_newline(self : Parser) -> Bool {
 
 ///|
 fn Parser::current_slice(self : Parser, start_offset : Int) -> String {
-  self.source.view(start_offset~, end_offset=self.offset).to_string()
+  self.source.view(start_offset~, end_offset=self.offset).to_owned()
 }
 
 ///|
@@ -974,7 +974,7 @@ fn Parser::peek_line(self : Parser) -> String {
     }
     end_ += 1
   }
-  self.source.view(start_offset=self.offset, end_offset=end_).to_string()
+  self.source.view(start_offset=self.offset, end_offset=end_).to_owned()
 }
 
 ///|
@@ -1127,7 +1127,7 @@ fn first_line_containing(text : String, needle : String) -> String? {
   let mut i = 0
   while i <= view.length() {
     if i == view.length() || view[i] == '\n' {
-      let line = text.view(start_offset=start, end_offset=i).to_string()
+      let line = text.view(start_offset=start, end_offset=i).to_owned()
       if line.contains(needle) {
         return Some(line)
       }
@@ -1349,7 +1349,7 @@ fn Parser::peek_comment_after_inline_space(
       end_ += 1
     }
     return Some(
-      (pos, self.source.view(start_offset=i, end_offset=end_).to_string()),
+      (pos, self.source.view(start_offset=i, end_offset=end_).to_owned()),
     )
   }
   None
@@ -1613,7 +1613,7 @@ fn trim_ascii_space(text : String) -> String {
         ) {
     end_ -= 1
   }
-  text.view(start_offset=start, end_offset=end_).to_string()
+  text.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 ///|
@@ -1640,8 +1640,8 @@ fn split_once(text : String, separator : UInt16) -> (String, String)? {
   let mut i = 0
   while i < view.length() {
     if view[i] == separator {
-      let left = text.view(end_offset=i).to_string()
-      let right = text.view(start_offset=i + 1).to_string()
+      let left = text.view(end_offset=i).to_owned()
+      let right = text.view(start_offset=i + 1).to_owned()
       return Some((left, right))
     }
     i += 1
@@ -1803,7 +1803,7 @@ fn split_directive_csv(text : String) -> Array[String]? {
       if i == start {
         return None
       }
-      let item = text.view(start_offset=start, end_offset=i).to_string()
+      let item = text.view(start_offset=start, end_offset=i).to_owned()
       if trim_ascii_space(item) != item {
         return None
       }
@@ -1823,7 +1823,7 @@ fn directive_value_source(raw : String) -> String {
       (view[0] == '"' && view[view.length() - 1] == '"') ||
       (view[0] == '\'' && view[view.length() - 1] == '\'')
     ) {
-    raw.view(start_offset=1, end_offset=view.length() - 1).to_string()
+    raw.view(start_offset=1, end_offset=view.length() - 1).to_owned()
   } else {
     raw
   }
@@ -1861,7 +1861,7 @@ fn is_disable_value(text : String) -> Bool {
 ///|
 fn parse_disable_code_number(text : String) -> Int? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
-  let digits = text.view(start_offset=start).to_string()
+  let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !is_disable_code(text) {
     return None
   }
@@ -1934,7 +1934,7 @@ fn parse_annotation_entries(
   while start < view.length() && is_space_char(view[start]) {
     start += 1
   }
-  let rest = line.view(start_offset=start).to_string()
+  let rest = line.view(start_offset=start).to_owned()
   let annotations : Array[Annotation] = []
   let diagnostics : Array[Diagnostic] = []
   let base = advance_position_columns(pos, start)
@@ -2118,7 +2118,7 @@ fn parse_annotation_line(
     return ([], [])
   }
   parse_annotation_entries(
-    line.view(start_offset=rest_offset).to_string(),
+    line.view(start_offset=rest_offset).to_owned(),
     advance_position_columns(pos, rest_offset),
     options,
   )
@@ -2225,7 +2225,7 @@ fn basename(text : String) -> String {
     }
     i += 1
   }
-  text.view(start_offset=start).to_string()
+  text.view(start_offset=start).to_owned()
 }
 
 ///|
@@ -2234,7 +2234,7 @@ fn env_shell_from_args(args : Array[String], start : Int) -> String {
   while i < args.length() {
     let arg = quote_removed_source(args[i])
     if arg.has_prefix("--split-string=") {
-      let head = arg.view(start_offset="--split-string=".length()).to_string()
+      let head = arg.view(start_offset="--split-string=".length()).to_owned()
       if head != "" && !head.has_prefix("-") && !head.contains("=") {
         return basename(head)
       }
@@ -2253,7 +2253,7 @@ fn env_shell_from_args(args : Array[String], start : Int) -> String {
 ///|
 fn executable_from_shebang(line : String) -> String {
   let command = if line.has_prefix("#!") {
-    trim_ascii_space(line.view(start_offset=2).to_string())
+    trim_ascii_space(line.view(start_offset=2).to_owned())
   } else {
     trim_ascii_space(line)
   }
@@ -3301,7 +3301,7 @@ fn Parser::try_parse_bats_test(self : Parser) -> CommandKind? raise ParseError {
   self.advance_n(name_end - self.offset)
   let name = self.source
     .view(start_offset=name_start, end_offset=name_end)
-    .to_string()
+    .to_owned()
   self.skip_inline_space()
   if self.peek() != Some('{') {
     self.reset(mark)
@@ -3752,7 +3752,7 @@ fn split_top_level_semicolons(text : String) -> Array[String] {
     } else if ch == ';' && paren_depth == 0 {
       parts.push(
         trim_ascii_space(
-          text.view(start_offset=start, end_offset=parser.offset).to_string(),
+          text.view(start_offset=start, end_offset=parser.offset).to_owned(),
         ),
       )
       ignore(parser.advance_one())
@@ -3761,7 +3761,7 @@ fn split_top_level_semicolons(text : String) -> Array[String] {
     }
     ignore(parser.advance_one())
   }
-  parts.push(trim_ascii_space(text.view(start_offset=start).to_string()))
+  parts.push(trim_ascii_space(text.view(start_offset=start).to_owned()))
   parts
 }
 
@@ -4452,7 +4452,7 @@ fn Parser::read_condition_tokens(
         ignore(self.advance_one())
       }
       let source = self.current_slice(start_offset)
-      let normalized = "-" + source.view(start_offset=1).to_string()
+      let normalized = "-" + source.view(start_offset=1).to_owned()
       tokens.push(
         ConditionToken::Word({
           span: make_span(start, self.position()),
@@ -5528,7 +5528,7 @@ fn strip_matching_outer_quotes(text : String) -> String {
       (text[0] == '"' && text[text.length() - 1] == '"') ||
       (text[0] == '\'' && text[text.length() - 1] == '\'')
     ) {
-    text.view(start_offset=1, end_offset=text.length() - 1).to_string()
+    text.view(start_offset=1, end_offset=text.length() - 1).to_owned()
   } else {
     text
   }
@@ -5568,7 +5568,7 @@ fn arithmetic_legacy_comparison(text : String) -> (String, String)? {
             )
           if before_ok && after_ok {
             return Some(
-              (text.view(start_offset=i, end_offset=end_).to_string(), op),
+              (text.view(start_offset=i, end_offset=end_).to_owned(), op),
             )
           }
         }
@@ -5708,22 +5708,22 @@ fn Parser::validate_assignments(
 ///|
 fn keyword_spacing_diagnostic(name : String) -> (Int, String)? {
   if name.length() > 2 &&
-    lower_ascii_string(name.view(end_offset=2).to_string()) == "if" &&
+    lower_ascii_string(name.view(end_offset=2).to_owned()) == "if" &&
     name[2] == '[' {
     return Some((1069, "You need a space before the [."))
   }
   if name.length() > 4 &&
-    lower_ascii_string(name.view(end_offset=4).to_string()) == "then" &&
+    lower_ascii_string(name.view(end_offset=4).to_owned()) == "then" &&
     name[4] == '#' {
     return Some((1099, "You need a space before the #."))
   }
   if name.length() > 4 &&
-    lower_ascii_string(name.view(end_offset=4).to_string()) == "else" &&
+    lower_ascii_string(name.view(end_offset=4).to_owned()) == "else" &&
     name[4] == '!' {
     return Some((1129, "You need a space before the !."))
   }
   if name.length() > 2 &&
-    lower_ascii_string(name.view(end_offset=2).to_string()) == "do" &&
+    lower_ascii_string(name.view(end_offset=2).to_owned()) == "do" &&
     name[2] == ':' {
     return Some((1130, "You need a space before the :."))
   }
@@ -6024,7 +6024,7 @@ fn Parser::parse_redirection(
       if self.offset != gap_start && self.peek() == Some('(') {
         let spacing = self.source
           .view(start_offset=gap_start, end_offset=self.offset)
-          .to_string()
+          .to_owned()
         self.emit_simple_command_context_diagnostic()
         self.emit_diagnostic(
           DiagnosticSeverity::Error,
@@ -6138,7 +6138,7 @@ fn Parser::parse_optional_redirection_source(
   if i == start || redirect_operator_len_at(self.source, i) == 0 {
     return None
   }
-  let digits = self.source.view(start_offset=start, end_offset=i).to_string()
+  let digits = self.source.view(start_offset=start, end_offset=i).to_owned()
   self.offset = i
   self.column += i - start
   Some(RedirectionSource::Fd(digits_to_int(digits)))
@@ -6482,7 +6482,7 @@ fn Parser::read_assignment_index(self : Parser) -> ArrayIndex? raise ParseError 
       if depth == 0 {
         let raw = self.source
           .view(start_offset=start + 1, end_offset=self.offset - 1)
-          .to_string()
+          .to_owned()
         return Some(parse_array_index(raw))
       }
       depth -= 1
@@ -6638,8 +6638,8 @@ fn split_unescaped_once(text : String, separator : UInt16) -> (String, String)? 
     Some(index) =>
       Some(
         (
-          text.view(end_offset=index).to_string(),
-          text.view(start_offset=index + 1).to_string(),
+          text.view(end_offset=index).to_owned(),
+          text.view(start_offset=index + 1).to_owned(),
         ),
       )
   }
@@ -6685,7 +6685,7 @@ fn parse_parameter_reference(
   } else {
     return (None, None, start)
   }
-  let name = raw.view(start_offset=start, end_offset=i).to_string()
+  let name = raw.view(start_offset=start, end_offset=i).to_owned()
   match read_parameter_index(raw, i) {
     Some((index, end_)) => (Some(name), Some(parse_array_index(index)), end_)
     None => (Some(name), None, i)
@@ -6699,26 +6699,26 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
   }
   if text.has_prefix(":-") {
     return Some(
-      ParameterOperator::DefaultValue(text.view(start_offset=2).to_string()),
+      ParameterOperator::DefaultValue(text.view(start_offset=2).to_owned()),
     )
   }
   if text.has_prefix(":=") {
     return Some(
-      ParameterOperator::AssignDefault(text.view(start_offset=2).to_string()),
+      ParameterOperator::AssignDefault(text.view(start_offset=2).to_owned()),
     )
   }
   if text.has_prefix(":?") {
     return Some(
-      ParameterOperator::ErrorValue(text.view(start_offset=2).to_string()),
+      ParameterOperator::ErrorValue(text.view(start_offset=2).to_owned()),
     )
   }
   if text.has_prefix(":+") {
     return Some(
-      ParameterOperator::AlternateValue(text.view(start_offset=2).to_string()),
+      ParameterOperator::AlternateValue(text.view(start_offset=2).to_owned()),
     )
   }
   if text.has_prefix(":") {
-    let rest = text.view(start_offset=1).to_string()
+    let rest = text.view(start_offset=1).to_owned()
     match split_unescaped_once(rest, ':') {
       None => return Some(ParameterOperator::Slice(rest, None))
       Some((offset, length)) =>
@@ -6728,28 +6728,28 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
   if text.has_prefix("##") {
     return Some(
       ParameterOperator::RemoveLongestPrefix(
-        text.view(start_offset=2).to_string(),
+        text.view(start_offset=2).to_owned(),
       ),
     )
   }
   if text.has_prefix("#") {
     return Some(
       ParameterOperator::RemoveShortestPrefix(
-        text.view(start_offset=1).to_string(),
+        text.view(start_offset=1).to_owned(),
       ),
     )
   }
   if text.has_prefix("%%") {
     return Some(
       ParameterOperator::RemoveLongestSuffix(
-        text.view(start_offset=2).to_string(),
+        text.view(start_offset=2).to_owned(),
       ),
     )
   }
   if text.has_prefix("%") {
     return Some(
       ParameterOperator::RemoveShortestSuffix(
-        text.view(start_offset=1).to_string(),
+        text.view(start_offset=1).to_owned(),
       ),
     )
   }
@@ -6763,7 +6763,7 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
     } else {
       (ParameterReplaceMode::First, 1)
     }
-    let rest = text.view(start_offset=offset).to_string()
+    let rest = text.view(start_offset=offset).to_owned()
     match split_unescaped_once(rest, '/') {
       None => return Some(ParameterOperator::Replace(mode, rest, None))
       Some((pattern, replacement)) =>
@@ -6774,7 +6774,7 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
   }
   if text.has_prefix("@") {
     return Some(
-      ParameterOperator::Transform(text.view(start_offset=1).to_string()),
+      ParameterOperator::Transform(text.view(start_offset=1).to_owned()),
     )
   }
   let (case_mode, offset) = if text.has_prefix("^^") {
@@ -6794,7 +6794,7 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
   }
   match case_mode {
     Some(mode) => {
-      let pattern = text.view(start_offset=offset).to_string()
+      let pattern = text.view(start_offset=offset).to_owned()
       return Some(
         ParameterOperator::CaseModify(
           mode,
@@ -6830,7 +6830,7 @@ fn parse_parameter_expansion(raw : String) -> ParameterExpansion {
   }
   let (name, index, next) = parse_parameter_reference(raw, i)
   let operator = if next < view.length() {
-    parse_parameter_operator(raw.view(start_offset=next).to_string())
+    parse_parameter_operator(raw.view(start_offset=next).to_owned())
   } else {
     None
   }
@@ -6936,7 +6936,7 @@ fn make_fragment_word(
 
 ///|
 fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
-  let source = raw.view(start_offset=start).to_string()
+  let source = raw.view(start_offset=start).to_owned()
   let parser = Parser::new(source.view(), ParseOptions::default(), [])
   try {
     match parser.peek() {
@@ -6945,7 +6945,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         ignore(parser.advance_one())
         let text = parser.read_until_single_quote(quote_start)
         let end_ = parser.position()
-        let fragment = source.view(end_offset=parser.offset).to_string()
+        let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
             make_fragment_word(fragment, end_, [WordPart::SingleQuoted(text)]),
@@ -6958,7 +6958,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         ignore(parser.advance_one())
         let parts = parser.read_double_quoted_parts(quote_start)
         let end_ = parser.position()
-        let fragment = source.view(end_offset=parser.offset).to_string()
+        let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
             make_fragment_word(fragment, end_, [WordPart::DoubleQuoted(parts)]),
@@ -6971,7 +6971,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         parser.consume_backquote_start()
         let script = parser.read_backquoted_script(false, quote_start)
         let end_ = parser.position()
-        let fragment = source.view(end_offset=parser.offset).to_string()
+        let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
             make_fragment_word(fragment, end_, [WordPart::BackQuoted(script)]),
@@ -6983,7 +6983,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         match parser.parse_dollar_part() {
           Some(part) => {
             let end_ = parser.position()
-            let fragment = source.view(end_offset=parser.offset).to_string()
+            let fragment = source.view(end_offset=parser.offset).to_owned()
             Some(
               (
                 make_fragment_word(fragment, end_, [part]),
@@ -6999,7 +6999,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
           Some(next) => {
             ignore(parser.advance_one())
             let end_ = parser.position()
-            let fragment = source.view(end_offset=parser.offset).to_string()
+            let fragment = source.view(end_offset=parser.offset).to_owned()
             Some(
               (
                 make_fragment_word(fragment, end_, [single_char_literal(next)]),
@@ -7068,21 +7068,21 @@ fn split_top_level_shell_text(
           brace_depth == 0 &&
           paren_depth == 0 &&
           bracket_depth == 0 {
-          parts.push(text.view(start_offset=start, end_offset=i).to_string())
+          parts.push(text.view(start_offset=start, end_offset=i).to_owned())
           start = i + 1
         }
       }
     }
     i += 1
   }
-  parts.push(text.view(start_offset=start).to_string())
+  parts.push(text.view(start_offset=start).to_owned())
   parts
 }
 
 ///|
 fn parse_extglob_pattern(raw : String) -> ExtGlobPattern {
   let inner = if raw.length() >= 3 {
-    raw.view(start_offset=2, end_offset=raw.length() - 1).to_string()
+    raw.view(start_offset=2, end_offset=raw.length() - 1).to_owned()
   } else {
     ""
   }
@@ -7092,7 +7092,7 @@ fn parse_extglob_pattern(raw : String) -> ExtGlobPattern {
   {
     raw,
     operator: if raw.length() > 0 {
-      raw.view(end_offset=1).to_string()
+      raw.view(end_offset=1).to_owned()
     } else {
       ""
     },
@@ -7103,7 +7103,7 @@ fn parse_extglob_pattern(raw : String) -> ExtGlobPattern {
 ///|
 fn parse_brace_expansion(raw : String) -> BraceExpansion {
   let inner = if raw.length() >= 2 {
-    raw.view(start_offset=1, end_offset=raw.length() - 1).to_string()
+    raw.view(start_offset=1, end_offset=raw.length() - 1).to_owned()
   } else {
     ""
   }
@@ -7165,7 +7165,7 @@ fn read_balanced_paren_segment(raw : String, start : Int) -> (String, Int)? {
         ignore(parser.advance_one())
         return Some(
           (
-            raw.view(start_offset=start + 1, end_offset=end_).to_string(),
+            raw.view(start_offset=start + 1, end_offset=end_).to_owned(),
             start + parser.offset,
           ),
         )
@@ -7208,7 +7208,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
       push_arithmetic_literal(tokens, literal)
       tokens.push(
         ArithmeticToken::Operator(
-          raw.view(start_offset=i, end_offset=i + op_len).to_string(),
+          raw.view(start_offset=i, end_offset=i + op_len).to_owned(),
         ),
       )
       i += op_len
@@ -7230,7 +7230,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
       let end_ = arithmetic_literal_end(raw, i)
       tokens.push(
         ArithmeticToken::Literal(
-          raw.view(start_offset=i, end_offset=end_).to_string(),
+          raw.view(start_offset=i, end_offset=end_).to_owned(),
         ),
       )
       i = end_
@@ -7256,7 +7256,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
       }
       tokens.push(
         ArithmeticToken::Variable(
-          raw.view(start_offset=start, end_offset=name_end).to_string(),
+          raw.view(start_offset=start, end_offset=name_end).to_owned(),
           indexes,
         ),
       )
@@ -8007,7 +8007,7 @@ fn Parser::read_dollar_bracket_content(
       content.write_string(
         self.source
         .view(start_offset=nested_start, end_offset=self.offset)
-        .to_string(),
+        .to_owned(),
       )
       continue
     }
@@ -8838,7 +8838,7 @@ fn Parser::read_arithmetic_expansion(self : Parser) -> String raise ParseError {
       content.write_string(
         self.source
         .view(start_offset=nested_start, end_offset=self.offset)
-        .to_string(),
+        .to_owned(),
       )
       continue
     }
@@ -8963,7 +8963,7 @@ fn strip_leading_tabs(input : String) -> String {
   while i < view.length() && view[i] == '\t' {
     i += 1
   }
-  input.view(start_offset=i).to_string()
+  input.view(start_offset=i).to_owned()
 }
 
 ///|
@@ -8973,7 +8973,7 @@ fn strip_leading_space_tabs(input : String) -> String {
   while i < view.length() && (view[i] == ' ' || view[i] == '\t') {
     i += 1
   }
-  input.view(start_offset=i).to_string()
+  input.view(start_offset=i).to_owned()
 }
 
 ///|
@@ -9035,7 +9035,7 @@ fn classify_here_doc_near_match(
   }
 
   if !strip_tabs && trimmed_ws.has_prefix(delimiter) && trimmed_ws != line {
-    let rest = trimmed_ws.view(start_offset=delimiter.length()).to_string()
+    let rest = trimmed_ws.view(start_offset=delimiter.length()).to_owned()
     if rest == "" {
       return Some(
         (
@@ -9048,7 +9048,7 @@ fn classify_here_doc_near_match(
   let candidate = if strip_tabs { strip_leading_tabs(line) } else { line }
   if candidate.has_prefix(delimiter) {
     let delimiter_column = line.length() - candidate.length()
-    let rest = candidate.view(start_offset=delimiter.length()).to_string()
+    let rest = candidate.view(start_offset=delimiter.length()).to_owned()
     if rest == "" {
       return None
     }
@@ -9108,7 +9108,7 @@ fn Parser::read_line(self : Parser) -> (String, Bool) {
   }
   let line = self.source
     .view(start_offset=start, end_offset=self.offset)
-    .to_string()
+    .to_owned()
   let has_newline = self.consume_newline()
   (line, has_newline)
 }
@@ -9225,7 +9225,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
         let delimiter_column = line.length() - compare.length()
         let rest = compare
           .view(start_offset=entry.delimiter.length())
-          .to_string()
+          .to_owned()
         if all_space_tabs(rest) {
           let diagnostic = {
             span: span_at(
@@ -9377,7 +9377,7 @@ fn dirname(path : String) -> String {
   match slash {
     None => "."
     Some(0) => "/"
-    Some(index) => path.view(end_offset=index).to_string()
+    Some(index) => path.view(end_offset=index).to_owned()
   }
 }
 
@@ -11000,7 +11000,7 @@ pub fn parse_config_report(source : String) -> ConfigParseReport {
   let mut offset = 0
   let mut line = 1
   for raw in source.split("\n") {
-    let text = raw.to_string()
+    let text = raw.to_owned()
     if config_line_is_ignorable(text) {
       offset += text.length() + 1
       line += 1
@@ -11067,5 +11067,5 @@ fn config_line_is_ignorable(line : String) -> Bool {
     return true
   }
   view[start] == '#' &&
-  !is_shellcheck_annotation_comment(line.view(start_offset=start).to_string())
+  !is_shellcheck_annotation_comment(line.view(start_offset=start).to_owned())
 }

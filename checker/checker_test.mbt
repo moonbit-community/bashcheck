@@ -369,7 +369,7 @@ test "checker localizes lint fixes to the reported filename" {
   match diagnostic.fix {
     Some(fix) => {
       assert_eq(fix.replacements[0].filename, "script.sh")
-      assert_eq(
+      @test.assert_eq(
         @fixer.apply_fix(fix, result.source),
         Some(
           (

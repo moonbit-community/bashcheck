@@ -70,39 +70,42 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let wrapped_command = first_command(wrapped)
-  assert_eq(@semantics.command_name(wrapped_command), Some("command"))
-  assert_eq(@semantics.effective_command_name(wrapped_command), Some("printf"))
+  @test.assert_eq(@semantics.command_name(wrapped_command), Some("command"))
+  @test.assert_eq(
+    @semantics.effective_command_name(wrapped_command),
+    Some("printf"),
+  )
 
   let words = @semantics.command_words(wrapped_command)
-  assert_eq(words.length(), 5)
-  assert_eq(words[0].source, "command")
-  assert_eq(words[1].source, "--")
-  assert_eq(words[2].source, "printf")
-  assert_eq(words[3].source, "'%s'")
-  assert_eq(words[4].source, "\"$x\"")
+  @test.assert_eq(words.length(), 5)
+  @test.assert_eq(words[0].source, "command")
+  @test.assert_eq(words[1].source, "--")
+  @test.assert_eq(words[2].source, "printf")
+  @test.assert_eq(words[3].source, "'%s'")
+  @test.assert_eq(words[4].source, "\"$x\"")
 
   let args = @semantics.command_arguments(wrapped_command)
-  assert_eq(args.length(), 4)
-  assert_eq(args[0].source, "--")
-  assert_eq(args[1].source, "printf")
-  assert_eq(args[2].source, "'%s'")
-  assert_eq(args[3].source, "\"$x\"")
+  @test.assert_eq(args.length(), 4)
+  @test.assert_eq(args[0].source, "--")
+  @test.assert_eq(args[1].source, "printf")
+  @test.assert_eq(args[2].source, "'%s'")
+  @test.assert_eq(args[3].source, "\"$x\"")
 
   let effective_words = @semantics.effective_command_words(wrapped_command)
-  assert_eq(effective_words.length(), 3)
-  assert_eq(effective_words[0].source, "printf")
-  assert_eq(effective_words[1].source, "'%s'")
-  assert_eq(effective_words[2].source, "\"$x\"")
+  @test.assert_eq(effective_words.length(), 3)
+  @test.assert_eq(effective_words[0].source, "printf")
+  @test.assert_eq(effective_words[1].source, "'%s'")
+  @test.assert_eq(effective_words[2].source, "\"$x\"")
 
   let effective_args = @semantics.effective_command_arguments(wrapped_command)
-  assert_eq(effective_args.length(), 2)
-  assert_eq(effective_args[0].source, "'%s'")
-  assert_eq(effective_args[1].source, "\"$x\"")
+  @test.assert_eq(effective_args.length(), 2)
+  @test.assert_eq(effective_args[0].source, "'%s'")
+  @test.assert_eq(effective_args[1].source, "\"$x\"")
 
-  assert_eq(@semantics.oversimplify_command(wrapped_command), [
+  @test.assert_eq(@semantics.oversimplify_command(wrapped_command), [
     "command", "--", "printf", "%s", "${VAR}",
   ])
-  assert_eq(@semantics.all_redirections(wrapped_command).length(), 1)
+  @test.assert_eq(@semantics.all_redirections(wrapped_command).length(), 1)
 
   let introspection = parse_query_ok(
     (
@@ -111,12 +114,15 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let introspection_command = first_command(introspection)
-  assert_eq(@semantics.command_name(introspection_command), Some("command"))
-  assert_eq(
+  @test.assert_eq(
+    @semantics.command_name(introspection_command),
+    Some("command"),
+  )
+  @test.assert_eq(
     @semantics.effective_command_name(introspection_command),
     Some("command"),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_command_words(introspection_command).length(),
     3,
   )
@@ -128,15 +134,15 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let quoted_introspection_command = first_command(quoted_introspection)
-  assert_eq(
+  @test.assert_eq(
     @semantics.command_name(quoted_introspection_command),
     Some("command"),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_command_name(quoted_introspection_command),
     Some("command"),
   )
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_command_words(quoted_introspection_command).length(),
     3,
   )
@@ -148,7 +154,7 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let quoted_end_of_options_command = first_command(quoted_end_of_options)
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_command_name(quoted_end_of_options_command),
     Some("command"),
   )
@@ -160,7 +166,7 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let quoted_pass_through_command = first_command(quoted_pass_through)
-  assert_eq(
+  @test.assert_eq(
     @semantics.effective_command_name(quoted_pass_through_command),
     Some("command"),
   )
@@ -172,15 +178,18 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let quoted_exec_command = first_command(quoted_exec)
-  assert_eq(@semantics.command_name(quoted_exec_command), Some("exec"))
-  assert_eq(@semantics.effective_command_name(quoted_exec_command), Some("sh"))
+  @test.assert_eq(@semantics.command_name(quoted_exec_command), Some("exec"))
+  @test.assert_eq(
+    @semantics.effective_command_name(quoted_exec_command),
+    Some("sh"),
+  )
   let quoted_exec_words = @semantics.effective_command_words(
     quoted_exec_command,
   )
-  assert_eq(quoted_exec_words.length(), 3)
-  assert_eq(quoted_exec_words[0].source, "sh")
-  assert_eq(quoted_exec_words[1].source, "-c")
-  assert_eq(quoted_exec_words[2].source, "true")
+  @test.assert_eq(quoted_exec_words.length(), 3)
+  @test.assert_eq(quoted_exec_words[0].source, "sh")
+  @test.assert_eq(quoted_exec_words[1].source, "-c")
+  @test.assert_eq(quoted_exec_words[2].source, "true")
 
   let sourced = parse_query_ok(
     (
@@ -189,17 +198,17 @@ test "command queries resolve wrappers and source commands" {
     ),
   )
   let source_command = first_command(sourced)
-  assert_eq(@semantics.command_name(source_command), Some("."))
-  assert_eq(@semantics.effective_command_name(source_command), Some("."))
+  @test.assert_eq(@semantics.command_name(source_command), Some("."))
+  @test.assert_eq(@semantics.effective_command_name(source_command), Some("."))
   let source_words = @semantics.command_words(source_command)
-  assert_eq(source_words.length(), 2)
-  assert_eq(source_words[0].source, "lib.sh")
-  assert_eq(source_words[1].source, "\"$x\"")
+  @test.assert_eq(source_words.length(), 2)
+  @test.assert_eq(source_words[0].source, "lib.sh")
+  @test.assert_eq(source_words[1].source, "\"$x\"")
   let source_args = @semantics.command_arguments(source_command)
-  assert_eq(source_args.length(), 2)
-  assert_eq(source_args[0].source, "lib.sh")
-  assert_eq(source_args[1].source, "\"$x\"")
-  assert_eq(@semantics.oversimplify_command(source_command), [
+  @test.assert_eq(source_args.length(), 2)
+  @test.assert_eq(source_args[0].source, "lib.sh")
+  @test.assert_eq(source_args[1].source, "\"$x\"")
+  @test.assert_eq(@semantics.oversimplify_command(source_command), [
     ".", "lib.sh", "${VAR}",
   ])
 
@@ -211,8 +220,11 @@ test "command queries resolve wrappers and source commands" {
       ),
     ),
   )
-  assert_eq(@semantics.command_name(source_keyword), Some("source"))
-  assert_eq(@semantics.effective_command_name(source_keyword), Some("source"))
+  @test.assert_eq(@semantics.command_name(source_keyword), Some("source"))
+  @test.assert_eq(
+    @semantics.effective_command_name(source_keyword),
+    Some("source"),
+  )
 }
 
 ///|
@@ -225,8 +237,8 @@ test "command basename queries keep direct and builtin names distinct" {
       ),
     ),
   )
-  assert_eq(@semantics.command_name(direct), Some("/usr/bin/find"))
-  assert_eq(@semantics.command_basename(direct), Some("find"))
+  @test.assert_eq(@semantics.command_name(direct), Some("/usr/bin/find"))
+  @test.assert_eq(@semantics.command_basename(direct), Some("find"))
   assert_true(@semantics.builtin_command_name(direct) is None)
 
   let builtin = first_command(
@@ -237,9 +249,9 @@ test "command basename queries keep direct and builtin names distinct" {
       ),
     ),
   )
-  assert_eq(@semantics.command_name(builtin), Some("builtin"))
-  assert_eq(@semantics.command_basename(builtin), Some("builtin"))
-  assert_eq(@semantics.builtin_command_name(builtin), Some("read"))
+  @test.assert_eq(@semantics.command_name(builtin), Some("builtin"))
+  @test.assert_eq(@semantics.command_basename(builtin), Some("builtin"))
+  @test.assert_eq(@semantics.builtin_command_name(builtin), Some("read"))
 
   let wrapped = first_command(
     parse_query_ok(
@@ -262,8 +274,8 @@ test "word queries detect literals flags constants globs and dollar strings" {
   )
   let simple = simple_of(first_command(script))
 
-  assert_eq(@semantics.literal_text(simple.words[1]), Some("foo"))
-  assert_eq(@semantics.leading_unquoted_text(simple.words[2]), Some("-n"))
+  @test.assert_eq(@semantics.literal_text(simple.words[1]), Some("foo"))
+  @test.assert_eq(@semantics.leading_unquoted_text(simple.words[2]), Some("-n"))
   assert_true(@semantics.is_unquoted_flag(simple.words[2]))
   assert_true(!@semantics.is_unquoted_flag(simple.words[3]))
   assert_true(@semantics.is_constant_word(simple.words[1]))
@@ -271,7 +283,7 @@ test "word queries detect literals flags constants globs and dollar strings" {
   assert_true(@semantics.is_glob_word(simple.words[4]))
   assert_true(!@semantics.is_glob_word(simple.words[5]))
   assert_true(@semantics.is_glob_word(simple.words[7]))
-  assert_eq(
+  @test.assert_eq(
     @semantics.literal_text(simple.words[8]),
     Some(
       (
@@ -291,7 +303,7 @@ test "special parameters stay visible in oversimplified commands" {
     ),
   )
   let command = first_command(script)
-  assert_eq(@semantics.oversimplify_command(command), [
+  @test.assert_eq(@semantics.oversimplify_command(command), [
     "echo", "@", "?", "1", "${VAR}",
   ])
 }
@@ -306,11 +318,11 @@ test "literal text preserves special parameters and positional recovery" {
   )
   let simple = simple_of(first_command(script))
 
-  assert_eq(@semantics.literal_text(simple.words[1]), Some("?"))
-  assert_eq(@semantics.literal_text(simple.words[2]), Some("1"))
-  assert_eq(@semantics.literal_text(simple.words[3]), Some("10"))
-  assert_eq(@semantics.literal_text(simple.words[4]), Some("?"))
-  assert_eq(@semantics.literal_text(simple.words[5]), Some("10"))
+  @test.assert_eq(@semantics.literal_text(simple.words[1]), Some("?"))
+  @test.assert_eq(@semantics.literal_text(simple.words[2]), Some("1"))
+  @test.assert_eq(@semantics.literal_text(simple.words[3]), Some("10"))
+  @test.assert_eq(@semantics.literal_text(simple.words[4]), Some("?"))
+  @test.assert_eq(@semantics.literal_text(simple.words[5]), Some("10"))
 }
 
 ///|
@@ -345,18 +357,18 @@ test "walkers stay within the current script and can inspect includes separately
 
   let mut script_count = 0
   @semantics.walk_script(script, fn(_) { script_count += 1 })
-  assert_eq(script_count, 1)
+  @test.assert_eq(script_count, 1)
 
   let mut item_count = 0
   @semantics.walk_list_item(root_item, fn(_) { item_count += 1 })
-  assert_eq(item_count, 1)
+  @test.assert_eq(item_count, 1)
 
   let mut root_command_count = 0
   @semantics.walk_command(root_command, fn(_) { root_command_count += 1 })
-  assert_eq(root_command_count, 1)
+  @test.assert_eq(root_command_count, 1)
 
   let root_redirects = @semantics.all_redirections(root_command)
-  assert_eq(root_redirects.length(), 0)
+  @test.assert_eq(root_redirects.length(), 0)
 
   let included = match source.included {
     Some(script) => script
@@ -364,7 +376,7 @@ test "walkers stay within the current script and can inspect includes separately
   }
   let mut included_script_count = 0
   @semantics.walk_script(included, fn(_) { included_script_count += 1 })
-  assert_eq(included_script_count, 2)
+  @test.assert_eq(included_script_count, 2)
 
   let echo_command = first_command(included)
   let names : Array[String] = []
@@ -374,25 +386,25 @@ test "walkers stay within the current script and can inspect includes separately
       None => ()
     }
   })
-  assert_eq(names, ["echo", "printf"])
+  @test.assert_eq(names, ["echo", "printf"])
 
   let redirects = @semantics.all_redirections(echo_command)
-  assert_eq(redirects.length(), 1)
+  @test.assert_eq(redirects.length(), 1)
 
   let echo_simple = simple_of(echo_command)
   let nested_word = echo_simple.words[1]
 
   let mut word_count = 0
   @semantics.walk_word(nested_word, fn(_) { word_count += 1 })
-  assert_eq(word_count, 4)
+  @test.assert_eq(word_count, 4)
 
   let mut part_count = 0
   @semantics.walk_word_part(nested_word.parts[0], fn(_) { part_count += 1 })
-  assert_eq(part_count, 5)
+  @test.assert_eq(part_count, 5)
 
   let mut redirection_count = 0
   @semantics.walk_redirection(redirects[0], fn(_) { redirection_count += 1 })
-  assert_eq(redirection_count, 1)
+  @test.assert_eq(redirection_count, 1)
 }
 
 ///|
@@ -419,10 +431,14 @@ test "directive extraction stays local to the current script or list item" {
       #|
     ),
   )
-  assert_eq(@semantics.extract_disable_directives(script), ["SC1000"])
-  assert_eq(@semantics.extract_enable_directives(script), ["root-check"])
+  @test.assert_eq(@semantics.extract_disable_directives(script), ["SC1000"])
+  @test.assert_eq(@semantics.extract_enable_directives(script), ["root-check"])
 
   let inner_item = first_if_body_item(script)
-  assert_eq(@semantics.list_item_disable_directives(inner_item), ["SC2000"])
-  assert_eq(@semantics.list_item_enable_directives(inner_item), ["inner-check"])
+  @test.assert_eq(@semantics.list_item_disable_directives(inner_item), [
+    "SC2000",
+  ])
+  @test.assert_eq(@semantics.list_item_enable_directives(inner_item), [
+    "inner-check",
+  ])
 }

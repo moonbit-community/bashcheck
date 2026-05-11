@@ -11,6 +11,10 @@ import {
   "moonbitlang/core/debug",
 } for "test"
 
+import {
+  "moonbitlang/core/test" @test,
+} for "wbtest"
+
 supported_targets = "+native"
 
 options(

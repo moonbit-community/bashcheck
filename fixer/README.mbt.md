@@ -24,7 +24,7 @@ test "doc fixer models one replacement as one fix" {
     ),
   ])
 
-  assert_eq(@fixer.apply_fix(fix, "echo foo\n"), Some("echo bar\n"))
+  @test.assert_eq(@fixer.apply_fix(fix, "echo foo\n"), Some("echo bar\n"))
 }
 ```
 
@@ -82,7 +82,7 @@ test "doc fixer merges non-overlapping replacements and rejects overlaps" {
     None => abort("expected merged fix")
   }
 
-  assert_eq(
+  @test.assert_eq(
     @fixer.apply_fix(merged, "echo foo\nprintf hi\n"),
     Some("echo bar\nprintf bye\n"),
   )

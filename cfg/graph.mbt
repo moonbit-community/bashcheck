@@ -1724,7 +1724,7 @@ fn condition_target_base_name(text : String) -> String {
   while end < view.length() && is_name_continue(view[end]) {
     end += 1
   }
-  text.view(end_offset=end).to_string()
+  text.view(end_offset=end).to_owned()
 }
 
 ///|
@@ -2897,7 +2897,7 @@ fn unset_mode(flags : Array[String]) -> String {
     let view = flag[:]
     let mut i = 1
     while i < view.length() {
-      match flag.view(start_offset=i, end_offset=i + 1).to_string() {
+      match flag.view(start_offset=i, end_offset=i + 1).to_owned() {
         "n" => saw_n = true
         "v" => saw_v = true
         "f" => saw_f = true
@@ -3127,7 +3127,7 @@ fn parse_plus_minus_flag_token(text : String) -> (Bool, Array[String])? {
     if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
       return None
     }
-    flags.push(text.view(start_offset=i, end_offset=i + 1).to_string())
+    flags.push(text.view(start_offset=i, end_offset=i + 1).to_owned())
     i += 1
   }
   Some((enabled, flags))
@@ -3228,17 +3228,17 @@ fn split_declare_assignment(text : String) -> (String, Bool, String)? {
       if i == 0 {
         return None
       }
-      let raw_name = text.view(end_offset=i).to_string()
+      let raw_name = text.view(end_offset=i).to_owned()
       let append = raw_name.has_suffix("+")
       let name = if append {
-        raw_name.view(end_offset=raw_name.length() - 1).to_string()
+        raw_name.view(end_offset=raw_name.length() - 1).to_owned()
       } else {
         raw_name
       }
       if !is_variable_name(name) {
         return None
       }
-      return Some((name, append, text.view(start_offset=i + 1).to_string()))
+      return Some((name, append, text.view(start_offset=i + 1).to_owned()))
     }
     i += 1
   }
@@ -3375,7 +3375,7 @@ fn parse_short_literal_args(
       return None
     }
     if text.has_prefix("-") && text != "-" {
-      let option_text = text.view(start_offset=1).to_string()
+      let option_text = text.view(start_offset=1).to_owned()
       let option_view = option_text[:]
       if option_view.length() == 0 {
         operands.push(text)
@@ -3384,9 +3384,7 @@ fn parse_short_literal_args(
       }
       let mut j = 0
       while j < option_view.length() {
-        let name = option_text
-          .view(start_offset=j, end_offset=j + 1)
-          .to_string()
+        let name = option_text.view(start_offset=j, end_offset=j + 1).to_owned()
         let needs_value = match
           short_flag_requires_value(spec, option_view[j]) {
           Some(needs_value) => needs_value
@@ -3396,7 +3394,7 @@ fn parse_short_literal_args(
           if j + 1 < option_view.length() {
             flags.push({
               name,
-              value: option_text.view(start_offset=j + 1).to_string(),
+              value: option_text.view(start_offset=j + 1).to_owned(),
             })
           } else {
             guard i + 1 < args.length() else { return None }
@@ -3482,7 +3480,7 @@ fn find_literal_gnu_option_value(
       return None
     }
     if text.has_prefix("-") && text != "-" {
-      let option_text = text.view(start_offset=1).to_string()
+      let option_text = text.view(start_offset=1).to_owned()
       let option_view = option_text[:]
       if option_view.length() == 0 {
         i += 1
@@ -3490,9 +3488,7 @@ fn find_literal_gnu_option_value(
       }
       let mut j = 0
       while j < option_view.length() {
-        let name = option_text
-          .view(start_offset=j, end_offset=j + 1)
-          .to_string()
+        let name = option_text.view(start_offset=j, end_offset=j + 1).to_owned()
         let needs_value = match
           short_flag_requires_value(spec, option_view[j]) {
           Some(needs_value) => needs_value
@@ -3500,7 +3496,7 @@ fn find_literal_gnu_option_value(
         }
         if needs_value {
           let value = if j + 1 < option_view.length() {
-            Some(option_text.view(start_offset=j + 1).to_string())
+            Some(option_text.view(start_offset=j + 1).to_owned())
           } else if i + 1 < args.length() {
             @semantics.literal_text(args[i + 1])
           } else {
