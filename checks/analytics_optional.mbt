@@ -25,7 +25,7 @@ fn run_quote_safe_variables_optional_check(
                 CheckSeverity::Style,
                 2248,
                 "Prefer double quoting even when variables don't contain special characters.",
-                replace_span_fix(word.span, "\"" + word.source + "\""),
+                shellcheck_surround_span_fix(word.span, "\"", 7),
               )
             }
           None => ()
@@ -163,7 +163,7 @@ fn run_avoid_nullary_conditions_optional_check(
                     CheckSeverity::Style,
                     2244,
                     "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer).",
-                    insert_before_position_fix(word.span.start, "-n "),
+                    insert_after_position_fix(word.span.start, "-n ", 7),
                   )
                 }
             }
@@ -392,7 +392,7 @@ fn run_require_variable_braces_optional_check(
         Some(name) => {
           let fix = match word.parts {
             [@parser.WordPart::Parameter(single)] if single == name =>
-              Some(replace_span_fix(word.span, "${" + name + "}"))
+              Some(shellcheck_brace_parameter_span_fix(word.span, 7))
             _ => None
           }
           match fix {
@@ -448,19 +448,67 @@ fn run_require_double_brackets_optional_check(
   }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(
-        { kind: @parser.ConditionKind::SingleBracket, .. }
-      ) =>
-        push_diagnostic(
-          diagnostics,
-          command.span,
-          CheckSeverity::Style,
-          2292,
-          "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox.",
-        )
+      @parser.CommandKind::Condition(condition) =>
+        match condition.kind {
+          @parser.ConditionKind::SingleBracket => {
+            let message = "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox."
+            if condition_expr_has_double_bracket_fix(condition.expr) {
+              push_diagnostic_with_fix(
+                diagnostics,
+                command.span,
+                CheckSeverity::Style,
+                2292,
+                message,
+                double_bracket_condition_fix(command.span),
+              )
+            } else {
+              push_diagnostic(
+                diagnostics,
+                command.span,
+                CheckSeverity::Style,
+                2292,
+                message,
+              )
+            }
+          }
+          @parser.ConditionKind::DoubleBracket => ()
+        }
       _ => ()
     }
   })
+}
+
+///|
+fn condition_expr_has_double_bracket_fix(expr : @parser.ConditionExpr) -> Bool {
+  match expr {
+    @parser.ConditionExpr::Word(_) | @parser.ConditionExpr::Unary(_, _, _) =>
+      true
+    @parser.ConditionExpr::Binary(op, _, _, _) =>
+      !op.contains("<") && !op.contains(">")
+    _ => false
+  }
+}
+
+///|
+fn double_bracket_condition_fix(span : @parser.Span) -> @fixer.Fix {
+  @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
+      "",
+      span.start,
+      span.start,
+      "[",
+      7,
+      @fixer.InsertionPoint::after(),
+    ),
+    @fixer.Replacement::new(
+      "",
+      span.end,
+      span.end,
+      "]",
+      7,
+      @fixer.InsertionPoint::before(),
+    ),
+  ])
 }
 
 ///|

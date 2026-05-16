@@ -39,7 +39,16 @@ test "analytics batch r attaches a shellcheck-style fix" {
 
   assert_eq(count_code(diagnostics, 2331), 1)
   match first_code(diagnostics, 2331).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 2)
+      assert_eq(replacement.start.column, 3)
+      assert_eq(replacement.end.line, 2)
+      assert_eq(replacement.end.column, 5)
+      assert_eq(replacement.text, "-e")
+      assert_eq(replacement.precedence, 6)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -50,6 +59,7 @@ test "analytics batch r attaches a shellcheck-style fix" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2331 fix")
   }
 }

@@ -187,10 +187,61 @@ test "formatter json fix replacements match shellcheck field shape" {
 
   assert_true(
     json1.contains(
-      "\"replacements\":[{\"column\":6,\"endColumn\":11,\"endLine\":2,\"insertionPoint\":\"beforeStart\",\"line\":2,\"precedence\":0,\"replacement\":\"$(foo)\"}]",
+      "\"replacements\":[{\"column\":6,\"endColumn\":7,\"endLine\":2,\"insertionPoint\":\"afterEnd\",\"line\":2,\"precedence\":5,\"replacement\":\"$(\"},{\"column\":10,\"endColumn\":11,\"endLine\":2,\"insertionPoint\":\"beforeStart\",\"line\":2,\"precedence\":5,\"replacement\":\")\"}]",
+    ),
+  )
+  assert_true(
+    json1.contains(
+      "\"replacements\":[{\"column\":5,\"endColumn\":5,\"endLine\":3,\"insertionPoint\":\"beforeStart\",\"line\":3,\"precedence\":0,\"replacement\":\" -r\"}]",
     ),
   )
   assert_true(!json1.contains("\"replacements\":[{\"file\":"))
   assert_true(diff.contains("+echo $(foo)"))
   assert_true(diff.contains("+read -r foo"))
+}
+
+///|
+test "formatter json fix replacements cover optional and token replacement shapes" {
+  let double_bracket_result = check_ok(
+    (
+      #|#!/bin/bash
+      #|[ -x foo ]
+      #|
+    ),
+    spec=@checker.CheckSpec::default()
+      .with_filename(Some("script.sh"))
+      .with_optional_checks(["require-double-brackets"])
+      .with_include_codes([2292]),
+  )
+  let cp_result = check_ok(
+    (
+      #|#!/bin/bash
+      #|cp -r foo bar
+      #|
+    ),
+    spec=@checker.CheckSpec::default()
+      .with_filename(Some("script.sh"))
+      .with_include_codes([2336]),
+  )
+  let json1 = render_results(
+    [double_bracket_result, cp_result],
+    named_format("json1"),
+  )
+  let diff = render_results(
+    [double_bracket_result, cp_result],
+    named_format("diff"),
+  )
+
+  assert_true(
+    json1.contains(
+      "\"replacements\":[{\"column\":1,\"endColumn\":1,\"endLine\":2,\"insertionPoint\":\"afterEnd\",\"line\":2,\"precedence\":7,\"replacement\":\"[\"},{\"column\":11,\"endColumn\":11,\"endLine\":2,\"insertionPoint\":\"beforeStart\",\"line\":2,\"precedence\":7,\"replacement\":\"]\"}]",
+    ),
+  )
+  assert_true(
+    json1.contains(
+      "\"replacements\":[{\"column\":4,\"endColumn\":6,\"endLine\":2,\"insertionPoint\":\"afterEnd\",\"line\":2,\"precedence\":0,\"replacement\":\"-R\"}]",
+    ),
+  )
+  assert_true(diff.contains("+[[ -x foo ]]"))
+  assert_true(diff.contains("+cp -R foo bar"))
 }

@@ -1438,13 +1438,29 @@ fn analytics_maybe_warn_unchecked_dir_change(
     command_has_short_flag(command, 'n')) else {
     return
   }
-  push_diagnostic(
+  let diagnostic_span = effective_command_span(command)
+  push_diagnostic_with_fix(
     diagnostics,
-    effective_command_span(command),
+    diagnostic_span,
     CheckSeverity::Warning,
     2164,
     "Use '\{name} ... || exit' or '\{name} ... || return' in case \{name} fails.",
+    analytics_unchecked_dir_change_fix(command.span),
   )
+}
+
+///|
+fn analytics_unchecked_dir_change_fix(span : @parser.Span) -> @fixer.Fix {
+  @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
+      "",
+      span.end,
+      span.end,
+      " || exit",
+      3,
+      @fixer.InsertionPoint::before(),
+    ),
+  ])
 }
 
 ///|

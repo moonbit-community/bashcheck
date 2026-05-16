@@ -9,7 +9,16 @@ test "analytics batch o flags blatant recursion and offers command fixups" {
 
   assert_eq(count_code(diagnostics, 2264), 2)
   match first_code(diagnostics, 2264).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 2)
+      assert_eq(replacement.start.column, 7)
+      assert_eq(replacement.end.line, 2)
+      assert_eq(replacement.end.column, 7)
+      assert_eq(replacement.text, "command ")
+      assert_eq(replacement.precedence, 10)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(
         @fixer.apply_fix(
           fix,
@@ -29,6 +38,7 @@ test "analytics batch o flags blatant recursion and offers command fixups" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2264 fix")
   }
 }

@@ -344,6 +344,69 @@ fn insert_before_position_fix(
 }
 
 ///|
+fn shellcheck_position_offset(
+  position : @parser.Position,
+  delta : Int,
+) -> @parser.Position {
+  @parser.Position::new(
+    position.offset + delta,
+    position.line,
+    position.column + delta,
+  )
+}
+
+///|
+fn shellcheck_surround_span_fix(
+  span : @parser.Span,
+  text : String,
+  precedence : Int,
+) -> @fixer.Fix {
+  @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
+      "",
+      span.start,
+      span.start,
+      text,
+      precedence,
+      @fixer.InsertionPoint::after(),
+    ),
+    @fixer.Replacement::new(
+      "",
+      span.end,
+      span.end,
+      text,
+      precedence,
+      @fixer.InsertionPoint::before(),
+    ),
+  ])
+}
+
+///|
+fn shellcheck_brace_parameter_span_fix(
+  span : @parser.Span,
+  precedence : Int,
+) -> @fixer.Fix {
+  @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
+      "",
+      span.start,
+      shellcheck_position_offset(span.start, 1),
+      "${",
+      precedence,
+      @fixer.InsertionPoint::after(),
+    ),
+    @fixer.Replacement::new(
+      "",
+      span.end,
+      span.end,
+      "}",
+      precedence,
+      @fixer.InsertionPoint::before(),
+    ),
+  ])
+}
+
+///|
 fn span_prefix(span : @parser.Span, width : Int) -> @parser.Span {
   @parser.Span::new(
     span.start,

@@ -20,7 +20,44 @@ test "analytics checks attach fixes for backticks" {
   let diagnostic = first_code(check_source(source), 2006)
 
   match diagnostic.fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 4)
+      let first_open = fix.replacements[0]
+      assert_eq(first_open.start.line, 1)
+      assert_eq(first_open.start.column, 6)
+      assert_eq(first_open.end.line, 1)
+      assert_eq(first_open.end.column, 7)
+      assert_eq(first_open.text, "$(")
+      assert_eq(first_open.precedence, 5)
+      assert_true(first_open.insertion_point == @fixer.InsertionPoint::after())
+      let first_close = fix.replacements[1]
+      assert_eq(first_close.start.line, 1)
+      assert_eq(first_close.start.column, 23)
+      assert_eq(first_close.end.line, 1)
+      assert_eq(first_close.end.column, 24)
+      assert_eq(first_close.text, ")")
+      assert_eq(first_close.precedence, 5)
+      assert_true(
+        first_close.insertion_point == @fixer.InsertionPoint::before(),
+      )
+      let second_open = fix.replacements[2]
+      assert_eq(second_open.start.line, 1)
+      assert_eq(second_open.start.column, 25)
+      assert_eq(second_open.end.line, 1)
+      assert_eq(second_open.end.column, 26)
+      assert_eq(second_open.text, "$(")
+      assert_eq(second_open.precedence, 5)
+      assert_true(second_open.insertion_point == @fixer.InsertionPoint::after())
+      let second_close = fix.replacements[3]
+      assert_eq(second_close.start.line, 1)
+      assert_eq(second_close.start.column, 34)
+      assert_eq(second_close.end.line, 1)
+      assert_eq(second_close.end.column, 35)
+      assert_eq(second_close.text, ")")
+      assert_eq(second_close.precedence, 5)
+      assert_true(
+        second_close.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -30,7 +67,44 @@ test "analytics checks attach fixes for backticks" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2006 fix")
+  }
+}
+
+///|
+test "analytics checks preserve multiline backtick replacement positions" {
+  let source =
+    #|echo `printf '%s'
+    #|date`
+    #|
+  let diagnostic = first_code(check_source(source), 2006)
+
+  match diagnostic.fix {
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open = fix.replacements[0]
+      assert_eq(open.start.line, 1)
+      assert_eq(open.start.column, 6)
+      assert_eq(open.end.line, 1)
+      assert_eq(open.end.column, 7)
+      let close = fix.replacements[1]
+      assert_eq(close.start.line, 2)
+      assert_eq(close.start.column, 5)
+      assert_eq(close.end.line, 2)
+      assert_eq(close.end.column, 6)
+      @test.assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|echo $(printf '%s'
+            #|date)
+            #|
+          ),
+        ),
+      )
+    }
+    None => checks_fail("expected multiline SC2006 fix")
   }
 }
 
@@ -460,6 +534,41 @@ test "analytics batch c checks flag echo-wc ssh heredoc and late function defini
 }
 
 ///|
+test "analytics batch c attaches shellcheck-style quote swap fix" {
+  let source =
+    #|#!/bin/bash
+    #|$"(foo)"
+    #|
+  let diagnostic = first_code(check_source(source), 2247)
+  assert_eq(diagnostic.span.start.line, 2)
+  assert_eq(diagnostic.span.start.column, 1)
+  match diagnostic.fix {
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 2)
+      assert_eq(replacement.start.column, 1)
+      assert_eq(replacement.end.line, 2)
+      assert_eq(replacement.end.column, 3)
+      assert_eq(replacement.text, "\"$")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
+      @test.assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|#!/bin/bash
+            #|"$(foo)"
+            #|
+          ),
+        ),
+      )
+    }
+    None => checks_fail("expected SC2247 fix")
+  }
+}
+
+///|
 test "analytics batch c checks flag overwritten exit codes" {
   let diagnostics = check_source(
     (
@@ -529,7 +638,26 @@ test "analytics optional checks flag quote-safe variables only for clean standal
     "Prefer double quoting even when variables don't contain special characters.",
   )
   match diagnostic.fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open_quote = fix.replacements[0]
+      assert_eq(open_quote.start.line, 2)
+      assert_eq(open_quote.start.column, 6)
+      assert_eq(open_quote.end.line, 2)
+      assert_eq(open_quote.end.column, 6)
+      assert_eq(open_quote.text, "\"")
+      assert_eq(open_quote.precedence, 7)
+      assert_true(open_quote.insertion_point == @fixer.InsertionPoint::after())
+      let close_quote = fix.replacements[1]
+      assert_eq(close_quote.start.line, 2)
+      assert_eq(close_quote.start.column, 11)
+      assert_eq(close_quote.end.line, 2)
+      assert_eq(close_quote.end.column, 11)
+      assert_eq(close_quote.text, "\"")
+      assert_eq(close_quote.precedence, 7)
+      assert_true(
+        close_quote.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -542,6 +670,7 @@ test "analytics optional checks flag quote-safe variables only for clean standal
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2248 fix")
   }
 }
@@ -576,6 +705,88 @@ test "analytics optional checks flag nullary and negated conditions" {
 }
 
 ///|
+test "analytics optional checks attach shellcheck-style nullary condition fix" {
+  let source =
+    #|[[ $(cmd) ]]
+    #|
+  let diagnostics = check_script(
+    parse_checks_ok(source),
+    options=CheckOptions::default().with_optional_checks([
+      "avoid-nullary-conditions",
+    ]),
+  )
+
+  let diagnostic = first_code(diagnostics, 2243)
+  assert_eq(diagnostic.span.start.line, 1)
+  assert_eq(diagnostic.span.start.column, 4)
+  assert_eq(diagnostic.span.end.column, 10)
+  match diagnostic.fix {
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 1)
+      assert_eq(replacement.start.column, 4)
+      assert_eq(replacement.end.line, 1)
+      assert_eq(replacement.end.column, 4)
+      assert_eq(replacement.text, "-n ")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
+      @test.assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|[[ -n $(cmd) ]]
+            #|
+          ),
+        ),
+      )
+    }
+    None => checks_fail("expected SC2243 fix")
+  }
+}
+
+///|
+test "analytics optional checks attach shellcheck-style dynamic nullary fix" {
+  let source =
+    #|[[ "$a$b" ]]
+    #|
+  let diagnostics = check_script(
+    parse_checks_ok(source),
+    options=CheckOptions::default().with_optional_checks([
+      "avoid-nullary-conditions",
+    ]),
+  )
+
+  let diagnostic = first_code(diagnostics, 2244)
+  assert_eq(diagnostic.span.start.line, 1)
+  assert_eq(diagnostic.span.start.column, 4)
+  assert_eq(diagnostic.span.end.column, 10)
+  match diagnostic.fix {
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 1)
+      assert_eq(replacement.start.column, 4)
+      assert_eq(replacement.end.line, 1)
+      assert_eq(replacement.end.column, 4)
+      assert_eq(replacement.text, "-n ")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
+      @test.assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|[[ -n "$a$b" ]]
+            #|
+          ),
+        ),
+      )
+    }
+    None => checks_fail("expected SC2244 fix")
+  }
+}
+
+///|
 test "analytics optional checks require braces for bare variable references" {
   let source =
     #|echo $name
@@ -593,7 +804,26 @@ test "analytics optional checks require braces for bare variable references" {
   assert_eq(count_code(diagnostics, 2250), 2)
   let diagnostic = first_code(diagnostics, 2250)
   match diagnostic.fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open_brace = fix.replacements[0]
+      assert_eq(open_brace.start.line, 1)
+      assert_eq(open_brace.start.column, 6)
+      assert_eq(open_brace.end.line, 1)
+      assert_eq(open_brace.end.column, 7)
+      assert_eq(open_brace.text, "${")
+      assert_eq(open_brace.precedence, 7)
+      assert_true(open_brace.insertion_point == @fixer.InsertionPoint::after())
+      let close_brace = fix.replacements[1]
+      assert_eq(close_brace.start.line, 1)
+      assert_eq(close_brace.start.column, 11)
+      assert_eq(close_brace.end.line, 1)
+      assert_eq(close_brace.end.column, 11)
+      assert_eq(close_brace.text, "}")
+      assert_eq(close_brace.precedence, 7)
+      assert_true(
+        close_brace.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -606,6 +836,7 @@ test "analytics optional checks require braces for bare variable references" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2250 fix on bare variable word")
   }
 }
@@ -650,6 +881,58 @@ test "analytics optional checks require double brackets only in supporting shell
 
   assert_eq(count_code(bash, 2292), 1)
   assert_true(!has_code(sh, 2292))
+}
+
+///|
+test "analytics optional checks attach shellcheck-style double bracket fix" {
+  let source =
+    #|#!/bin/bash
+    #|[ -x foo ]
+    #|
+  let diagnostics = check_script(
+    parse_checks_ok(source),
+    options=CheckOptions::default().with_optional_checks([
+      "require-double-brackets",
+    ]),
+  )
+
+  let diagnostic = first_code(diagnostics, 2292)
+  match diagnostic.fix {
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open_bracket = fix.replacements[0]
+      assert_eq(open_bracket.start.line, 2)
+      assert_eq(open_bracket.start.column, 1)
+      assert_eq(open_bracket.end.line, 2)
+      assert_eq(open_bracket.end.column, 1)
+      assert_eq(open_bracket.text, "[")
+      assert_eq(open_bracket.precedence, 7)
+      assert_true(
+        open_bracket.insertion_point == @fixer.InsertionPoint::after(),
+      )
+      let close_bracket = fix.replacements[1]
+      assert_eq(close_bracket.start.line, 2)
+      assert_eq(close_bracket.start.column, 11)
+      assert_eq(close_bracket.end.line, 2)
+      assert_eq(close_bracket.end.column, 11)
+      assert_eq(close_bracket.text, "]")
+      assert_eq(close_bracket.precedence, 7)
+      assert_true(
+        close_bracket.insertion_point == @fixer.InsertionPoint::before(),
+      )
+      @test.assert_eq(
+        @fixer.apply_fix(fix, source),
+        Some(
+          (
+            #|#!/bin/bash
+            #|[[ -x foo ]]
+            #|
+          ),
+        ),
+      )
+    }
+    None => checks_fail("expected SC2292 fix")
+  }
 }
 
 ///|

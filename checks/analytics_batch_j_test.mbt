@@ -9,7 +9,16 @@ test "analytics batch j flags translated string variables and applies shellcheck
 
   assert_eq(count_code(diagnostics, 2256), 1)
   match first_code(diagnostics, 2256).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 3)
+      assert_eq(replacement.start.column, 15)
+      assert_eq(replacement.end.line, 3)
+      assert_eq(replacement.end.column, 17)
+      assert_eq(replacement.text, "\"$")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -21,6 +30,7 @@ test "analytics batch j flags translated string variables and applies shellcheck
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2256 fix")
   }
 }
@@ -37,7 +47,24 @@ test "analytics batch j flags leading x comparisons across test forms" {
 
   assert_eq(count_code(diagnostics, 2268), 2)
   match first_code(diagnostics, 2268).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let lhs = fix.replacements[0]
+      assert_eq(lhs.start.line, 3)
+      assert_eq(lhs.start.column, 3)
+      assert_eq(lhs.end.line, 3)
+      assert_eq(lhs.end.column, 4)
+      assert_eq(lhs.text, "")
+      assert_eq(lhs.precedence, 8)
+      assert_true(lhs.insertion_point == @fixer.InsertionPoint::after())
+      let rhs = fix.replacements[1]
+      assert_eq(rhs.start.line, 3)
+      assert_eq(rhs.start.column, 13)
+      assert_eq(rhs.end.line, 3)
+      assert_eq(rhs.end.column, 14)
+      assert_eq(rhs.text, "")
+      assert_eq(rhs.precedence, 8)
+      assert_true(rhs.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -50,6 +77,7 @@ test "analytics batch j flags leading x comparisons across test forms" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2268 fix")
   }
 }

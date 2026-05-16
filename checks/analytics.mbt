@@ -485,7 +485,79 @@ fn case_clause_has_default_pattern(clause : @parser.CaseClause) -> Bool {
 
 ///|
 fn backtick_fix(word : @parser.Word) -> @fixer.Fix {
-  replace_span_fix(word.span, rewrite_legacy_backticks(word.source))
+  let replacements : Array[@fixer.Replacement] = []
+  let view = word.source[:]
+  let mut in_backticks = false
+  let mut escaped = false
+  let mut i = 0
+  while i < view.length() {
+    let ch = view[i]
+    if ch == '`' && !escaped {
+      let start = analytics_position_at_source_offset(
+        word.span.start,
+        word.source,
+        i,
+      )
+      let end_ = analytics_position_at_source_offset(
+        word.span.start,
+        word.source,
+        i + 1,
+      )
+      replacements.push(
+        @fixer.Replacement::new(
+          "",
+          start,
+          end_,
+          if in_backticks {
+            ")"
+          } else {
+            "$("
+          },
+          5,
+          if in_backticks {
+            @fixer.InsertionPoint::before()
+          } else {
+            @fixer.InsertionPoint::after()
+          },
+        ),
+      )
+      in_backticks = !in_backticks
+    }
+    escaped = ch == '\\' && !escaped
+    if ch != '\\' {
+      escaped = false
+    }
+    i += 1
+  }
+  if replacements.length() == 0 {
+    replace_span_fix(word.span, rewrite_legacy_backticks(word.source))
+  } else {
+    @fixer.Fix::from_replacements(replacements)
+  }
+}
+
+///|
+fn analytics_position_at_source_offset(
+  start : @parser.Position,
+  source : String,
+  target_offset : Int,
+) -> @parser.Position {
+  let view = source[:]
+  let mut offset = start.offset
+  let mut line = start.line
+  let mut column = start.column
+  let mut i = 0
+  while i < target_offset && i < view.length() {
+    offset += 1
+    if view[i] == '\n' {
+      line += 1
+      column = 1
+    } else {
+      column += 1
+    }
+    i += 1
+  }
+  @parser.Position::new(offset, line, column)
 }
 
 ///|

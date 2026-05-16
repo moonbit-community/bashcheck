@@ -60,3 +60,100 @@ test "compat regression covers shell support sh builtin portability diagnostics"
     ],
   )
 }
+
+///|
+test "compat regression covers shell support bash-specific baseline diagnostics" {
+  assert_compat_case(
+    "shell-support-echo-sed-rewrite",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034,SC2154
+      #|FOO=$(echo "$cow" | sed 's/foo/bar/g')
+      #|
+    ),
+    [
+      compat_style(
+        2001, 3, 7, 38, "See if you can use ${variable//search/replace} instead.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "shell-support-ps1-escape-baseline",
+    (
+      #|#!/bin/bash
+      #|PS1='\\033[1;35m\\$ '
+      #|
+    ),
+    [
+      compat_info(
+        2025, 2, 5, 22, "Make sure all escape sequences are enclosed in \\[..\\] to prevent line wrapping issues",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "shell-support-brace-range-baselines",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2086,SC2154
+      #|echo {1..$n}
+      #|eval echo DSC{0001..$n}.jpg
+      #|
+    ),
+    [
+      compat_warning(
+        2051, 3, 6, 13, "Bash doesn't support variables in brace range expansions.",
+      ),
+      compat_style(
+        2175, 4, 14, 24, "Quote this invalid brace expansion since it should be passed literally to eval.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "shell-support-multidimensional-array-baseline",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2086,SC2154
+      #|echo ${foo[1][2]}
+      #|
+    ),
+    [
+      compat_warning(
+        2180, 3, 6, 18, "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers shell support pipeline bang baseline diagnostics" {
+  assert_compat_case(
+    "shell-support-posix-multiple-bangs",
+    (
+      #|#!/bin/sh
+      #|! ! true
+      #|
+    ),
+    [
+      compat_error(
+        2325, 2, 1, 2, "Multiple ! in front of pipelines are a bash/ksh extension. Use only 0 or 1.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "shell-support-mid-pipeline-bang",
+    (
+      #|#!/bin/bash
+      #|true | ! true
+      #|
+    ),
+    [
+      compat_error(
+        2326, 2, 8, 9, "! is not allowed in the middle of pipelines. Use command group as in cmd | { ! cmd; } if necessary.",
+      ),
+    ],
+  )
+}

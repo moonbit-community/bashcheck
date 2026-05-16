@@ -66,7 +66,26 @@ test "analytics batch m quotes literal equals fragments for SC2191" {
   let diagnostics = check_source(source)
 
   match first_code(diagnostics, 2191).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open_quote = fix.replacements[0]
+      assert_eq(open_quote.start.line, 3)
+      assert_eq(open_quote.start.column, 9)
+      assert_eq(open_quote.end.line, 3)
+      assert_eq(open_quote.end.column, 9)
+      assert_eq(open_quote.text, "\"")
+      assert_eq(open_quote.precedence, 9)
+      assert_true(open_quote.insertion_point == @fixer.InsertionPoint::after())
+      let close_quote = fix.replacements[1]
+      assert_eq(close_quote.start.line, 3)
+      assert_eq(close_quote.start.column, 15)
+      assert_eq(close_quote.end.line, 3)
+      assert_eq(close_quote.end.column, 15)
+      assert_eq(close_quote.text, "\"")
+      assert_eq(close_quote.precedence, 9)
+      assert_true(
+        close_quote.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, source),
         Some(
@@ -78,6 +97,7 @@ test "analytics batch m quotes literal equals fragments for SC2191" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2191 fix")
   }
 }

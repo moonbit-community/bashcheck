@@ -124,3 +124,121 @@ test "compat regression covers phase e malformed command name diagnostics" {
     ],
   )
 }
+
+///|
+test "compat regression covers phase e existing analytics baseline tail" {
+  assert_compat_case(
+    "phase-e-analytics-single-quoted-expression",
+    (
+      #|#!/bin/bash
+      #|echo '$foo'
+      #|
+    ),
+    [
+      compat_info(
+        2016, 2, 6, 12, "Expressions don't expand in single quotes, use double quotes for that.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "phase-e-analytics-tilde-in-quotes",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|var="~/out.txt"
+      #|
+    ),
+    [
+      compat_warning(
+        2088, 3, 6, 15, "Tilde does not expand in quotes. Use $HOME.",
+      ),
+    ],
+  )
+
+  assert_compat_case(
+    "phase-e-analytics-for-in-trailing-commas",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|for f in foo, bar,; do true; done
+      #|
+    ),
+    [
+      compat_warning(
+        2258, 3, 10, 14, "The trailing comma is part of the value, not a separator. Delete or quote it.",
+      ),
+      compat_warning(
+        2258, 3, 15, 19, "The trailing comma is part of the value, not a separator. Delete or quote it.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers phase e constant nullary analytics baseline" {
+  assert_compat_case(
+    "phase-e-analytics-constant-nullary",
+    (
+      #|#!/bin/bash
+      #|[ false ]
+      #|[ 0 ]
+      #|[ true ]
+      #|[ 1 ]
+      #|
+    ),
+    [
+      compat_error(2158, 2, 3, 8, "[ false ] is true. Remove the brackets."),
+      compat_error(2159, 3, 3, 4, "[ 0 ] is true. Use 'false' instead."),
+      compat_style(2160, 4, 3, 7, "Instead of '[ true ]', just use 'true'."),
+      compat_style(2161, 5, 3, 4, "Instead of '[ 1 ]', use 'true'."),
+    ],
+  )
+}
+
+///|
+test "compat regression covers phase e loop variable override analytics baseline" {
+  assert_compat_case(
+    "phase-e-analytics-loop-variable-override",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2043
+      #|for i in a; do
+      #|  for ((i = 0; i < 3; i++)); do
+      #|    :
+      #|  done
+      #|done
+      #|
+    ),
+    [
+      compat_warning(
+        2167, 3, 1, 4, "This parent loop has its index variable overridden.",
+      ),
+      compat_warning(
+        2165, 4, 3, 6, "This nested loop overrides the index variable of its parent.",
+      ),
+    ],
+  )
+}
+
+///|
+test "compat regression covers phase e assignment-shaped command analytics baseline" {
+  assert_compat_case(
+    "phase-e-analytics-assignment-shaped-command",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2154,SC2086
+      #|$var==42
+      #|var${x}/=value
+      #|
+    ),
+    [
+      compat_error(
+        2272, 3, 1, 9, "Command name contains ==. For comparison, use [ \"$var\" = value ].",
+      ),
+      compat_error(
+        2276, 4, 1, 15, "This is interpreted as a command name containing '='. Bad assignment or comparison?",
+      ),
+    ],
+  )
+}

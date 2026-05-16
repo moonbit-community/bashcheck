@@ -124,3 +124,31 @@ test "compat regression covers expr glob argument diagnostics" {
     ],
   )
 }
+
+///|
+test "compat regression covers command batch d baseline diagnostics" {
+  assert_compat_case(
+    "commands-batch-d-baseline-diagnostics",
+    (
+      #|#!/bin/bash
+      #|# shellcheck disable=SC2034
+      #|echo "\\n"
+      #|f(){ local x=$(false); }
+      #|trap foo 16 KILL 9
+      #|
+    ),
+    [
+      compat_info(
+        2028, 3, 6, 11, "echo may not expand escape sequences. Use printf.",
+      ),
+      compat_warning(
+        2155, 4, 12, 13, "Declare and assign separately to avoid masking return values.",
+      ),
+      compat_warning(
+        2172, 5, 10, 12, "Trapping signals by number is not well defined. Prefer signal names.",
+      ),
+      compat_error(2173, 5, 13, 17, "SIGKILL/SIGSTOP can not be trapped."),
+      compat_error(2173, 5, 18, 19, "SIGKILL/SIGSTOP can not be trapped."),
+    ],
+  )
+}

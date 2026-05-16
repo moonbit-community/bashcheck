@@ -41,7 +41,18 @@ test "analytics batch k flags while-read pitfalls and shellcheck-style fixes" {
   assert_eq(count_code(diagnostics, 2095), 8)
   assert_eq(batch_k_count_warning_code(diagnostics, 2095), 4)
   match batch_k_first_warning_code(diagnostics, 2095).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 2)
+      assert_eq(replacement.start.column, 26)
+      assert_eq(replacement.end.line, 2)
+      assert_eq(replacement.end.column, 26)
+      assert_eq(replacement.text, " -n")
+      assert_eq(replacement.precedence, 9)
+      assert_true(
+        replacement.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(
           fix,
@@ -65,6 +76,7 @@ test "analytics batch k flags while-read pitfalls and shellcheck-style fixes" {
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2095 fix")
   }
 }

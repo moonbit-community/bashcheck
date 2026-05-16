@@ -22,8 +22,18 @@ test "analytics batch p maps shell-specific equals-in-command diagnostics" {
     #|BASH_ARGV0='foo'
     #|
   match first_code(bash_diagnostics, 2277).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 2)
+      assert_eq(replacement.start.column, 1)
+      assert_eq(replacement.end.line, 2)
+      assert_eq(replacement.end.column, 2)
+      assert_eq(replacement.text, "BASH_ARGV0")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(@fixer.apply_fix(fix, bash_source), Some(bash_expected))
+    }
     None => checks_fail("expected SC2277 fix")
   }
 
@@ -102,8 +112,18 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|var=foo
     #|
   match first_code(plain_diagnostics, 2281).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 3)
+      assert_eq(replacement.start.column, 1)
+      assert_eq(replacement.end.line, 3)
+      assert_eq(replacement.end.column, 2)
+      assert_eq(replacement.text, "")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(@fixer.apply_fix(fix, plain_source), Some(plain_expected))
+    }
     None => checks_fail("expected plain SC2281 fix")
   }
 
@@ -119,11 +139,31 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|var[42]=foo
     #|
   match first_code(braced_diagnostics, 2281).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let open_brace = fix.replacements[0]
+      assert_eq(open_brace.start.line, 3)
+      assert_eq(open_brace.start.column, 1)
+      assert_eq(open_brace.end.line, 3)
+      assert_eq(open_brace.end.column, 3)
+      assert_eq(open_brace.text, "")
+      assert_eq(open_brace.precedence, 7)
+      assert_true(open_brace.insertion_point == @fixer.InsertionPoint::after())
+      let close_brace = fix.replacements[1]
+      assert_eq(close_brace.start.line, 3)
+      assert_eq(close_brace.start.column, 10)
+      assert_eq(close_brace.end.line, 3)
+      assert_eq(close_brace.end.column, 11)
+      assert_eq(close_brace.text, "")
+      assert_eq(close_brace.precedence, 7)
+      assert_true(
+        close_brace.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, braced_source),
         Some(braced_expected),
       )
+    }
     None => checks_fail("expected braced SC2281 fix")
   }
 
@@ -139,8 +179,18 @@ test "analytics batch p offers lhs assignment fixes for direct references" {
     #|var+=foo
     #|
   match first_code(plus_diagnostics, 2281).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 3)
+      assert_eq(replacement.start.column, 1)
+      assert_eq(replacement.end.line, 3)
+      assert_eq(replacement.end.column, 2)
+      assert_eq(replacement.text, "")
+      assert_eq(replacement.precedence, 7)
+      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
       @test.assert_eq(@fixer.apply_fix(fix, plus_source), Some(plus_expected))
+    }
     None => checks_fail("expected plus-assignment SC2281 fix")
   }
 }

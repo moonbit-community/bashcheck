@@ -161,7 +161,28 @@ test "analytics batch q flags bare bangs under set -e and preserves shellcheck-s
 
   assert_eq(count_code(diagnostics, 2251), 4)
   match fix_diagnostic.fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 2)
+      let bang_removal = fix.replacements[0]
+      assert_eq(bang_removal.start.line, 3)
+      assert_eq(bang_removal.start.column, 1)
+      assert_eq(bang_removal.end.line, 3)
+      assert_eq(bang_removal.end.column, 2)
+      assert_eq(bang_removal.text, "")
+      assert_eq(bang_removal.precedence, 3)
+      assert_true(
+        bang_removal.insertion_point == @fixer.InsertionPoint::after(),
+      )
+      let exit_append = fix.replacements[1]
+      assert_eq(exit_append.start.line, 3)
+      assert_eq(exit_append.start.column, 7)
+      assert_eq(exit_append.end.line, 3)
+      assert_eq(exit_append.end.column, 7)
+      assert_eq(exit_append.text, " && exit 1")
+      assert_eq(exit_append.precedence, 4)
+      assert_true(
+        exit_append.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, fix_source),
         Some(
@@ -174,6 +195,7 @@ test "analytics batch q flags bare bangs under set -e and preserves shellcheck-s
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2251 fix")
   }
 }
@@ -260,7 +282,18 @@ test "analytics batch q flags mistaken background and pipe operators on test com
   assert_eq(count_code(diagnostics, 2265), 2)
   assert_eq(count_code(diagnostics, 2266), 1)
   match first_code(check_source(and_fix_source), 2265).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 4)
+      assert_eq(replacement.start.column, 11)
+      assert_eq(replacement.end.line, 4)
+      assert_eq(replacement.end.column, 11)
+      assert_eq(replacement.text, "&")
+      assert_eq(replacement.precedence, 3)
+      assert_true(
+        replacement.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, and_fix_source),
         Some(
@@ -273,10 +306,22 @@ test "analytics batch q flags mistaken background and pipe operators on test com
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2265 fix")
   }
   match first_code(check_source(or_fix_source), 2266).fix {
-    Some(fix) =>
+    Some(fix) => {
+      assert_eq(fix.replacements.length(), 1)
+      let replacement = fix.replacements[0]
+      assert_eq(replacement.start.line, 4)
+      assert_eq(replacement.start.column, 11)
+      assert_eq(replacement.end.line, 4)
+      assert_eq(replacement.end.column, 11)
+      assert_eq(replacement.text, "|")
+      assert_eq(replacement.precedence, 4)
+      assert_true(
+        replacement.insertion_point == @fixer.InsertionPoint::before(),
+      )
       @test.assert_eq(
         @fixer.apply_fix(fix, or_fix_source),
         Some(
@@ -289,6 +334,7 @@ test "analytics batch q flags mistaken background and pipe operators on test com
           ),
         ),
       )
+    }
     None => checks_fail("expected SC2266 fix")
   }
 }
