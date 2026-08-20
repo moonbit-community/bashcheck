@@ -91,10 +91,10 @@ fn normalize_compat_diagnostics(
 ///|
 fn compat_severity_name(severity : DiagnosticSeverity) -> String {
   match severity {
-    DiagnosticSeverity::Error => "error"
-    DiagnosticSeverity::Warning => "warning"
-    DiagnosticSeverity::Info => "info"
-    DiagnosticSeverity::Style => "style"
+    Error => "error"
+    Warning => "warning"
+    Info => "info"
+    Style => "style"
   }
 }
 
@@ -1285,7 +1285,7 @@ test "compat regression covers equals in command diagnostics" {
         2278, 1, 1, 3, "$0 can't be assigned in Ksh (but it does reflect the current function).",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Ksh)),
+    CheckSpec::default().with_shell_override(Some(Ksh)),
   )
 
   assert_compat_case_with_spec(
@@ -1299,9 +1299,7 @@ test "compat regression covers equals in command diagnostics" {
         2279, 1, 1, 5, "$0 can't be assigned in Dash. This becomes a command name.",
       ),
     ],
-    CheckSpec::default().with_shell_override(
-      Some(@semantics.ShellDialect::Dash),
-    ),
+    CheckSpec::default().with_shell_override(Some(Dash)),
   )
 
   assert_compat_case_with_spec(
@@ -1315,7 +1313,7 @@ test "compat regression covers equals in command diagnostics" {
         2280, 1, 1, 3, "$0 can't be assigned this way, and there is no portable alternative.",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
+    CheckSpec::default().with_shell_override(Some(Sh)),
   )
 }
 
@@ -2155,7 +2153,7 @@ test "compat regression lets explicit shell overrides win over annotations" {
         2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
+    CheckSpec::default().with_shell_override(Some(Sh)),
   )
 
   assert_compat_case_with_spec(
@@ -2170,9 +2168,7 @@ test "compat regression lets explicit shell overrides win over annotations" {
         2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
       ),
     ],
-    CheckSpec::default().with_shell_override(
-      Some(@semantics.ShellDialect::Bash),
-    ),
+    CheckSpec::default().with_shell_override(Some(Bash)),
   )
 }
 
@@ -2598,7 +2594,7 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
         2090, 1, 26, 32, "Quotes/backslashes in this variable will not be respected.",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(@semantics.ShellDialect::Sh)),
+    CheckSpec::default().with_shell_override(Some(Sh)),
   )
 
   assert_compat_case(

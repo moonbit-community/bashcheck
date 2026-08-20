@@ -12,127 +12,127 @@ fn analytics_batch_d_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2032,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Shell functions and aliases cannot be dispatched by external commands.",
     },
     {
       code: 2033,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Shell functions and aliases cannot be passed to external commands as commands.",
     },
     {
       code: 2119,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Calls without arguments should pass \"$@\" when the function reads positional parameters.",
     },
     {
       code: 2096,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Most shebang implementations only allow one interpreter argument.",
     },
     {
       code: 2104,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Functions should use return instead of break/continue outside loops.",
     },
     {
       code: 2105,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "break and continue are only valid in loops.",
     },
     {
       code: 2106,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "break/continue in subshell-like contexts only affect that subshell.",
     },
     {
       code: 2111,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "ksh does not allow the function keyword together with parentheses.",
     },
     {
       code: 2112,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "The function keyword is non-standard when used with parentheses.",
     },
     {
       code: 2113,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "The function keyword is non-standard without parentheses.",
     },
     {
       code: 2118,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "ksh does not support |& pipelines.",
     },
     {
       code: 2120,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Function references positional parameters but is only invoked without arguments.",
     },
     {
       code: 2127,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Shell-specific syntax needs an explicit shell that supports it.",
     },
     {
       code: 2103,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Prefer a subshell over manually cd'ing back afterward.",
     },
     {
       code: 2164,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "cd/pushd/popd should be guarded with || exit/return unless failure is already handled.",
     },
     {
       code: 2165,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Nested loops should not reuse a parent loop variable.",
     },
     {
       code: 2167,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Parent loop variable is overridden by a nested loop.",
     },
     {
       code: 2262,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Aliases defined in a parsing unit are not available later in that same parsing unit.",
     },
     {
       code: 2263,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "This command does not see the alias defined earlier in the same parsing unit.",
     },
     {
       code: 2302,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Looping over array values should not be combined with using those values as array keys.",
     },
     {
       code: 2303,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Array values are not array keys.",
     },
@@ -182,7 +182,7 @@ fn check_shebang_parameters_d(
         push_diagnostic(
           diagnostics,
           d_shebang_span(script, shebang),
-          CheckSeverity::Error,
+          Error,
           2096,
           "On most OS, shebangs can only specify a single parameter.",
         )
@@ -333,7 +333,7 @@ fn check_loop_keyword_scope(
   let lastpipe = @semantics.has_lastpipe(script, shell)
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Command(command)) =>
         match d_loop_keyword_name(command) {
           Some(name) =>
             d_check_loop_keyword_command(
@@ -349,7 +349,7 @@ fn check_loop_keyword_scope(
 ///|
 fn d_loop_keyword_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words.get(0) {
         Some(word) =>
           match word_single_literal_text(word) {
@@ -378,7 +378,7 @@ fn d_check_loop_keyword_command(
         push_diagnostic(
           diagnostics,
           command.span,
-          CheckSeverity::Warning,
+          Warning,
           2106,
           "This only exits the subshell caused by the \{reason}.",
         )
@@ -388,11 +388,11 @@ fn d_check_loop_keyword_command(
   }
 
   match scopes.get(0) {
-    Some(DLoopKeywordScopeKind::Function) =>
+    Some(Function) =>
       push_diagnostic(
         diagnostics,
         command.span,
-        CheckSeverity::Error,
+        Error,
         2104,
         "In functions, use return instead of \{name}.",
       )
@@ -400,7 +400,7 @@ fn d_check_loop_keyword_command(
       push_diagnostic(
         diagnostics,
         command.span,
-        CheckSeverity::Error,
+        Error,
         2105,
         "\{name} is only valid in loops.",
       )
@@ -430,53 +430,38 @@ fn d_loop_keyword_scope_kind_for_ancestor(
   lastpipe : Bool,
 ) -> DLoopKeywordScopeKind? {
   match @semantics.node_ref_of(indexed, id) {
-    Some(@semantics.NodeRef::ListItem(item)) =>
+    Some(ListItem(item)) =>
       match item.terminator {
-        Some(@parser.Terminator::Background) =>
-          Some(DLoopKeywordScopeKind::Subshell("backgrounding &"))
+        Some(Background) => Some(Subshell("backgrounding &"))
         _ => None
       }
-    Some(@semantics.NodeRef::FunctionDef(_)) =>
-      Some(DLoopKeywordScopeKind::Function)
-    Some(@semantics.NodeRef::LoopClause(_))
-    | Some(@semantics.NodeRef::ForClause(_))
-    | Some(@semantics.NodeRef::ArithmeticForClause(_))
-    | Some(@semantics.NodeRef::SelectClause(_)) =>
-      Some(DLoopKeywordScopeKind::Loop)
-    Some(@semantics.NodeRef::CoProcClause(_)) =>
-      Some(DLoopKeywordScopeKind::Subshell("coproc"))
-    Some(@semantics.NodeRef::BatsTestClause(_)) =>
-      Some(DLoopKeywordScopeKind::Subshell("@bats test"))
-    Some(@semantics.NodeRef::Command(command)) =>
+    Some(FunctionDef(_)) => Some(Function)
+    Some(LoopClause(_))
+    | Some(ForClause(_))
+    | Some(ArithmeticForClause(_))
+    | Some(SelectClause(_)) => Some(Loop)
+    Some(CoProcClause(_)) => Some(Subshell("coproc"))
+    Some(BatsTestClause(_)) => Some(Subshell("@bats test"))
+    Some(Command(command)) =>
       match command.kind {
-        @parser.CommandKind::Function(_) =>
-          Some(DLoopKeywordScopeKind::Function)
-        @parser.CommandKind::While(_)
-        | @parser.CommandKind::Until(_)
-        | @parser.CommandKind::ForIn(_)
-        | @parser.CommandKind::ForArithmetic(_)
-        | @parser.CommandKind::Select(_) => Some(DLoopKeywordScopeKind::Loop)
-        @parser.CommandKind::Subshell(_) =>
-          Some(DLoopKeywordScopeKind::Subshell("(..) group"))
-        @parser.CommandKind::BatsTest(_) =>
-          Some(DLoopKeywordScopeKind::Subshell("@bats test"))
+        Function(_) => Some(Function)
+        While(_) | Until(_) | ForIn(_) | ForArithmetic(_) | Select(_) =>
+          Some(Loop)
+        Subshell(_) => Some(Subshell("(..) group"))
+        BatsTest(_) => Some(Subshell("@bats test"))
         _ =>
           if d_command_is_coproc_body(indexed, id) {
-            Some(DLoopKeywordScopeKind::Subshell("coproc"))
+            Some(Subshell("coproc"))
           } else if d_command_is_pipeline_subshell(indexed, id, lastpipe) {
-            Some(DLoopKeywordScopeKind::Subshell("pipeline"))
+            Some(Subshell("pipeline"))
           } else {
             None
           }
       }
-    Some(@semantics.NodeRef::WordPart(@parser.WordPart::CommandSubstitution(_)))
-    | Some(
-      @semantics.NodeRef::WordPart(
-        @parser.WordPart::BraceCommandSubstitution(_, _)
-      )
-    ) => Some(DLoopKeywordScopeKind::Subshell("$(..) expansion"))
-    Some(@semantics.NodeRef::WordPart(@parser.WordPart::BackQuoted(_))) =>
-      Some(DLoopKeywordScopeKind::Subshell("`..` expansion"))
+    Some(WordPart(CommandSubstitution(_)))
+    | Some(WordPart(BraceCommandSubstitution(_, _))) =>
+      Some(Subshell("$(..) expansion"))
+    Some(WordPart(BackQuoted(_))) => Some(Subshell("`..` expansion"))
     _ => None
   }
 }
@@ -487,7 +472,7 @@ fn d_loop_keyword_scopes_have_loop(
 ) -> Bool {
   scopes.any(fn(scope) {
     match scope {
-      DLoopKeywordScopeKind::Loop => true
+      Loop => true
       _ => false
     }
   })
@@ -499,7 +484,7 @@ fn d_first_loop_keyword_subshell_scope(
 ) -> String? {
   for scope in scopes {
     match scope {
-      DLoopKeywordScopeKind::Subshell(reason) => return Some(reason)
+      Subshell(reason) => return Some(reason)
       _ => ()
     }
   }
@@ -514,7 +499,7 @@ fn d_command_is_coproc_body(
   match @semantics.parent_of(indexed, id) {
     Some(parent) =>
       match @semantics.node_ref_of(indexed, parent) {
-        Some(@semantics.NodeRef::CoProcClause(_)) => true
+        Some(CoProcClause(_)) => true
         _ => false
       }
     None => false
@@ -530,7 +515,7 @@ fn d_command_is_pipeline_subshell(
   let segment_id = match @semantics.parent_of(indexed, id) {
     Some(parent) =>
       match @semantics.node_ref_of(indexed, parent) {
-        Some(@semantics.NodeRef::PipelineSegment(_)) => parent
+        Some(PipelineSegment(_)) => parent
         _ => return false
       }
     None => return false
@@ -538,7 +523,7 @@ fn d_command_is_pipeline_subshell(
   let pipeline_id = match @semantics.parent_of(indexed, segment_id) {
     Some(parent) =>
       match @semantics.node_ref_of(indexed, parent) {
-        Some(@semantics.NodeRef::Pipeline(pipeline)) =>
+        Some(Pipeline(pipeline)) =>
           if pipeline.segments.length() > 1 {
             parent
           } else {
@@ -566,7 +551,7 @@ fn d_pipeline_segment_ids(
   let ids : Array[@semantics.NodeId] = []
   for child in @semantics.children_of(indexed, pipeline_id) {
     match @semantics.node_ref_of(indexed, child) {
-      Some(@semantics.NodeRef::PipelineSegment(_)) => ids.push(child)
+      Some(PipelineSegment(_)) => ids.push(child)
       _ => ()
     }
   }
@@ -581,7 +566,7 @@ fn check_function_declarations(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_) =>
+      Function(function_) =>
         d_maybe_warn_function_declaration(
           command, function_, shell, diagnostics,
         )
@@ -600,12 +585,12 @@ fn d_maybe_warn_function_declaration(
   if !function_.uses_keyword {
     return
   }
-  if shell == @semantics.ShellDialect::Ksh {
+  if shell == Ksh {
     if function_.has_parentheses {
       push_diagnostic(
         diagnostics,
         command.span,
-        CheckSeverity::Error,
+        Error,
         2111,
         "ksh does not allow 'function' keyword and '()' at the same time.",
       )
@@ -619,7 +604,7 @@ fn d_maybe_warn_function_declaration(
     push_diagnostic(
       diagnostics,
       command.span,
-      CheckSeverity::Warning,
+      Warning,
       2112,
       "'function' keyword is non-standard. Delete it.",
     )
@@ -627,7 +612,7 @@ fn d_maybe_warn_function_declaration(
     push_diagnostic(
       diagnostics,
       command.span,
-      CheckSeverity::Warning,
+      Warning,
       2113,
       "'function' keyword is non-standard. Use 'foo()' instead of 'function foo'.",
     )
@@ -640,16 +625,16 @@ fn check_stderr_pipe_ksh(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell == @semantics.ShellDialect::Ksh else { return }
+  guard shell == Ksh else { return }
   visit_script_pipelines(script, fn(pipeline) {
     let mut i = 0
     while i < pipeline.operators.length() {
       match pipeline.operators[i] {
-        @parser.PipeOperator::PipeAndStderr =>
+        PipeAndStderr =>
           push_diagnostic(
             diagnostics,
             pipe_operator_span(pipeline, i, 2),
-            CheckSeverity::Error,
+            Error,
             2118,
             "Ksh does not support |&. Use 2>&1 |.",
           )
@@ -665,7 +650,7 @@ fn check_functions_used_externally(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let definitions : Map[String, AnalyticsFunctionInfo] = Map::new()
+  let definitions : Map[String, AnalyticsFunctionInfo] = Map([])
   collect_function_and_alias_definitions(script, definitions)
   visit_script_commands(script, fn(command) {
     let effective_name = match @semantics.effective_command_name(command) {
@@ -684,14 +669,14 @@ fn check_functions_used_externally(
               push_diagnostic(
                 diagnostics,
                 candidate.span,
-                CheckSeverity::Warning,
+                Warning,
                 2033,
                 "Shell functions can't be passed to external commands. Use separate script or sh -c.",
               )
               push_diagnostic(
                 diagnostics,
                 info.declaration_span,
-                CheckSeverity::Info,
+                Info,
                 2032,
                 "This function can't be invoked via \{effective_name}\{analytics_line_context(command.span.start.line)}",
               )
@@ -711,7 +696,7 @@ fn collect_function_and_alias_definitions(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_) =>
+      Function(function_) =>
         if !definitions.contains(function_.name) {
           definitions.set(function_.name, {
             declaration_span: function_definition_report_span(
@@ -719,7 +704,7 @@ fn collect_function_and_alias_definitions(
             ),
           })
         }
-      @parser.CommandKind::Simple(_) =>
+      Simple(_) =>
         if @semantics.effective_command_name(command) == Some("alias") {
           for argument in @semantics.effective_command_arguments(command) {
             match analytics_alias_definition_name(argument) {
@@ -849,10 +834,10 @@ fn check_unpassed_in_functions(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let functions : Map[String, AnalyticsFunctionInfo] = Map::new()
+  let functions : Map[String, AnalyticsFunctionInfo] = Map([])
   collect_unpassed_function_candidates(script, functions)
 
-  let calls : Map[String, Array[AnalyticsUnpassedCall]] = Map::new()
+  let calls : Map[String, Array[AnalyticsUnpassedCall]] = Map([])
   visit_script_commands(script, fn(command) {
     let name = match direct_simple_command_name(command) {
       Some(name) => name
@@ -886,7 +871,7 @@ fn check_unpassed_in_functions(
           push_diagnostic(
             diagnostics,
             call.span,
-            CheckSeverity::Info,
+            Info,
             2119,
             "Use \{name} \"$@\" if function's $1 should mean script's $1.",
           )
@@ -894,7 +879,7 @@ fn check_unpassed_in_functions(
         push_diagnostic(
           diagnostics,
           info.declaration_span,
-          CheckSeverity::Warning,
+          Warning,
           2120,
           "\{name} references arguments, but none are ever passed.",
         )
@@ -911,7 +896,7 @@ fn collect_unpassed_function_candidates(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_) =>
+      Function(function_) =>
         if !functions.contains(function_.name) &&
           function_directly_references_positional_arguments(function_.body) &&
           !function_sets_positional_arguments(function_.body) {
@@ -929,7 +914,7 @@ fn collect_unpassed_function_candidates(
 ///|
 fn direct_simple_command_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words.get(0) {
         Some(word) => word_single_literal_text(word)
         None => None
@@ -980,12 +965,11 @@ fn analytics_walk_command_ignoring_nested_functions(
 ) -> Unit {
   visit(command)
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_walk_pipeline_ignoring_nested_functions(clause.body, visit)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script) =>
+    Subshell(script) | BraceGroup(script) =>
       analytics_walk_script_ignoring_nested_functions(script, visit)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_walk_script_ignoring_nested_functions(arm.condition, visit)
         analytics_walk_script_ignoring_nested_functions(arm.body, visit)
@@ -996,27 +980,27 @@ fn analytics_walk_command_ignoring_nested_functions(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_walk_script_ignoring_nested_functions(clause.condition, visit)
       analytics_walk_script_ignoring_nested_functions(clause.body, visit)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_walk_script_ignoring_nested_functions(clause.body, visit)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_walk_script_ignoring_nested_functions(clause.body, visit)
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_walk_script_ignoring_nested_functions(clause.body, visit)
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_walk_script_ignoring_nested_functions(item.body, visit)
       }
-    @parser.CommandKind::Function(_)
-    | @parser.CommandKind::BatsTest(_)
-    | @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
-    @parser.CommandKind::CoProc(clause) =>
+    Function(_)
+    | BatsTest(_)
+    | Simple(_)
+    | Source(_)
+    | Condition(_)
+    | Arithmetic(_) => ()
+    CoProc(clause) =>
       analytics_walk_command_ignoring_nested_functions(clause.body, visit)
   }
 }
@@ -1053,12 +1037,11 @@ fn word_contains_direct_positional_reference(word : @parser.Word) -> Bool {
       return
     }
     match part {
-      @parser.WordPart::Parameter(name)
-      | @parser.WordPart::SpecialParameter(name) =>
+      Parameter(name) | SpecialParameter(name) =>
         if analytics_is_positional_parameter(name) {
           found = true
         }
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         match expansion.name {
           Some(name) =>
             if analytics_is_positional_parameter(name) &&
@@ -1185,7 +1168,7 @@ fn d_emit_cd_back_warning(
       push_diagnostic(
         diagnostics,
         candidates[i].command.span,
-        CheckSeverity::Info,
+        Info,
         2103,
         "Use a ( subshell ) to avoid having to cd back.",
       )
@@ -1223,13 +1206,10 @@ fn d_visit_command_for_cd_back(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
-      d_visit_pipeline_for_cd_back(clause.body, diagnostics)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Time(clause) => d_visit_pipeline_for_cd_back(clause.body, diagnostics)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       d_visit_script_for_cd_back(script, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         d_visit_script_for_cd_back(arm.condition, diagnostics)
         d_visit_script_for_cd_back(arm.body, diagnostics)
@@ -1239,28 +1219,22 @@ fn d_visit_command_for_cd_back(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       d_visit_script_for_cd_back(clause.condition, diagnostics)
       d_visit_script_for_cd_back(clause.body, diagnostics)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) => d_visit_script_for_cd_back(clause.body, diagnostics)
+    ForArithmetic(clause) =>
       d_visit_script_for_cd_back(clause.body, diagnostics)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      d_visit_script_for_cd_back(clause.body, diagnostics)
-    @parser.CommandKind::Select(clause) =>
-      d_visit_script_for_cd_back(clause.body, diagnostics)
-    @parser.CommandKind::Case(clause) =>
+    Select(clause) => d_visit_script_for_cd_back(clause.body, diagnostics)
+    Case(clause) =>
       for item in clause.items {
         d_visit_script_for_cd_back(item.body, diagnostics)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       d_visit_command_for_cd_back(function_.body, diagnostics)
-    @parser.CommandKind::CoProc(clause) =>
-      d_visit_command_for_cd_back(clause.body, diagnostics)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    CoProc(clause) => d_visit_command_for_cd_back(clause.body, diagnostics)
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -1314,7 +1288,7 @@ fn analytics_pipeline_has_or_exit_guard(
     return false
   }
   match operators[index] {
-    @parser.AndOrOperator::OrIf => ()
+    OrIf => ()
     _ => return false
   }
   match pipelines.get(index + 1) {
@@ -1363,18 +1337,16 @@ fn analytics_visit_command_for_cd_guards(
     command, in_condition, guarded, diagnostics,
   )
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_visit_pipeline_for_cd_guards(
         clause.body,
         in_condition,
         guarded,
         diagnostics,
       )
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_visit_script_for_cd_guards(script, in_condition, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_visit_script_for_cd_guards(arm.condition, true, diagnostics)
         analytics_visit_script_for_cd_guards(arm.body, false, diagnostics)
@@ -1385,38 +1357,35 @@ fn analytics_visit_command_for_cd_guards(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_visit_script_for_cd_guards(clause.condition, true, diagnostics)
       analytics_visit_script_for_cd_guards(clause.body, false, diagnostics)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_visit_script_for_cd_guards(clause.body, false, diagnostics)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_visit_script_for_cd_guards(clause.body, false, diagnostics)
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_visit_script_for_cd_guards(clause.body, false, diagnostics)
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_visit_script_for_cd_guards(item.body, false, diagnostics)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_visit_command_for_cd_guards(
         function_.body,
         false,
         guarded,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_visit_command_for_cd_guards(
         clause.body,
         false,
         guarded,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -1442,7 +1411,7 @@ fn analytics_maybe_warn_unchecked_dir_change(
   push_diagnostic_with_fix(
     diagnostics,
     diagnostic_span,
-    CheckSeverity::Warning,
+    Warning,
     2164,
     "Use '\{name} ... || exit' or '\{name} ... || return' in case \{name} fails.",
     analytics_unchecked_dir_change_fix(command.span),
@@ -1597,14 +1566,14 @@ fn analytics_visit_command_for_loop_reassignment(
           push_diagnostic(
             diagnostics,
             command_keyword_span(command, "for"),
-            CheckSeverity::Warning,
+            Warning,
             2165,
             "This nested loop overrides the index variable of its parent.",
           )
           push_diagnostic(
             diagnostics,
             parent.span,
-            CheckSeverity::Warning,
+            Warning,
             2167,
             "This parent loop has its index variable overridden.",
           )
@@ -1618,17 +1587,15 @@ fn analytics_visit_command_for_loop_reassignment(
   }
 
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_visit_pipeline_for_loop_reassignment(
         clause.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_visit_script_for_loop_reassignment(script, stack, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_visit_script_for_loop_reassignment(
           arm.condition,
@@ -1647,7 +1614,7 @@ fn analytics_visit_command_for_loop_reassignment(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_visit_script_for_loop_reassignment(
         clause.condition,
         stack,
@@ -1659,25 +1626,25 @@ fn analytics_visit_command_for_loop_reassignment(
         diagnostics,
       )
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_visit_script_for_loop_reassignment(
         clause.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_visit_script_for_loop_reassignment(
         clause.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_visit_script_for_loop_reassignment(
         clause.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_visit_script_for_loop_reassignment(
           item.body,
@@ -1685,22 +1652,19 @@ fn analytics_visit_command_for_loop_reassignment(
           diagnostics,
         )
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_visit_command_for_loop_reassignment(
         function_.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_visit_command_for_loop_reassignment(
         clause.body,
         stack,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 
   if pushed {
@@ -1711,14 +1675,10 @@ fn analytics_visit_command_for_loop_reassignment(
 ///|
 fn analytics_loop_binding_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::ForIn(clause) => Some(clause.name)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForIn(clause) => Some(clause.name)
+    ForArithmetic(clause) =>
       match clause.init.tokens {
-        [
-          @parser.ArithmeticToken::Variable(name, []),
-          @parser.ArithmeticToken::Operator("="),
-          ..,
-        ] => Some(name)
+        [Variable(name, []), Operator("="), ..] => Some(name)
         _ => None
       }
     _ => None
@@ -1746,11 +1706,11 @@ fn check_alias_used_in_same_parsing_unit(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   for group in analytics_group_list_items_by_parsing_unit(script.items) {
-    let aliases : Map[String, @parser.Span] = Map::new()
+    let aliases : Map[String, @parser.Span] = Map([])
     for item in group {
       visit_and_or_list_commands(item.and_or, fn(command) {
         match command.kind {
-          @parser.CommandKind::Simple(simple) =>
+          Simple(simple) =>
             match simple.words.get(0) {
               Some(first) =>
                 match word_single_literal_text(first) {
@@ -1775,14 +1735,14 @@ fn check_alias_used_in_same_parsing_unit(
                         push_diagnostic(
                           diagnostics,
                           alias_span,
-                          CheckSeverity::Warning,
+                          Warning,
                           2262,
                           "This alias can't be defined and used in the same parsing unit. Use a function instead.",
                         )
                         push_diagnostic(
                           diagnostics,
                           first.span,
-                          CheckSeverity::Info,
+                          Info,
                           2263,
                           "Since they're in the same parsing unit, this command will not refer to the previously mentioned alias.",
                         )
@@ -1888,7 +1848,7 @@ fn analytics_visit_command_for_array_loop_values(
   analytics_invalidate_array_loop_contexts(contexts, written)
 
   let pushed = match command.kind {
-    @parser.CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       let loop_values = analytics_collect_array_loop_values(clause.values)
       if loop_values.length() > 0 {
         contexts.push({ index_name: clause.name, loop_values, active: true })
@@ -1901,19 +1861,17 @@ fn analytics_visit_command_for_array_loop_values(
   }
 
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_visit_pipeline_for_array_loop_values(
         clause.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_visit_script_for_array_loop_values(
         script, contexts, diagnostics,
       )
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_visit_script_for_array_loop_values(
           arm.condition,
@@ -1934,7 +1892,7 @@ fn analytics_visit_command_for_array_loop_values(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_visit_script_for_array_loop_values(
         clause.condition,
         contexts,
@@ -1946,25 +1904,25 @@ fn analytics_visit_command_for_array_loop_values(
         diagnostics,
       )
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_visit_script_for_array_loop_values(
         clause.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_visit_script_for_array_loop_values(
         clause.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_visit_script_for_array_loop_values(
         clause.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_visit_script_for_array_loop_values(
           item.body,
@@ -1972,22 +1930,19 @@ fn analytics_visit_command_for_array_loop_values(
           diagnostics,
         )
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_visit_command_for_array_loop_values(
         function_.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_visit_command_for_array_loop_values(
         clause.body,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 
   if pushed {
@@ -2012,7 +1967,7 @@ fn analytics_collect_array_loop_values(
 ///|
 fn analytics_word_iterates_array_values(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [BracedParameter(expansion)] =>
       match expansion.name {
         Some(name) if !expansion.indirect && parameter_index_is(expansion, "@") =>
           Some(name)
@@ -2046,14 +2001,14 @@ fn analytics_check_array_loop_uses_in_command(
     analytics_check_array_loop_uses_in_word(word, contexts, diagnostics)
   })
   match command.kind {
-    @parser.CommandKind::Arithmetic(arithmetic) =>
+    Arithmetic(arithmetic) =>
       analytics_check_array_loop_uses_in_arithmetic_expr(
         arithmetic.expr,
         command.span,
         contexts,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       analytics_check_array_loop_uses_in_arithmetic_expr(
         clause.init,
         command.span,
@@ -2096,14 +2051,13 @@ fn analytics_check_array_loop_word_part(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match part {
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       for nested in parts {
         analytics_check_array_loop_word_part(
           nested, span, contexts, diagnostics,
         )
       }
-    @parser.WordPart::BracedParameter(expansion) => {
+    BracedParameter(expansion) => {
       analytics_maybe_report_array_loop_index_use(
         expansion.name,
         expansion.index,
@@ -2117,18 +2071,17 @@ fn analytics_check_array_loop_word_part(
         )
       })
     }
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       analytics_check_array_loop_uses_in_arithmetic_expr(
         expr, span, contexts, diagnostics,
       )
-    @parser.WordPart::ExtGlob(pattern) =>
+    ExtGlob(pattern) =>
       for alternative in pattern.alternatives {
         analytics_check_array_loop_uses_in_word(
           alternative, contexts, diagnostics,
         )
       }
-    @parser.WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       for element in expansion.elements {
         analytics_check_array_loop_uses_in_word(element, contexts, diagnostics)
       }
@@ -2145,7 +2098,7 @@ fn analytics_check_array_loop_uses_in_arithmetic_expr(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Variable(name, indexes) =>
+      Variable(name, indexes) =>
         for index in indexes {
           analytics_maybe_report_array_loop_index_use(
             Some(name),
@@ -2155,9 +2108,9 @@ fn analytics_check_array_loop_uses_in_arithmetic_expr(
             diagnostics,
           )
         }
-      @parser.ArithmeticToken::Expansion(word) =>
+      Expansion(word) =>
         analytics_check_array_loop_uses_in_word(word, contexts, diagnostics)
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         analytics_check_array_loop_uses_in_arithmetic_expr(
           inner, span, contexts, diagnostics,
         )
@@ -2195,14 +2148,14 @@ fn analytics_maybe_report_array_loop_index_use(
         push_diagnostic(
           diagnostics,
           loop_span,
-          CheckSeverity::Warning,
+          Warning,
           2302,
           "This loops over values. To loop over keys, use \"\\${!array[@]}\".",
         )
         push_diagnostic(
           diagnostics,
           span,
-          CheckSeverity::Warning,
+          Warning,
           2303,
           "\{context.index_name} is an array value, not a key. Use directly or loop over keys instead.",
         )
@@ -2233,12 +2186,10 @@ fn analytics_array_index_uses_name(
   name : String,
 ) -> Bool {
   match index.parts {
-    [@parser.WordPart::Literal(text)] =>
-      analytics_trim_ascii_space(text) == name
-    [@parser.WordPart::Parameter(text)]
-    | [@parser.WordPart::SpecialParameter(text)] => text == name
+    [Literal(text)] => analytics_trim_ascii_space(text) == name
+    [Parameter(text)] | [SpecialParameter(text)] => text == name
     [
-      @parser.WordPart::BracedParameter(
+      BracedParameter(
         {
           name: Some(text),
           index: None,
@@ -2301,14 +2252,14 @@ fn d_check_unsupported_case_feature(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       match d_case_feature_support(clause.items) {
         Some((feature, supported)) =>
           if !d_shell_is_supported(shell, supported) {
             push_diagnostic(
               diagnostics,
               command.span,
-              CheckSeverity::Error,
+              Error,
               2127,
               d_unsupported_feature_message(feature, supported),
             )
@@ -2327,21 +2278,16 @@ fn d_case_feature_support(
   let mut has_fallthrough = false
   for item in items {
     match item.separator {
-      @parser.CaseSeparator::Continue => has_continue = true
-      @parser.CaseSeparator::FallThrough => has_fallthrough = true
-      @parser.CaseSeparator::Break => ()
+      Continue => has_continue = true
+      FallThrough => has_fallthrough = true
+      Break => ()
     }
   }
   if has_continue {
-    return Some(("cases with ;;&", [@semantics.ShellDialect::Bash]))
+    return Some(("cases with ;;&", [Bash]))
   }
   if has_fallthrough {
-    return Some(
-      (
-        "cases with ;&",
-        [@semantics.ShellDialect::Bash, @semantics.ShellDialect::Ksh],
-      ),
-    )
+    return Some(("cases with ;&", [Bash, Ksh]))
   }
   None
 }
@@ -2352,22 +2298,19 @@ fn d_check_unsupported_brace_command_expansions(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  if d_shell_is_supported(shell, [
-      @semantics.ShellDialect::Bash,
-      @semantics.ShellDialect::Ksh,
-    ]) {
+  if d_shell_is_supported(shell, [Bash, Ksh]) {
     return
   }
   let message = d_unsupported_feature_message("${ ..; } command expansion", [
-    @semantics.ShellDialect::Bash,
-    @semantics.ShellDialect::Ksh,
+    Bash,
+    Ksh,
   ])
   visit_direct_words_in_command(command, fn(word, _) {
     if d_word_has_brace_command_expansion(word) {
       push_diagnostic(
         diagnostics,
         d_brace_command_expansion_span(word),
-        CheckSeverity::Error,
+        Error,
         2127,
         message,
       )
@@ -2375,17 +2318,11 @@ fn d_check_unsupported_brace_command_expansions(
   })
   for redirect in command.redirects {
     match redirect.target {
-      @parser.RedirectionTarget::HereDoc(doc) =>
+      HereDoc(doc) =>
         match doc.parts {
           Some(parts) =>
             if d_here_doc_has_brace_command_expansion(parts) {
-              push_diagnostic(
-                diagnostics,
-                redirect.span,
-                CheckSeverity::Error,
-                2127,
-                message,
-              )
+              push_diagnostic(diagnostics, redirect.span, Error, 2127, message)
             }
           None => ()
         }
@@ -2399,7 +2336,7 @@ fn d_word_has_brace_command_expansion(word : @parser.Word) -> Bool {
   let mut found = false
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::BraceCommandSubstitution(_, _) => found = true
+      BraceCommandSubstitution(_, _) => found = true
       _ => ()
     }
   })
@@ -2414,7 +2351,7 @@ fn d_here_doc_has_brace_command_expansion(
   for part in parts {
     walk_word_part_deep(part, fn(nested) {
       match nested {
-        @parser.WordPart::BraceCommandSubstitution(_, _) => found = true
+        BraceCommandSubstitution(_, _) => found = true
         _ => ()
       }
     })
@@ -2425,17 +2362,10 @@ fn d_here_doc_has_brace_command_expansion(
 ///|
 fn d_brace_command_expansion_span(word : @parser.Word) -> @parser.Span {
   match word.parts {
-    [@parser.WordPart::BraceCommandSubstitution(_, _)] => word.span
-    [
-      @parser.WordPart::DoubleQuoted(
-        [@parser.WordPart::BraceCommandSubstitution(_, _)]
-      ),
-    ]
-    | [
-      @parser.WordPart::DollarDoubleQuoted(
-        [@parser.WordPart::BraceCommandSubstitution(_, _)]
-      ),
-    ] => d_span_offset(word.span, 1, word.source.length() - 2)
+    [BraceCommandSubstitution(_, _)] => word.span
+    [DoubleQuoted([BraceCommandSubstitution(_, _)])]
+    | [DollarDoubleQuoted([BraceCommandSubstitution(_, _)])] =>
+      d_span_offset(word.span, 1, word.source.length() - 2)
     _ => word.span
   }
 }
@@ -2495,10 +2425,10 @@ fn d_supported_shell_names(
 ///|
 fn d_shell_env_name(shell : @semantics.ShellDialect) -> String {
   match shell {
-    @semantics.ShellDialect::Sh => "sh"
-    @semantics.ShellDialect::Bash => "bash"
-    @semantics.ShellDialect::Dash => "dash"
-    @semantics.ShellDialect::Ksh => "ksh"
-    @semantics.ShellDialect::BusyboxSh => "busybox sh"
+    Sh => "sh"
+    Bash => "bash"
+    Dash => "dash"
+    Ksh => "ksh"
+    BusyboxSh => "busybox sh"
   }
 }

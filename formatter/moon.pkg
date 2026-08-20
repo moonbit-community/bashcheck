@@ -1,10 +1,10 @@
 import {
-  "moonbit-community/bashcheck/checker" @checker,
-  "moonbit-community/bashcheck/fixer" @fixer,
+  "moonbit-community/bashcheck/checker",
+  "moonbit-community/bashcheck/fixer",
 }
 
 import {
   "moonbitlang/core/debug",
 } for "test"
 
-supported_targets = "+native"
+supported_targets = "wasm+native"

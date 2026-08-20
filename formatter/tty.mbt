@@ -198,10 +198,10 @@ fn wiki_entry_precedes(lhs : WikiEntry, rhs : WikiEntry) -> Bool {
 /// Maps severities to footer sort priority.
 fn wiki_entry_severity_rank(severity : @checker.DiagnosticSeverity) -> Int {
   match severity {
-    @checker.DiagnosticSeverity::Error => 0
-    @checker.DiagnosticSeverity::Warning => 1
-    @checker.DiagnosticSeverity::Info => 2
-    @checker.DiagnosticSeverity::Style => 3
+    Error => 0
+    Warning => 1
+    Info => 2
+    Style => 3
   }
 }
 

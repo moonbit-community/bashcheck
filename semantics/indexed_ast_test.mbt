@@ -37,7 +37,7 @@ fn all_node_ids(indexed : @semantics.IndexedScript) -> Array[@semantics.NodeId] 
 fn find_first_command(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
   for id in all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Command(_)) => return id
+      Some(Command(_)) => return id
       _ => ()
     }
   }
@@ -48,7 +48,7 @@ fn find_first_command(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
 fn find_first_word(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
   for id in all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Word(_)) => return id
+      Some(Word(_)) => return id
       _ => ()
     }
   }
@@ -59,10 +59,7 @@ fn find_first_word(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
 fn find_parameter_part(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
   for id in all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
-        if name == "USER" {
-          return id
-        }
+      Some(WordPart(Parameter(name))) => if name == "USER" { return id }
       _ => ()
     }
   }
@@ -73,7 +70,7 @@ fn find_parameter_part(indexed : @semantics.IndexedScript) -> @semantics.NodeId 
 fn find_source_command(indexed : @semantics.IndexedScript) -> @semantics.NodeId {
   for id in all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::SourceCommand(_)) => return id
+      Some(SourceCommand(_)) => return id
       _ => ()
     }
   }
@@ -87,10 +84,7 @@ fn find_word_with_source(
 ) -> @semantics.NodeId {
   for id in all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Word(word)) =>
-        if word.source == source {
-          return id
-        }
+      Some(Word(word)) => if word.source == source { return id }
       _ => ()
     }
   }
@@ -131,7 +125,7 @@ test "indexed ast tracks parent chains and nearest word/command" {
     None => fail("expected containing command")
   }
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words.length(), 2)
       assert_eq(simple.words[0].source, "echo")
     }
@@ -174,10 +168,10 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
   let mut saw_included_descendant = false
   for child in @semantics.find_descendants(indexed, source_command) {
     match @semantics.node_ref_of(indexed, child) {
-      Some(@semantics.NodeRef::Script(_)) => saw_included_descendant = true
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Script(_)) => saw_included_descendant = true
+      Some(Command(command)) =>
         match command.kind {
-          @parser.CommandKind::Simple(simple) =>
+          Simple(simple) =>
             if simple.words.length() > 0 && simple.words[0].source == "echo" {
               saw_included_descendant = true
             }
@@ -189,7 +183,7 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
   assert_true(!saw_included_descendant)
 
   let source = match first_indexed_command(script).kind {
-    @parser.CommandKind::Source(source) => source
+    Source(source) => source
     _ => fail("expected source command")
   }
   let included = match source.included {
@@ -202,11 +196,11 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
       included_indexed,
       find_first_command(included_indexed),
     ) {
-    Some(@semantics.NodeRef::Command(command)) => command
+    Some(Command(command)) => command
     _ => fail("expected included command")
   }
   match included_command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words.length(), 2)
       assert_eq(simple.words[0].source, "echo")
     }

@@ -11,9 +11,9 @@ async fn default_driver_outcome(action : CliAction) -> CliOutcome {
 
 ///|
 async test "driver renders help list-optional and version actions" {
-  let help = default_driver_outcome(CliAction::ShowHelp)
-  let optional = default_driver_outcome(CliAction::ListOptional)
-  let version = default_driver_outcome(CliAction::ShowVersion)
+  let help = default_driver_outcome(ShowHelp)
+  let optional = default_driver_outcome(ListOptional)
+  let version = default_driver_outcome(ShowVersion)
 
   assert_eq(help.exit_code, 0)
   assert_true(help.output.contains("Usage: bashcheck"))

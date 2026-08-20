@@ -1,17 +1,15 @@
 import {
-  "moonbit-community/bashcheck/parser" @parser,
-  "moonbit-community/bashcheck/semantics" @semantics,
-  "moonbit-community/bashcheck/checks" @checks,
-  "moonbit-community/bashcheck/fixer" @fixer,
+  "moonbit-community/bashcheck/parser",
+  "moonbit-community/bashcheck/semantics",
+  "moonbit-community/bashcheck/checks",
+  "moonbit-community/bashcheck/fixer",
 }
 
 import {
   "moonbitlang/core/debug",
-  "moonbitlang/core/test" @test,
+  "moonbitlang/core/test",
 } for "test"
 
 import {
   "moonbitlang/core/debug",
 } for "wbtest"
-
-supported_targets = "+native"

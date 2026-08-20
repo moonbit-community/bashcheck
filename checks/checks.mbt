@@ -360,9 +360,7 @@ fn annotations_disable_code(
 ) -> Bool {
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::Disable(value) if disable_value_matches_code(
-          value, code,
-        ) => return true
+      Disable(value) if disable_value_matches_code(value, code) => return true
       _ => ()
     }
   }
@@ -492,10 +490,10 @@ fn diagnostic_precedes(lhs : CheckDiagnostic, rhs : CheckDiagnostic) -> Bool {
 ///|
 fn severity_rank(severity : CheckSeverity) -> Int {
   match severity {
-    CheckSeverity::Error => 0
-    CheckSeverity::Warning => 1
-    CheckSeverity::Info => 2
-    CheckSeverity::Style => 3
+    Error => 0
+    Warning => 1
+    Info => 2
+    Style => 3
   }
 }
 

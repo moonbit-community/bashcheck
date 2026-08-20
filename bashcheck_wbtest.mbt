@@ -20,9 +20,9 @@ test "cli parses help list-optional and version actions" {
   let optional = cli_parse_ok(["--list-optional"])
   let version = cli_parse_ok(["--version"])
 
-  assert_true(help.action is @driver.CliAction::ShowHelp)
-  assert_true(optional.action is @driver.CliAction::ListOptional)
-  assert_true(version.action is @driver.CliAction::ShowVersion)
+  assert_true(help.action is ShowHelp)
+  assert_true(optional.action is ListOptional)
+  assert_true(version.action is ShowVersion)
 }
 
 ///|
@@ -31,9 +31,9 @@ test "cli keeps the first meta action when multiple are present" {
   let version_first = cli_parse_ok(["--version", "--help"])
   let list_first = cli_parse_ok(["--list-optional", "--help"])
 
-  assert_true(help_first.action is @driver.CliAction::ShowHelp)
-  assert_true(version_first.action is @driver.CliAction::ShowVersion)
-  assert_true(list_first.action is @driver.CliAction::ListOptional)
+  assert_true(help_first.action is ShowHelp)
+  assert_true(version_first.action is ShowVersion)
+  assert_true(list_first.action is ListOptional)
 }
 
 ///|
@@ -60,11 +60,8 @@ test "cli accumulates flags and parses short options" {
 
   assert_true(config.spec.check_sourced)
   assert_true(config.spec.ignore_rc)
-  @test.assert_eq(
-    config.spec.shell_override,
-    Some(@semantics.ShellDialect::Bash),
-  )
-  assert_true(config.spec.min_severity is @checker.DiagnosticSeverity::Warning)
+  @test.assert_eq(config.spec.shell_override, Some(Bash))
+  assert_true(config.spec.min_severity is Warning)
   assert_eq(config.spec.include_codes, [2006, 2046])
   assert_eq(config.spec.exclude_codes, [2005])
   assert_true(!config.spec.optional_checks.contains("control-flow"))
@@ -75,7 +72,7 @@ test "cli accumulates flags and parses short options" {
   @test.assert_eq(config.spec.config_path_override, Some("config.rc"))
   assert_true(!config.spec.extended_analysis)
   assert_true(config.spec.extended_analysis_forced)
-  assert_true(config.format is @formatter.OutputFormat::Diff)
+  assert_true(config.format is Diff)
   assert_eq(config.format_options.wiki_link_count, 0)
   assert_true(config.format_options.enable_color)
   assert_eq(config.files, ["script.sh"])
@@ -87,7 +84,7 @@ test "cli keeps the first format and accepts unknown optional checks" {
     "--format", "json", "--format", "tty", "--enable", "bogus,all", "script.sh",
   ])
 
-  assert_true(config.format is @formatter.OutputFormat::Json)
+  assert_true(config.format is Json)
   assert_true(config.spec.optional_checks.contains("bogus"))
   assert_true(!config.spec.optional_checks.contains("control-flow"))
   assert_true(config.spec.optional_checks.contains("quote-safe-variables"))

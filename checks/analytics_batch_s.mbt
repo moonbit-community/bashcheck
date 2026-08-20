@@ -12,7 +12,7 @@ fn analytics_batch_s_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2336,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "cp -r behavior is implementation-defined.",
     },
@@ -49,7 +49,7 @@ fn check_cp_legacy_r(
     push_diagnostic_with_fix(
       diagnostics,
       argument.span,
-      CheckSeverity::Warning,
+      Warning,
       2336,
       "cp -r behavior is implementation-defined",
       s_replace_span_fix(argument.span, "-R"),

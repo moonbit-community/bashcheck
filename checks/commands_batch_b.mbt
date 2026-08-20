@@ -6,85 +6,85 @@ fn append_commands_batch_b_descriptions(
     description in [
       {
         code: 2139,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Alias values expand when defined, not when used.",
       },
       {
         code: 2142,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "Aliases can't use positional parameters.",
       },
       {
         code: 2213,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "getopts options should be handled by the matching case.",
       },
       {
         code: 2214,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "This case pattern is not specified by getopts.",
       },
       {
         code: 2219,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "commands",
         summary: "Prefer (( expr )) over let expr.",
       },
       {
         code: 2220,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Handle invalid getopts flags with a *) case.",
       },
       {
         code: 2224,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "mv expects both source and destination.",
       },
       {
         code: 2225,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "cp expects both source and destination.",
       },
       {
         code: 2226,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "ln expects both source and destination.",
       },
       {
         code: 2253,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Use chmod -R to recurse, not -r.",
       },
       {
         code: 2267,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "GNU xargs -i is deprecated in favor of -I{}.",
       },
       {
         code: 2290,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "Remove spaces around = or += when assigning.",
       },
       {
         code: 2293,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "commands",
         summary: "Use * rather than @ for eval with @Q-quoted arrays.",
       },
       {
         code: 2294,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "eval negates the benefit of arrays.",
       },
@@ -109,7 +109,7 @@ fn check_aliases_use_args(
           push_diagnostic(
             diagnostics,
             argument.span,
-            CheckSeverity::Error,
+            Error,
             2142,
             "Aliases can't use positional parameters. Use a function.",
           )
@@ -179,7 +179,7 @@ fn check_aliases_expand_early(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Warning,
+          Warning,
           2139,
           "This expands when defined, not when used. Consider escaping.",
         )
@@ -195,8 +195,7 @@ fn check_while_getopts_case(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::While(clause) =>
-        maybe_check_while_getopts_clause(clause, diagnostics)
+      While(clause) => maybe_check_while_getopts_clause(clause, diagnostics)
       _ => ()
     }
   })
@@ -228,7 +227,7 @@ fn maybe_check_while_getopts_clause(
     None => return
   }
   let case_clause = match case_command.kind {
-    @parser.CommandKind::Case(clause) => clause
+    Case(clause) => clause
     _ => return
   }
   let requested = getopts_requested_options(option_text)
@@ -238,15 +237,10 @@ fn maybe_check_while_getopts_clause(
   for item in case_clause.items {
     for pattern in item.patterns {
       match getopts_pattern_kind(pattern) {
-        GetoptsPatternKind::Exact(text) =>
-          if !handled.contains(text) {
-            handled.push(text)
-          }
-        GetoptsPatternKind::Wildcard | GetoptsPatternKind::Question =>
-          has_invalid_fallback = true
-        GetoptsPatternKind::DigitClass | GetoptsPatternKind::Other =>
-          has_unanalyzable_pattern = true
-        GetoptsPatternKind::Colon => ()
+        Exact(text) => if !handled.contains(text) { handled.push(text) }
+        Wildcard | Question => has_invalid_fallback = true
+        DigitClass | Other => has_unanalyzable_pattern = true
+        Colon => ()
       }
     }
   }
@@ -260,7 +254,7 @@ fn maybe_check_while_getopts_clause(
     push_diagnostic(
       diagnostics,
       case_command.span,
-      CheckSeverity::Warning,
+      Warning,
       2213,
       "getopts specified -\{option}, but it's not handled by this 'case'.",
     )
@@ -268,11 +262,11 @@ fn maybe_check_while_getopts_clause(
   for item in case_clause.items {
     for pattern in item.patterns {
       match getopts_pattern_kind(pattern) {
-        GetoptsPatternKind::Exact(text) if !requested.contains(text) =>
+        Exact(text) if !requested.contains(text) =>
           push_diagnostic(
             diagnostics,
             pattern.span,
-            CheckSeverity::Warning,
+            Warning,
             2214,
             "This case is not specified by getopts.",
           )
@@ -284,7 +278,7 @@ fn maybe_check_while_getopts_clause(
     push_diagnostic(
       diagnostics,
       case_command.span,
-      CheckSeverity::Warning,
+      Warning,
       2220,
       "Invalid flags are not handled. Add a *) case.",
     )
@@ -320,7 +314,7 @@ fn script_assigns_name(script : @parser.Script, name : String) -> Bool {
       return
     }
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.assignments.any(fn(assignment) { assignment.name == name }) {
           assigned = true
         }
@@ -341,7 +335,7 @@ fn find_getopts_case_command(
       return
     }
     match command.kind {
-      @parser.CommandKind::Case(clause) =>
+      Case(clause) =>
         if read_expansion_target_name(clause.word) == Some(variable_name) {
           found = Some(command)
         }
@@ -369,20 +363,20 @@ fn getopts_requested_options(text : String) -> Array[String] {
 ///|
 fn getopts_pattern_kind(pattern : @parser.Word) -> GetoptsPatternKind {
   if pattern.source == "*" {
-    return GetoptsPatternKind::Wildcard
+    return Wildcard
   }
   if pattern.source == "?" || pattern.source == "\\?" {
-    return GetoptsPatternKind::Question
+    return Question
   }
   if pattern.source == "[0-9]" {
-    return GetoptsPatternKind::DigitClass
+    return DigitClass
   }
   match @semantics.literal_text(pattern) {
-    Some("*") => GetoptsPatternKind::Wildcard
-    Some("?") => GetoptsPatternKind::Question
-    Some(":") => GetoptsPatternKind::Colon
-    Some(text) if text[:].length() == 1 => GetoptsPatternKind::Exact(text)
-    _ => GetoptsPatternKind::Other
+    Some("*") => Wildcard
+    Some("?") => Question
+    Some(":") => Colon
+    Some(text) if text[:].length() == 1 => Exact(text)
+    _ => Other
   }
 }
 
@@ -392,18 +386,13 @@ fn check_let_usage(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell_is_one_of(shell, [
-    @semantics.ShellDialect::Bash,
-    @semantics.ShellDialect::Ksh,
-  ]) else {
-    return
-  }
+  guard shell_is_one_of(shell, [Bash, Ksh]) else { return }
   visit_script_commands(script, fn(command) {
     if command_matches_exact_name(command, "let") {
       push_diagnostic(
         diagnostics,
         effective_command_span(command),
-        CheckSeverity::Style,
+        Style,
         2219,
         "Instead of 'let expr', prefer (( expr )) .",
       )
@@ -421,7 +410,7 @@ fn check_mv_arguments(
     diagnostics,
     "mv",
     2224,
-    CheckSeverity::Error,
+    Error,
     "This mv has no destination. Check the arguments.",
   )
 }
@@ -436,7 +425,7 @@ fn check_cp_arguments(
     diagnostics,
     "cp",
     2225,
-    CheckSeverity::Error,
+    Error,
     "This cp has no destination. Check the arguments.",
   )
 }
@@ -451,7 +440,7 @@ fn check_ln_arguments(
     diagnostics,
     "ln",
     2226,
-    CheckSeverity::Warning,
+    Warning,
     "This ln has no destination. Check the arguments, or specify '.' explicitly.",
   )
 }
@@ -636,7 +625,7 @@ fn check_chmod_dash_r(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Warning,
+          Warning,
           2253,
           "Use -R to recurse, or explicitly a-r to remove read permissions.",
         )
@@ -659,7 +648,7 @@ fn check_xargs_dash_i(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Info,
+          Info,
           2267,
           "GNU xargs -i is deprecated in favor of -I{}",
         )
@@ -752,7 +741,7 @@ fn check_argument_comparison_spacing(
           push_diagnostic(
             diagnostics,
             argument.span,
-            CheckSeverity::Error,
+            Error,
             2290,
             "Remove spaces around += to append.",
           )
@@ -760,7 +749,7 @@ fn check_argument_comparison_spacing(
           push_diagnostic(
             diagnostics,
             argument.span,
-            CheckSeverity::Error,
+            Error,
             2290,
             "Remove spaces around = to assign.",
           )
@@ -804,7 +793,7 @@ fn check_eval_array(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Style,
+          Style,
           2293,
           "When eval'ing @Q-quoted words, use * rather than @ as the index.",
         )
@@ -812,7 +801,7 @@ fn check_eval_array(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Warning,
+          Warning,
           2294,
           "eval negates the benefit of arrays. Drop eval to preserve whitespace/symbols (or eval as string).",
         )
@@ -824,8 +813,8 @@ fn check_eval_array(
 ///|
 fn eval_part_is_array_expansion(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::SpecialParameter("@") => true
-    @parser.WordPart::BracedParameter(expansion) =>
+    SpecialParameter("@") => true
+    BracedParameter(expansion) =>
       parameter_index_is(expansion, "@") || expansion.name == Some("@")
     _ => false
   }
@@ -834,7 +823,7 @@ fn eval_part_is_array_expansion(part : @parser.WordPart) -> Bool {
 ///|
 fn eval_part_is_q_quoted_array(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       (parameter_index_is(expansion, "@") || expansion.name == Some("@")) &&
       eval_part_has_q_modifier(expansion)
     _ => false
@@ -844,7 +833,7 @@ fn eval_part_is_q_quoted_array(part : @parser.WordPart) -> Bool {
 ///|
 fn eval_part_has_q_modifier(expansion : @parser.ParameterExpansion) -> Bool {
   match expansion.operator {
-    Some(@parser.ParameterOperator::Transform("Q")) => true
+    Some(Transform("Q")) => true
     _ => false
   }
 }

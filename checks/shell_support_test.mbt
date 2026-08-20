@@ -48,13 +48,13 @@ test "shell support severity follows the active shell dialect" {
 
   assert_true(
     match sh_diagnostic.severity {
-      CheckSeverity::Warning => true
+      Warning => true
       _ => false
     },
   )
   assert_true(
     match dash_diagnostic.severity {
-      CheckSeverity::Error => true
+      Error => true
       _ => false
     },
   )
@@ -112,19 +112,19 @@ test "shell support checks flag bash-only compatibility tail rules" {
   assert_true(has_code(diagnostics, 2332))
   assert_true(
     match first_code(diagnostics, 2025).severity {
-      CheckSeverity::Info => true
+      Info => true
       _ => false
     },
   )
   assert_true(
     match first_code(diagnostics, 2079).severity {
-      CheckSeverity::Error => true
+      Error => true
       _ => false
     },
   )
   assert_true(
     match first_code(diagnostics, 2175).severity {
-      CheckSeverity::Style => true
+      Style => true
       _ => false
     },
   )

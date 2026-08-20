@@ -12,61 +12,61 @@ fn analytics_batch_t_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2007,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Use $((..)) instead of deprecated $[..].",
     },
     {
       code: 2084,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Standalone $((..)) in command position executes its result.",
     },
     {
       code: 2089,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quoted/backslashed fragments stored in scalars stay literal later.",
     },
     {
       code: 2090,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Scalar expansions do not re-apply quotes or backslashes later.",
     },
     {
       code: 2091,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Remove surrounding $() to avoid executing output.",
     },
     {
       code: 2092,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Remove backticks to avoid executing output.",
     },
     {
       code: 2093,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Remove exec if the script should continue afterward.",
     },
     {
       code: 2094,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Avoid reading and writing the same file in one pipeline.",
     },
     {
       code: 2116,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Avoid echo inside command substitutions when plain words suffice.",
     },
     {
       code: 2209,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Common command-looking assignments usually need $(...).",
     },
@@ -118,13 +118,13 @@ fn check_dollar_brackets(
     visit_direct_words_in_command(command, fn(word, _) {
       walk_word_deep(word, fn(part) {
         match part {
-          @parser.WordPart::DollarBracket(expr) =>
+          DollarBracket(expr) =>
             match dollar_bracket_span(word, expr) {
               Some(span) =>
                 push_diagnostic(
                   diagnostics,
                   span,
-                  CheckSeverity::Style,
+                  Style,
                   2007,
                   "Use $((..)) instead of deprecated $[..]",
                 )
@@ -157,29 +157,29 @@ fn check_spurious_expansion_commands(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.words.length() == 1 =>
+      Simple(simple) if simple.words.length() == 1 =>
         match simple.words[0].parts {
-          [@parser.WordPart::CommandSubstitution(_)] =>
+          [CommandSubstitution(_)] =>
             push_diagnostic(
               diagnostics,
               simple.words[0].span,
-              CheckSeverity::Warning,
+              Warning,
               2091,
               "Remove surrounding $() to avoid executing output (or use eval if intentional).",
             )
-          [@parser.WordPart::BackQuoted(_)] =>
+          [BackQuoted(_)] =>
             push_diagnostic(
               diagnostics,
               simple.words[0].span,
-              CheckSeverity::Warning,
+              Warning,
               2092,
               "Remove backticks to avoid executing output (or use eval if intentional).",
             )
-          [@parser.WordPart::ArithmeticExpansion(_)] =>
+          [ArithmeticExpansion(_)] =>
             push_diagnostic(
               diagnostics,
               simple.words[0].span,
-              CheckSeverity::Error,
+              Error,
               2084,
               "Remove '$' or use '_=$((expr))' to avoid executing output.",
             )
@@ -196,7 +196,7 @@ fn check_quotes_in_literals(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let quoted_assignments : Map[String, @parser.Span] = Map::new()
+  let quoted_assignments : Map[String, @parser.Span] = Map([])
   let reported_origins : Array[@parser.Span] = []
   batch_t_check_quote_literals_script(
     script, shell, quoted_assignments, reported_origins, diagnostics,
@@ -287,12 +287,12 @@ fn batch_t_check_quote_literals_command(
   persist_writes : Bool,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       batch_t_check_quote_literals_simple_command(
         command, simple, shell, quoted_assignments, reported_origins, diagnostics,
         persist_writes,
       )
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       for assignment in source.assignments {
         batch_t_check_quote_literal_assignment_value(
           assignment.value,
@@ -306,7 +306,7 @@ fn batch_t_check_quote_literals_command(
       batch_t_check_quote_literal_word(
         source.path,
         command,
-        WordPlace::SourcePath,
+        SourcePath,
         shell,
         quoted_assignments,
         reported_origins,
@@ -316,7 +316,7 @@ fn batch_t_check_quote_literals_command(
         batch_t_check_quote_literal_word(
           option,
           command,
-          WordPlace::SourceOption,
+          SourceOption,
           shell,
           quoted_assignments,
           reported_origins,
@@ -327,7 +327,7 @@ fn batch_t_check_quote_literals_command(
         batch_t_check_quote_literal_word(
           arg,
           command,
-          WordPlace::SourceArgument,
+          SourceArgument,
           shell,
           quoted_assignments,
           reported_origins,
@@ -346,7 +346,7 @@ fn batch_t_check_quote_literals_command(
         None => ()
       }
     }
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       batch_t_check_quote_literals_pipeline(
         clause.body,
         shell,
@@ -354,12 +354,11 @@ fn batch_t_check_quote_literals_command(
         reported_origins,
         diagnostics,
       )
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | BatsTest({ body: script, .. }) =>
       batch_t_check_quote_literals_script(
         script, shell, quoted_assignments, reported_origins, diagnostics,
       )
-    @parser.CommandKind::Subshell(script) =>
+    Subshell(script) =>
       batch_t_check_quote_literals_script(
         script,
         shell,
@@ -367,7 +366,7 @@ fn batch_t_check_quote_literals_command(
         reported_origins,
         diagnostics,
       )
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         batch_t_check_quote_literals_script(
           arm.condition,
@@ -396,7 +395,7 @@ fn batch_t_check_quote_literals_command(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       batch_t_check_quote_literals_script(
         clause.condition,
         shell,
@@ -412,12 +411,12 @@ fn batch_t_check_quote_literals_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       for value in clause.values {
         batch_t_check_quote_literal_word(
           value,
           command,
-          WordPlace::ForValue,
+          ForValue,
           shell,
           quoted_assignments,
           reported_origins,
@@ -432,12 +431,12 @@ fn batch_t_check_quote_literals_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::Select(clause) => {
+    Select(clause) => {
       for value in clause.values {
         batch_t_check_quote_literal_word(
           value,
           command,
-          WordPlace::SelectValue,
+          SelectValue,
           shell,
           quoted_assignments,
           reported_origins,
@@ -452,11 +451,11 @@ fn batch_t_check_quote_literals_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       batch_t_check_quote_literal_word(
         clause.word,
         command,
-        WordPlace::CaseWord,
+        CaseWord,
         shell,
         quoted_assignments,
         reported_origins,
@@ -467,7 +466,7 @@ fn batch_t_check_quote_literals_command(
           batch_t_check_quote_literal_word(
             pattern,
             command,
-            WordPlace::CasePattern,
+            CasePattern,
             shell,
             quoted_assignments,
             reported_origins,
@@ -483,7 +482,7 @@ fn batch_t_check_quote_literals_command(
         )
       }
     }
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       batch_t_check_quote_literals_condition_expr(
         condition.expr,
         condition.kind,
@@ -493,7 +492,7 @@ fn batch_t_check_quote_literals_command(
         reported_origins,
         diagnostics,
       )
-    @parser.CommandKind::Arithmetic(command_) =>
+    Arithmetic(command_) =>
       batch_t_check_quote_literals_arithmetic_expr(
         command_.expr,
         command,
@@ -502,7 +501,7 @@ fn batch_t_check_quote_literals_command(
         reported_origins,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       batch_t_check_quote_literals_arithmetic_expr(
         clause.init,
         command,
@@ -535,13 +534,13 @@ fn batch_t_check_quote_literals_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       match clause.name {
         Some(name) =>
           batch_t_check_quote_literal_word(
             name,
             command,
-            WordPlace::CoProcName,
+            CoProcName,
             shell,
             quoted_assignments,
             reported_origins,
@@ -558,7 +557,7 @@ fn batch_t_check_quote_literals_command(
         false,
       )
     }
-    @parser.CommandKind::Function(_) => ()
+    Function(_) => ()
   }
 }
 
@@ -599,7 +598,7 @@ fn batch_t_check_quote_literals_simple_command(
   batch_t_check_quote_literal_word(
     simple.words[0],
     command,
-    WordPlace::CommandName,
+    CommandName,
     shell,
     quoted_assignments,
     reported_origins,
@@ -610,7 +609,7 @@ fn batch_t_check_quote_literals_simple_command(
     batch_t_check_quote_literal_word(
       simple.words[i],
       command,
-      WordPlace::CommandArgument,
+      CommandArgument,
       shell,
       quoted_assignments,
       reported_origins,
@@ -630,17 +629,17 @@ fn batch_t_check_quote_literal_assignment_value(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Word(word) =>
+    Word(word) =>
       batch_t_check_quote_literal_word(
         word,
         command,
-        WordPlace::AssignmentValue,
+        AssignmentValue,
         shell,
         quoted_assignments,
         reported_origins,
         diagnostics,
       )
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for element in elements {
         batch_t_check_quote_literal_assignment_value(
           element.value,
@@ -651,7 +650,7 @@ fn batch_t_check_quote_literal_assignment_value(
           diagnostics,
         )
       }
-    @parser.AssignmentValue::Empty => ()
+    Empty => ()
   }
 }
 
@@ -663,7 +662,7 @@ fn batch_t_update_quote_literal_assignment_state(
 ) -> Unit {
   if assignment.append ||
     assignment.indexes.length() > 0 ||
-    assignment.value is @parser.AssignmentValue::ArrayLiteral(_) {
+    assignment.value is ArrayLiteral(_) {
     quoted_assignments.remove(assignment.name)
     return
   }
@@ -679,10 +678,8 @@ fn batch_t_assignment_value_quote_origin(
   quoted_assignments : Map[String, @parser.Span],
 ) -> @parser.Span? {
   match value {
-    @parser.AssignmentValue::Word(word) =>
-      batch_t_word_quote_origin(word, quoted_assignments)
-    @parser.AssignmentValue::ArrayLiteral(_) | @parser.AssignmentValue::Empty =>
-      None
+    Word(word) => batch_t_word_quote_origin(word, quoted_assignments)
+    ArrayLiteral(_) | Empty => None
   }
 }
 
@@ -713,12 +710,12 @@ fn batch_t_parts_quote_origin(
     let location = batch_t_part_location(raw, offset, part)
     let absolute_offset = base_offset + location.relative_offset
     match part {
-      @parser.WordPart::Parameter(name) =>
+      Parameter(name) =>
         match quoted_assignments.get(name) {
           Some(span) => return Some(span)
           None => ()
         }
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         match batch_t_plain_braced_reference_name(expansion) {
           Some(name) =>
             match quoted_assignments.get(name) {
@@ -727,7 +724,7 @@ fn batch_t_parts_quote_origin(
             }
           None => ()
         }
-      @parser.WordPart::DoubleQuoted(nested) =>
+      DoubleQuoted(nested) =>
         match
           batch_t_parts_quote_origin(
             word,
@@ -739,7 +736,7 @@ fn batch_t_parts_quote_origin(
           Some(span) => return Some(span)
           None => ()
         }
-      @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DollarDoubleQuoted(nested) =>
         match
           batch_t_parts_quote_origin(
             word,
@@ -751,10 +748,10 @@ fn batch_t_parts_quote_origin(
           Some(span) => return Some(span)
           None => ()
         }
-      @parser.WordPart::Literal(text)
-      | @parser.WordPart::SingleQuoted(text)
-      | @parser.WordPart::DollarSingleQuoted(text)
-      | @parser.WordPart::Glob(text) =>
+      Literal(text)
+      | SingleQuoted(text)
+      | DollarSingleQuoted(text)
+      | Glob(text) =>
         if batch_t_text_contains_quote_literals(text) {
           return Some(
             batch_t_span_offset(word.span, absolute_offset, location.width),
@@ -777,7 +774,7 @@ fn batch_t_check_quote_literal_word(
   reported_origins : Array[@parser.Span],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let skip_eval = place == WordPlace::CommandArgument &&
+  let skip_eval = place == CommandArgument &&
     @semantics.effective_command_name(command) == Some("eval")
   batch_t_check_quote_literal_word_parts(
     word,
@@ -815,13 +812,13 @@ fn batch_t_check_quote_literal_word_parts(
       location.width,
     )
     match part {
-      @parser.WordPart::Parameter(name) =>
+      Parameter(name) =>
         if !quoted_context && !skip_eval {
           batch_t_maybe_push_quote_literal_read(
             name, span, shell, quoted_assignments, reported_origins, diagnostics,
           )
         }
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         if !quoted_context && !skip_eval {
           match batch_t_plain_braced_reference_name(expansion) {
             Some(name) =>
@@ -831,7 +828,7 @@ fn batch_t_check_quote_literal_word_parts(
             None => ()
           }
         }
-      @parser.WordPart::DoubleQuoted(nested) =>
+      DoubleQuoted(nested) =>
         batch_t_check_quote_literal_word_parts(
           word,
           nested,
@@ -844,7 +841,7 @@ fn batch_t_check_quote_literal_word_parts(
           reported_origins,
           diagnostics,
         )
-      @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DollarDoubleQuoted(nested) =>
         batch_t_check_quote_literal_word_parts(
           word,
           nested,
@@ -874,20 +871,20 @@ fn batch_t_check_quote_literals_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   let place = match kind {
-    @parser.ConditionKind::SingleBracket => WordPlace::ConditionSingleBracket
-    @parser.ConditionKind::DoubleBracket => WordPlace::ConditionDoubleBracket
+    SingleBracket => WordPlace::ConditionSingleBracket
+    DoubleBracket => ConditionDoubleBracket
   }
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) =>
+    Empty => ()
+    Word(word) =>
       batch_t_check_quote_literal_word(
         word, command, place, shell, quoted_assignments, reported_origins, diagnostics,
       )
-    @parser.ConditionExpr::Unary(_, _, word) =>
+    Unary(_, _, word) =>
       batch_t_check_quote_literal_word(
         word, command, place, shell, quoted_assignments, reported_origins, diagnostics,
       )
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Binary(_, _, lhs, rhs) => {
       batch_t_check_quote_literal_word(
         lhs, command, place, shell, quoted_assignments, reported_origins, diagnostics,
       )
@@ -895,12 +892,11 @@ fn batch_t_check_quote_literals_condition_expr(
         rhs, command, place, shell, quoted_assignments, reported_origins, diagnostics,
       )
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       batch_t_check_quote_literals_condition_expr(
         inner, kind, command, shell, quoted_assignments, reported_origins, diagnostics,
       )
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       batch_t_check_quote_literals_condition_expr(
         lhs, kind, command, shell, quoted_assignments, reported_origins, diagnostics,
       )
@@ -922,17 +918,17 @@ fn batch_t_check_quote_literals_arithmetic_expr(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Expansion(word) =>
+      Expansion(word) =>
         batch_t_check_quote_literal_word(
           word,
           command,
-          WordPlace::ArithmeticWord,
+          ArithmeticWord,
           shell,
           quoted_assignments,
           reported_origins,
           diagnostics,
         )
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         batch_t_check_quote_literals_arithmetic_expr(
           inner, command, shell, quoted_assignments, reported_origins, diagnostics,
         )
@@ -957,7 +953,7 @@ fn batch_t_maybe_push_quote_literal_read(
         push_diagnostic(
           diagnostics,
           origin,
-          CheckSeverity::Warning,
+          Warning,
           2089,
           batch_t_quote_literal_assignment_message(shell),
         )
@@ -965,7 +961,7 @@ fn batch_t_maybe_push_quote_literal_read(
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Warning,
+        Warning,
         2090,
         "Quotes/backslashes in this variable will not be respected.",
       )
@@ -1067,7 +1063,7 @@ fn batch_t_trim_outer_fragment(fragment : String, prefix_width : Int) -> String 
 fn batch_t_copy_quote_assignment_map(
   source : Map[String, @parser.Span],
 ) -> Map[String, @parser.Span] {
-  let copied : Map[String, @parser.Span] = Map::new()
+  let copied : Map[String, @parser.Span] = Map([])
   source.each(fn(name, span) { copied.set(name, span) })
   copied
 }
@@ -1128,7 +1124,7 @@ fn list_item_is_exec_cleanup(item : @parser.ListItem) -> Bool {
   }
   let command = pipeline.segments[0].command
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       if simple.words.length() == 0 {
         simple.assignments.length() > 0
       } else {
@@ -1159,13 +1155,13 @@ fn maybe_push_spurious_exec_from_list_item(
   }
   let command = pipeline.segments[0].command
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words {
         [first, _, ..] if @semantics.literal_text(first) == Some("exec") =>
           push_diagnostic(
             diagnostics,
             command.span,
-            CheckSeverity::Warning,
+            Warning,
             2093,
             "Remove \"exec \" if script should continue after this command.",
           )
@@ -1203,18 +1199,16 @@ fn visit_spurious_exec_nested_in_command(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       match source.included {
         Some(script) => check_spurious_exec_script(script, false, diagnostics)
         None => ()
       }
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       visit_spurious_exec_nested_in_pipeline(clause.body, diagnostics)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       check_spurious_exec_script(script, false, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         check_spurious_exec_script(arm.condition, false, diagnostics)
         check_spurious_exec_script(arm.body, false, diagnostics)
@@ -1224,27 +1218,23 @@ fn visit_spurious_exec_nested_in_command(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       check_spurious_exec_script(clause.condition, false, diagnostics)
       check_spurious_exec_script(clause.body, true, diagnostics)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) => check_spurious_exec_script(clause.body, true, diagnostics)
+    ForArithmetic(clause) =>
       check_spurious_exec_script(clause.body, true, diagnostics)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      check_spurious_exec_script(clause.body, true, diagnostics)
-    @parser.CommandKind::Select(clause) =>
-      check_spurious_exec_script(clause.body, true, diagnostics)
-    @parser.CommandKind::Case(clause) =>
+    Select(clause) => check_spurious_exec_script(clause.body, true, diagnostics)
+    Case(clause) =>
       for item in clause.items {
         check_spurious_exec_script(item.body, false, diagnostics)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       visit_spurious_exec_nested_in_command(function_.body, diagnostics)
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       visit_spurious_exec_nested_in_command(clause.body, diagnostics)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -1300,21 +1290,18 @@ fn batch_t_collect_command_occurrences(
 ) -> Unit {
   visit_direct_words_in_command(command, fn(word, place) {
     match place {
-      WordPlace::AssignmentValue | WordPlace::RedirectionTarget => ()
-      _ => occurrences.push({ word, command, usage: BatchTWordUsage::Other })
+      AssignmentValue | RedirectionTarget => ()
+      _ => occurrences.push({ word, command, usage: Other })
     }
   })
   for redirect in command.redirects {
     let usage = match redirect.op {
-      @parser.RedirectionOperator::Read => Some(BatchTWordUsage::InputRedirect)
-      @parser.RedirectionOperator::Write
-      | @parser.RedirectionOperator::Append =>
-        Some(BatchTWordUsage::OutputRedirect)
+      Read => Some(BatchTWordUsage::InputRedirect)
+      Write | Append => Some(OutputRedirect)
       _ => None
     }
     match (usage, redirect.target) {
-      (Some(usage), @parser.RedirectionTarget::Word(word)) =>
-        occurrences.push({ word, command, usage })
+      (Some(usage), Word(word)) => occurrences.push({ word, command, usage })
       _ => ()
     }
   }
@@ -1331,13 +1318,7 @@ fn batch_t_push_redirect_conflict(
     return
   }
   reported.push(occurrence)
-  push_diagnostic(
-    diagnostics,
-    occurrence.word.span,
-    CheckSeverity::Info,
-    2094,
-    message,
-  )
+  push_diagnostic(diagnostics, occurrence.word.span, Info, 2094, message)
 }
 
 ///|
@@ -1351,10 +1332,10 @@ fn batch_t_redirect_conflict(
   if lhs.word.source != rhs.word.source {
     return false
   }
-  if lhs.usage == BatchTWordUsage::Other && rhs.usage == BatchTWordUsage::Other {
+  if lhs.usage == Other && rhs.usage == Other {
     return false
   }
-  if lhs.usage == rhs.usage && lhs.usage != BatchTWordUsage::Other {
+  if lhs.usage == rhs.usage && lhs.usage != Other {
     return false
   }
   if batch_t_special_redirect_word(lhs.word) ||
@@ -1377,8 +1358,7 @@ fn check_useless_echo_substitutions(
     visit_direct_words_in_command(command, fn(word, _) {
       walk_word_deep(word, fn(part) {
         match part {
-          @parser.WordPart::CommandSubstitution(subscript)
-          | @parser.WordPart::BackQuoted(subscript) =>
+          CommandSubstitution(subscript) | BackQuoted(subscript) =>
             batch_t_maybe_warn_useless_echo(word, part, subscript, diagnostics)
           _ => ()
         }
@@ -1407,7 +1387,7 @@ fn batch_t_maybe_warn_useless_echo(
   push_diagnostic(
     diagnostics,
     batch_t_substitution_span(word, part),
-    CheckSeverity::Style,
+    Style,
     2116,
     "Useless echo? Instead of 'cmd $(echo foo)', just use 'cmd foo'.",
   )
@@ -1456,11 +1436,8 @@ fn batch_t_echo_argument_can_be_inlined(word : @parser.Word) -> Bool {
 fn batch_t_word_parts_can_be_inlined(parts : Array[@parser.WordPart]) -> Bool {
   for part in parts {
     match part {
-      @parser.WordPart::Glob(_)
-      | @parser.WordPart::ExtGlob(_)
-      | @parser.WordPart::BraceExpansion(_) => return false
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      Glob(_) | ExtGlob(_) | BraceExpansion(_) => return false
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         if !batch_t_word_parts_can_be_inlined(nested) {
           return false
         }
@@ -1492,7 +1469,7 @@ fn batch_t_substitution_fragment(
   part : @parser.WordPart,
 ) -> String? {
   match part {
-    @parser.WordPart::CommandSubstitution(_) =>
+    CommandSubstitution(_) =>
       match batch_t_string_offset(raw, "$(") {
         Some(offset) => {
           let fragment = raw.view(start_offset=offset).to_owned()
@@ -1504,7 +1481,7 @@ fn batch_t_substitution_fragment(
         }
         None => None
       }
-    @parser.WordPart::BackQuoted(_) =>
+    BackQuoted(_) =>
       match batch_t_string_offset(raw, "`") {
         Some(offset) => {
           let fragment = raw.view(start_offset=offset).to_owned()
@@ -1544,13 +1521,13 @@ fn check_command_like_assignments(
   let common_commands = @semantics.common_command_names()
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.assignments.length() == 1 => {
+      Simple(simple) if simple.assignments.length() == 1 => {
         let assignment = simple.assignments[0]
         if assignment.append || assignment.indexes.length() > 0 {
           return
         }
         let command_name = match assignment.value {
-          @parser.AssignmentValue::Word(word) => unquoted_assignment_text(word)
+          Word(word) => unquoted_assignment_text(word)
           _ => None
         }
         match command_name {
@@ -1564,7 +1541,7 @@ fn check_command_like_assignments(
             push_diagnostic(
               diagnostics,
               span,
-              CheckSeverity::Warning,
+              Warning,
               2209,
               "Use var=$(command) to assign output (or quote to assign string).",
             )
@@ -1591,8 +1568,7 @@ fn unquoted_assignment_text(word : @parser.Word) -> String? {
   let buf = StringBuilder::new()
   for part in word.parts {
     match part {
-      @parser.WordPart::Literal(text) | @parser.WordPart::Glob(text) =>
-        buf.write_string(text)
+      Literal(text) | Glob(text) => buf.write_string(text)
       _ => return None
     }
   }

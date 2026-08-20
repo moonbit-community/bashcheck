@@ -12,49 +12,49 @@ fn analytics_batch_m_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2054,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use spaces, not commas, to separate array elements.",
     },
     {
       code: 2190,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Elements in associative arrays need explicit [index]=value syntax.",
     },
     {
       code: 2191,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This literal = looks like a mistaken array index assignment.",
     },
     {
       code: 2192,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This indexed array element has no value.",
     },
     {
       code: 2194,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This word is constant. Did you forget the $ on a variable?",
     },
     {
       code: 2195,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This pattern will never match the case statement's word. Double check them.",
     },
     {
       code: 2221,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This pattern always overrides a later one on line N.",
     },
     {
       code: 2222,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This pattern never matches because of a previous pattern on line N.",
     },
@@ -80,11 +80,11 @@ fn check_commarray_literals(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           m_maybe_warn_comma_array(assignment, diagnostics)
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           m_maybe_warn_comma_array(assignment, diagnostics)
         }
@@ -99,12 +99,12 @@ fn m_maybe_warn_comma_array(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match assignment.value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       if elements.any(fn(element) { m_array_element_has_literal_comma(element) }) {
         push_diagnostic(
           diagnostics,
           array_assignment_value_span(assignment),
-          CheckSeverity::Warning,
+          Warning,
           2054,
           "Use spaces, not commas, to separate array elements.",
         )
@@ -123,10 +123,9 @@ fn m_assignment_value_has_literal_comma(
   value : @parser.AssignmentValue,
 ) -> Bool {
   match value {
-    @parser.AssignmentValue::Empty => false
-    @parser.AssignmentValue::Word(word) =>
-      m_word_has_unquoted_literal_comma(word)
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    Empty => false
+    Word(word) => m_word_has_unquoted_literal_comma(word)
+    ArrayLiteral(elements) =>
       elements.any(fn(element) { m_array_element_has_literal_comma(element) })
   }
 }
@@ -140,7 +139,7 @@ fn m_word_has_unquoted_literal_comma(word : @parser.Word) -> Bool {
 ///|
 fn m_word_part_has_unquoted_literal_comma(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Literal(text) => text.contains(",")
+    Literal(text) => text.contains(",")
     _ => false
   }
 }
@@ -197,7 +196,7 @@ fn check_array_assignment_indices(
   let associative_names = m_collect_associative_array_names(script)
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           m_check_array_assignment_indices(
             assignment,
@@ -205,7 +204,7 @@ fn check_array_assignment_indices(
             diagnostics,
           )
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           m_check_array_assignment_indices(
             assignment,
@@ -225,7 +224,7 @@ fn m_check_array_assignment_indices(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match assignment.value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       m_check_array_assignment_elements(
         elements,
         is_associative,
@@ -250,7 +249,7 @@ fn m_check_array_assignment_elements(
         push_diagnostic_with_fix(
           diagnostics,
           equals_word.span,
-          CheckSeverity::Warning,
+          Warning,
           2191,
           "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
           m_quote_span_fix(equals_word.span),
@@ -263,11 +262,11 @@ fn m_check_array_assignment_elements(
 
     let element = elements[i]
     if element.indexes.length() > 0 {
-      if element.value is @parser.AssignmentValue::Empty {
+      if element.value is Empty {
         push_diagnostic(
           diagnostics,
           m_empty_indexed_element_span(elements, i, assignment_span),
-          CheckSeverity::Warning,
+          Warning,
           2192,
           "This array element has no value. Remove spaces after = or use \"\" for empty string.",
         )
@@ -279,24 +278,23 @@ fn m_check_array_assignment_elements(
     }
 
     match element.value {
-      @parser.AssignmentValue::Word(word) =>
+      Word(word) =>
         match m_array_assignment_equals_kind(word) {
-          MArrayAssignmentEqualsKind::LiteralEquals(span) =>
+          LiteralEquals(span) =>
             push_diagnostic_with_fix(
               diagnostics,
               span,
-              CheckSeverity::Warning,
+              Warning,
               2191,
               "The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.",
               m_quote_span_fix(span),
             )
-          MArrayAssignmentEqualsKind::PlainIdentifierEquals
-          | MArrayAssignmentEqualsKind::None =>
+          PlainIdentifierEquals | None =>
             if is_associative {
               push_diagnostic(
                 diagnostics,
                 word.span,
-                CheckSeverity::Warning,
+                Warning,
                 2190,
                 "Elements in associative arrays need index, e.g. array=( [index]=value ) .",
               )
@@ -322,16 +320,14 @@ fn m_array_assignment_equals_kind(
   let mut part_index = 0
   while part_index < word.parts.length() {
     match word.parts[part_index] {
-      @parser.WordPart::Literal(text) =>
+      Literal(text) =>
         match m_find_char(text, '=') {
           Some(index) => {
             let before = text.view(end_offset=index).to_owned()
             if part_index == 0 && m_is_identifier_name(before) {
-              return MArrayAssignmentEqualsKind::PlainIdentifierEquals
+              return PlainIdentifierEquals
             }
-            return MArrayAssignmentEqualsKind::LiteralEquals(
-              m_span_for_literal_fragment(word, text),
-            )
+            return LiteralEquals(m_span_for_literal_fragment(word, text))
           }
           None => ()
         }
@@ -339,7 +335,7 @@ fn m_array_assignment_equals_kind(
     }
     part_index += 1
   }
-  MArrayAssignmentEqualsKind::None
+  None
 }
 
 ///|
@@ -405,8 +401,7 @@ fn m_collect_associative_array_names(script : @parser.Script) -> Array[String] {
   let names : Array[String] = []
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
-        m_collect_associative_names_from_simple(simple, names)
+      Simple(simple) => m_collect_associative_names_from_simple(simple, names)
       _ => ()
     }
   })
@@ -470,7 +465,7 @@ fn m_word_plain_identifier(word : @parser.Word) -> String? {
 ///|
 fn m_word_plain_text(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::Literal(text)] => Some(text)
+    [Literal(text)] => Some(text)
     _ => None
   }
 }
@@ -485,7 +480,7 @@ fn m_push_unique_name(names : Array[String], name : String) -> Unit {
 ///|
 fn m_array_element_word(element : @parser.ArrayElement) -> @parser.Word? {
   match element.value {
-    @parser.AssignmentValue::Word(word) => Some(word)
+    Word(word) => Some(word)
     _ => None
   }
 }
@@ -636,13 +631,13 @@ fn check_unmatchable_cases(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Case(clause) => {
+      Case(clause) => {
         let constant_word = @semantics.is_constant_word(clause.word)
         if constant_word {
           push_diagnostic(
             diagnostics,
             clause.word.span,
-            CheckSeverity::Warning,
+            Warning,
             2194,
             "This word is constant. Did you forget the $ on a variable?",
           )
@@ -662,7 +657,7 @@ fn check_unmatchable_cases(
               push_diagnostic(
                 diagnostics,
                 pattern.span,
-                CheckSeverity::Warning,
+                Warning,
                 2195,
                 "This pattern will never match the case statement's word. Double check them.",
               )
@@ -676,7 +671,7 @@ fn check_unmatchable_cases(
         let mut pattern_index = 0
         for item in clause.items {
           for pattern in item.patterns {
-            if item.separator is @parser.CaseSeparator::Break {
+            if item.separator is Break {
               break_patterns.push(
                 (
                   pattern_index,
@@ -702,7 +697,7 @@ fn check_unmatchable_cases(
                   push_diagnostic(
                     diagnostics,
                     left_pattern.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2221,
                     "This pattern always overrides a later one on line " +
                     right_pattern.span.start.line.to_string() +
@@ -711,7 +706,7 @@ fn check_unmatchable_cases(
                   push_diagnostic(
                     diagnostics,
                     right_pattern.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2222,
                     "This pattern never matches because of a previous pattern on line " +
                     left_pattern.span.start.line.to_string() +
@@ -743,7 +738,7 @@ priv enum PseudoGlob {
 fn word_to_pseudo_glob(word : @parser.Word) -> Array[PseudoGlob] {
   match word_to_pseudo_glob_impl(word, false) {
     Some(glob) => glob
-    None => [PseudoGlob::Many]
+    None => [Many]
   }
 }
 
@@ -760,7 +755,7 @@ fn word_to_pseudo_glob_impl(
   let glob : Array[PseudoGlob] = []
   let parts = word.parts
   match parts {
-    [@parser.WordPart::Literal(text), .. rest] if text.has_prefix("~") => {
+    [Literal(text), .. rest] if text.has_prefix("~") => {
       if exact {
         return None
       }
@@ -778,14 +773,14 @@ fn word_to_pseudo_glob_impl(
 
 ///|
 fn append_tilde_prefix(text : String, glob : Array[PseudoGlob]) -> Bool {
-  glob.push(PseudoGlob::Many)
+  glob.push(Many)
   let mut in_tail = false
   for ch in text {
     if in_tail {
-      glob.push(PseudoGlob::Char(ch))
+      glob.push(Char(ch))
     } else if ch == '/' {
       in_tail = true
-      glob.push(PseudoGlob::Char(ch))
+      glob.push(Char(ch))
     }
   }
   true
@@ -812,31 +807,28 @@ fn append_word_part_pseudo_glob(
   glob : Array[PseudoGlob],
 ) -> Bool {
   match part {
-    @parser.WordPart::Literal(text) | @parser.WordPart::SingleQuoted(text) =>
-      append_text_pseudo_glob(text, glob)
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(text) | SingleQuoted(text) => append_text_pseudo_glob(text, glob)
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       append_word_parts_pseudo_glob(parts, exact, glob)
-    @parser.WordPart::Glob(text) =>
-      append_glob_text_pseudo_glob(text, exact, glob)
-    @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::BracedParameter(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BackQuoted(_)
-    | @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_)
-    | @parser.WordPart::ExtGlob(_)
-    | @parser.WordPart::ProcessSubstitution(_, _)
-    | @parser.WordPart::BraceExpansion(_) =>
+    Glob(text) => append_glob_text_pseudo_glob(text, exact, glob)
+    Parameter(_)
+    | SpecialParameter(_)
+    | BracedParameter(_)
+    | BraceCommandSubstitution(_, _)
+    | CommandSubstitution(_)
+    | BackQuoted(_)
+    | ArithmeticExpansion(_)
+    | DollarBracket(_)
+    | ExtGlob(_)
+    | ProcessSubstitution(_, _)
+    | BraceExpansion(_) =>
       if exact {
         false
       } else {
-        glob.push(PseudoGlob::Many)
+        glob.push(Many)
         true
       }
-    @parser.WordPart::DollarSingleQuoted(text) =>
+    DollarSingleQuoted(text) =>
       append_text_pseudo_glob(decode_dollar_single_quoted_local(text), glob)
   }
 }
@@ -844,7 +836,7 @@ fn append_word_part_pseudo_glob(
 ///|
 fn append_text_pseudo_glob(text : String, glob : Array[PseudoGlob]) -> Bool {
   for ch in text {
-    glob.push(PseudoGlob::Char(ch))
+    glob.push(Char(ch))
   }
   true
 }
@@ -863,7 +855,7 @@ fn append_glob_text_pseudo_glob(
       if exact {
         return false
       }
-      glob.push(PseudoGlob::Any)
+      glob.push(Any)
       i += 1
       continue
     }
@@ -871,7 +863,7 @@ fn append_glob_text_pseudo_glob(
       if exact {
         return false
       }
-      glob.push(PseudoGlob::Many)
+      glob.push(Many)
       i += 1
       continue
     }
@@ -884,17 +876,17 @@ fn append_glob_text_pseudo_glob(
         if exact {
           return false
         }
-        glob.push(PseudoGlob::Any)
+        glob.push(Any)
         i = j + 1
         continue
       }
       if exact {
         return false
       }
-      glob.push(PseudoGlob::Many)
+      glob.push(Many)
       return true
     }
-    glob.push(PseudoGlob::Char(ch.unsafe_to_char()))
+    glob.push(Char(ch.unsafe_to_char()))
     i += 1
   }
   true
@@ -906,13 +898,13 @@ fn simplify_pseudo_glob(glob : Array[PseudoGlob]) -> Array[PseudoGlob] {
   let mut index = 0
   while index < glob.length() {
     match glob[index] {
-      PseudoGlob::Any | PseudoGlob::Many => {
+      Any | Many => {
         let mut seen_many = false
         let anys : Array[PseudoGlob] = []
         while index < glob.length() {
           match glob[index] {
-            PseudoGlob::Any => anys.push(PseudoGlob::Any)
-            PseudoGlob::Many => seen_many = true
+            Any => anys.push(Any)
+            Many => seen_many = true
             _ => break
           }
           index += 1
@@ -921,11 +913,11 @@ fn simplify_pseudo_glob(glob : Array[PseudoGlob]) -> Array[PseudoGlob] {
           simplified.push(part)
         }
         if seen_many {
-          simplified.push(PseudoGlob::Many)
+          simplified.push(Many)
         }
       }
-      PseudoGlob::Char(ch) => {
-        simplified.push(PseudoGlob::Char(ch))
+      Char(ch) => {
+        simplified.push(Char(ch))
         index += 1
       }
     }
@@ -948,18 +940,18 @@ fn matchable(x : Array[PseudoGlob], y : Array[PseudoGlob]) -> Bool {
     ([], _) => matchable(y, [])
     (_, []) =>
       match x {
-        [PseudoGlob::Many, .. rest] => matchable(rest.to_owned(), [])
+        [Many, .. rest] => matchable(rest.to_owned(), [])
         _ => false
       }
     ([x_head, .. x_rest], [y_head, .. y_rest]) =>
       match (x_head, y_head) {
-        (PseudoGlob::Many, _) =>
+        (Many, _) =>
           matchable(x, y_rest.to_owned()) || matchable(x_rest.to_owned(), y)
-        (_, PseudoGlob::Many) =>
+        (_, Many) =>
           matchable(x, y_rest.to_owned()) || matchable(x_rest.to_owned(), y)
-        (PseudoGlob::Any, _) => matchable(x_rest.to_owned(), y_rest.to_owned())
-        (_, PseudoGlob::Any) => matchable(x_rest.to_owned(), y_rest.to_owned())
-        (PseudoGlob::Char(x_char), PseudoGlob::Char(y_char)) =>
+        (Any, _) => matchable(x_rest.to_owned(), y_rest.to_owned())
+        (_, Any) => matchable(x_rest.to_owned(), y_rest.to_owned())
+        (Char(x_char), Char(y_char)) =>
           x_char == y_char && matchable(x_rest.to_owned(), y_rest.to_owned())
       }
   }
@@ -977,21 +969,19 @@ fn pseudo_glob_is_superset_of(
 fn matchable_superset(x : Array[PseudoGlob], y : Array[PseudoGlob]) -> Bool {
   match (x, y) {
     ([], []) => true
-    ([PseudoGlob::Many, .. rest], []) => matchable_superset(rest.to_owned(), [])
+    ([Many, .. rest], []) => matchable_superset(rest.to_owned(), [])
     ([], _) => false
     (_, []) => false
     ([x_head, .. x_rest], [y_head, .. y_rest]) =>
       match (x_head, y_head) {
-        (PseudoGlob::Many, PseudoGlob::Many) =>
-          matchable_superset(x, y_rest.to_owned())
-        (PseudoGlob::Many, _) =>
+        (Many, Many) => matchable_superset(x, y_rest.to_owned())
+        (Many, _) =>
           matchable_superset(x, y_rest.to_owned()) ||
           matchable_superset(x_rest.to_owned(), y)
-        (_, PseudoGlob::Many) => false
-        (PseudoGlob::Any, _) =>
-          matchable_superset(x_rest.to_owned(), y_rest.to_owned())
-        (_, PseudoGlob::Any) => false
-        (PseudoGlob::Char(x_char), PseudoGlob::Char(y_char)) =>
+        (_, Many) => false
+        (Any, _) => matchable_superset(x_rest.to_owned(), y_rest.to_owned())
+        (_, Any) => false
+        (Char(x_char), Char(y_char)) =>
           x_char == y_char &&
           matchable_superset(x_rest.to_owned(), y_rest.to_owned())
       }

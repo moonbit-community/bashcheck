@@ -25,7 +25,7 @@ test "doc semantics builds an index that keeps node kinds and spans" {
   @test.assert_eq(root.to_int(), 0)
   assert_true(
     match @semantics.node_kind_of(indexed, root) {
-      Some(@semantics.NodeKind::Script) => true
+      Some(Script) => true
       _ => false
     },
   )
@@ -89,17 +89,11 @@ test "doc semantics infers shell settings and directives" {
     Err(err) => abort(err.to_string())
   }
 
-  @test.assert_eq(
-    @semantics.determine_shell(script),
-    @semantics.ShellDialect::Dash,
-  )
+  @test.assert_eq(@semantics.determine_shell(script), Dash)
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
   @test.assert_eq(@semantics.extract_disable_directives(script), ["SC2000"])
   @test.assert_eq(@semantics.extract_enable_directives(script), ["quote-check"])
-  @test.assert_eq(
-    @semantics.effective_execution_mode(sourced=true),
-    @semantics.ExecutionMode::Sourced,
-  )
+  @test.assert_eq(@semantics.effective_execution_mode(sourced=true), Sourced)
 }
 ```

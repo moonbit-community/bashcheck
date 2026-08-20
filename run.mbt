@@ -211,12 +211,9 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
             }
             Err(error) => return Err(error)
           }
-        ("--list-optional", _) =>
-          action = choose_action(action, @driver.CliAction::ListOptional)
-        ("--version", _) =>
-          action = choose_action(action, @driver.CliAction::ShowVersion)
-        ("--help", _) =>
-          action = choose_action(action, @driver.CliAction::ShowHelp)
+        ("--list-optional", _) => action = choose_action(action, ListOptional)
+        ("--version", _) => action = choose_action(action, ShowVersion)
+        ("--help", _) => action = choose_action(action, ShowHelp)
         (flag, _) => return Err(usage_error("Unknown option: " + flag))
       }
       // Most long options consume at most one argv slot beyond the current one,
@@ -252,7 +249,7 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
     }
     i += 1
   }
-  if files.length() == 0 && action is @driver.CliAction::Run {
+  if files.length() == 0 && action is Run {
     // Match ShellCheck's CLI behavior: a plain run with no files reads stdin.
     files.push("-")
   }
@@ -310,7 +307,7 @@ fn parse_short_options(
     match flag {
       'a' => spec = spec.with_check_sourced(true)
       'x' => spec = spec.with_external_sources(true)
-      'V' => action = @driver.CliAction::ShowVersion
+      'V' => action = ShowVersion
       'C' => {
         // `-Cauto` and `-C auto` both funnel through the same parser. A bare
         // `-C` means "force color on", which matches `--color` without value.
@@ -441,7 +438,7 @@ fn choose_action(
   next : @driver.CliAction,
 ) -> @driver.CliAction {
   match current {
-    @driver.CliAction::Run => next
+    Run => next
     _ => current
   }
 }
@@ -509,10 +506,10 @@ fn read_short_value(
 /// flag without a value means "turn color on", not "auto-detect".
 fn parse_color_option(value : String?) -> Result[CliColorOption, CliError] {
   match value {
-    None => Ok(CliColorOption::Always)
-    Some("auto") => Ok(CliColorOption::Auto)
-    Some("always") => Ok(CliColorOption::Always)
-    Some("never") => Ok(CliColorOption::Never)
+    None => Ok(Always)
+    Some("auto") => Ok(Auto)
+    Some("always") => Ok(Always)
+    Some("never") => Ok(Never)
     Some(_) =>
       Err(
         support_error(
@@ -529,9 +526,9 @@ fn parse_color_option(value : String?) -> Result[CliColorOption, CliError] {
 /// otherwise enabling color only for non-dumb terminals.
 fn resolve_color(color : CliColorOption) -> Bool {
   match color {
-    CliColorOption::Always => true
-    CliColorOption::Never => false
-    CliColorOption::Auto =>
+    Always => true
+    Never => false
+    Auto =>
       if @env.get_env_var("NO_COLOR") is Some(_) {
         false
       } else {
@@ -557,11 +554,11 @@ fn parse_bool_value(text : String) -> Bool? {
 /// Parses a shell dialect name accepted by the CLI.
 fn parse_shell(text : String) -> @semantics.ShellDialect? {
   match text {
-    "sh" => Some(@semantics.ShellDialect::Sh)
-    "bash" => Some(@semantics.ShellDialect::Bash)
-    "dash" => Some(@semantics.ShellDialect::Dash)
-    "ksh" => Some(@semantics.ShellDialect::Ksh)
-    "busybox-sh" | "busybox" => Some(@semantics.ShellDialect::BusyboxSh)
+    "sh" => Some(Sh)
+    "bash" => Some(Bash)
+    "dash" => Some(Dash)
+    "ksh" => Some(Ksh)
+    "busybox-sh" | "busybox" => Some(BusyboxSh)
     _ => None
   }
 }
@@ -701,13 +698,13 @@ fn append_optional_checks(
 ///|
 /// Constructs a usage error that should terminate with the CLI usage exit code.
 fn usage_error(message : String) -> CliError {
-  { kind: CliErrorKind::Usage, message }
+  { kind: Usage, message }
 }
 
 ///|
 /// Constructs a support error for syntactically valid but unsupported input.
 fn support_error(message : String) -> CliError {
-  { kind: CliErrorKind::Support, message }
+  { kind: Support, message }
 }
 
 ///|
@@ -743,7 +740,7 @@ fn unknown_severity_error() -> CliError {
 /// Maps parser error classes to shell exit codes.
 fn cli_exit_code(kind : CliErrorKind) -> Int {
   match kind {
-    CliErrorKind::Usage => 3
-    CliErrorKind::Support => 4
+    Usage => 3
+    Support => 4
   }
 }

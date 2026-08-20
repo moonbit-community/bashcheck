@@ -12,7 +12,7 @@ fn analytics_batch_k_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2095,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Commands in while read loops may swallow stdin.",
     },
@@ -49,7 +49,7 @@ fn analytics_visit_while_read_script(
 ) -> Unit {
   for item in script.items {
     let item_background_delta = match item.terminator {
-      Some(@parser.Terminator::Background) => 1
+      Some(Background) => 1
       _ => 0
     }
     let item_background_bonus = background_bonus + item_background_delta
@@ -120,17 +120,11 @@ fn analytics_visit_while_read_command(
         command, structure_depth, substitution_depth, substitution_bonus, background_bonus,
       ) {
       Some((info_message, warning_message, fix)) => {
-        push_diagnostic(
-          diagnostics,
-          loop_span,
-          CheckSeverity::Info,
-          2095,
-          info_message,
-        )
+        push_diagnostic(diagnostics, loop_span, Info, 2095, info_message)
         push_diagnostic_with_fix(
           diagnostics,
           analytics_while_read_warning_span(command),
-          CheckSeverity::Warning,
+          Warning,
           2095,
           warning_message,
           fix,
@@ -141,7 +135,7 @@ fn analytics_visit_while_read_command(
   }
 
   match command.kind {
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       let condition_loop_span = if active_loop_span is Some(loop_span) {
         Some(loop_span)
       } else {
@@ -171,9 +165,7 @@ fn analytics_visit_while_read_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_visit_while_read_script(
         script,
         active_loop_span,
@@ -183,7 +175,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_visit_while_read_script(
           arm.condition,
@@ -218,7 +210,7 @@ fn analytics_visit_while_read_command(
         None => ()
       }
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_visit_while_read_script(
         clause.body,
         active_loop_span,
@@ -228,7 +220,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_visit_while_read_script(
         clause.body,
         active_loop_span,
@@ -238,7 +230,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_visit_while_read_script(
         clause.body,
         active_loop_span,
@@ -248,7 +240,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_visit_while_read_script(
           item.body,
@@ -260,7 +252,7 @@ fn analytics_visit_while_read_command(
           diagnostics,
         )
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_visit_while_read_command(
         function_.body,
         active_loop_span,
@@ -270,7 +262,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_visit_while_read_command(
         clause.body,
         active_loop_span,
@@ -280,7 +272,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_visit_while_read_pipeline(
         clause.body,
         active_loop_span,
@@ -290,10 +282,7 @@ fn analytics_visit_while_read_command(
         background_bonus,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -310,14 +299,10 @@ fn analytics_visit_while_read_word(
 ) -> Unit {
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) => {
-        let nested_bonus = if place == WordPlace::AssignmentValue {
-          1
-        } else {
-          0
-        }
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => {
+        let nested_bonus = if place == AssignmentValue { 1 } else { 0 }
         analytics_visit_while_read_script(
           script,
           active_loop_span,
@@ -340,7 +325,7 @@ fn analytics_visit_while_read_word(
 ///|
 fn analytics_command_is_while_read_loop(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       analytics_script_is_stdin_read_loop(clause.condition)
     _ => false
   }
@@ -379,20 +364,15 @@ fn analytics_redirection_reads_from_stdin(
 ) -> Bool {
   let source_reads_stdin = match redirect.source {
     None => true
-    Some(@parser.RedirectionSource::Fd(fd)) => fd == 0
-    Some(@parser.RedirectionSource::All) => true
-    Some(@parser.RedirectionSource::Named(_)) => false
+    Some(Fd(fd)) => fd == 0
+    Some(All) => true
+    Some(Named(_)) => false
   }
   if !source_reads_stdin {
     return false
   }
   match redirect.op {
-    @parser.RedirectionOperator::Read
-    | @parser.RedirectionOperator::ReadWrite
-    | @parser.RedirectionOperator::HereDoc
-    | @parser.RedirectionOperator::HereDocStrip
-    | @parser.RedirectionOperator::HereString
-    | @parser.RedirectionOperator::DupInput => true
+    Read | ReadWrite | HereDoc | HereDocStrip | HereString | DupInput => true
     _ => false
   }
 }

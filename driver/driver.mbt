@@ -35,13 +35,12 @@ pub async fn run_cli(
   format_options : @formatter.FormatOptions,
 ) -> CliOutcome {
   match action {
-    CliAction::ShowHelp => { output: cli_usage_text(), exit_code: 0 }
-    CliAction::ShowVersion => { output: "bashcheck 0.1.0", exit_code: 0 }
-    CliAction::ListOptional =>
+    ShowHelp => { output: cli_usage_text(), exit_code: 0 }
+    ShowVersion => { output: "bashcheck 0.1.0", exit_code: 0 }
+    ListOptional =>
       { output: @checker.list_optional_checks_text(), exit_code: 0 }
-    CliAction::Run =>
-      match
-        collect_results(files, spec, format is @formatter.OutputFormat::Quiet) {
+    Run =>
+      match collect_results(files, spec, format is Quiet) {
         Ok(results) => {
           // Rendering is format-dependent, but exit-status semantics are not:
           // any reported diagnostic means the run should fail with exit code 1.

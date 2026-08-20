@@ -12,43 +12,43 @@ fn analytics_batch_w_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2082,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Invalid parameter indirection inside ${..} needs ${!name} or eval.",
     },
     {
       code: 2124,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Assigning $@ or ${array[@]} to scalars concatenates array values.",
     },
     {
       code: 2125,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Brace expansions and globs stay literal in scalar assignments.",
     },
     {
       code: 2223,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Default assignments in : ${var=...} should be quoted to avoid globbing.",
     },
     {
       code: 2233,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Subshells around if/while conditions add avoidable overhead.",
     },
     {
       code: 2234,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Single test commands do not need their own subshell wrappers.",
     },
     {
       code: 2235,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Use brace groups instead of test-only subshell wrappers.",
     },
@@ -77,13 +77,13 @@ fn check_invalid_parameter_indirection_w(
     visit_direct_words_in_command(command, fn(word, _) {
       walk_word_deep(word, fn(part) {
         match part {
-          @parser.WordPart::BracedParameter(expansion) =>
+          BracedParameter(expansion) =>
             if w_is_invalid_parameter_indirection(expansion) {
               let fragment = "${\{expansion.raw}}"
               push_diagnostic(
                 diagnostics,
                 analytics_span_for_nested_word_text(word, fragment, fragment),
-                CheckSeverity::Error,
+                Error,
                 2082,
                 "To expand via indirection, use arrays, ${!name} or (for sh only) eval.",
               )
@@ -114,11 +114,11 @@ fn check_array_to_string_assignments_w(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           w_check_scalar_assignment(assignment, diagnostics)
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           w_check_scalar_assignment(assignment, diagnostics)
         }
@@ -136,12 +136,12 @@ fn w_check_scalar_assignment(
     return
   }
   match assignment.value {
-    @parser.AssignmentValue::Word(word) =>
+    Word(word) =>
       if w_word_has_array_concat_expansion(word) {
         push_diagnostic(
           diagnostics,
           array_assignment_value_span(assignment),
-          CheckSeverity::Warning,
+          Warning,
           2124,
           "Assigning an array to a string! Assign as array, or use * instead of @ to concatenate.",
         )
@@ -149,7 +149,7 @@ fn w_check_scalar_assignment(
         push_diagnostic(
           diagnostics,
           array_assignment_value_span(assignment),
-          CheckSeverity::Warning,
+          Warning,
           2125,
           "Brace expansions and globs are literal in assignments. Quote it or use an array.",
         )
@@ -164,8 +164,8 @@ fn w_word_has_array_concat_expansion(word : @parser.Word) -> Bool {
   walk_word_deep(word, fn(part) {
     if !found {
       match part {
-        @parser.WordPart::SpecialParameter("@") => found = true
-        @parser.WordPart::BracedParameter(expansion) =>
+        SpecialParameter("@") => found = true
+        BracedParameter(expansion) =>
           if w_braced_parameter_is_array_at(expansion) {
             found = true
           }
@@ -184,7 +184,7 @@ fn w_braced_parameter_is_array_at(
     return false
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::AlternateValue(_)) => false
+    Some(AlternateValue(_)) => false
     _ => parameter_index_is(expansion, "@") || expansion.name == Some("@")
   }
 }
@@ -193,8 +193,7 @@ fn w_braced_parameter_is_array_at(
 fn w_word_has_literal_assignment_glob(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::Glob(_) | @parser.WordPart::BraceExpansion(_) =>
-        return true
+      Glob(_) | BraceExpansion(_) => return true
       _ => ()
     }
   }
@@ -208,7 +207,7 @@ fn check_default_assignment_globbing_w(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         match simple.words.get(0) {
           Some(first) if @semantics.literal_text(first) == Some(":") => {
             let mut i = 1
@@ -217,7 +216,7 @@ fn check_default_assignment_globbing_w(
                 push_diagnostic(
                   diagnostics,
                   span,
-                  CheckSeverity::Info,
+                  Info,
                   2223,
                   "This default assignment may cause DoS due to globbing. Quote it.",
                 )
@@ -252,7 +251,7 @@ fn w_default_assignment_target_spans(
       remaining_width
     }
     match part {
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         if w_parameter_operator_is_default_assignment(expansion.operator) {
           spans.push(
             analytics_span_offset(word.span, fragment_offset, fragment_width),
@@ -323,18 +322,17 @@ fn w_visit_command_for_subshelled_tests(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Subshell(script) => {
+    Subshell(script) => {
       w_maybe_push_subshelled_test_diagnostic(
         command, script, in_condition_context, is_function_body, diagnostics,
       )
       w_visit_script_for_subshelled_tests(script, false, diagnostics)
     }
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       w_visit_pipeline_for_subshelled_tests(clause.body, false, diagnostics)
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | BatsTest({ body: script, .. }) =>
       w_visit_script_for_subshelled_tests(script, false, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         w_visit_script_for_subshelled_tests(arm.condition, true, diagnostics)
         w_visit_script_for_subshelled_tests(arm.body, false, diagnostics)
@@ -345,38 +343,35 @@ fn w_visit_command_for_subshelled_tests(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       w_visit_script_for_subshelled_tests(clause.condition, true, diagnostics)
       w_visit_script_for_subshelled_tests(clause.body, false, diagnostics)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       w_visit_script_for_subshelled_tests(clause.body, false, diagnostics)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       w_visit_script_for_subshelled_tests(clause.body, false, diagnostics)
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       w_visit_script_for_subshelled_tests(clause.body, false, diagnostics)
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         w_visit_script_for_subshelled_tests(item.body, false, diagnostics)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       w_visit_command_for_subshelled_tests(
         function_.body,
         false,
         true,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       w_visit_command_for_subshelled_tests(
         clause.body,
         false,
         false,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -403,13 +398,7 @@ fn w_maybe_push_subshelled_test_diagnostic(
   } else {
     (2235, "Use { ..; } instead of (..) to avoid subshell overhead.")
   }
-  push_diagnostic(
-    diagnostics,
-    command.span,
-    CheckSeverity::Style,
-    code,
-    message,
-  )
+  push_diagnostic(diagnostics, command.span, Style, code, message)
 }
 
 ///|
@@ -419,7 +408,7 @@ fn w_script_is_test_structure(script : @parser.Script) -> Bool {
   }
   for item in script.items {
     match item.terminator {
-      Some(@parser.Terminator::Background) => return false
+      Some(Background) => return false
       _ => ()
     }
     if !w_and_or_list_is_test_structure(item.and_or) {
@@ -456,8 +445,7 @@ fn w_command_is_test_structure(command : @parser.Command) -> Bool {
     return true
   }
   match command.kind {
-    @parser.CommandKind::BraceGroup(script) =>
-      w_script_is_test_structure(script)
+    BraceGroup(script) => w_script_is_test_structure(script)
     _ => false
   }
 }
@@ -465,8 +453,8 @@ fn w_command_is_test_structure(command : @parser.Command) -> Bool {
 ///|
 fn w_command_is_test_command(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Condition(_) => true
-    @parser.CommandKind::Simple(simple) =>
+    Condition(_) => true
+    Simple(simple) =>
       simple.assignments.length() == 0 &&
       simple.words.length() > 0 &&
       command_matches_exact_name(command, "test")
@@ -535,13 +523,10 @@ fn w_command_has_assignment_effect(command : @parser.Command) -> Bool {
     return true
   }
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
-      w_pipeline_has_assignment_effect(clause.body)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Time(clause) => w_pipeline_has_assignment_effect(clause.body)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       w_script_has_assignment_effect(script)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         if w_script_has_assignment_effect(arm.condition) ||
           w_script_has_assignment_effect(arm.body) {
@@ -553,40 +538,26 @@ fn w_command_has_assignment_effect(command : @parser.Command) -> Bool {
         None => false
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       w_script_has_assignment_effect(clause.condition) ||
       w_script_has_assignment_effect(clause.body)
-    @parser.CommandKind::ForIn(clause) =>
-      w_script_has_assignment_effect(clause.body)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      w_script_has_assignment_effect(clause.body)
-    @parser.CommandKind::Select(clause) =>
-      w_script_has_assignment_effect(clause.body)
-    @parser.CommandKind::Case(clause) =>
+    ForIn(clause) => w_script_has_assignment_effect(clause.body)
+    ForArithmetic(clause) => w_script_has_assignment_effect(clause.body)
+    Select(clause) => w_script_has_assignment_effect(clause.body)
+    Case(clause) =>
       clause.items.any(fn(item) { w_script_has_assignment_effect(item.body) })
-    @parser.CommandKind::Function(function_) =>
-      w_command_has_assignment_effect(function_.body)
-    @parser.CommandKind::CoProc(clause) =>
-      w_command_has_assignment_effect(clause.body)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_) => false
-    @parser.CommandKind::Arithmetic(command) =>
-      w_arithmetic_expr_has_assignment_effect(command.expr)
+    Function(function_) => w_command_has_assignment_effect(function_.body)
+    CoProc(clause) => w_command_has_assignment_effect(clause.body)
+    Simple(_) | Source(_) | Condition(_) => false
+    Arithmetic(command) => w_arithmetic_expr_has_assignment_effect(command.expr)
   }
 }
 
 ///|
 fn w_command_has_direct_assignment_effect(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      if simple.assignments.length() > 0 {
-        return true
-      }
-    @parser.CommandKind::Source(source) =>
-      if source.assignments.length() > 0 {
-        return true
-      }
+    Simple(simple) => if simple.assignments.length() > 0 { return true }
+    Source(source) => if source.assignments.length() > 0 { return true }
     _ => ()
   }
 
@@ -605,12 +576,11 @@ fn w_word_has_assignment_effect(word : @parser.Word) -> Bool {
   walk_word_deep(word, fn(part) {
     if !found {
       match part {
-        @parser.WordPart::BracedParameter(expansion) =>
+        BracedParameter(expansion) =>
           if w_parameter_operator_is_default_assignment(expansion.operator) {
             found = true
           }
-        @parser.WordPart::ArithmeticExpansion(expr)
-        | @parser.WordPart::DollarBracket(expr) =>
+        ArithmeticExpansion(expr) | DollarBracket(expr) =>
           if w_arithmetic_expr_has_assignment_effect(expr) {
             found = true
           }
@@ -626,9 +596,8 @@ fn w_parameter_operator_is_default_assignment(
   operator : @parser.ParameterOperator?,
 ) -> Bool {
   match operator {
-    Some(@parser.ParameterOperator::AssignDefault(_)) => true
-    Some(@parser.ParameterOperator::Raw(text)) =>
-      text.has_prefix("=") || text.has_prefix(":=")
+    Some(AssignDefault(_)) => true
+    Some(Raw(text)) => text.has_prefix("=") || text.has_prefix(":=")
     _ => false
   }
 }
@@ -639,11 +608,8 @@ fn w_arithmetic_expr_has_assignment_effect(
 ) -> Bool {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Operator(op) =>
-        if w_is_assignment_arithmetic_operator(op) {
-          return true
-        }
-      @parser.ArithmeticToken::Group(inner) =>
+      Operator(op) => if w_is_assignment_arithmetic_operator(op) { return true }
+      Group(inner) =>
         if w_arithmetic_expr_has_assignment_effect(inner) {
           return true
         }

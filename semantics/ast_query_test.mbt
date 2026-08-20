@@ -48,7 +48,7 @@ fn first_command(script : @parser.Script) -> @parser.Command {
 ///|
 fn simple_of(command : @parser.Command) -> @parser.SimpleCommand {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => simple
+    Simple(simple) => simple
     _ => query_fail("expected simple command")
   }
 }
@@ -56,7 +56,7 @@ fn simple_of(command : @parser.Command) -> @parser.SimpleCommand {
 ///|
 fn source_of(command : @parser.Command) -> @parser.SourceCommand {
   match command.kind {
-    @parser.CommandKind::Source(source) => source
+    Source(source) => source
     _ => query_fail("expected source command")
   }
 }
@@ -410,7 +410,7 @@ test "walkers stay within the current script and can inspect includes separately
 ///|
 fn first_if_body_item(script : @parser.Script) -> @parser.ListItem {
   match first_command(script).kind {
-    @parser.CommandKind::If(clause) =>
+    If(clause) =>
       match clause.arms.get(0) {
         Some(arm) => first_item(arm.body)
         None => query_fail("expected if arm")

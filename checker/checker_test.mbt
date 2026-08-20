@@ -129,9 +129,7 @@ test "checker emits SC2148 only when the entry shell stays unknown" {
       #|echo hello
       #|
     ),
-    spec=CheckSpec::default().with_shell_override(
-      Some(@semantics.ShellDialect::Dash),
-    ),
+    spec=CheckSpec::default().with_shell_override(Some(Dash)),
   )
 
   assert_true(checker_has_code(plain.diagnostics, 2148))

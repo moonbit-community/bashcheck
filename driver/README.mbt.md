@@ -24,8 +24,8 @@ async fn driver_doc_outcome(action : @driver.CliAction) -> @driver.CliOutcome {
 
 ///|
 async test "doc driver handles help and version actions" {
-  let help = driver_doc_outcome(@driver.CliAction::ShowHelp)
-  let version = driver_doc_outcome(@driver.CliAction::ShowVersion)
+  let help = driver_doc_outcome(ShowHelp)
+  let version = driver_doc_outcome(ShowVersion)
 
   assert_eq(help.exit_code, 0)
   assert_true(help.output.contains("Usage: bashcheck"))
@@ -43,7 +43,7 @@ uniform: every action still becomes one `CliOutcome`.
 ```mbt check
 ///|
 async test "doc driver renders optional-check listings" {
-  let optional = driver_doc_outcome(@driver.CliAction::ListOptional)
+  let optional = driver_doc_outcome(ListOptional)
 
   assert_eq(optional.exit_code, 0)
   assert_true(optional.output.contains("name:    add-default-case"))

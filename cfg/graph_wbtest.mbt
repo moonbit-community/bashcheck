@@ -33,7 +33,7 @@ fn root_nodes(cfg : CFG) -> Array[CfgNodeId] {
 fn count_structural_nodes(cfg : CFG) -> Int {
   let mut count = 0
   for node in cfg.nodes {
-    if node.kind == CfgNodeKind::Structural {
+    if node.kind == Structural {
       count += 1
     }
   }
@@ -60,14 +60,14 @@ fn assert_cfg_node_references_valid(cfg : CFG) -> Unit {
   }
   for node in cfg.nodes {
     match node.kind {
-      CfgNodeKind::ExecuteSubshell(_, entry, exit_) =>
+      ExecuteSubshell(_, entry, exit_) =>
         if !valid_node_id(cfg, entry) || !valid_node_id(cfg, exit_) {
           cfg_fail("subshell node references invalid node id")
         }
-      CfgNodeKind::ApplyEffects(effects) =>
+      ApplyEffects(effects) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::DefineFunction(_, _, entry, exit_) =>
+            DefineFunction(_, _, entry, exit_) =>
               if !valid_node_id(cfg, entry) || !valid_node_id(cfg, exit_) {
                 cfg_fail("function effect references invalid node id")
               }
@@ -128,7 +128,7 @@ fn count_execute_subshells(cfg : CFG) -> Int {
   let mut count = 0
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ExecuteSubshell(_, _, _), .. }) => count += 1
+      Some({ kind: ExecuteSubshell(_, _, _), .. }) => count += 1
       _ => ()
     }
   }
@@ -139,7 +139,7 @@ fn count_execute_subshells(cfg : CFG) -> Int {
 fn has_execute_command(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ExecuteCommand(Some(current)), .. }) =>
+      Some({ kind: ExecuteCommand(Some(current)), .. }) =>
         if current == name {
           return true
         }
@@ -153,7 +153,7 @@ fn has_execute_command(cfg : CFG, name : String) -> Bool {
 fn has_background_pid(cfg : CFG) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::SetBackgroundPid(_), .. }) => return true
+      Some({ kind: SetBackgroundPid(_), .. }) => return true
       _ => ()
     }
   }
@@ -164,11 +164,10 @@ fn has_background_pid(cfg : CFG) -> Bool {
 fn has_define_function(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ApplyEffects(effects), .. }) =>
+      Some({ kind: ApplyEffects(effects), .. }) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::DefineFunction(current, _, _, _) if current == name =>
-              return true
+            DefineFunction(current, _, _, _) if current == name => return true
             _ => ()
           }
         }
@@ -182,10 +181,10 @@ fn has_define_function(cfg : CFG, name : String) -> Bool {
 fn has_read_variable_effect(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ApplyEffects(effects), .. }) =>
+      Some({ kind: ApplyEffects(effects), .. }) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::ReadVariable(current) if current == name => return true
+            ReadVariable(current) if current == name => return true
             _ => ()
           }
         }
@@ -199,11 +198,11 @@ fn has_read_variable_effect(cfg : CFG, name : String) -> Bool {
 fn has_integer_write_effect(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ApplyEffects(effects), .. }) =>
+      Some({ kind: ApplyEffects(effects), .. }) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::WriteVariable(current, value) =>
-              if current == name && value == CfgValue::Integer {
+            WriteVariable(current, value) =>
+              if current == name && value == Integer {
                 return true
               }
             _ => ()
@@ -219,11 +218,11 @@ fn has_integer_write_effect(cfg : CFG, name : String) -> Bool {
 fn has_string_write_effect(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ApplyEffects(effects), .. }) =>
+      Some({ kind: ApplyEffects(effects), .. }) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::WriteVariable(current, value) =>
-              if current == name && value == CfgValue::String {
+            WriteVariable(current, value) =>
+              if current == name && value == String {
                 return true
               }
             _ => ()
@@ -239,11 +238,10 @@ fn has_string_write_effect(cfg : CFG, name : String) -> Bool {
 fn has_undefine_variable_effect(cfg : CFG, name : String) -> Bool {
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
-      Some({ kind: CfgNodeKind::ApplyEffects(effects), .. }) =>
+      Some({ kind: ApplyEffects(effects), .. }) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::UndefineVariable(current) if current == name =>
-              return true
+            UndefineVariable(current) if current == name => return true
             _ => ()
           }
         }
@@ -257,10 +255,10 @@ fn has_undefine_variable_effect(cfg : CFG, name : String) -> Bool {
 fn has_hint_defined_effect(cfg : CFG, name : String) -> Bool {
   for node in cfg.nodes {
     match node.kind {
-      CfgNodeKind::ApplyEffects(effects) =>
+      ApplyEffects(effects) =>
         for tagged in effects {
           match tagged.effect {
-            CfgEffect::HintDefined(current) if current == name => return true
+            HintDefined(current) if current == name => return true
             _ => ()
           }
         }
@@ -274,7 +272,7 @@ fn has_hint_defined_effect(cfg : CFG, name : String) -> Bool {
 fn find_command_ast_id(cfg : CFG, name : String) -> CfgAstId {
   for entry in cfg.ast_entries {
     match entry.node_ref {
-      @semantics.NodeRef::Command(command) =>
+      Command(command) =>
         match @semantics.command_name(command) {
           Some(current) if current == name => return entry.id
           _ => ()
@@ -289,7 +287,7 @@ fn find_command_ast_id(cfg : CFG, name : String) -> CfgAstId {
 fn find_source_ast_id(cfg : CFG) -> CfgAstId {
   for entry in cfg.ast_entries {
     match entry.node_ref {
-      @semantics.NodeRef::SourceCommand(_) => return entry.id
+      SourceCommand(_) => return entry.id
       _ => ()
     }
   }
@@ -300,7 +298,7 @@ fn find_source_ast_id(cfg : CFG) -> CfgAstId {
 fn find_pipeline_ast_id(cfg : CFG) -> CfgAstId {
   for entry in cfg.ast_entries {
     match entry.node_ref {
-      @semantics.NodeRef::Pipeline(_) => return entry.id
+      Pipeline(_) => return entry.id
       _ => ()
     }
   }
@@ -376,7 +374,7 @@ test "cfg keeps included source scripts under the source command" {
   let source_entry = cfg.ast_entries[source_id.to_int()]
   let mut script_children = 0
   for child in source_entry.children {
-    if cfg.ast_entries[child.to_int()].kind == AstTag::Script {
+    if cfg.ast_entries[child.to_int()].kind == Script {
       script_children += 1
     }
   }
@@ -466,16 +464,10 @@ test "cfg pipefail promotes leading pipeline exits into real flow" {
     None => cfg_fail("missing pipefail pipeline range")
   }
 
-  assert_eq(
-    incoming_edge_count(detached, detached_end, CfgEdgeKind::FalseFlow),
-    2,
-  )
-  assert_eq(
-    incoming_edge_count(pipefail, pipefail_end, CfgEdgeKind::FalseFlow),
-    0,
-  )
-  assert_eq(incoming_edge_count(detached, detached_end, CfgEdgeKind::Flow), 1)
-  assert_eq(incoming_edge_count(pipefail, pipefail_end, CfgEdgeKind::Flow), 3)
+  assert_eq(incoming_edge_count(detached, detached_end, FalseFlow), 2)
+  assert_eq(incoming_edge_count(pipefail, pipefail_end, FalseFlow), 0)
+  assert_eq(incoming_edge_count(detached, detached_end, Flow), 1)
+  assert_eq(incoming_edge_count(pipefail, pipefail_end, Flow), 3)
 }
 
 ///|

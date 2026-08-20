@@ -223,49 +223,47 @@ fn traverse_command_kind(
   on_redirection : (@parser.Redirection) -> Unit,
 ) -> Unit {
   match kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       traverse_simple_command(
         simple, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       traverse_source_command(
         source, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       traverse_time_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       traverse_script(
         script, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::If(clause) =>
+    If(clause) =>
       traverse_if_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       traverse_loop_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       traverse_for_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       traverse_arithmetic_for_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       traverse_select_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       traverse_case_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       traverse_condition_expr(
         condition.expr,
         on_script,
@@ -275,7 +273,7 @@ fn traverse_command_kind(
         on_word_part,
         on_redirection,
       )
-    @parser.CommandKind::Arithmetic(command) =>
+    Arithmetic(command) =>
       traverse_arithmetic_expr(
         command.expr,
         on_script,
@@ -285,7 +283,7 @@ fn traverse_command_kind(
         on_word_part,
         on_redirection,
       )
-    @parser.CommandKind::Function(function_def) =>
+    Function(function_def) =>
       traverse_command(
         function_def.body,
         on_script,
@@ -295,7 +293,7 @@ fn traverse_command_kind(
         on_word_part,
         on_redirection,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       traverse_co_proc_clause(
         clause, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
@@ -423,12 +421,12 @@ fn traverse_assignment_value(
   on_redirection : (@parser.Redirection) -> Unit,
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Empty => ()
-    @parser.AssignmentValue::Word(word) =>
+    Empty => ()
+    Word(word) =>
       traverse_word(
         word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for element in elements {
         for index in element.indexes {
           traverse_array_index(
@@ -665,13 +663,12 @@ fn traverse_condition_expr(
   on_redirection : (@parser.Redirection) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word)
-    | @parser.ConditionExpr::Unary(_, _, word) =>
+    Empty => ()
+    Word(word) | Unary(_, _, word) =>
       traverse_word(
         word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Binary(_, _, lhs, rhs) => {
       traverse_word(
         lhs, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
@@ -679,12 +676,11 @@ fn traverse_condition_expr(
         rhs, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       traverse_condition_expr(
         inner, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       traverse_condition_expr(
         lhs, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
@@ -735,11 +731,11 @@ fn traverse_redirection(
 ) -> Unit {
   on_redirection(redirection)
   match redirection.target {
-    @parser.RedirectionTarget::Word(word) =>
+    Word(word) =>
       traverse_word(
         word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.RedirectionTarget::HereDoc(doc) =>
+    HereDoc(doc) =>
       match doc.parts {
         Some(parts) =>
           for part in parts {
@@ -782,43 +778,41 @@ fn traverse_word_part(
 ) -> Unit {
   on_word_part(part)
   match part {
-    @parser.WordPart::Literal(_)
-    | @parser.WordPart::SingleQuoted(_)
-    | @parser.WordPart::DollarSingleQuoted(_)
-    | @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::Glob(_) => ()
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(_)
+    | SingleQuoted(_)
+    | DollarSingleQuoted(_)
+    | Parameter(_)
+    | SpecialParameter(_)
+    | Glob(_) => ()
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       for nested in parts {
         traverse_word_part(
           nested, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
         )
       }
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       traverse_parameter_expansion(
         expansion, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.WordPart::BraceCommandSubstitution(_, script)
-    | @parser.WordPart::CommandSubstitution(script)
-    | @parser.WordPart::BackQuoted(script)
-    | @parser.WordPart::ProcessSubstitution(_, script) =>
+    BraceCommandSubstitution(_, script)
+    | CommandSubstitution(script)
+    | BackQuoted(script)
+    | ProcessSubstitution(_, script) =>
       traverse_script(
         script, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       traverse_arithmetic_expr(
         expr, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
-    @parser.WordPart::ExtGlob(pattern) =>
+    ExtGlob(pattern) =>
       for alternative in pattern.alternatives {
         traverse_word(
           alternative, on_script, on_list_item, on_command, on_word, on_word_part,
           on_redirection,
         )
       }
-    @parser.WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       for element in expansion.elements {
         traverse_word(
           element, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
@@ -845,7 +839,7 @@ fn traverse_parameter_expansion(
     None => ()
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::Slice(offset, length)) => {
+    Some(Slice(offset, length)) => {
       traverse_arithmetic_expr(
         @parser.parse_arithmetic_expr(offset),
         on_script,
@@ -869,7 +863,7 @@ fn traverse_parameter_expansion(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::Replace(_, pattern, replacement)) => {
+    Some(Replace(_, pattern, replacement)) => {
       traverse_word(
         @parser.parse_text_as_word(pattern),
         on_script,
@@ -893,7 +887,7 @@ fn traverse_parameter_expansion(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::CaseModify(_, Some(pattern))) =>
+    Some(CaseModify(_, Some(pattern))) =>
       traverse_word(
         @parser.parse_text_as_word(pattern),
         on_script,
@@ -903,16 +897,16 @@ fn traverse_parameter_expansion(
         on_word_part,
         on_redirection,
       )
-    Some(@parser.ParameterOperator::DefaultValue(text))
-    | Some(@parser.ParameterOperator::AssignDefault(text))
-    | Some(@parser.ParameterOperator::ErrorValue(text))
-    | Some(@parser.ParameterOperator::AlternateValue(text))
-    | Some(@parser.ParameterOperator::RemoveShortestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveShortestSuffix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestSuffix(text))
-    | Some(@parser.ParameterOperator::Transform(text))
-    | Some(@parser.ParameterOperator::Raw(text)) =>
+    Some(DefaultValue(text))
+    | Some(AssignDefault(text))
+    | Some(ErrorValue(text))
+    | Some(AlternateValue(text))
+    | Some(RemoveShortestPrefix(text))
+    | Some(RemoveLongestPrefix(text))
+    | Some(RemoveShortestSuffix(text))
+    | Some(RemoveLongestSuffix(text))
+    | Some(Transform(text))
+    | Some(Raw(text)) =>
       traverse_word(
         @parser.parse_text_as_word(text),
         on_script,
@@ -922,9 +916,7 @@ fn traverse_parameter_expansion(
         on_word_part,
         on_redirection,
       )
-    Some(@parser.ParameterOperator::Names(_))
-    | Some(@parser.ParameterOperator::CaseModify(_, None))
-    | None => ()
+    Some(Names(_)) | Some(CaseModify(_, None)) | None => ()
   }
 }
 
@@ -964,17 +956,17 @@ fn traverse_arithmetic_expr(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Variable(_, indexes) =>
+      Variable(_, indexes) =>
         for index in indexes {
           traverse_array_index(
             index, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
           )
         }
-      @parser.ArithmeticToken::Expansion(word) =>
+      Expansion(word) =>
         traverse_word(
           word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
         )
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         traverse_arithmetic_expr(
           inner, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
         )
@@ -987,12 +979,12 @@ fn traverse_arithmetic_expr(
 /// Returns the literal command name for a simple or source command.
 pub fn command_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words.get(0) {
         Some(word) => literal_text(word)
         None => None
       }
-    @parser.CommandKind::Source(source) => Some(source.keyword)
+    Source(source) => Some(source.keyword)
     _ => None
   }
 }
@@ -1010,8 +1002,8 @@ pub fn command_basename(command : @parser.Command) -> String? {
 /// Returns all words that make up the executable invocation.
 pub fn command_words(command : @parser.Command) -> Array[@parser.Word] {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => copy_words_from(simple.words, 0)
-    @parser.CommandKind::Source(source) => {
+    Simple(simple) => copy_words_from(simple.words, 0)
+    Source(source) => {
       let words : Array[@parser.Word] = []
       for option in source.options {
         words.push(option)
@@ -1031,8 +1023,8 @@ pub fn command_words(command : @parser.Command) -> Array[@parser.Word] {
 /// when that distinction exists.
 pub fn command_arguments(command : @parser.Command) -> Array[@parser.Word] {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => copy_words_from(simple.words, 1)
-    @parser.CommandKind::Source(source) => {
+    Simple(simple) => copy_words_from(simple.words, 1)
+    Source(source) => {
       let words : Array[@parser.Word] = []
       for option in source.options {
         words.push(option)
@@ -1051,7 +1043,7 @@ pub fn command_arguments(command : @parser.Command) -> Array[@parser.Word] {
 /// Returns the command name after wrappers such as `command` are accounted for.
 pub fn effective_command_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match effective_simple_word_index(simple.words) {
         Some(index) =>
           match simple.words.get(index) {
@@ -1060,7 +1052,7 @@ pub fn effective_command_name(command : @parser.Command) -> String? {
           }
         None => None
       }
-    @parser.CommandKind::Source(source) => Some(source.keyword)
+    Source(source) => Some(source.keyword)
     _ => None
   }
 }
@@ -1069,7 +1061,7 @@ pub fn effective_command_name(command : @parser.Command) -> String? {
 /// Returns the command named after a leading `builtin` wrapper.
 pub fn builtin_command_name(command : @parser.Command) -> String? {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words {
         [first, second, ..] =>
           if literal_text(first) == Some("builtin") {
@@ -1089,7 +1081,7 @@ pub fn effective_command_words(
   command : @parser.Command,
 ) -> Array[@parser.Word] {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       copy_words_from(
         simple.words,
         match effective_simple_word_index(simple.words) {
@@ -1107,7 +1099,7 @@ pub fn effective_command_arguments(
   command : @parser.Command,
 ) -> Array[@parser.Word] {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match effective_simple_word_index(simple.words) {
         Some(index) => copy_words_from(simple.words, index + 1)
         None => []
@@ -1148,7 +1140,7 @@ pub fn leading_unquoted_text(word : @parser.Word) -> String? {
   let mut saw_literal = false
   for part in word.parts {
     match part {
-      @parser.WordPart::Literal(text) => {
+      Literal(text) => {
         saw_literal = true
         buf.write_string(text)
       }
@@ -1189,8 +1181,7 @@ fn append_flattened_word_parts(
 ) -> Unit {
   for part in parts {
     match part {
-      @parser.WordPart::DoubleQuoted(parts)
-      | @parser.WordPart::DollarDoubleQuoted(parts) =>
+      DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
         append_flattened_word_parts(parts, flattened)
       _ => flattened.push(part)
     }
@@ -1200,10 +1191,8 @@ fn append_flattened_word_parts(
 ///|
 fn leading_shell_word_part_text(part : @parser.WordPart) -> String? {
   match part {
-    @parser.WordPart::Literal(text) | @parser.WordPart::SingleQuoted(text) =>
-      Some(text)
-    @parser.WordPart::DollarSingleQuoted(text) =>
-      Some(decode_dollar_single_quoted(text))
+    Literal(text) | SingleQuoted(text) => Some(text)
+    DollarSingleQuoted(text) => Some(decode_dollar_single_quoted(text))
     _ => None
   }
 }
@@ -1212,7 +1201,7 @@ fn leading_shell_word_part_text(part : @parser.WordPart) -> String? {
 /// Reports whether a word is fully constant after shell expansion rules.
 pub fn is_constant_word(word : @parser.Word) -> Bool {
   match word.parts.get(0) {
-    Some(@parser.WordPart::Literal(text)) if text.has_prefix("~") => false
+    Some(Literal(text)) if text.has_prefix("~") => false
     _ => word.parts.all(is_constant_word_part)
   }
 }
@@ -1220,11 +1209,8 @@ pub fn is_constant_word(word : @parser.Word) -> Bool {
 ///|
 fn is_constant_word_part(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Literal(_)
-    | @parser.WordPart::SingleQuoted(_)
-    | @parser.WordPart::DollarSingleQuoted(_) => true
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(_) | SingleQuoted(_) | DollarSingleQuoted(_) => true
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       parts.all(is_constant_word_part)
     _ => false
   }
@@ -1239,7 +1225,7 @@ pub fn is_glob_word(word : @parser.Word) -> Bool {
 ///|
 fn is_glob_word_part(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Glob(_) | @parser.WordPart::ExtGlob(_) => true
+    Glob(_) | ExtGlob(_) => true
     _ => false
   }
 }
@@ -1249,7 +1235,7 @@ fn has_split_range(parts : Array[@parser.WordPart]) -> Bool {
   let mut saw_open = false
   for part in parts {
     match part {
-      @parser.WordPart::Literal(text) => {
+      Literal(text) => {
         if saw_open && text.contains("]") {
           return true
         }
@@ -1285,9 +1271,8 @@ pub fn is_assignment_only(simple : @parser.SimpleCommand) -> Bool {
 /// Produces a simplified word list suitable for heuristics and diagnostics.
 pub fn oversimplify_command(command : @parser.Command) -> Array[String] {
   match command.kind {
-    @parser.CommandKind::Simple(_) =>
-      command_words(command).map(oversimplify_word)
-    @parser.CommandKind::Source(source) => {
+    Simple(_) => command_words(command).map(oversimplify_word)
+    Source(source) => {
       let words : Array[String] = [source.keyword]
       for option in source.options {
         words.push(oversimplify_word(option))
@@ -1314,21 +1299,20 @@ fn oversimplify_word(word : @parser.Word) -> String {
 ///|
 fn oversimplify_word_part(part : @parser.WordPart) -> String {
   match part {
-    @parser.WordPart::Literal(text)
-    | @parser.WordPart::SingleQuoted(text)
-    | @parser.WordPart::DollarSingleQuoted(text)
-    | @parser.WordPart::Glob(text) => text
-    @parser.WordPart::SpecialParameter(name) => name
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) => {
+    Literal(text)
+    | SingleQuoted(text)
+    | DollarSingleQuoted(text)
+    | Glob(text) => text
+    SpecialParameter(name) => name
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) => {
       let buf = StringBuilder::new()
       for nested in parts {
         buf.write_string(oversimplify_word_part(nested))
       }
       buf.to_string()
     }
-    @parser.WordPart::ExtGlob(pattern) => pattern.raw
-    @parser.WordPart::BraceExpansion(expansion) => expansion.raw
+    ExtGlob(pattern) => pattern.raw
+    BraceExpansion(expansion) => expansion.raw
     _ => "${VAR}"
   }
 }
@@ -1365,8 +1349,8 @@ fn directives_from_annotations(
   let directives : Array[String] = []
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::Disable(value) if disable => directives.push(value)
-      @parser.Annotation::Enable(value) if !disable => directives.push(value)
+      Disable(value) if disable => directives.push(value)
+      Enable(value) if !disable => directives.push(value)
       _ => ()
     }
   }
@@ -1392,18 +1376,15 @@ fn append_literal_word_part_text(
   buf : StringBuilder,
 ) -> Bool {
   match part {
-    @parser.WordPart::Literal(text)
-    | @parser.WordPart::SingleQuoted(text)
-    | @parser.WordPart::SpecialParameter(text) => {
+    Literal(text) | SingleQuoted(text) | SpecialParameter(text) => {
       buf.write_string(text)
       true
     }
-    @parser.WordPart::DollarSingleQuoted(text) => {
+    DollarSingleQuoted(text) => {
       buf.write_string(decode_dollar_single_quoted(text))
       true
     }
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       append_literal_word_parts_text(parts, buf)
     _ => false
   }
@@ -1558,7 +1539,7 @@ fn plain_literal_text(word : @parser.Word) -> String? {
   let buf = StringBuilder::new()
   for part in word.parts {
     match part {
-      @parser.WordPart::Literal(text) => buf.write_string(text)
+      Literal(text) => buf.write_string(text)
       _ => return None
     }
   }

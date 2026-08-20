@@ -49,8 +49,8 @@ pub fn CheckSpec::default() -> CheckSpec {
     ignore_rc: false,
     shell_override: None,
     fallback_shell: None,
-    execution_mode: @semantics.ExecutionMode::Executed,
-    min_severity: DiagnosticSeverity::Style,
+    execution_mode: Executed,
+    min_severity: Style,
     include_codes: [],
     exclude_codes: [],
     optional_checks: [],
@@ -217,10 +217,10 @@ pub fn list_optional_checks_text() -> String {
 /// Parses a lowercase severity name such as `error` or `style`.
 pub fn parse_diagnostic_severity(text : String) -> DiagnosticSeverity? {
   match text {
-    "error" => Some(DiagnosticSeverity::Error)
-    "warning" => Some(DiagnosticSeverity::Warning)
-    "info" => Some(DiagnosticSeverity::Info)
-    "style" => Some(DiagnosticSeverity::Style)
+    "error" => Some(Error)
+    "warning" => Some(Warning)
+    "info" => Some(Info)
+    "style" => Some(Style)
     _ => None
   }
 }

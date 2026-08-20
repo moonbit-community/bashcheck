@@ -47,4 +47,3 @@ pub fn Replacement::with_text(Self, String) -> Self
 // Type aliases
 
 // Traits
-

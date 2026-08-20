@@ -83,7 +83,7 @@ fn first_config_error(
 ) -> @parser.Diagnostic? {
   for diagnostic in diagnostics {
     match diagnostic.severity {
-      @parser.DiagnosticSeverity::Error => return Some(diagnostic)
+      Error => return Some(diagnostic)
       _ => ()
     }
   }
@@ -102,7 +102,7 @@ fn positioned_config_parse_error(
   {
     filename,
     span: diagnostic.span,
-    severity: DiagnosticSeverity::Error,
+    severity: Error,
     code: Some(1134),
     message: "Failed to process \{filename}, line \{line}: \{cause}. Fix any mentioned problems and try again.",
     fix: None,
@@ -235,7 +235,7 @@ fn apply_config_to_spec(
   let source_paths = copy_strings(spec.source_paths)
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::SourcePath(path) =>
+      SourcePath(path) =>
         // `SCRIPTDIR` placeholders are expanded relative to the checked file,
         // not relative to the rc file itself.
         source_paths.push(expand_source_path(path, spec.filename))
@@ -277,7 +277,7 @@ fn config_external_sources(
   let mut enabled = false
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::ExternalSources(flag) => enabled = flag
+      ExternalSources(flag) => enabled = flag
       _ => ()
     }
   }

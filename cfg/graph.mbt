@@ -261,7 +261,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
   let flow_in = init_int_grid(count, 0)
   let flow_out = init_int_grid(count, 0)
   for edge in cfg.graph_edges {
-    if edge.kind == CfgEdgeKind::Flow {
+    if edge.kind == Flow {
       flow_out[edge.from.to_int()] += 1
       flow_in[edge.to.to_int()] += 1
     }
@@ -269,7 +269,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
   let structural_candidates = init_bool_grid(count, false)
   for node in cfg.nodes {
     let index = node.id.to_int()
-    structural_candidates[index] = node.kind == CfgNodeKind::Structural &&
+    structural_candidates[index] = node.kind == Structural &&
       flow_in[index] == 1 &&
       flow_out[index] == 1
   }
@@ -280,7 +280,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
   for edge in cfg.graph_edges {
     let from = edge.from.to_int()
     let to = edge.to.to_int()
-    if edge.kind == CfgEdgeKind::Flow &&
+    if edge.kind == Flow &&
       structural_candidates[from] &&
       structural_candidates[to] {
       union_remap(direct_remap, from, to)
@@ -317,7 +317,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
     let to = edge.to.to_int()
     let remapped_from = old_to_new[from]
     let remapped_to = old_to_new[to]
-    if edge.kind == CfgEdgeKind::Flow && remapped_from == remapped_to {
+    if edge.kind == Flow && remapped_from == remapped_to {
       continue
     }
     append_unique_cfg_edge(graph_edges, {
@@ -386,10 +386,9 @@ fn remap_node_kind(
   old_to_new : Array[CfgNodeId],
 ) -> CfgNodeKind {
   match kind {
-    CfgNodeKind::ApplyEffects(effects) =>
-      CfgNodeKind::ApplyEffects(remap_effects(effects, old_to_new))
-    CfgNodeKind::ExecuteSubshell(reason, entry, exit_) =>
-      CfgNodeKind::ExecuteSubshell(
+    ApplyEffects(effects) => ApplyEffects(remap_effects(effects, old_to_new))
+    ExecuteSubshell(reason, entry, exit_) =>
+      ExecuteSubshell(
         reason,
         old_to_new[entry.to_int()],
         old_to_new[exit_.to_int()],
@@ -416,8 +415,8 @@ fn remap_effects(
 ///|
 fn remap_effect(effect : CfgEffect, old_to_new : Array[CfgNodeId]) -> CfgEffect {
   match effect {
-    CfgEffect::DefineFunction(name, ast_id, entry, exit_) =>
-      CfgEffect::DefineFunction(
+    DefineFunction(name, ast_id, entry, exit_) =>
+      DefineFunction(
         name,
         ast_id,
         old_to_new[entry.to_int()],
@@ -465,42 +464,42 @@ fn append_unique_cfg_edge(values : Array[CfgEdge], edge : CfgEdge) -> Unit {
 ///|
 fn ast_tag_of(node_ref : @semantics.NodeRef) -> AstTag {
   match node_ref {
-    @semantics.NodeRef::Script(_) => AstTag::Script
-    @semantics.NodeRef::Annotation(_) => AstTag::Annotation
-    @semantics.NodeRef::ListItem(_) => AstTag::ListItem
-    @semantics.NodeRef::AndOrList(_) => AstTag::AndOrList
-    @semantics.NodeRef::Pipeline(_) => AstTag::Pipeline
-    @semantics.NodeRef::PipelineSegment(_) => AstTag::PipelineSegment
-    @semantics.NodeRef::Command(_) => AstTag::Command
-    @semantics.NodeRef::SimpleCommand(_) => AstTag::SimpleCommand
-    @semantics.NodeRef::SourceCommand(_) => AstTag::SourceCommand
-    @semantics.NodeRef::ArithmeticExpr(_) => AstTag::ArithmeticExpr
-    @semantics.NodeRef::ArithmeticToken(_) => AstTag::ArithmeticToken
-    @semantics.NodeRef::ArrayIndex(_) => AstTag::ArrayIndex
-    @semantics.NodeRef::TimeClause(_) => AstTag::TimeClause
-    @semantics.NodeRef::Assignment(_) => AstTag::Assignment
-    @semantics.NodeRef::ArrayElement(_) => AstTag::ArrayElement
-    @semantics.NodeRef::IfClause(_) => AstTag::IfClause
-    @semantics.NodeRef::IfArm(_) => AstTag::IfArm
-    @semantics.NodeRef::LoopClause(_) => AstTag::LoopClause
-    @semantics.NodeRef::ForClause(_) => AstTag::ForClause
-    @semantics.NodeRef::ArithmeticForClause(_) => AstTag::ArithmeticForClause
-    @semantics.NodeRef::SelectClause(_) => AstTag::SelectClause
-    @semantics.NodeRef::CaseClause(_) => AstTag::CaseClause
-    @semantics.NodeRef::CaseItem(_) => AstTag::CaseItem
-    @semantics.NodeRef::ConditionCommand(_) => AstTag::ConditionCommand
-    @semantics.NodeRef::ConditionExpr(_) => AstTag::ConditionExpr
-    @semantics.NodeRef::ArithmeticCommand(_) => AstTag::ArithmeticCommand
-    @semantics.NodeRef::CoProcClause(_) => AstTag::CoProcClause
-    @semantics.NodeRef::BatsTestClause(_) => AstTag::BatsTestClause
-    @semantics.NodeRef::FunctionDef(_) => AstTag::FunctionDef
-    @semantics.NodeRef::Redirection(_) => AstTag::Redirection
-    @semantics.NodeRef::HereDoc(_) => AstTag::HereDoc
-    @semantics.NodeRef::ExtGlobPattern(_) => AstTag::ExtGlobPattern
-    @semantics.NodeRef::BraceExpansion(_) => AstTag::BraceExpansion
-    @semantics.NodeRef::Word(_) => AstTag::Word
-    @semantics.NodeRef::WordPart(_) => AstTag::WordPart
-    @semantics.NodeRef::ParameterExpansion(_) => AstTag::ParameterExpansion
+    Script(_) => Script
+    Annotation(_) => Annotation
+    ListItem(_) => ListItem
+    AndOrList(_) => AndOrList
+    Pipeline(_) => Pipeline
+    PipelineSegment(_) => PipelineSegment
+    Command(_) => Command
+    SimpleCommand(_) => SimpleCommand
+    SourceCommand(_) => SourceCommand
+    ArithmeticExpr(_) => ArithmeticExpr
+    ArithmeticToken(_) => ArithmeticToken
+    ArrayIndex(_) => ArrayIndex
+    TimeClause(_) => TimeClause
+    Assignment(_) => Assignment
+    ArrayElement(_) => ArrayElement
+    IfClause(_) => IfClause
+    IfArm(_) => IfArm
+    LoopClause(_) => LoopClause
+    ForClause(_) => ForClause
+    ArithmeticForClause(_) => ArithmeticForClause
+    SelectClause(_) => SelectClause
+    CaseClause(_) => CaseClause
+    CaseItem(_) => CaseItem
+    ConditionCommand(_) => ConditionCommand
+    ConditionExpr(_) => ConditionExpr
+    ArithmeticCommand(_) => ArithmeticCommand
+    CoProcClause(_) => CoProcClause
+    BatsTestClause(_) => BatsTestClause
+    FunctionDef(_) => FunctionDef
+    Redirection(_) => Redirection
+    HereDoc(_) => HereDoc
+    ExtGlobPattern(_) => ExtGlobPattern
+    BraceExpansion(_) => BraceExpansion
+    Word(_) => Word
+    WordPart(_) => WordPart
+    ParameterExpansion(_) => ParameterExpansion
   }
 }
 
@@ -583,7 +582,7 @@ fn AstCollector::copy_from_indexed(
     let _ = self.copy_from_indexed(indexed, child, Some(id))
   }
   match node_ref {
-    @semantics.NodeRef::SourceCommand(source) =>
+    SourceCommand(source) =>
       match source.included {
         Some(included) => {
           let _ = self.copy_script(included, Some(id))
@@ -640,9 +639,9 @@ fn GraphBuilder::new(
 ///|
 fn GraphBuilder::build_raw(self : GraphBuilder) -> CFG {
   self.ast_stack.push(self.root)
-  let entry = self.new_node(CfgNodeKind::EntryPoint("MAIN"))
-  let implied_exit = self.new_node(CfgNodeKind::ImpliedExit)
-  let main_exit = self.new_node(CfgNodeKind::Structural)
+  let entry = self.new_node(EntryPoint("MAIN"))
+  let implied_exit = self.new_node(ImpliedExit)
+  let main_exit = self.new_node(Structural)
   let old_exit = self.exit_target
   let old_return = self.return_target
   self.exit_target = Some(main_exit)
@@ -692,7 +691,7 @@ fn GraphBuilder::parent_command_of(
   match self.entry_at(id).parent {
     Some(parent) =>
       match self.entry_at(parent).node_ref {
-        @semantics.NodeRef::Command(command) => Some(command)
+        Command(command) => Some(command)
         _ => None
       }
     None => None
@@ -758,7 +757,7 @@ fn GraphBuilder::new_node_range(
 
 ///|
 fn GraphBuilder::none(self : GraphBuilder) -> Range {
-  self.new_node_range(CfgNodeKind::Structural)
+  self.new_node_range(Structural)
 }
 
 ///|
@@ -821,7 +820,7 @@ fn GraphBuilder::link_range(
   lhs : Range,
   rhs : Range,
 ) -> Range {
-  self.link(lhs.end_, rhs.start, CfgEdgeKind::Flow)
+  self.link(lhs.end_, rhs.start, Flow)
   { start: lhs.start, end_: rhs.end_ }
 }
 
@@ -888,58 +887,42 @@ fn GraphBuilder::build_ast(self : GraphBuilder, id : CfgAstId) -> Range {
 ///|
 fn GraphBuilder::build_ast_inner(self : GraphBuilder, id : CfgAstId) -> Range {
   match self.entry_at(id).node_ref {
-    @semantics.NodeRef::Script(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::Annotation(_) => self.none()
-    @semantics.NodeRef::ListItem(item) => self.build_list_item(id, item)
-    @semantics.NodeRef::AndOrList(list) => self.build_and_or_list(id, list)
-    @semantics.NodeRef::Pipeline(pipeline) => self.build_pipeline(id, pipeline)
-    @semantics.NodeRef::PipelineSegment(segment) =>
-      self.build_pipeline_segment(id, segment)
-    @semantics.NodeRef::Command(command) => self.build_command(id, command)
-    @semantics.NodeRef::SimpleCommand(simple) =>
-      self.build_simple_command(id, simple)
-    @semantics.NodeRef::SourceCommand(source) =>
-      self.build_source_command(id, source)
-    @semantics.NodeRef::ArithmeticExpr(expr) =>
-      self.build_arithmetic_expr(id, expr)
-    @semantics.NodeRef::ArithmeticToken(token) =>
-      self.build_arithmetic_token(id, token)
-    @semantics.NodeRef::ArrayIndex(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::TimeClause(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::Assignment(assignment) =>
-      self.build_assignment(id, assignment, None)
-    @semantics.NodeRef::ArrayElement(_) =>
-      self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::IfClause(clause) => self.build_if_clause(id, clause)
-    @semantics.NodeRef::IfArm(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::LoopClause(_) => self.build_loop_clause(id)
-    @semantics.NodeRef::ForClause(clause) => self.build_for_clause(id, clause)
-    @semantics.NodeRef::ArithmeticForClause(_) =>
-      self.build_arithmetic_for_clause(id)
-    @semantics.NodeRef::SelectClause(clause) =>
-      self.build_select_clause(id, clause)
-    @semantics.NodeRef::CaseClause(clause) => self.build_case_clause(id, clause)
-    @semantics.NodeRef::CaseItem(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::ConditionCommand(_) => self.build_condition_command(id)
-    @semantics.NodeRef::ConditionExpr(expr) =>
-      self.build_condition_expr(id, expr)
-    @semantics.NodeRef::ArithmeticCommand(_) =>
-      self.build_arithmetic_command(id)
-    @semantics.NodeRef::CoProcClause(clause) =>
-      self.build_co_proc_clause(id, clause)
-    @semantics.NodeRef::BatsTestClause(_) => self.build_bats_test_clause(id)
-    @semantics.NodeRef::FunctionDef(function_def) =>
-      self.build_function_def(id, function_def)
-    @semantics.NodeRef::Redirection(redirect) =>
-      self.build_redirection(id, redirect)
-    @semantics.NodeRef::HereDoc(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::ExtGlobPattern(_) =>
-      self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::BraceExpansion(_) =>
-      self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::Word(_) => self.sequence_ids(self.children_of(id))
-    @semantics.NodeRef::WordPart(part) => self.build_word_part(id, part)
-    @semantics.NodeRef::ParameterExpansion(expansion) =>
+    Script(_) => self.sequence_ids(self.children_of(id))
+    Annotation(_) => self.none()
+    ListItem(item) => self.build_list_item(id, item)
+    AndOrList(list) => self.build_and_or_list(id, list)
+    Pipeline(pipeline) => self.build_pipeline(id, pipeline)
+    PipelineSegment(segment) => self.build_pipeline_segment(id, segment)
+    Command(command) => self.build_command(id, command)
+    SimpleCommand(simple) => self.build_simple_command(id, simple)
+    SourceCommand(source) => self.build_source_command(id, source)
+    ArithmeticExpr(expr) => self.build_arithmetic_expr(id, expr)
+    ArithmeticToken(token) => self.build_arithmetic_token(id, token)
+    ArrayIndex(_) => self.sequence_ids(self.children_of(id))
+    TimeClause(_) => self.sequence_ids(self.children_of(id))
+    Assignment(assignment) => self.build_assignment(id, assignment, None)
+    ArrayElement(_) => self.sequence_ids(self.children_of(id))
+    IfClause(clause) => self.build_if_clause(id, clause)
+    IfArm(_) => self.sequence_ids(self.children_of(id))
+    LoopClause(_) => self.build_loop_clause(id)
+    ForClause(clause) => self.build_for_clause(id, clause)
+    ArithmeticForClause(_) => self.build_arithmetic_for_clause(id)
+    SelectClause(clause) => self.build_select_clause(id, clause)
+    CaseClause(clause) => self.build_case_clause(id, clause)
+    CaseItem(_) => self.sequence_ids(self.children_of(id))
+    ConditionCommand(_) => self.build_condition_command(id)
+    ConditionExpr(expr) => self.build_condition_expr(id, expr)
+    ArithmeticCommand(_) => self.build_arithmetic_command(id)
+    CoProcClause(clause) => self.build_co_proc_clause(id, clause)
+    BatsTestClause(_) => self.build_bats_test_clause(id)
+    FunctionDef(function_def) => self.build_function_def(id, function_def)
+    Redirection(redirect) => self.build_redirection(id, redirect)
+    HereDoc(_) => self.sequence_ids(self.children_of(id))
+    ExtGlobPattern(_) => self.sequence_ids(self.children_of(id))
+    BraceExpansion(_) => self.sequence_ids(self.children_of(id))
+    Word(_) => self.sequence_ids(self.children_of(id))
+    WordPart(part) => self.build_word_part(id, part)
+    ParameterExpansion(expansion) =>
       self.build_parameter_expansion(id, expansion)
   }
 }
@@ -950,20 +933,20 @@ fn GraphBuilder::build_list_item(
   id : CfgAstId,
   item : @parser.ListItem,
 ) -> Range {
-  let annotations = self.children_with_kind(id, AstTag::Annotation)
+  let annotations = self.children_with_kind(id, Annotation)
   let prefix = self.sequence_ids(annotations)
-  let and_or_id = self.first_child_with_kind(id, AstTag::AndOrList)
+  let and_or_id = self.first_child_with_kind(id, AndOrList)
   let main = match item.terminator {
-    Some(@parser.Terminator::Background) => {
+    Some(Background) => {
       let start = self.none()
       let fork = match and_or_id {
         Some(and_or_id) => self.build_subshell("background '&'", and_or_id)
         None => self.none()
       }
-      let pid = self.new_node_range(CfgNodeKind::SetBackgroundPid(id))
-      let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+      let pid = self.new_node_range(SetBackgroundPid(id))
+      let status = self.new_node_range(SetExitCode(id))
       let _ = self.link_range(start, fork)
-      let _ = self.link_range_as(CfgEdgeKind::FalseFlow, fork, pid)
+      let _ = self.link_range_as(FalseFlow, fork, pid)
       self.link_ranges([start, pid, status])
     }
     _ =>
@@ -981,7 +964,7 @@ fn GraphBuilder::build_and_or_list(
   id : CfgAstId,
   list : @parser.AndOrList,
 ) -> Range {
-  let pipelines = self.children_with_kind(id, AstTag::Pipeline)
+  let pipelines = self.children_with_kind(id, Pipeline)
   guard pipelines.length() > 0 else { return self.none() }
   let mut current = self.build_ast(pipelines[0])
   let mut i = 0
@@ -1004,17 +987,17 @@ fn GraphBuilder::build_pipeline(
   pipeline : @parser.Pipeline,
 ) -> Range {
   ignore(pipeline)
-  let segment_ids = self.children_with_kind(id, AstTag::PipelineSegment)
+  let segment_ids = self.children_with_kind(id, PipelineSegment)
   if segment_ids.length() <= 1 {
     return self.sequence_ids(segment_ids)
   }
   let start = self.none()
   let result = self.build_pipeline_parts(id, segment_ids, self.params.lastpipe)
-  let end = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let end = self.new_node_range(SetExitCode(id))
   let leading_exit_edge = if self.params.pipefail {
     CfgEdgeKind::Flow
   } else {
-    CfgEdgeKind::FalseFlow
+    FalseFlow
   }
   for leading in result.0 {
     let _ = self.link_range(start, leading)
@@ -1057,14 +1040,14 @@ fn GraphBuilder::build_pipeline_segment(
   id : CfgAstId,
   segment : @parser.PipelineSegment,
 ) -> Range {
-  let command = match self.first_child_with_kind(id, AstTag::Command) {
+  let command = match self.first_child_with_kind(id, Command) {
     Some(command) => self.build_ast(command)
     None => self.none()
   }
   if segment.bangs % 2 == 0 {
     return command
   }
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_range(command, status)
 }
 
@@ -1075,92 +1058,92 @@ fn GraphBuilder::build_command(
   command : @parser.Command,
 ) -> Range {
   let body = match command.kind {
-    @parser.CommandKind::Simple(_) =>
-      match self.first_child_with_kind(id, AstTag::SimpleCommand) {
+    Simple(_) =>
+      match self.first_child_with_kind(id, SimpleCommand) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Source(_) =>
-      match self.first_child_with_kind(id, AstTag::SourceCommand) {
+    Source(_) =>
+      match self.first_child_with_kind(id, SourceCommand) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Time(_) =>
-      match self.first_child_with_kind(id, AstTag::TimeClause) {
+    Time(_) =>
+      match self.first_child_with_kind(id, TimeClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Subshell(_) =>
-      match self.first_child_with_kind(id, AstTag::Script) {
+    Subshell(_) =>
+      match self.first_child_with_kind(id, Script) {
         Some(child) => {
           let main = self.build_subshell("explicit (..) subshell", child)
-          let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+          let status = self.new_node_range(SetExitCode(id))
           self.link_range(main, status)
         }
         None => self.none()
       }
-    @parser.CommandKind::BraceGroup(_) =>
-      match self.first_child_with_kind(id, AstTag::Script) {
+    BraceGroup(_) =>
+      match self.first_child_with_kind(id, Script) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::If(_) =>
-      match self.first_child_with_kind(id, AstTag::IfClause) {
+    If(_) =>
+      match self.first_child_with_kind(id, IfClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::While(_) | @parser.CommandKind::Until(_) =>
-      match self.first_child_with_kind(id, AstTag::LoopClause) {
+    While(_) | Until(_) =>
+      match self.first_child_with_kind(id, LoopClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::ForIn(_) =>
-      match self.first_child_with_kind(id, AstTag::ForClause) {
+    ForIn(_) =>
+      match self.first_child_with_kind(id, ForClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::ForArithmetic(_) =>
-      match self.first_child_with_kind(id, AstTag::ArithmeticForClause) {
+    ForArithmetic(_) =>
+      match self.first_child_with_kind(id, ArithmeticForClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Select(_) =>
-      match self.first_child_with_kind(id, AstTag::SelectClause) {
+    Select(_) =>
+      match self.first_child_with_kind(id, SelectClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Case(_) =>
-      match self.first_child_with_kind(id, AstTag::CaseClause) {
+    Case(_) =>
+      match self.first_child_with_kind(id, CaseClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Condition(_) =>
-      match self.first_child_with_kind(id, AstTag::ConditionCommand) {
+    Condition(_) =>
+      match self.first_child_with_kind(id, ConditionCommand) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Arithmetic(_) =>
-      match self.first_child_with_kind(id, AstTag::ArithmeticCommand) {
+    Arithmetic(_) =>
+      match self.first_child_with_kind(id, ArithmeticCommand) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::Function(_) =>
-      match self.first_child_with_kind(id, AstTag::FunctionDef) {
+    Function(_) =>
+      match self.first_child_with_kind(id, FunctionDef) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::CoProc(_) =>
-      match self.first_child_with_kind(id, AstTag::CoProcClause) {
+    CoProc(_) =>
+      match self.first_child_with_kind(id, CoProcClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
-    @parser.CommandKind::BatsTest(_) =>
-      match self.first_child_with_kind(id, AstTag::BatsTestClause) {
+    BatsTest(_) =>
+      match self.first_child_with_kind(id, BatsTestClause) {
         Some(child) => self.build_ast(child)
         None => self.none()
       }
   }
-  let redirects = self.children_with_kind(id, AstTag::Redirection)
+  let redirects = self.children_with_kind(id, Redirection)
   if redirects.length() == 0 {
     return body
   }
@@ -1174,18 +1157,18 @@ fn GraphBuilder::build_simple_command(
   id : CfgAstId,
   simple : @parser.SimpleCommand,
 ) -> Range {
-  let assignment_ids = self.children_with_kind(id, AstTag::Assignment)
+  let assignment_ids = self.children_with_kind(id, Assignment)
   let split_assignments = split_simple_assignment_ids(
     self, simple, assignment_ids,
   )
   let prefix_assignment_ids = split_assignments.0
   let suffix_assignment_ids = split_assignments.1
-  let word_ids = self.children_with_kind(id, AstTag::Word)
+  let word_ids = self.children_with_kind(id, Word)
   if simple.words.length() == 0 {
     let parts : Array[Range] = []
     for assignment_id in prefix_assignment_ids {
       let assignment = match self.entry_at(assignment_id).node_ref {
-        @semantics.NodeRef::Assignment(assignment) => assignment
+        Assignment(assignment) => assignment
         _ => panic()
       }
       parts.push(self.build_assignment(assignment_id, assignment, None))
@@ -1195,7 +1178,7 @@ fn GraphBuilder::build_simple_command(
     } else {
       self.link_ranges(parts)
     }
-    let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+    let status = self.new_node_range(SetExitCode(id))
     return self.link_range(prefix, status)
   }
   let args = self.sequence_ids(word_ids)
@@ -1217,7 +1200,7 @@ fn GraphBuilder::build_simple_command(
   }
   ranges.push(action)
   if prefix_assignment_ids.length() > 0 {
-    ranges.push(self.new_node_range(CfgNodeKind::DropPrefixAssignments))
+    ranges.push(self.new_node_range(DropPrefixAssignments))
   }
   self.link_ranges(ranges)
 }
@@ -1229,8 +1212,8 @@ fn GraphBuilder::build_source_command(
   source : @parser.SourceCommand,
 ) -> Range {
   let children = self.children_of(id)
-  let assignment_ids = self.children_with_kind(id, AstTag::Assignment)
-  let word_ids = self.children_with_kind(id, AstTag::Word)
+  let assignment_ids = self.children_with_kind(id, Assignment)
+  let word_ids = self.children_with_kind(id, Word)
   let args = self.sequence_ids(word_ids)
   let assignments = self.build_prefix_assignments(assignment_ids)
   let action = self.build_external_command(id, Some(source.keyword))
@@ -1241,7 +1224,7 @@ fn GraphBuilder::build_source_command(
   ranges.push(action)
   let command_range = self.link_ranges(ranges)
   let cleanup = if assignment_ids.length() > 0 {
-    Some(self.new_node_range(CfgNodeKind::DropPrefixAssignments))
+    Some(self.new_node_range(DropPrefixAssignments))
   } else {
     None
   }
@@ -1288,9 +1271,7 @@ fn GraphBuilder::build_assignment(
   if assignment.append {
     ranges.push(
       self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          { ast_id: id, effect: CfgEffect::ReadVariable(assignment.name) },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name) }]),
       ),
     )
   }
@@ -1307,10 +1288,10 @@ fn GraphBuilder::build_assignment(
   for prop in assignment_added_props(assignment) {
     effects.push({
       ast_id: id,
-      effect: CfgEffect::SetProps(scope, assignment.name, [prop]),
+      effect: SetProps(scope, assignment.name, [prop]),
     })
   }
-  ranges.push(self.new_node_range(CfgNodeKind::ApplyEffects(effects)))
+  ranges.push(self.new_node_range(ApplyEffects(effects)))
   let range = self.link_ranges(ranges)
   self.record_range(id, range)
   range
@@ -1321,7 +1302,7 @@ fn GraphBuilder::build_assignment_inputs(
   self : GraphBuilder,
   id : CfgAstId,
 ) -> Range {
-  let index_ids = self.children_with_kind(id, AstTag::ArrayIndex)
+  let index_ids = self.children_with_kind(id, ArrayIndex)
   let value_ids = assignment_value_children(self, id)
   let value = if value_ids.length() == 0 {
     self.none()
@@ -1343,7 +1324,7 @@ fn GraphBuilder::build_if_clause(
   clause : @parser.IfClause,
 ) -> Range {
   let start = self.none()
-  let arm_ids = self.children_with_kind(id, AstTag::IfArm)
+  let arm_ids = self.children_with_kind(id, IfArm)
   let branch_starts : Array[Range] = []
   let branch_bodies : Array[Range] = []
   for arm_id in arm_ids {
@@ -1354,7 +1335,7 @@ fn GraphBuilder::build_if_clause(
   let else_id = find_else_script_id(self, id, clause.arms.length())
   let else_body = match else_id {
     Some(else_id) => self.build_ast(else_id)
-    None => self.new_node_range(CfgNodeKind::SetExitCode(id))
+    None => self.new_node_range(SetExitCode(id))
   }
   let end = self.none()
   let mut previous = start
@@ -1381,7 +1362,7 @@ fn GraphBuilder::build_if_arm_parts(
   id : CfgAstId,
 ) -> (Range, Range) {
   self.ast_stack.push(id)
-  let children = self.children_with_kind(id, AstTag::Script)
+  let children = self.children_with_kind(id, Script)
   let old_condition = self.is_condition
   self.is_condition = true
   let condition = match children.get(0) {
@@ -1400,9 +1381,9 @@ fn GraphBuilder::build_if_arm_parts(
 
 ///|
 fn GraphBuilder::build_loop_clause(self : GraphBuilder, id : CfgAstId) -> Range {
-  let children = self.children_with_kind(id, AstTag::Script)
+  let children = self.children_with_kind(id, Script)
   let head = self.none()
-  let end = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let end = self.new_node_range(SetExitCode(id))
   self.push_loop_targets(end.start, head.start)
   let old_condition = self.is_condition
   self.is_condition = true
@@ -1429,8 +1410,8 @@ fn GraphBuilder::build_for_clause(
   id : CfgAstId,
   clause : @parser.ForClause,
 ) -> Range {
-  let value_ids = self.children_with_kind(id, AstTag::Word)
-  let body = match self.first_child_with_kind(id, AstTag::Script) {
+  let value_ids = self.children_with_kind(id, Word)
+  let body = match self.first_child_with_kind(id, Script) {
     Some(body) => body
     None => return self.none()
   }
@@ -1443,8 +1424,8 @@ fn GraphBuilder::build_select_clause(
   id : CfgAstId,
   clause : @parser.SelectClause,
 ) -> Range {
-  let value_ids = self.children_with_kind(id, AstTag::Word)
-  let body = match self.first_child_with_kind(id, AstTag::Script) {
+  let value_ids = self.children_with_kind(id, Word)
+  let body = match self.first_child_with_kind(id, Script) {
     Some(body) => body
     None => return self.none()
   }
@@ -1469,9 +1450,7 @@ fn GraphBuilder::build_for_in_like(
   self.pop_loop_targets()
   for write in writes {
     let assign = self.new_node_range(
-      CfgNodeKind::ApplyEffects([
-        { ast_id: id, effect: CfgEffect::WriteVariable(name, write) },
-      ]),
+      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, write) }]),
     )
     let _ = self.link_ranges([choice, assign, body])
   }
@@ -1487,7 +1466,7 @@ fn GraphBuilder::build_arithmetic_for_clause(
   self : GraphBuilder,
   id : CfgAstId,
 ) -> Range {
-  let exprs = self.children_with_kind(id, AstTag::ArithmeticExpr)
+  let exprs = self.children_with_kind(id, ArithmeticExpr)
   let init = match exprs.get(0) {
     Some(init) => self.build_ast(init)
     None => self.none()
@@ -1502,7 +1481,7 @@ fn GraphBuilder::build_arithmetic_for_clause(
   }
   let end = self.none()
   self.push_loop_targets(end.start, step.start)
-  let body = match self.first_child_with_kind(id, AstTag::Script) {
+  let body = match self.first_child_with_kind(id, Script) {
     Some(body) => self.build_ast(body)
     None => self.none()
   }
@@ -1520,18 +1499,18 @@ fn GraphBuilder::build_case_clause(
   clause : @parser.CaseClause,
 ) -> Range {
   let start = self.none()
-  let word = match self.first_child_with_kind(id, AstTag::Word) {
+  let word = match self.first_child_with_kind(id, Word) {
     Some(word) => self.build_ast(word)
     None => self.none()
   }
-  let item_ids = self.children_with_kind(id, AstTag::CaseItem)
+  let item_ids = self.children_with_kind(id, CaseItem)
   if item_ids.length() == 0 {
     return self.link_range(start, word)
   }
   let entries : Array[(@parser.CaseSeparator, Range, Range)] = []
   for item_id in item_ids {
     let item = match self.entry_at(item_id).node_ref {
-      @semantics.NodeRef::CaseItem(item) => item
+      CaseItem(item) => item
       _ => panic()
     }
     let built = self.build_case_item_parts(item_id)
@@ -1546,13 +1525,13 @@ fn GraphBuilder::build_case_clause(
     let next = entries[i + 1]
     let _ = self.link_range(current.1, next.1)
     match current.0 {
-      @parser.CaseSeparator::Break => {
+      Break => {
         let _ = self.link_range(current.2, end)
       }
-      @parser.CaseSeparator::FallThrough => {
+      FallThrough => {
         let _ = self.link_range(current.2, next.2)
       }
-      @parser.CaseSeparator::Continue => {
+      Continue => {
         let _ = self.link_range(current.2, next.1)
       }
     }
@@ -1576,8 +1555,8 @@ fn GraphBuilder::build_case_item_parts(
   let mut body_id : CfgAstId? = None
   for child in children {
     match self.entry_at(child).kind {
-      AstTag::Word => if body_id is None { pattern_ids.push(child) }
-      AstTag::Script => body_id = Some(child)
+      Word => if body_id is None { pattern_ids.push(child) }
+      Script => body_id = Some(child)
       _ => ()
     }
   }
@@ -1618,11 +1597,11 @@ fn GraphBuilder::build_condition_command(
   self : GraphBuilder,
   id : CfgAstId,
 ) -> Range {
-  let expr = match self.first_child_with_kind(id, AstTag::ConditionExpr) {
+  let expr = match self.first_child_with_kind(id, ConditionExpr) {
     Some(expr) => self.build_ast(expr)
     None => self.none()
   }
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_range(expr, status)
 }
 
@@ -1633,27 +1612,21 @@ fn GraphBuilder::build_condition_expr(
   expr : @parser.ConditionExpr,
 ) -> Range {
   match expr {
-    @parser.ConditionExpr::Empty => self.none()
-    @parser.ConditionExpr::Word(_) =>
-      self.sequence_ids(self.children_with_kind(id, AstTag::Word))
-    @parser.ConditionExpr::Unary(op, _, word) => {
-      let base = self.sequence_ids(self.children_with_kind(id, AstTag::Word))
+    Empty => self.none()
+    Word(_) => self.sequence_ids(self.children_with_kind(id, Word))
+    Unary(op, _, word) => {
+      let base = self.sequence_ids(self.children_with_kind(id, Word))
       let effects = condition_unary_hint_effects(id, op, word)
       if effects.length() == 0 {
         base
       } else {
-        self.link_range(
-          base,
-          self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-        )
+        self.link_range(base, self.new_node_range(ApplyEffects(effects)))
       }
     }
-    @parser.ConditionExpr::Binary(_, _, _, _) =>
-      self.sequence_ids(self.children_with_kind(id, AstTag::Word))
-    @parser.ConditionExpr::Group(_) | @parser.ConditionExpr::Not(_) =>
-      self.sequence_ids(self.children_of(id))
-    @parser.ConditionExpr::And(_, _, _) | @parser.ConditionExpr::Or(_, _, _) => {
-      let children = self.children_with_kind(id, AstTag::ConditionExpr)
+    Binary(_, _, _, _) => self.sequence_ids(self.children_with_kind(id, Word))
+    Group(_) | Not(_) => self.sequence_ids(self.children_of(id))
+    And(_, _, _) | Or(_, _, _) => {
+      let children = self.children_with_kind(id, ConditionExpr)
       if children.length() < 2 {
         return self.sequence_ids(children)
       }
@@ -1679,10 +1652,10 @@ fn condition_unary_hint_effects(
     None => return []
   }
   let effects : Array[CfgTaggedEffect] = [
-    { ast_id: id, effect: CfgEffect::HintDefined(name) },
+    { ast_id: id, effect: HintDefined(name) },
   ]
   if condition_test_target_is_indexed(word) {
-    effects.push({ ast_id: id, effect: CfgEffect::HintArray(name) })
+    effects.push({ ast_id: id, effect: HintArray(name) })
   }
   effects
 }
@@ -1732,11 +1705,11 @@ fn GraphBuilder::build_arithmetic_command(
   self : GraphBuilder,
   id : CfgAstId,
 ) -> Range {
-  let expr = match self.first_child_with_kind(id, AstTag::ArithmeticExpr) {
+  let expr = match self.first_child_with_kind(id, ArithmeticExpr) {
     Some(expr) => self.build_ast(expr)
     None => self.none()
   }
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_range(expr, status)
 }
 
@@ -1746,7 +1719,7 @@ fn GraphBuilder::build_arithmetic_expr(
   id : CfgAstId,
   expr : @parser.ArithmeticExpr,
 ) -> Range {
-  let token_ids = self.children_with_kind(id, AstTag::ArithmeticToken)
+  let token_ids = self.children_with_kind(id, ArithmeticToken)
   let ranges : Array[Range] = []
   let mut i = 0
   while i < expr.tokens.length() && i < token_ids.length() {
@@ -1768,10 +1741,7 @@ fn GraphBuilder::build_arithmetic_expr(
   if effects.length() == 0 {
     base
   } else {
-    self.link_range(
-      base,
-      self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-    )
+    self.link_range(base, self.new_node_range(ApplyEffects(effects)))
   }
 }
 
@@ -1787,35 +1757,25 @@ fn GraphBuilder::build_co_proc_clause(
       match @semantics.literal_text(name) {
         Some(name) =>
           self.new_node_range(
-            CfgNodeKind::ApplyEffects([
-              {
-                ast_id: id,
-                effect: CfgEffect::WriteVariable(name, CfgValue::Array),
-              },
-            ]),
+            ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array) }]),
           )
         None => self.none()
       }
     None =>
       self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          {
-            ast_id: id,
-            effect: CfgEffect::WriteVariable("COPROC", CfgValue::Array),
-          },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: WriteVariable("COPROC", Array) }]),
       )
   }
-  let body_id = match self.first_child_with_kind(id, AstTag::Command) {
+  let body_id = match self.first_child_with_kind(id, Command) {
     Some(body_id) => body_id
     None => return self.none()
   }
   let child = self.build_subshell("coproc", body_id)
-  let end = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let end = self.new_node_range(SetExitCode(id))
   let _ = self.link_range(start, parent)
   let _ = self.link_range(start, child)
   let _ = self.link_range(parent, end)
-  let _ = self.link_range_as(CfgEdgeKind::FalseFlow, child, end)
+  let _ = self.link_range_as(FalseFlow, child, end)
   self.span_range(start, end)
 }
 
@@ -1825,22 +1785,12 @@ fn GraphBuilder::build_bats_test_clause(
   id : CfgAstId,
 ) -> Range {
   let status = self.new_node_range(
-    CfgNodeKind::ApplyEffects([
-      {
-        ast_id: id,
-        effect: CfgEffect::WriteVariable("status", CfgValue::Integer),
-      },
-    ]),
+    ApplyEffects([{ ast_id: id, effect: WriteVariable("status", Integer) }]),
   )
   let output = self.new_node_range(
-    CfgNodeKind::ApplyEffects([
-      {
-        ast_id: id,
-        effect: CfgEffect::WriteVariable("output", CfgValue::String),
-      },
-    ]),
+    ApplyEffects([{ ast_id: id, effect: WriteVariable("output", String) }]),
   )
-  let body = match self.first_child_with_kind(id, AstTag::Script) {
+  let body = match self.first_child_with_kind(id, Script) {
     Some(body) => self.build_ast(body)
     None => self.none()
   }
@@ -1853,14 +1803,12 @@ fn GraphBuilder::build_function_def(
   id : CfgAstId,
   function_def : @parser.FunctionDef,
 ) -> Range {
-  let body_id = match self.first_child_with_kind(id, AstTag::Command) {
+  let body_id = match self.first_child_with_kind(id, Command) {
     Some(body_id) => body_id
     None => return self.none()
   }
-  let entry = self.new_node(
-    CfgNodeKind::EntryPoint("function \{function_def.name}"),
-  )
-  let exit_ = self.new_node(CfgNodeKind::Structural)
+  let entry = self.new_node(EntryPoint("function \{function_def.name}"))
+  let exit_ = self.new_node(Structural)
   let old_exit = self.exit_target
   let old_return = self.return_target
   let old_function = self.is_function
@@ -1879,14 +1827,14 @@ fn GraphBuilder::build_function_def(
   self.loop_continue_targets = old_continue_targets
   let _ = self.link_ranges([node_range(entry), body, node_range(exit_)])
   let definition = self.new_node_range(
-    CfgNodeKind::ApplyEffects([
+    ApplyEffects([
       {
         ast_id: id,
-        effect: CfgEffect::DefineFunction(function_def.name, id, entry, exit_),
+        effect: DefineFunction(function_def.name, id, entry, exit_),
       },
     ]),
   )
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_ranges([definition, status])
 }
 
@@ -1907,28 +1855,23 @@ fn GraphBuilder::build_arithmetic_token_with_read(
   should_read : Bool,
 ) -> Range {
   match token {
-    @parser.ArithmeticToken::Literal(_)
-    | @parser.ArithmeticToken::Operator(_) => self.none()
-    @parser.ArithmeticToken::Variable(name, indexes) => {
+    Literal(_) | Operator(_) => self.none()
+    Variable(name, indexes) => {
       ignore(indexes)
-      let index_ids = self.children_with_kind(id, AstTag::ArrayIndex)
+      let index_ids = self.children_with_kind(id, ArrayIndex)
       let ranges : Array[Range] = []
       if index_ids.length() > 0 {
         ranges.push(self.sequence_ids(index_ids))
         ranges.push(
           self.new_node_range(
-            CfgNodeKind::ApplyEffects([
-              { ast_id: id, effect: CfgEffect::HintArray(name) },
-            ]),
+            ApplyEffects([{ ast_id: id, effect: HintArray(name) }]),
           ),
         )
       }
       if should_read {
         ranges.push(
           self.new_node_range(
-            CfgNodeKind::ApplyEffects([
-              { ast_id: id, effect: CfgEffect::ReadVariable(name) },
-            ]),
+            ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
           ),
         )
       }
@@ -1940,8 +1883,7 @@ fn GraphBuilder::build_arithmetic_token_with_read(
         self.link_ranges(ranges)
       }
     }
-    @parser.ArithmeticToken::Expansion(_) | @parser.ArithmeticToken::Group(_) =>
-      self.sequence_ids(self.children_of(id))
+    Expansion(_) | Group(_) => self.sequence_ids(self.children_of(id))
   }
 }
 
@@ -1952,45 +1894,33 @@ fn GraphBuilder::build_word_part(
   part : @parser.WordPart,
 ) -> Range {
   match part {
-    @parser.WordPart::Literal(_)
-    | @parser.WordPart::SingleQuoted(_)
-    | @parser.WordPart::DollarSingleQuoted(_)
-    | @parser.WordPart::Glob(_) => self.none()
-    @parser.WordPart::Parameter(name) =>
+    Literal(_) | SingleQuoted(_) | DollarSingleQuoted(_) | Glob(_) =>
+      self.none()
+    Parameter(name) =>
       self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          { ast_id: id, effect: CfgEffect::ReadVariable(name) },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
       )
-    @parser.WordPart::SpecialParameter(name) =>
+    SpecialParameter(name) =>
       self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          { ast_id: id, effect: CfgEffect::ReadVariable(name) },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
       )
-    @parser.WordPart::DoubleQuoted(_)
-    | @parser.WordPart::DollarDoubleQuoted(_)
-    | @parser.WordPart::ExtGlob(_)
-    | @parser.WordPart::BraceExpansion(_) =>
+    DoubleQuoted(_) | DollarDoubleQuoted(_) | ExtGlob(_) | BraceExpansion(_) =>
       self.sequence_ids(self.children_of(id))
-    @parser.WordPart::BracedParameter(_) =>
-      match self.first_child_with_kind(id, AstTag::ParameterExpansion) {
+    BracedParameter(_) =>
+      match self.first_child_with_kind(id, ParameterExpansion) {
         Some(expansion) => self.build_ast(expansion)
         None => self.none()
       }
-    @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BackQuoted(_) =>
-      match self.first_child_with_kind(id, AstTag::Script) {
+    BraceCommandSubstitution(_, _) | CommandSubstitution(_) | BackQuoted(_) =>
+      match self.first_child_with_kind(id, Script) {
         Some(script_id) =>
           self.build_subshell("command substitution", script_id)
         None => self.none()
       }
-    @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_) =>
-      self.sequence_ids(self.children_with_kind(id, AstTag::ArithmeticExpr))
-    @parser.WordPart::ProcessSubstitution(kind, _) =>
-      match self.first_child_with_kind(id, AstTag::Script) {
+    ArithmeticExpansion(_) | DollarBracket(_) =>
+      self.sequence_ids(self.children_with_kind(id, ArithmeticExpr))
+    ProcessSubstitution(kind, _) =>
+      match self.first_child_with_kind(id, Script) {
         Some(script_id) => {
           let start = self.none()
           let body = self.build_subshell(
@@ -1999,7 +1929,7 @@ fn GraphBuilder::build_word_part(
           )
           let end = self.none()
           let _ = self.link_range(start, body)
-          let _ = self.link_range_as(CfgEdgeKind::FalseFlow, body, end)
+          let _ = self.link_range_as(FalseFlow, body, end)
           let _ = self.link_range(start, end)
           self.span_range(start, end)
         }
@@ -2024,27 +1954,20 @@ fn GraphBuilder::build_parameter_expansion(
       if expansion.index is Some(_) {
         ranges.push(
           self.new_node_range(
-            CfgNodeKind::ApplyEffects([
-              { ast_id: id, effect: CfgEffect::HintArray(name) },
-            ]),
+            ApplyEffects([{ ast_id: id, effect: HintArray(name) }]),
           ),
         )
       }
       let read = self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          { ast_id: id, effect: CfgEffect::ReadVariable(name) },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
       )
       ranges.push(read)
       match expansion.operator {
-        Some(@parser.ParameterOperator::AssignDefault(_)) => {
+        Some(AssignDefault(_)) => {
           let assign_value = parameter_assign_default_value(id, expansion)
           let assign = self.new_node_range(
-            CfgNodeKind::ApplyEffects([
-              {
-                ast_id: id,
-                effect: CfgEffect::WriteVariable(name, assign_value),
-              },
+            ApplyEffects([
+              { ast_id: id, effect: WriteVariable(name, assign_value) },
             ]),
           )
           let result = self.none()
@@ -2080,15 +2003,15 @@ fn GraphBuilder::build_redirection(
 ) -> Range {
   let target = self.sequence_ids(self.children_of(id))
   match redirect.source {
-    Some(@parser.RedirectionSource::Named(name)) => {
+    Some(Named(name)) => {
       let effect = self.new_node_range(
-        CfgNodeKind::ApplyEffects([
+        ApplyEffects([
           {
             ast_id: id,
             effect: if redirection_closes_named_fd(redirect) {
-              CfgEffect::ReadVariable(name)
+              ReadVariable(name)
             } else {
-              CfgEffect::WriteVariable(name, CfgValue::Integer)
+              WriteVariable(name, Integer)
             },
           },
         ]),
@@ -2107,12 +2030,10 @@ fn GraphBuilder::build_prefix_assignments(
   let ranges : Array[Range] = []
   for assignment_id in assignment_ids {
     let assignment = match self.entry_at(assignment_id).node_ref {
-      @semantics.NodeRef::Assignment(assignment) => assignment
+      Assignment(assignment) => assignment
       _ => panic()
     }
-    ranges.push(
-      self.build_assignment(assignment_id, assignment, Some(CfgScope::Prefix)),
-    )
+    ranges.push(self.build_assignment(assignment_id, assignment, Some(Prefix)))
   }
   ranges
 }
@@ -2156,14 +2077,14 @@ fn GraphBuilder::build_command_action(
 fn GraphBuilder::build_exit_action(self : GraphBuilder) -> Range {
   match self.exit_target {
     Some(target) => {
-      let exit_ = self.new_node(CfgNodeKind::ResolvedExit)
-      self.link(exit_, target, CfgEdgeKind::Exit)
-      let dead_end = self.new_node(CfgNodeKind::Unreachable)
+      let exit_ = self.new_node(ResolvedExit)
+      self.link(exit_, target, Exit)
+      let dead_end = self.new_node(Unreachable)
       { start: exit_, end_: dead_end }
     }
     None => {
-      let exit_ = self.new_node(CfgNodeKind::UnresolvedExit)
-      let dead_end = self.new_node(CfgNodeKind::Unreachable)
+      let exit_ = self.new_node(UnresolvedExit)
+      let dead_end = self.new_node(Unreachable)
       { start: exit_, end_: dead_end }
     }
   }
@@ -2173,9 +2094,9 @@ fn GraphBuilder::build_exit_action(self : GraphBuilder) -> Range {
 fn GraphBuilder::build_return_action(self : GraphBuilder) -> Range {
   match self.return_target {
     Some(target) => {
-      let ret = self.new_node(CfgNodeKind::Structural)
-      self.link(ret, target, CfgEdgeKind::Flow)
-      let dead_end = self.new_node(CfgNodeKind::Unreachable)
+      let ret = self.new_node(Structural)
+      self.link(ret, target, Flow)
+      let dead_end = self.new_node(Unreachable)
       { start: ret, end_: dead_end }
     }
     None => self.none()
@@ -2209,11 +2130,11 @@ fn GraphBuilder::build_loop_control_action(
 ) -> Range {
   match self.loop_target(continue_, args) {
     Some(target) => {
-      let status = self.new_node(CfgNodeKind::SetExitCode(id))
-      let jump = self.new_node(CfgNodeKind::Structural)
-      self.link(status, jump, CfgEdgeKind::Flow)
-      self.link(jump, target, CfgEdgeKind::Flow)
-      let dead_end = self.new_node(CfgNodeKind::Unreachable)
+      let status = self.new_node(SetExitCode(id))
+      let jump = self.new_node(Structural)
+      self.link(status, jump, Flow)
+      self.link(jump, target, Flow)
+      let dead_end = self.new_node(Unreachable)
       { start: status, end_: dead_end }
     }
     None => self.append_status(id, self.none())
@@ -2245,10 +2166,7 @@ fn GraphBuilder::build_unset_action(
       }
     }
   }
-  self.append_status(
-    id,
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-  )
+  self.append_status(id, self.new_node_range(ApplyEffects(effects)))
 }
 
 ///|
@@ -2265,7 +2183,7 @@ fn GraphBuilder::build_declare_action(
   if !parsed.skip_variables {
     for assignment_id in assignment_ids {
       let assignment = match self.entry_at(assignment_id).node_ref {
-        @semantics.NodeRef::Assignment(assignment) => assignment
+        Assignment(assignment) => assignment
         _ => panic()
       }
       ranges.push(
@@ -2292,7 +2210,7 @@ fn GraphBuilder::build_declare_action(
   let operands = if effects.length() == 0 {
     self.none()
   } else {
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects))
+    self.new_node_range(ApplyEffects(effects))
   }
   ranges.push(operands)
   self.append_status(id, self.link_ranges(ranges))
@@ -2309,18 +2227,12 @@ fn GraphBuilder::build_printf_action(
     Some(parsed) =>
       match find_parsed_option_value(parsed.flags, "v") {
         Some(name) =>
-          effects.push({
-            ast_id: id,
-            effect: CfgEffect::WriteVariable(name, CfgValue::String),
-          })
+          effects.push({ ast_id: id, effect: WriteVariable(name, String) })
         None => ()
       }
     None => ()
   }
-  self.append_status(
-    id,
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-  )
+  self.append_status(id, self.new_node_range(ApplyEffects(effects)))
 }
 
 ///|
@@ -2334,26 +2246,17 @@ fn GraphBuilder::build_wait_action(
     Some(parsed) =>
       match find_parsed_option_value(parsed.flags, "p") {
         Some(name) if is_variable_name(name) =>
-          effects.push({
-            ast_id: id,
-            effect: CfgEffect::WriteVariable(name, CfgValue::Integer),
-          })
+          effects.push({ ast_id: id, effect: WriteVariable(name, Integer) })
         _ => ()
       }
     None =>
       match find_literal_gnu_option_value(args, "fnp:", "p") {
         Some(name) if is_variable_name(name) =>
-          effects.push({
-            ast_id: id,
-            effect: CfgEffect::WriteVariable(name, CfgValue::Integer),
-          })
+          effects.push({ ast_id: id, effect: WriteVariable(name, Integer) })
         _ => ()
       }
   }
-  self.append_status(
-    id,
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-  )
+  self.append_status(id, self.new_node_range(ApplyEffects(effects)))
 }
 
 ///|
@@ -2366,9 +2269,7 @@ fn GraphBuilder::build_mapfile_action(
   self.append_status(
     id,
     self.new_node_range(
-      CfgNodeKind::ApplyEffects([
-        { ast_id: id, effect: CfgEffect::WriteVariable(name, CfgValue::Array) },
-      ]),
+      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array) }]),
     ),
   )
 }
@@ -2384,19 +2285,13 @@ fn GraphBuilder::build_read_action(
     Some(parsed) =>
       match find_parsed_option_value(parsed.flags, "a") {
         Some(name) if is_variable_name(name) =>
-          effects.push({
-            ast_id: id,
-            effect: CfgEffect::WriteVariable(name, CfgValue::Array),
-          })
+          effects.push({ ast_id: id, effect: WriteVariable(name, Array) })
         _ => append_read_string_effects(effects, id, parsed.operands)
       }
     None =>
       match find_literal_gnu_option_value(args, flags_for_read(), "a") {
         Some(name) if is_variable_name(name) =>
-          effects.push({
-            ast_id: id,
-            effect: CfgEffect::WriteVariable(name, CfgValue::Array),
-          })
+          effects.push({ ast_id: id, effect: WriteVariable(name, Array) })
         _ => {
           let literal_suffix = trailing_literal_words(args)
           match parse_gnu_literal_args(literal_suffix, flags_for_read()) {
@@ -2405,7 +2300,7 @@ fn GraphBuilder::build_read_action(
                 Some(name) if is_variable_name(name) =>
                   effects.push({
                     ast_id: id,
-                    effect: CfgEffect::WriteVariable(name, CfgValue::Array),
+                    effect: WriteVariable(name, Array),
                   })
                 _ => append_read_string_effects(effects, id, parsed.operands)
               }
@@ -2414,10 +2309,7 @@ fn GraphBuilder::build_read_action(
         }
       }
   }
-  self.append_status(
-    id,
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-  )
+  self.append_status(id, self.new_node_range(ApplyEffects(effects)))
 }
 
 ///|
@@ -2433,16 +2325,13 @@ fn GraphBuilder::build_define_action(
         Some(name) =>
           effects.push({
             ast_id: id,
-            effect: CfgEffect::WriteVariable("FLAGS_" + name, CfgValue::String),
+            effect: WriteVariable("FLAGS_" + name, String),
           })
         None => ()
       }
     None => ()
   }
-  self.append_status(
-    id,
-    self.new_node_range(CfgNodeKind::ApplyEffects(effects)),
-  )
+  self.append_status(id, self.new_node_range(ApplyEffects(effects)))
 }
 
 ///|
@@ -2451,8 +2340,8 @@ fn GraphBuilder::build_external_command(
   id : CfgAstId,
   command_name : String?,
 ) -> Range {
-  let execute = self.new_node_range(CfgNodeKind::ExecuteCommand(command_name))
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let execute = self.new_node_range(ExecuteCommand(command_name))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_range(execute, status)
 }
 
@@ -2462,7 +2351,7 @@ fn GraphBuilder::append_status(
   id : CfgAstId,
   range : Range,
 ) -> Range {
-  let status = self.new_node_range(CfgNodeKind::SetExitCode(id))
+  let status = self.new_node_range(SetExitCode(id))
   self.link_range(range, status)
 }
 
@@ -2487,8 +2376,8 @@ fn GraphBuilder::build_subshell(
   reason : String,
   body_id : CfgAstId,
 ) -> Range {
-  let entry = self.new_node(CfgNodeKind::EntryPoint("subshell \{reason}"))
-  let end = self.new_node(CfgNodeKind::Structural)
+  let entry = self.new_node(EntryPoint("subshell \{reason}"))
+  let end = self.new_node(Structural)
   let old_exit = self.exit_target
   let old_return = self.return_target
   let old_break_targets = copy_node_ids(self.loop_break_targets)
@@ -2503,7 +2392,7 @@ fn GraphBuilder::build_subshell(
   self.loop_break_targets = old_break_targets
   self.loop_continue_targets = old_continue_targets
   let _ = self.link_ranges([node_range(entry), body, node_range(end)])
-  self.new_node_range(CfgNodeKind::ExecuteSubshell(reason, entry, end))
+  self.new_node_range(ExecuteSubshell(reason, entry, end))
 }
 
 ///|
@@ -2520,9 +2409,7 @@ fn GraphBuilder::build_declare_assignment_operand(
   if assignment.append {
     ranges.push(
       self.new_node_range(
-        CfgNodeKind::ApplyEffects([
-          { ast_id: id, effect: CfgEffect::ReadVariable(assignment.name) },
-        ]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name) }]),
       ),
     )
   }
@@ -2539,22 +2426,22 @@ fn GraphBuilder::build_declare_assignment_operand(
   for prop in assignment_added_props(assignment) {
     effects.push({
       ast_id: id,
-      effect: CfgEffect::SetProps(scope, assignment.name, [prop]),
+      effect: SetProps(scope, assignment.name, [prop]),
     })
   }
   if added_props.length() > 0 {
     effects.push({
       ast_id: id,
-      effect: CfgEffect::SetProps(scope, assignment.name, added_props),
+      effect: SetProps(scope, assignment.name, added_props),
     })
   }
   if removed_props.length() > 0 {
     effects.push({
       ast_id: id,
-      effect: CfgEffect::UnsetProps(scope, assignment.name, removed_props),
+      effect: UnsetProps(scope, assignment.name, removed_props),
     })
   }
-  ranges.push(self.new_node_range(CfgNodeKind::ApplyEffects(effects)))
+  ranges.push(self.new_node_range(ApplyEffects(effects)))
   let range = self.link_ranges(ranges)
   self.record_range(id, range)
   let _ = self.ast_stack.pop()
@@ -2566,10 +2453,10 @@ fn assignment_added_props(
   assignment : @parser.Assignment,
 ) -> Array[CfgVariableProp] {
   if assignment.indexes.length() > 0 {
-    return [CfgVariableProp::Array]
+    return [Array]
   }
   match assignment.value {
-    @parser.AssignmentValue::ArrayLiteral(_) => [CfgVariableProp::Array]
+    ArrayLiteral(_) => [Array]
     _ => []
   }
 }
@@ -2623,7 +2510,7 @@ fn split_simple_assignment_ids(
   let suffix : Array[CfgAstId] = []
   for assignment_id in assignment_ids {
     let assignment = match builder.entry_at(assignment_id).node_ref {
-      @semantics.NodeRef::Assignment(assignment) => assignment
+      Assignment(assignment) => assignment
       _ => panic()
     }
     if assignment.span.start.offset < first_word_offset {
@@ -2712,12 +2599,12 @@ fn parameter_assign_default_value(
   expansion : @parser.ParameterExpansion,
 ) -> CfgValue {
   match expansion.operator {
-    Some(@parser.ParameterOperator::AssignDefault(value)) =>
-      CfgValue::Computed(
+    Some(AssignDefault(value)) =>
+      Computed(
         id,
         word_parts_to_string_parts(@parser.parse_text_as_word(value).parts),
       )
-    _ => CfgValue::String
+    _ => String
   }
 }
 
@@ -2728,7 +2615,7 @@ fn assignment_value_children(
 ) -> Array[CfgAstId] {
   let values : Array[CfgAstId] = []
   for child in builder.children_of(id) {
-    if builder.entry_at(child).kind != AstTag::ArrayIndex {
+    if builder.entry_at(child).kind != ArrayIndex {
       values.push(child)
     }
   }
@@ -2741,19 +2628,18 @@ fn assignment_value_type(
   assignment : @parser.Assignment,
 ) -> CfgValue {
   if assignment.indexes.length() > 0 {
-    return CfgValue::Array
+    return Array
   }
   match assignment.value {
-    @parser.AssignmentValue::Empty =>
-      scalar_assignment_value(id, assignment.name, assignment.append, [])
-    @parser.AssignmentValue::Word(word) =>
+    Empty => scalar_assignment_value(id, assignment.name, assignment.append, [])
+    Word(word) =>
       scalar_assignment_value(
         id,
         assignment.name,
         assignment.append,
         word_parts_to_string_parts(word.parts),
       )
-    @parser.AssignmentValue::ArrayLiteral(_) => CfgValue::Array
+    ArrayLiteral(_) => Array
   }
 }
 
@@ -2766,12 +2652,12 @@ fn scalar_assignment_value(
 ) -> CfgValue {
   let combined : Array[CfgStringPart] = []
   if append {
-    combined.push(CfgStringPart::Variable(name))
+    combined.push(Variable(name))
   }
   for part in parts {
     combined.push(part)
   }
-  CfgValue::Computed(id, combined)
+  Computed(id, combined)
 }
 
 ///|
@@ -2781,10 +2667,10 @@ fn assignment_write_effect(
   value : CfgValue,
 ) -> CfgEffect {
   match scope {
-    Some(CfgScope::Prefix) => CfgEffect::WritePrefix(assignment.name, value)
-    Some(CfgScope::Local) => CfgEffect::WriteLocal(assignment.name, value)
-    Some(CfgScope::Global) => CfgEffect::WriteGlobal(assignment.name, value)
-    None => CfgEffect::WriteVariable(assignment.name, value)
+    Some(Prefix) => WritePrefix(assignment.name, value)
+    Some(Local) => WriteLocal(assignment.name, value)
+    Some(Global) => WriteGlobal(assignment.name, value)
+    None => WriteVariable(assignment.name, value)
   }
 }
 
@@ -2794,25 +2680,25 @@ fn loop_assignments(
   value_ids : Array[CfgAstId],
 ) -> Array[CfgValue] {
   if value_ids.length() == 0 {
-    return [CfgValue::String]
+    return [String]
   }
   let values : Array[CfgValue] = []
   let mut all_constant = true
   for value_id in value_ids {
     match builder.entry_at(value_id).node_ref {
-      @semantics.NodeRef::Word(word) =>
+      Word(word) =>
         if !@semantics.is_constant_word(word) {
           all_constant = false
         } else {
           values.push(
-            CfgValue::Computed(value_id, word_parts_to_string_parts(word.parts)),
+            Computed(value_id, word_parts_to_string_parts(word.parts)),
           )
         }
       _ => all_constant = false
     }
   }
   if !all_constant {
-    return [CfgValue::String]
+    return [String]
   }
   values
 }
@@ -2962,10 +2848,10 @@ fn unset_mode_from_parsed_flags(flags : Array[ParsedShortOption]) -> String {
 ///|
 fn unset_effect(mode : String, text : String) -> CfgEffect {
   match mode {
-    "nameref" => CfgEffect::UndefineNameref(text)
-    "variable" => CfgEffect::UndefineVariable(text)
-    "function" => CfgEffect::UndefineFunction(text)
-    _ => CfgEffect::Undefine(text)
+    "nameref" => UndefineNameref(text)
+    "variable" => UndefineVariable(text)
+    "function" => UndefineFunction(text)
+    _ => Undefine(text)
   }
 }
 
@@ -2986,10 +2872,10 @@ fn scoped_write_effect(
   value : CfgValue,
 ) -> CfgEffect {
   match scope {
-    Some(CfgScope::Local) => CfgEffect::WriteLocal(name, value)
-    Some(CfgScope::Global) => CfgEffect::WriteGlobal(name, value)
-    Some(CfgScope::Prefix) => CfgEffect::WritePrefix(name, value)
-    None => CfgEffect::WriteVariable(name, value)
+    Some(Local) => WriteLocal(name, value)
+    Some(Global) => WriteGlobal(name, value)
+    Some(Prefix) => WritePrefix(name, value)
+    None => WriteVariable(name, value)
   }
 }
 
@@ -3046,8 +2932,8 @@ fn parse_declare_action_info(
               Some((true, flags)) =>
                 for flag in flags {
                   match flag {
-                    "A" => push_prop(added_props, CfgVariableProp::Associative)
-                    "a" => push_prop(added_props, CfgVariableProp::Array)
+                    "A" => push_prop(added_props, Associative)
+                    "a" => push_prop(added_props, Array)
                     "f" | "F" | "p" => skip_variables = true
                     _ => ()
                   }
@@ -3059,16 +2945,12 @@ fn parse_declare_action_info(
               Some((enabled, flags)) =>
                 for flag in flags {
                   match flag {
-                    "A" if enabled =>
-                      push_prop(added_props, CfgVariableProp::Associative)
-                    "a" if enabled =>
-                      push_prop(added_props, CfgVariableProp::Array)
-                    "i" if enabled =>
-                      push_prop(added_props, CfgVariableProp::Integer)
-                    "i" => push_prop(removed_props, CfgVariableProp::Integer)
-                    "x" if enabled =>
-                      push_prop(added_props, CfgVariableProp::Export)
-                    "x" => push_prop(removed_props, CfgVariableProp::Export)
+                    "A" if enabled => push_prop(added_props, Associative)
+                    "a" if enabled => push_prop(added_props, Array)
+                    "i" if enabled => push_prop(added_props, Integer)
+                    "i" => push_prop(removed_props, Integer)
+                    "x" if enabled => push_prop(added_props, Export)
+                    "x" => push_prop(removed_props, Export)
                     "g" if enabled => saw_global = true
                     "f" | "F" | "p" if enabled => skip_variables = true
                     _ => ()
@@ -3083,9 +2965,9 @@ fn parse_declare_action_info(
   match command_name {
     Some("export") =>
       if saw_unexport {
-        push_prop(removed_props, CfgVariableProp::Export)
+        push_prop(removed_props, Export)
       } else if !skip_variables {
-        push_prop(added_props, CfgVariableProp::Export)
+        push_prop(added_props, Export)
       }
     _ => ()
   }
@@ -3093,9 +2975,9 @@ fn parse_declare_action_info(
     Some("local") => Some(CfgScope::Local)
     _ =>
       if saw_global {
-        Some(CfgScope::Global)
+        Some(Global)
       } else if is_function && declare_defaults_to_local_scope(command_name) {
-        Some(CfgScope::Local)
+        Some(Local)
       } else {
         None
       }
@@ -3147,7 +3029,7 @@ fn append_declare_operand_effects(
       match split_declare_assignment(text) {
         Some((name, append, value)) => {
           if append {
-            effects.push({ ast_id: id, effect: CfgEffect::ReadVariable(name) })
+            effects.push({ ast_id: id, effect: ReadVariable(name) })
           }
           effects.push({
             ast_id: id,
@@ -3177,14 +3059,14 @@ fn append_declare_operand_effects(
       match leading_declare_assignment(operand) {
         Some((name, append)) => {
           if append {
-            effects.push({ ast_id: id, effect: CfgEffect::ReadVariable(name) })
+            effects.push({ ast_id: id, effect: ReadVariable(name) })
           }
           effects.push({
             ast_id: id,
             effect: scoped_write_effect(
               scope,
               name,
-              scalar_assignment_value(id, name, append, [CfgStringPart::Unknown]),
+              scalar_assignment_value(id, name, append, [Unknown]),
             ),
           })
           append_declare_property_effects(
@@ -3206,16 +3088,10 @@ fn append_declare_property_effects(
   name : String,
 ) -> Unit {
   if added_props.length() > 0 {
-    effects.push({
-      ast_id: id,
-      effect: CfgEffect::SetProps(scope, name, added_props),
-    })
+    effects.push({ ast_id: id, effect: SetProps(scope, name, added_props) })
   }
   if removed_props.length() > 0 {
-    effects.push({
-      ast_id: id,
-      effect: CfgEffect::UnsetProps(scope, name, removed_props),
-    })
+    effects.push({ ast_id: id, effect: UnsetProps(scope, name, removed_props) })
   }
 }
 
@@ -3262,7 +3138,7 @@ fn declare_assignment_parts(value : String) -> Array[CfgStringPart] {
   if value == "" {
     []
   } else {
-    [CfgStringPart::Literal(value)]
+    [Literal(value)]
   }
 }
 
@@ -3299,17 +3175,11 @@ fn append_read_string_effects(
   names : Array[String],
 ) -> Unit {
   if names.length() == 0 {
-    effects.push({
-      ast_id: id,
-      effect: CfgEffect::WriteVariable("REPLY", CfgValue::String),
-    })
+    effects.push({ ast_id: id, effect: WriteVariable("REPLY", String) })
     return
   }
   for name in names {
-    effects.push({
-      ast_id: id,
-      effect: CfgEffect::WriteVariable(name, CfgValue::String),
-    })
+    effects.push({ ast_id: id, effect: WriteVariable(name, String) })
   }
 }
 
@@ -3567,27 +3437,21 @@ fn append_string_parts(
   part : @parser.WordPart,
 ) -> Unit {
   match part {
-    @parser.WordPart::Literal(text) | @parser.WordPart::SingleQuoted(text) =>
-      values.push(CfgStringPart::Literal(text))
-    @parser.WordPart::DollarSingleQuoted(text) =>
-      values.push(CfgStringPart::Literal(decode_dollar_single_quoted(text)))
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(text) | SingleQuoted(text) => values.push(Literal(text))
+    DollarSingleQuoted(text) =>
+      values.push(Literal(decode_dollar_single_quoted(text)))
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       for nested in parts {
         append_string_parts(values, nested)
       }
-    @parser.WordPart::Parameter(name)
-    | @parser.WordPart::SpecialParameter(name) =>
-      values.push(CfgStringPart::Variable(name))
-    @parser.WordPart::BracedParameter(expansion) =>
+    Parameter(name) | SpecialParameter(name) => values.push(Variable(name))
+    BracedParameter(expansion) =>
       match expansion.name {
-        Some(name) if expansion.operator is None =>
-          values.push(CfgStringPart::Variable(name))
-        _ => values.push(CfgStringPart::Unknown)
+        Some(name) if expansion.operator is None => values.push(Variable(name))
+        _ => values.push(Unknown)
       }
-    @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_) => values.push(CfgStringPart::Integer)
-    _ => values.push(CfgStringPart::Unknown)
+    ArithmeticExpansion(_) | DollarBracket(_) => values.push(Integer)
+    _ => values.push(Unknown)
   }
 }
 
@@ -3729,7 +3593,7 @@ fn find_last_child_script(
   let mut i = children.length()
   while i > 0 {
     i -= 1
-    if builder.entry_at(children[i]).kind == AstTag::Script {
+    if builder.entry_at(children[i]).kind == Script {
       return Some(children[i])
     }
   }
@@ -3874,7 +3738,7 @@ fn arithmetic_token_needs_read(
   index : Int,
 ) -> Bool {
   match tokens[index] {
-    @parser.ArithmeticToken::Variable(_, _) =>
+    Variable(_, _) =>
       match arithmetic_next_operator(tokens, index) {
         Some("=") => false
         _ => true
@@ -3892,17 +3756,14 @@ fn arithmetic_write_effects(
   let mut i = 0
   while i < tokens.length() {
     match tokens[i] {
-      @parser.ArithmeticToken::Variable(name, indexes) =>
+      Variable(name, indexes) =>
         if arithmetic_token_writes(
             arithmetic_prev_operator(tokens, i),
             arithmetic_next_operator(tokens, i),
           ) {
           effects.push({
             ast_id: id,
-            effect: CfgEffect::WriteVariable(
-              name,
-              arithmetic_written_value(indexes),
-            ),
+            effect: WriteVariable(name, arithmetic_written_value(indexes)),
           })
         }
       _ => ()
@@ -3933,7 +3794,7 @@ fn arithmetic_prev_operator(
     return None
   }
   match tokens[index - 1] {
-    @parser.ArithmeticToken::Operator(op) => Some(op)
+    Operator(op) => Some(op)
     _ => None
   }
 }
@@ -3947,7 +3808,7 @@ fn arithmetic_next_operator(
     return None
   }
   match tokens[index + 1] {
-    @parser.ArithmeticToken::Operator(op) => Some(op)
+    Operator(op) => Some(op)
     _ => None
   }
 }
@@ -3955,9 +3816,9 @@ fn arithmetic_next_operator(
 ///|
 fn arithmetic_written_value(indexes : Array[@parser.ArrayIndex]) -> CfgValue {
   if indexes.length() > 0 {
-    CfgValue::Array
+    Array
   } else {
-    CfgValue::Integer
+    Integer
   }
 }
 
@@ -3985,11 +3846,9 @@ fn is_arithmetic_write_operator(op : String) -> Bool {
 ///|
 fn redirection_closes_named_fd(redirect : @parser.Redirection) -> Bool {
   match redirect.op {
-    @parser.RedirectionOperator::DupInput
-    | @parser.RedirectionOperator::DupOutput =>
+    DupInput | DupOutput =>
       match redirect.target {
-        @parser.RedirectionTarget::Word(word) =>
-          @semantics.literal_text(word) == Some("-")
+        Word(word) => @semantics.literal_text(word) == Some("-")
         _ => false
       }
     _ => false
@@ -4064,7 +3923,7 @@ fn postdom_for_node(
 fn postdom_successors(cfg : CFG, node : CfgNodeId) -> Array[CfgNodeId] {
   let normal = real_successors(cfg, node)
   match node_at(cfg, node) {
-    Some({ kind: CfgNodeKind::ExecuteSubshell(_, start, _), .. }) => [start]
+    Some({ kind: ExecuteSubshell(_, start, _), .. }) => [start]
     _ =>
       match subshell_execute_for_end(cfg, node) {
         Some(execute) => real_successors(cfg, execute)
@@ -4082,8 +3941,7 @@ fn postdom_successors(cfg : CFG, node : CfgNodeId) -> Array[CfgNodeId] {
 fn subshell_execute_for_end(cfg : CFG, node : CfgNodeId) -> CfgNodeId? {
   for current in cfg.nodes {
     match current.kind {
-      CfgNodeKind::ExecuteSubshell(_, _, end) if end == node =>
-        return Some(current.id)
+      ExecuteSubshell(_, _, end) if end == node => return Some(current.id)
       _ => ()
     }
   }
@@ -4094,8 +3952,7 @@ fn subshell_execute_for_end(cfg : CFG, node : CfgNodeId) -> CfgNodeId? {
 fn real_successors(cfg : CFG, node : CfgNodeId) -> Array[CfgNodeId] {
   let successors : Array[CfgNodeId] = []
   for edge in cfg.graph_edges {
-    if edge.from == node &&
-      (edge.kind == CfgEdgeKind::Flow || edge.kind == CfgEdgeKind::Exit) {
+    if edge.from == node && (edge.kind == Flow || edge.kind == Exit) {
       successors.push(edge.to)
     }
   }

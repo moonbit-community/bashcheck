@@ -13,7 +13,7 @@ The public enum covers tty, json, json1, gcc, checkstyle, quiet, and diff.
 ///|
 test "doc formatter parses CLI format names" {
   match @formatter.parse_output_format("diff") {
-    Some(@formatter.OutputFormat::Diff) => ()
+    Some(Diff) => ()
     _ => abort("expected diff")
   }
   assert_true(@formatter.parse_output_format("bogus") is None)

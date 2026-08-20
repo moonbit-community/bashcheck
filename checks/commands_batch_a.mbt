@@ -6,181 +6,181 @@ fn append_commands_batch_a_descriptions(
     description in [
       {
         code: 2003,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "commands",
         summary: "expr is antiquated. Prefer modern shell arithmetic or tests.",
       },
       {
         code: 2018,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Use '[:lower:]' with tr to support accents and foreign alphabets.",
       },
       {
         code: 2019,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Use '[:upper:]' with tr to support accents and foreign alphabets.",
       },
       {
         code: 2020,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "tr replaces character sets, not whole words.",
       },
       {
         code: 2021,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Don't wrap tr classes in [].",
       },
       {
         code: 2022,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Regex wildcards in grep differ from glob wildcards.",
       },
       {
         code: 2059,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Don't use variables in the printf format string.",
       },
       {
         code: 2060,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Quote tr arguments to prevent glob expansion.",
       },
       {
         code: 2061,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Quote find patterns so the shell won't interpret them.",
       },
       {
         code: 2062,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Quote the grep pattern so the shell won't interpret it.",
       },
       {
         code: 2063,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "grep uses regex, but this pattern looks like a glob.",
       },
       {
         code: 2064,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Use single quotes in trap handlers to defer expansion.",
       },
       {
         code: 2146,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Group find actions behind -o with \\( \\).",
       },
       {
         code: 2150,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "find -exec does not invoke a shell.",
       },
       {
         code: 2151,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "return accepts only one integer 0-255.",
       },
       {
         code: 2152,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "return values must be within 0-255.",
       },
       {
         code: 2156,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Injecting filenames into sh -c under find is fragile.",
       },
       {
         code: 2182,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "printf format string has no variables, so extra arguments are ignored.",
       },
       {
         code: 2183,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "printf format string and argument count do not match.",
       },
       {
         code: 2229,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "read takes variable names, not expansions.",
       },
       {
         code: 2232,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "sudo can't directly run shell builtins.",
       },
       {
         code: 2240,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "The dot command does not support arguments in sh/dash.",
       },
       {
         code: 2241,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "exit accepts only one integer 0-255.",
       },
       {
         code: 2242,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "exit values must be within 0-255.",
       },
       {
         code: 2304,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "Escape * in expr to multiply.",
       },
       {
         code: 2305,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Quote regex arguments to expr to avoid glob expansion.",
       },
       {
         code: 2306,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Escape glob characters in expr arguments.",
       },
       {
         code: 2307,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "expr expects separate operator and operand arguments.",
       },
       {
         code: 2308,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "Prefer modern replacements for expr subcommands.",
       },
       {
         code: 2313,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Quote array indices in read targets to avoid glob expansion.",
       },
@@ -203,7 +203,7 @@ fn check_tr_arguments(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Warning,
+          Warning,
           2060,
           "Quote parameters to tr to prevent glob expansion.",
         )
@@ -214,7 +214,7 @@ fn check_tr_arguments(
           push_diagnostic(
             diagnostics,
             argument.span,
-            CheckSeverity::Info,
+            Info,
             2018,
             "Use '[:lower:]' to support accents and foreign alphabets.",
           )
@@ -222,7 +222,7 @@ fn check_tr_arguments(
           push_diagnostic(
             diagnostics,
             argument.span,
-            CheckSeverity::Info,
+            Info,
             2019,
             "Use '[:upper:]' to support accents and foreign alphabets.",
           )
@@ -233,7 +233,7 @@ fn check_tr_arguments(
             push_diagnostic(
               diagnostics,
               argument.span,
-              CheckSeverity::Info,
+              Info,
               2020,
               "tr replaces sets of chars, not words (mentioned due to duplicates).",
             )
@@ -247,7 +247,7 @@ fn check_tr_arguments(
             push_diagnostic(
               diagnostics,
               argument.span,
-              CheckSeverity::Info,
+              Info,
               2021,
               "Don't use [] around classes in tr, it replaces literal square brackets.",
             )
@@ -297,7 +297,7 @@ fn check_find_name_globs(
           push_diagnostic(
             diagnostics,
             arguments[i].span,
-            CheckSeverity::Warning,
+            Warning,
             2061,
             "Quote the parameter to \{flag} so the shell won't interpret it.",
           )
@@ -340,7 +340,7 @@ fn check_find_exec_single_argument(
           push_diagnostic(
             diagnostics,
             arguments[i].span,
-            CheckSeverity::Warning,
+            Warning,
             2150,
             "\{exec_name} does not invoke a shell. Rewrite or use \{exec_name} sh -c .. .",
           )
@@ -389,7 +389,7 @@ fn check_injectable_find_sh(
           push_diagnostic(
             diagnostics,
             arguments[i + 3].span,
-            CheckSeverity::Warning,
+            Warning,
             2156,
             "Injecting filenames is fragile and insecure. Use parameters.",
           )
@@ -419,7 +419,7 @@ fn check_find_action_precedence(
         push_diagnostic(
           diagnostics,
           arguments[i + 5].span,
-          CheckSeverity::Warning,
+          Warning,
           2146,
           "This action ignores everything before the -o. Use \\( \\) to group.",
         )
@@ -479,7 +479,7 @@ fn check_find_redirections(
         push_diagnostic(
           diagnostics,
           redirect.span,
-          CheckSeverity::Warning,
+          Warning,
           2227,
           "Redirection applies to the find command itself. Rewrite to work per action (or move to end).",
         )
@@ -502,7 +502,7 @@ fn check_expr_usage(
       push_diagnostic(
         diagnostics,
         effective_command_span(command),
-        CheckSeverity::Style,
+        Style,
         2003,
         "expr is antiquated. Consider rewriting this using $((..)), ${} or [[ ]].",
       )
@@ -514,7 +514,7 @@ fn check_expr_usage(
           push_diagnostic(
             diagnostics,
             op.span,
-            CheckSeverity::Error,
+            Error,
             2304,
             "* must be escaped to multiply: \\*. Modern $((x * y)) avoids this issue.",
           )
@@ -524,7 +524,7 @@ fn check_expr_usage(
             push_diagnostic(
               diagnostics,
               rhs.span,
-              CheckSeverity::Warning,
+              Warning,
               2305,
               "Quote regex argument to expr to avoid it expanding as a glob.",
             )
@@ -535,7 +535,7 @@ fn check_expr_usage(
         push_diagnostic(
           diagnostics,
           single.span,
-          CheckSeverity::Warning,
+          Warning,
           2307,
           "'expr' expects 3+ arguments but sees 1. Make sure each operator/operand is a separate argument, and escape <>&|.",
         )
@@ -546,7 +546,7 @@ fn check_expr_usage(
         push_diagnostic(
           diagnostics,
           command.span,
-          CheckSeverity::Warning,
+          Warning,
           2307,
           "'expr' expects 3+ arguments, but sees 2. Make sure each operator/operand is a separate argument, and escape <>&|.",
         )
@@ -559,7 +559,7 @@ fn check_expr_usage(
             push_diagnostic(
               diagnostics,
               arguments[i].span,
-              CheckSeverity::Warning,
+              Warning,
               2306,
               "Escape glob characters in arguments to expr to avoid pathname expansion.",
             )
@@ -599,7 +599,7 @@ fn expr_check_op_replacement(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Info,
+        Info,
         2308,
         "'expr match' has unspecified results. Prefer 'expr str : regex'.",
       )
@@ -607,7 +607,7 @@ fn expr_check_op_replacement(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Info,
+        Info,
         2308,
         "'expr length' has unspecified results. Prefer ${#var}.",
       )
@@ -615,7 +615,7 @@ fn expr_check_op_replacement(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Info,
+        Info,
         2308,
         "'expr substr' has unspecified results. Prefer 'cut' or ${var#???}.",
       )
@@ -623,7 +623,7 @@ fn expr_check_op_replacement(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Info,
+        Info,
         2308,
         "'expr index' has unspecified results. Prefer x=${var%%[chars]*}; $((${#x}+1)).",
       )
@@ -634,7 +634,7 @@ fn expr_check_op_replacement(
 ///|
 fn word_is_exact_unquoted_glob_text(word : @parser.Word, text : String) -> Bool {
   match word.parts {
-    [@parser.WordPart::Glob(raw)] => raw == text
+    [Glob(raw)] => raw == text
     _ => false
   }
 }
@@ -656,7 +656,7 @@ fn check_grep_patterns(
           push_diagnostic(
             diagnostics,
             word.span,
-            CheckSeverity::Warning,
+            Warning,
             2062,
             "Quote the grep pattern so the shell won't interpret it.",
           )
@@ -667,7 +667,7 @@ fn check_grep_patterns(
             push_diagnostic(
               diagnostics,
               word.span,
-              CheckSeverity::Warning,
+              Warning,
               2063,
               "Grep uses regex, but this looks like a glob.",
             )
@@ -677,7 +677,7 @@ fn check_grep_patterns(
                 push_diagnostic(
                   diagnostics,
                   word.span,
-                  CheckSeverity::Info,
+                  Info,
                   2022,
                   "Note that unlike globs, \{uint16_to_string(ch)}* here matches '\{uint16_to_string(ch)}\{uint16_to_string(ch)}\{uint16_to_string(ch)}' but not '\{grep_word_starting_with(ch)}'.",
                 )
@@ -864,7 +864,7 @@ fn check_trap_quotes(
             push_diagnostic(
               diagnostics,
               argument.span,
-              CheckSeverity::Warning,
+              Warning,
               2064,
               "Use single quotes, otherwise this expands now rather than when signalled.",
             )
@@ -879,16 +879,15 @@ fn check_trap_quotes(
 fn trap_parts_expand_immediately(parts : Array[@parser.WordPart]) -> Bool {
   for part in parts {
     match part {
-      @parser.WordPart::Parameter(_)
-      | @parser.WordPart::SpecialParameter(_)
-      | @parser.WordPart::BracedParameter(_)
-      | @parser.WordPart::CommandSubstitution(_)
-      | @parser.WordPart::BraceCommandSubstitution(_, _)
-      | @parser.WordPart::BackQuoted(_)
-      | @parser.WordPart::ArithmeticExpansion(_)
-      | @parser.WordPart::DollarBracket(_) => return true
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      Parameter(_)
+      | SpecialParameter(_)
+      | BracedParameter(_)
+      | CommandSubstitution(_)
+      | BraceCommandSubstitution(_, _)
+      | BackQuoted(_)
+      | ArithmeticExpansion(_)
+      | DollarBracket(_) => return true
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         if trap_parts_expand_immediately(nested) {
           return true
         }
@@ -940,20 +939,14 @@ fn check_return_or_exit_value(
   match @semantics.effective_command_arguments(command) {
     [first, second, ..] => {
       ignore(second)
-      push_diagnostic(
-        diagnostics,
-        first.span,
-        CheckSeverity::Error,
-        multi_code,
-        multi_message,
-      )
+      push_diagnostic(diagnostics, first.span, Error, multi_code, multi_message)
     }
     [value] =>
       if return_or_exit_argument_is_invalid(value) {
         push_diagnostic(
           diagnostics,
           value.span,
-          CheckSeverity::Error,
+          Error,
           invalid_code,
           invalid_message,
         )
@@ -1007,26 +1000,25 @@ fn append_return_or_exit_part(
   buf : StringBuilder,
 ) -> Bool {
   match part {
-    @parser.WordPart::Literal(text)
-    | @parser.WordPart::SingleQuoted(text)
-    | @parser.WordPart::DollarSingleQuoted(text)
-    | @parser.WordPart::Glob(text) => {
+    Literal(text)
+    | SingleQuoted(text)
+    | DollarSingleQuoted(text)
+    | Glob(text) => {
       buf.write_string(text)
       true
     }
-    @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::BracedParameter(_)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::BackQuoted(_)
-    | @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_) => {
+    Parameter(_)
+    | SpecialParameter(_)
+    | BracedParameter(_)
+    | CommandSubstitution(_)
+    | BraceCommandSubstitution(_, _)
+    | BackQuoted(_)
+    | ArithmeticExpansion(_)
+    | DollarBracket(_) => {
       buf.write_string("0")
       true
     }
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       append_return_or_exit_parts(parts, buf)
     _ => false
   }
@@ -1051,7 +1043,7 @@ fn check_printf_arguments(
           push_diagnostic(
             diagnostics,
             format_word.span,
-            CheckSeverity::Info,
+            Info,
             2059,
             "Don't use variables in the printf format string. Use printf '..%s..' \"$foo\".",
           )
@@ -1114,7 +1106,7 @@ fn check_printf_argument_count(
         push_diagnostic(
           diagnostics,
           format.span,
-          CheckSeverity::Error,
+          Error,
           2182,
           "This printf format string has no variables. Other arguments are ignored.",
         )
@@ -1134,7 +1126,7 @@ fn check_printf_argument_count(
       push_diagnostic(
         diagnostics,
         format.span,
-        CheckSeverity::Warning,
+        Warning,
         2183,
         "This format string has \{format_count} \{variable_word}, but is passed \{arg_count} \{argument_word}.",
       )
@@ -1264,13 +1256,13 @@ fn check_source_arguments(
   guard shell_is_posix_sh(shell) else { return }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         match source.args.get(0) {
           Some(argument) =>
             push_diagnostic(
               diagnostics,
               argument.span,
-              CheckSeverity::Warning,
+              Warning,
               2240,
               "The dot command does not support arguments in sh/dash. Set them as variables.",
             )
@@ -1297,7 +1289,7 @@ fn check_sudo_arguments(
             push_diagnostic(
               diagnostics,
               effective_command_span(command),
-              CheckSeverity::Warning,
+              Warning,
               2232,
               "Can't use sudo with builtins like \{name}. Did you want sudo sh -c .. instead?",
             )
@@ -1405,7 +1397,7 @@ fn check_read_expansions(
           push_diagnostic(
             diagnostics,
             variable_word.span,
-            CheckSeverity::Warning,
+            Warning,
             2229,
             "This does not read '\{name}'. Remove $/${} for that, or use ${var?} to quiet.",
           )
@@ -1417,7 +1409,7 @@ fn check_read_expansions(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Warning,
+          Warning,
           2313,
           "Quote array indices to avoid them expanding as globs.",
         )
@@ -1489,17 +1481,12 @@ fn read_variable_words(arguments : Array[@parser.Word]) -> Array[@parser.Word] {
 ///|
 fn read_expansion_target_name(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::Parameter(name)]
-    | [@parser.WordPart::SpecialParameter(name)] => Some(name)
-    [@parser.WordPart::BracedParameter(expansion)] =>
-      read_braced_target_name(expansion)
-    [@parser.WordPart::DoubleQuoted(parts)]
-    | [@parser.WordPart::DollarDoubleQuoted(parts)] =>
+    [Parameter(name)] | [SpecialParameter(name)] => Some(name)
+    [BracedParameter(expansion)] => read_braced_target_name(expansion)
+    [DoubleQuoted(parts)] | [DollarDoubleQuoted(parts)] =>
       match parts {
-        [@parser.WordPart::Parameter(name)]
-        | [@parser.WordPart::SpecialParameter(name)] => Some(name)
-        [@parser.WordPart::BracedParameter(expansion)] =>
-          read_braced_target_name(expansion)
+        [Parameter(name)] | [SpecialParameter(name)] => Some(name)
+        [BracedParameter(expansion)] => read_braced_target_name(expansion)
         _ => None
       }
     _ => None
@@ -1521,7 +1508,7 @@ fn read_braced_target_name(expansion : @parser.ParameterExpansion) -> String? {
 fn read_word_has_unquoted_array_index(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::Glob(text) if text.has_prefix("[") => return true
+      Glob(text) if text.has_prefix("[") => return true
       _ => ()
     }
   }

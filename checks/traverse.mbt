@@ -57,7 +57,7 @@ fn visit_command_and_includes(
 ) -> Unit {
   @semantics.walk_command(command, visit)
   match command.kind {
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       match source.included {
         Some(script) => visit_script_commands(script, visit)
         None => ()
@@ -105,12 +105,10 @@ fn visit_nested_pipelines_in_command(
   visit : (@parser.Pipeline) -> Unit,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Time(clause) => visit_pipeline_deep(clause.body, visit)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Time(clause) => visit_pipeline_deep(clause.body, visit)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       visit_script_pipelines(script, visit)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         visit_script_pipelines(arm.condition, visit)
         visit_script_pipelines(arm.body, visit)
@@ -120,28 +118,21 @@ fn visit_nested_pipelines_in_command(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       visit_script_pipelines(clause.condition, visit)
       visit_script_pipelines(clause.body, visit)
     }
-    @parser.CommandKind::ForIn(clause) =>
-      visit_script_pipelines(clause.body, visit)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      visit_script_pipelines(clause.body, visit)
-    @parser.CommandKind::Select(clause) =>
-      visit_script_pipelines(clause.body, visit)
-    @parser.CommandKind::Case(clause) =>
+    ForIn(clause) => visit_script_pipelines(clause.body, visit)
+    ForArithmetic(clause) => visit_script_pipelines(clause.body, visit)
+    Select(clause) => visit_script_pipelines(clause.body, visit)
+    Case(clause) =>
       for item in clause.items {
         visit_script_pipelines(item.body, visit)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       visit_nested_pipelines_in_command(function_.body, visit)
-    @parser.CommandKind::CoProc(clause) =>
-      visit_nested_pipelines_in_command(clause.body, visit)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    CoProc(clause) => visit_nested_pipelines_in_command(clause.body, visit)
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -151,78 +142,76 @@ fn visit_direct_words_in_command(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       for assignment in simple.assignments {
         visit_assignment_value_words(assignment.value, visit)
       }
       if simple.words.length() > 0 {
-        visit(simple.words[0], WordPlace::CommandName)
+        visit(simple.words[0], CommandName)
       }
       let mut i = 1
       while i < simple.words.length() {
-        visit(simple.words[i], WordPlace::CommandArgument)
+        visit(simple.words[i], CommandArgument)
         i += 1
       }
     }
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       for assignment in source.assignments {
         visit_assignment_value_words(assignment.value, visit)
       }
       for option in source.options {
-        visit(option, WordPlace::SourceOption)
+        visit(option, SourceOption)
       }
-      visit(source.path, WordPlace::SourcePath)
+      visit(source.path, SourcePath)
       for arg in source.args {
-        visit(arg, WordPlace::SourceArgument)
+        visit(arg, SourceArgument)
       }
     }
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       for flag in clause.flags {
-        visit(flag, WordPlace::TimeFlag)
+        visit(flag, TimeFlag)
       }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       for value in clause.values {
-        visit(value, WordPlace::ForValue)
+        visit(value, ForValue)
       }
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       for value in clause.values {
-        visit(value, WordPlace::SelectValue)
+        visit(value, SelectValue)
       }
-    @parser.CommandKind::Case(clause) => {
-      visit(clause.word, WordPlace::CaseWord)
+    Case(clause) => {
+      visit(clause.word, CaseWord)
       for item in clause.items {
         for pattern in item.patterns {
-          visit(pattern, WordPlace::CasePattern)
+          visit(pattern, CasePattern)
         }
       }
     }
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       visit_condition_expr_words(condition.expr, condition.kind, visit)
-    @parser.CommandKind::Arithmetic(command) =>
-      visit_arithmetic_expr_words(command.expr, visit)
-    @parser.CommandKind::ForArithmetic(clause) => {
+    Arithmetic(command) => visit_arithmetic_expr_words(command.expr, visit)
+    ForArithmetic(clause) => {
       visit_arithmetic_expr_words(clause.init, visit)
       visit_arithmetic_expr_words(clause.condition, visit)
       visit_arithmetic_expr_words(clause.step, visit)
     }
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       match clause.name {
-        Some(name) => visit(name, WordPlace::CoProcName)
+        Some(name) => visit(name, CoProcName)
         None => ()
       }
-    @parser.CommandKind::Subshell(_)
-    | @parser.CommandKind::BraceGroup(_)
-    | @parser.CommandKind::If(_)
-    | @parser.CommandKind::While(_)
-    | @parser.CommandKind::Until(_)
-    | @parser.CommandKind::Function(_)
-    | @parser.CommandKind::BatsTest(_) => ()
+    Subshell(_)
+    | BraceGroup(_)
+    | If(_)
+    | While(_)
+    | Until(_)
+    | Function(_)
+    | BatsTest(_) => ()
   }
   for redirect in command.redirects {
     match redirect.target {
-      @parser.RedirectionTarget::Word(word) =>
-        visit(word, WordPlace::RedirectionTarget)
-      @parser.RedirectionTarget::HereDoc(_) => ()
+      Word(word) => visit(word, RedirectionTarget)
+      HereDoc(_) => ()
     }
   }
 }
@@ -233,10 +222,9 @@ fn visit_assignment_value_words(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Empty => ()
-    @parser.AssignmentValue::Word(word) =>
-      visit(word, WordPlace::AssignmentValue)
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    Empty => ()
+    Word(word) => visit(word, AssignmentValue)
+    ArrayLiteral(elements) =>
       for element in elements {
         visit_array_element_words(element, visit)
       }
@@ -258,21 +246,19 @@ fn visit_condition_expr_words(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   let place = match kind {
-    @parser.ConditionKind::SingleBracket => WordPlace::ConditionSingleBracket
-    @parser.ConditionKind::DoubleBracket => WordPlace::ConditionDoubleBracket
+    SingleBracket => WordPlace::ConditionSingleBracket
+    DoubleBracket => ConditionDoubleBracket
   }
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) => visit(word, place)
-    @parser.ConditionExpr::Unary(_, _, word) => visit(word, place)
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Empty => ()
+    Word(word) => visit(word, place)
+    Unary(_, _, word) => visit(word, place)
+    Binary(_, _, lhs, rhs) => {
       visit(lhs, place)
       visit(rhs, place)
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      visit_condition_expr_words(inner, kind, visit)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Group(inner) | Not(inner) => visit_condition_expr_words(inner, kind, visit)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       visit_condition_expr_words(lhs, kind, visit)
       visit_condition_expr_words(rhs, kind, visit)
     }
@@ -286,10 +272,8 @@ fn visit_arithmetic_expr_words(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Expansion(word) =>
-        visit(word, WordPlace::ArithmeticWord)
-      @parser.ArithmeticToken::Group(inner) =>
-        visit_arithmetic_expr_words(inner, visit)
+      Expansion(word) => visit(word, ArithmeticWord)
+      Group(inner) => visit_arithmetic_expr_words(inner, visit)
       _ => ()
     }
   }

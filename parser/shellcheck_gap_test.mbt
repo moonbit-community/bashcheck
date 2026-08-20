@@ -92,7 +92,7 @@ test "brace expansions and array indexes stay balanced across nested shell synta
   )
   let (_, brace_simple) = first_simple(brace_script)
   match brace_simple.words[1].parts[0] {
-    @parser.WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       assert_eq(expansion.raw, "{foo,\"}\"}")
       assert_eq(expansion.elements.length(), 2)
       assert_eq(expansion.elements[0].source, "foo")
@@ -109,7 +109,7 @@ test "brace expansions and array indexes stay balanced across nested shell synta
   )
   let (_, brace_subst_simple) = first_simple(brace_subst)
   match brace_subst_simple.words[1].parts[0] {
-    @parser.WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       assert_eq(expansion.raw, "{foo,$(printf %s })}")
       assert_eq(expansion.elements.length(), 2)
       assert_eq(expansion.elements[1].source, "$(printf %s })")
@@ -153,7 +153,7 @@ test "command substitutions stay balanced across nested parameter expansions" {
   let (_, simple) = first_simple(script)
 
   match simple.words[1].parts[0] {
-    @parser.WordPart::CommandSubstitution(inner) => {
+    CommandSubstitution(inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words.length(), 3)
       assert_eq(nested.words[0].source, "printf")
@@ -164,7 +164,7 @@ test "command substitutions stay balanced across nested parameter expansions" {
   }
 
   match simple.words[2].parts[0] {
-    @parser.WordPart::ProcessSubstitution(kind, inner) => {
+    ProcessSubstitution(kind, inner) => {
       assert_eq(kind, "<")
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words[2].source, "${x//)/_}")
@@ -185,8 +185,7 @@ test "parameter expansions preserve nested command substitutions with closing pa
   let expansion = braced_parameter(simple.words[1].parts[0])
   assert_eq(expansion.raw, "foo:=$(printf %s ${x//)/_})")
   match expansion.operator {
-    Some(@parser.ParameterOperator::AssignDefault(text)) =>
-      assert_eq(text, "$(printf %s ${x//)/_})")
+    Some(AssignDefault(text)) => assert_eq(text, "$(printf %s ${x//)/_})")
     _ =>
       fail("expected assign-default operator with nested command substitution")
   }
@@ -202,7 +201,7 @@ test "arithmetic expansions preserve nested command substitutions with closing p
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::ArithmeticExpansion(expr) =>
+    ArithmeticExpansion(expr) =>
       assert_eq(arithmetic_raw(expr), " $(printf %s ${x//)/_}) + 1 ")
     _ => fail("expected arithmetic expansion")
   }
@@ -220,7 +219,7 @@ test "parameter operators ignore nested separator characters" {
 
   let nested_slice = braced_parameter(simple.words[1].parts[0])
   match nested_slice.operator {
-    Some(@parser.ParameterOperator::Slice(offset, Some(length))) => {
+    Some(Slice(offset, Some(length))) => {
       assert_eq(offset, "${foo:-1}")
       assert_eq(length, "2")
     }
@@ -229,7 +228,7 @@ test "parameter operators ignore nested separator characters" {
 
   let command_slice = braced_parameter(simple.words[2].parts[0])
   match command_slice.operator {
-    Some(@parser.ParameterOperator::Slice(offset, Some(length))) => {
+    Some(Slice(offset, Some(length))) => {
       assert_eq(offset, "$(printf %s :)")
       assert_eq(length, "1")
     }
@@ -238,9 +237,9 @@ test "parameter operators ignore nested separator characters" {
 
   let nested_replace = braced_parameter(simple.words[3].parts[0])
   match nested_replace.operator {
-    Some(@parser.ParameterOperator::Replace(mode, pattern, replacement)) => {
+    Some(Replace(mode, pattern, replacement)) => {
       match mode {
-        @parser.ParameterReplaceMode::First => ()
+        First => ()
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "${foo:-/}")
@@ -254,9 +253,9 @@ test "parameter operators ignore nested separator characters" {
 
   let command_replace = braced_parameter(simple.words[4].parts[0])
   match command_replace.operator {
-    Some(@parser.ParameterOperator::Replace(mode, pattern, replacement)) => {
+    Some(Replace(mode, pattern, replacement)) => {
       match mode {
-        @parser.ParameterReplaceMode::First => ()
+        First => ()
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "$(printf %s /)")
@@ -279,7 +278,7 @@ test "legacy dollar bracket arithmetic ignores closing brackets inside nested sh
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::DollarBracket(expr) =>
+    DollarBracket(expr) =>
       assert_eq(
         arithmetic_raw(expr),
         "$(printf %s ]) + ${arr[$(printf %s ])]} + 1",
@@ -298,7 +297,7 @@ test "modern arithmetic expansions ignore closing brackets inside nested shell s
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::ArithmeticExpansion(expr) =>
+    ArithmeticExpansion(expr) =>
       assert_eq(
         arithmetic_raw(expr),
         " arr[$(printf %s ])] + ${arr[$(printf %s ])]} + 1 ",
@@ -318,7 +317,7 @@ test "array literals and associative indices preserve nested shell syntax" {
   let (_, simple) = first_simple(script)
   assert_eq(simple.assignments.length(), 1)
   match simple.assignments[0].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    ArrayLiteral(elements) => {
       assert_eq(elements.length(), 3)
 
       assert_eq(index_raw(elements[0].indexes[0]), "\"a ] b\"")
@@ -329,7 +328,7 @@ test "array literals and associative indices preserve nested shell syntax" {
 
       assert_eq(index_raw(elements[2].indexes[0]), "${arr[$(printf %s ])]}")
       match elements[2].value {
-        @parser.AssignmentValue::ArrayLiteral(nested) => {
+        ArrayLiteral(nested) => {
           assert_eq(nested.length(), 3)
           assert_eq(assignment_word(nested[0].value).source, "foo")
           assert_eq(assignment_word(nested[1].value).source, "\"bar]\"")
@@ -352,7 +351,7 @@ test "brace expansions and extglobs ignore separators inside backticks" {
   )
   let (_, brace_simple) = first_simple(brace_script)
   match brace_simple.words[1].parts[0] {
-    @parser.WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       assert_eq(expansion.elements.length(), 3)
       assert_eq(expansion.elements[0].source, "foo")
       assert_eq(expansion.elements[1].source, "`printf %s ,`")
@@ -369,7 +368,7 @@ test "brace expansions and extglobs ignore separators inside backticks" {
   )
   let (_, extglob_simple) = first_simple(extglob_script)
   match extglob_simple.words[1].parts[0] {
-    @parser.WordPart::ExtGlob(pattern) => {
+    ExtGlob(pattern) => {
       assert_eq(pattern.alternatives.length(), 3)
       assert_eq(pattern.alternatives[0].source, "foo")
       assert_eq(pattern.alternatives[1].source, "`printf %s '|'`")
@@ -388,7 +387,7 @@ test "arithmetic for clauses ignore semicolons inside nested shell syntax" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "$(echo i=0; echo j=1)")
       assert_eq(arithmetic_raw(clause.condition), "i<10")
       assert_eq(arithmetic_raw(clause.step), "i++")
@@ -406,7 +405,7 @@ test "arithmetic for clauses ignore semicolons inside backticks" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "`echo i=0; echo j=1`")
       assert_eq(arithmetic_raw(clause.condition), "i<10")
       assert_eq(arithmetic_raw(clause.step), "i++")
@@ -424,7 +423,7 @@ test "arithmetic for clauses ignore semicolons inside parameter expansions" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "${x//;/_}")
       assert_eq(arithmetic_raw(clause.condition), "i<10")
       assert_eq(arithmetic_raw(clause.step), "i++")
@@ -443,19 +442,17 @@ test "arithmetic groups ignore closing parens inside nested shell syntax" {
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::ArithmeticExpansion(expr) => {
+    ArithmeticExpansion(expr) => {
       match expr.tokens[0] {
-        @parser.ArithmeticToken::Group(inner) =>
-          assert_eq(arithmetic_raw(inner), "${x//)/_}")
+        Group(inner) => assert_eq(arithmetic_raw(inner), "${x//)/_}")
         _ => fail("expected grouped parameter expansion")
       }
       match expr.tokens[1] {
-        @parser.ArithmeticToken::Operator(op) => assert_eq(op, "+")
+        Operator(op) => assert_eq(op, "+")
         _ => fail("expected plus operator")
       }
       match expr.tokens[2] {
-        @parser.ArithmeticToken::Group(inner) =>
-          assert_eq(arithmetic_raw(inner), "`printf %s ')'`")
+        Group(inner) => assert_eq(arithmetic_raw(inner), "`printf %s ')'`")
         _ => fail("expected grouped backquoted command")
       }
     }
@@ -477,7 +474,7 @@ test "case bodies ignore closing parens inside nested shell syntax" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       assert_eq(clause.items.length(), 1)
       assert_eq(clause.items[0].body.items.length(), 2)
     }

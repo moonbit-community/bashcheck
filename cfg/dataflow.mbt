@@ -107,7 +107,7 @@ priv struct AnalysisContext {
 
 ///|
 fn[A : Hash + Eq] singleton_set(value : A) -> Set[A] {
-  let result : Set[A] = Set::new()
+  let result : Set[A] = Set([])
   result.add(value)
   result
 }
@@ -149,52 +149,27 @@ fn value_with_kind(
 
 ///|
 fn unknown_variable_value() -> VariableValue {
-  value_with_kind(
-    VariableKind::String,
-    None,
-    SpaceStatus::Dirty,
-    NumericalStatus::Unknown,
-  )
+  value_with_kind(String, None, Dirty, Unknown)
 }
 
 ///|
 fn empty_string_value() -> VariableValue {
-  value_with_kind(
-    VariableKind::String,
-    Some(""),
-    SpaceStatus::Empty,
-    NumericalStatus::Empty,
-  )
+  value_with_kind(String, Some(""), Empty, Empty)
 }
 
 ///|
 fn unset_variable_value() -> VariableValue {
-  value_with_kind(
-    VariableKind::Unset,
-    Some(""),
-    SpaceStatus::Empty,
-    NumericalStatus::Empty,
-  )
+  value_with_kind(Unset, Some(""), Empty, Empty)
 }
 
 ///|
 fn array_variable_value() -> VariableValue {
-  value_with_kind(
-    VariableKind::Array,
-    None,
-    SpaceStatus::Dirty,
-    NumericalStatus::Unknown,
-  )
+  value_with_kind(Array, None, Dirty, Unknown)
 }
 
 ///|
 fn unknown_integer_value() -> VariableValue {
-  value_with_kind(
-    VariableKind::Integer,
-    None,
-    SpaceStatus::Clean,
-    NumericalStatus::Definitely,
-  )
+  value_with_kind(Integer, None, Clean, Definitely)
 }
 
 ///|
@@ -232,11 +207,11 @@ fn integer_variable_state() -> VariableState {
 ///|
 fn empty_internal_state() -> InternalState {
   {
-    global_values: Map::new(),
-    local_values: Map::new(),
-    prefix_values: Map::new(),
-    function_targets: Map::new(),
-    exit_codes: Set::new(),
+    global_values: Map([]),
+    local_values: Map([]),
+    prefix_values: Map([]),
+    function_targets: Map([]),
+    exit_codes: Set([]),
     reachable: true,
   }
 }
@@ -248,7 +223,7 @@ fn unreachable_internal_state() -> InternalState {
 
 ///|
 fn unknown_function_targets() -> Set[FunctionTarget] {
-  singleton_set(FunctionTarget::Unknown)
+  singleton_set(Unknown)
 }
 
 ///|
@@ -257,10 +232,10 @@ fn property_set_add(
   prop : CfgVariableProp,
 ) -> VariablePropertySet {
   match prop {
-    CfgVariableProp::Export => { ..props, exported: true }
-    CfgVariableProp::Array => { ..props, array_: true }
-    CfgVariableProp::Associative => { ..props, associative: true }
-    CfgVariableProp::Integer => { ..props, integer: true }
+    Export => { ..props, exported: true }
+    Array => { ..props, array_: true }
+    Associative => { ..props, associative: true }
+    Integer => { ..props, integer: true }
   }
 }
 
@@ -270,10 +245,10 @@ fn property_set_remove(
   prop : CfgVariableProp,
 ) -> VariablePropertySet {
   match prop {
-    CfgVariableProp::Export => { ..props, exported: false }
-    CfgVariableProp::Array => { ..props, array_: false }
-    CfgVariableProp::Associative => { ..props, associative: false }
-    CfgVariableProp::Integer => { ..props, integer: false }
+    Export => { ..props, exported: false }
+    Array => { ..props, array_: false }
+    Associative => { ..props, associative: false }
+    Integer => { ..props, integer: false }
   }
 }
 
@@ -282,7 +257,7 @@ fn add_properties_to_sets(
   property_sets : Set[VariablePropertySet],
   props : Array[CfgVariableProp],
 ) -> Set[VariablePropertySet] {
-  let result : Set[VariablePropertySet] = Set::new()
+  let result : Set[VariablePropertySet] = Set([])
   if property_sets.is_empty() {
     let mut current = empty_property_set()
     for prop in props {
@@ -306,7 +281,7 @@ fn remove_properties_from_sets(
   property_sets : Set[VariablePropertySet],
   props : Array[CfgVariableProp],
 ) -> Set[VariablePropertySet] {
-  let result : Set[VariablePropertySet] = Set::new()
+  let result : Set[VariablePropertySet] = Set([])
   if property_sets.is_empty() {
     result.add(empty_property_set())
     return result
@@ -378,9 +353,8 @@ fn add_properties_to_state(
   props : Array[CfgVariableProp],
 ) -> VariableState {
   let mut next_value = state.variable_value
-  if contains_prop(props, CfgVariableProp::Array) ||
-    contains_prop(props, CfgVariableProp::Associative) {
-    next_value = ensure_possible_kind(next_value, VariableKind::Array)
+  if contains_prop(props, Array) || contains_prop(props, Associative) {
+    next_value = ensure_possible_kind(next_value, Array)
   }
   {
     variable_value: next_value,
@@ -421,10 +395,10 @@ fn contains_prop(
 ///|
 fn merge_space_status(lhs : SpaceStatus, rhs : SpaceStatus) -> SpaceStatus {
   match (lhs, rhs) {
-    (SpaceStatus::Empty, other) => other
-    (other, SpaceStatus::Empty) => other
-    (SpaceStatus::Clean, SpaceStatus::Clean) => SpaceStatus::Clean
-    _ => SpaceStatus::Dirty
+    (Empty, other) => other
+    (other, Empty) => other
+    (Clean, Clean) => Clean
+    _ => Dirty
   }
 }
 
@@ -434,24 +408,21 @@ fn merge_numerical_status(
   rhs : NumericalStatus,
 ) -> NumericalStatus {
   match (lhs, rhs) {
-    (NumericalStatus::Definitely, NumericalStatus::Definitely) =>
-      NumericalStatus::Definitely
-    (NumericalStatus::Definitely, _) | (_, NumericalStatus::Definitely) =>
-      NumericalStatus::Maybe
-    (NumericalStatus::Maybe, _) | (_, NumericalStatus::Maybe) =>
-      NumericalStatus::Maybe
-    (NumericalStatus::Empty, NumericalStatus::Empty) => NumericalStatus::Empty
-    _ => NumericalStatus::Unknown
+    (Definitely, Definitely) => Definitely
+    (Definitely, _) | (_, Definitely) => Maybe
+    (Maybe, _) | (_, Maybe) => Maybe
+    (Empty, Empty) => Empty
+    _ => Unknown
   }
 }
 
 ///|
 fn append_space_status(lhs : SpaceStatus, rhs : SpaceStatus) -> SpaceStatus {
   match (lhs, rhs) {
-    (SpaceStatus::Empty, other) => other
-    (other, SpaceStatus::Empty) => other
-    (SpaceStatus::Clean, SpaceStatus::Clean) => SpaceStatus::Clean
-    _ => SpaceStatus::Dirty
+    (Empty, other) => other
+    (other, Empty) => other
+    (Clean, Clean) => Clean
+    _ => Dirty
   }
 }
 
@@ -461,13 +432,11 @@ fn append_numerical_status(
   rhs : NumericalStatus,
 ) -> NumericalStatus {
   match (lhs, rhs) {
-    (NumericalStatus::Empty, other) => other
-    (other, NumericalStatus::Empty) => other
-    (NumericalStatus::Definitely, NumericalStatus::Definitely) =>
-      NumericalStatus::Definitely
-    (NumericalStatus::Unknown, _) | (_, NumericalStatus::Unknown) =>
-      NumericalStatus::Unknown
-    _ => NumericalStatus::Maybe
+    (Empty, other) => other
+    (other, Empty) => other
+    (Definitely, Definitely) => Definitely
+    (Unknown, _) | (_, Unknown) => Unknown
+    _ => Maybe
   }
 }
 
@@ -515,7 +484,7 @@ fn append_variable_value(
       (Some(left), Some(right)) => Some(left + right)
       _ => None
     },
-    possible_kinds: singleton_set(VariableKind::String),
+    possible_kinds: singleton_set(String),
     space_status: append_space_status(lhs.space_status, rhs.space_status),
     numerical_status: append_numerical_status(
       lhs.numerical_status,
@@ -532,10 +501,7 @@ fn create_environment_state() -> InternalState {
   }
   for name in @semantics.variable_names_without_spaces() {
     state = set_global_value(state, name, {
-      variable_value: {
-        ..unknown_variable_value(),
-        space_status: SpaceStatus::Clean,
-      },
+      variable_value: { ..unknown_variable_value(), space_status: Clean },
       variable_properties: default_properties(),
     })
   }
@@ -607,7 +573,7 @@ fn set_single_exit_code(state : InternalState, id : CfgAstId) -> InternalState {
 
 ///|
 fn clear_prefix_values(state : InternalState) -> InternalState {
-  { ..state, prefix_values: Map::new() }
+  { ..state, prefix_values: Map([]) }
 }
 
 ///|
@@ -637,14 +603,14 @@ fn read_variable_with_scope(
   name : String,
 ) -> (VariableState, CfgScope) {
   match state.prefix_values.get(name) {
-    Some(value) => (value, CfgScope::Prefix)
+    Some(value) => (value, Prefix)
     None =>
       match state.local_values.get(name) {
-        Some(value) => (value, CfgScope::Local)
+        Some(value) => (value, Local)
         None =>
           match state.global_values.get(name) {
-            Some(value) => (value, CfgScope::Global)
-            None => (unknown_variable_state(), CfgScope::Global)
+            Some(value) => (value, Global)
+            None => (unknown_variable_state(), Global)
           }
       }
   }
@@ -673,9 +639,9 @@ fn write_variable(
   value : VariableState,
 ) -> InternalState {
   match read_variable_with_scope(state, name).1 {
-    CfgScope::Global => set_global_value(state, name, value)
-    CfgScope::Local => set_local_value(state, name, value)
-    CfgScope::Prefix => set_local_value(state, name, value)
+    Global => set_global_value(state, name, value)
+    Local => set_local_value(state, name, value)
+    Prefix => set_local_value(state, name, value)
   }
 }
 
@@ -691,9 +657,9 @@ fn update_variable_value(
     variable_properties: current.0.variable_properties,
   }
   match current.1 {
-    CfgScope::Global => set_global_value(state, name, next)
-    CfgScope::Local => set_local_value(state, name, next)
-    CfgScope::Prefix => set_local_value(state, name, next)
+    Global => set_global_value(state, name, next)
+    Local => set_local_value(state, name, next)
+    Prefix => set_local_value(state, name, next)
   }
 }
 
@@ -743,19 +709,19 @@ fn set_props(
   props : Array[CfgVariableProp],
 ) -> InternalState {
   match scope {
-    Some(CfgScope::Global) =>
+    Some(Global) =>
       set_global_value(
         state,
         name,
         add_properties_to_state(read_global(state, name), props),
       )
-    Some(CfgScope::Local) =>
+    Some(Local) =>
       set_local_value(
         state,
         name,
         add_properties_to_state(read_local(state, name), props),
       )
-    Some(CfgScope::Prefix) =>
+    Some(Prefix) =>
       set_local_value(
         state,
         name,
@@ -778,19 +744,19 @@ fn unset_props(
   props : Array[CfgVariableProp],
 ) -> InternalState {
   match scope {
-    Some(CfgScope::Global) =>
+    Some(Global) =>
       set_global_value(
         state,
         name,
         remove_properties_from_state(read_global(state, name), props),
       )
-    Some(CfgScope::Local) =>
+    Some(Local) =>
       set_local_value(
         state,
         name,
         remove_properties_from_state(read_local(state, name), props),
       )
-    Some(CfgScope::Prefix) =>
+    Some(Prefix) =>
       set_local_value(
         state,
         name,
@@ -920,10 +886,10 @@ fn compute_value_from_part(
   part : CfgStringPart,
 ) -> VariableValue {
   match part {
-    CfgStringPart::Literal(text) => literal_to_variable_value(text)
-    CfgStringPart::Integer => unknown_integer_value()
-    CfgStringPart::Unknown => unknown_variable_value()
-    CfgStringPart::Variable(name) =>
+    Literal(text) => literal_to_variable_value(text)
+    Integer => unknown_integer_value()
+    Unknown => unknown_variable_value()
+    Variable(name) =>
       if is_special_integer_name(name) {
         unknown_integer_value()
       } else {
@@ -943,11 +909,11 @@ fn cfg_value_to_variable_value(
   value : CfgValue,
 ) -> VariableValue {
   match value {
-    CfgValue::Uninitialized => unset_variable_value()
-    CfgValue::Array => array_variable_value()
-    CfgValue::String => unknown_variable_value()
-    CfgValue::Integer => unknown_integer_value()
-    CfgValue::Computed(_, parts) => {
+    Uninitialized => unset_variable_value()
+    Array => array_variable_value()
+    String => unknown_variable_value()
+    Integer => unknown_integer_value()
+    Computed(_, parts) => {
       let mut current = empty_string_value()
       for part in parts {
         current = append_variable_value(
@@ -963,51 +929,48 @@ fn cfg_value_to_variable_value(
 ///|
 fn process_effect(state : InternalState, effect : CfgEffect) -> InternalState {
   match effect {
-    CfgEffect::SetProps(scope, name, props) =>
-      set_props(state, scope, name, props)
-    CfgEffect::UnsetProps(scope, name, props) =>
-      unset_props(state, scope, name, props)
-    CfgEffect::ReadVariable(_) => state
-    CfgEffect::WriteVariable(name, value) =>
+    SetProps(scope, name, props) => set_props(state, scope, name, props)
+    UnsetProps(scope, name, props) => unset_props(state, scope, name, props)
+    ReadVariable(_) => state
+    WriteVariable(name, value) =>
       update_variable_value(
         state,
         name,
         cfg_value_to_variable_value(state, value),
       )
-    CfgEffect::WriteGlobal(name, value) =>
+    WriteGlobal(name, value) =>
       update_global_value(
         state,
         name,
         cfg_value_to_variable_value(state, value),
       )
-    CfgEffect::WriteLocal(name, value) =>
+    WriteLocal(name, value) =>
       update_local_value(state, name, cfg_value_to_variable_value(state, value))
-    CfgEffect::WritePrefix(name, value) =>
+    WritePrefix(name, value) =>
       update_prefix_value(
         state,
         name,
         cfg_value_to_variable_value(state, value),
       )
-    CfgEffect::DefineFunction(name, _, entry, exit_) =>
+    DefineFunction(name, _, entry, exit_) =>
       set_function_targets(
         state,
         name,
-        singleton_set(FunctionTarget::Definition(name, entry, exit_)),
+        singleton_set(Definition(name, entry, exit_)),
       )
-    CfgEffect::Undefine(name) =>
+    Undefine(name) =>
       set_function_targets(
         write_variable(state, name, unset_variable_state()),
         name,
         unknown_function_targets(),
       )
-    CfgEffect::UndefineVariable(name) =>
+    UndefineVariable(name) =>
       write_variable(state, name, unset_variable_state())
-    CfgEffect::UndefineFunction(name) =>
+    UndefineFunction(name) =>
       set_function_targets(state, name, unknown_function_targets())
-    CfgEffect::UndefineNameref(name) =>
-      write_variable(state, name, unset_variable_state())
-    CfgEffect::HintArray(_) => state
-    CfgEffect::HintDefined(_) => state
+    UndefineNameref(name) => write_variable(state, name, unset_variable_state())
+    HintArray(_) => state
+    HintDefined(_) => state
   }
 }
 
@@ -1020,7 +983,7 @@ fn is_special_integer_name(name : String) -> Bool {
 fn literal_to_variable_value(text : String) -> VariableValue {
   {
     literal_value: Some(text),
-    possible_kinds: singleton_set(VariableKind::String),
+    possible_kinds: singleton_set(String),
     space_status: literal_to_space_status(text),
     numerical_status: literal_to_numerical_status(text),
   }
@@ -1029,7 +992,7 @@ fn literal_to_variable_value(text : String) -> VariableValue {
 ///|
 fn literal_to_space_status(text : String) -> SpaceStatus {
   if text == "" {
-    return SpaceStatus::Empty
+    return Empty
   }
   if !(text.contains(" ") ||
     text.contains("\t") ||
@@ -1037,35 +1000,35 @@ fn literal_to_space_status(text : String) -> SpaceStatus {
     text.contains("*") ||
     text.contains("?") ||
     text.contains("[")) {
-    return SpaceStatus::Clean
+    return Clean
   }
-  SpaceStatus::Dirty
+  Dirty
 }
 
 ///|
 fn literal_to_numerical_status(text : String) -> NumericalStatus {
   if text == "" {
-    return NumericalStatus::Empty
+    return Empty
   }
   let view = text[:]
   if view.length() == 0 {
-    return NumericalStatus::Empty
+    return Empty
   }
   let mut start = 0
   if view[0] == '-' {
     if view.length() == 1 {
-      return NumericalStatus::Unknown
+      return Unknown
     }
     start = 1
   }
   let mut i = start
   while i < view.length() {
     if !is_digit(view[i]) {
-      return NumericalStatus::Unknown
+      return Unknown
     }
     i += 1
   }
-  NumericalStatus::Definitely
+  Definitely
 }
 
 ///|
@@ -1080,7 +1043,7 @@ fn build_context(cfg : CFG) -> AnalysisContext {
   let successors = init_node_id_grid(count)
   for edge in cfg.graph_edges {
     successors[edge.from.to_int()].push(edge.to)
-    if edge.kind == CfgEdgeKind::Flow || edge.kind == CfgEdgeKind::Exit {
+    if edge.kind == Flow || edge.kind == Exit {
       flow_predecessors[edge.to.to_int()].push(edge.from)
     }
   }
@@ -1088,9 +1051,9 @@ fn build_context(cfg : CFG) -> AnalysisContext {
     cfg,
     flow_predecessors,
     successors,
-    cache: Ref(Map::new()),
+    cache: Ref(Map([])),
     invocations: Ref([]),
-    invoked_functions: Ref(Set::new()),
+    invoked_functions: Ref(Set([])),
   }
 }
 
@@ -1285,8 +1248,8 @@ fn transfer_function_target(
   stack : Array[CfgNodeId],
 ) -> InternalState {
   match target {
-    FunctionTarget::Unknown => state
-    FunctionTarget::Definition(_, entry, exit_) =>
+    Unknown => state
+    Definition(_, entry, exit_) =>
       if contains_node_id(stack, entry) {
         state
       } else {
@@ -1336,26 +1299,26 @@ fn transfer_node(
     return input
   }
   match node_kind_at(ctx, node) {
-    CfgNodeKind::Structural => input
-    CfgNodeKind::EntryPoint(_) => input
-    CfgNodeKind::DropPrefixAssignments => clear_prefix_values(input)
-    CfgNodeKind::ApplyEffects(effects) => {
+    Structural => input
+    EntryPoint(_) => input
+    DropPrefixAssignments => clear_prefix_values(input)
+    ApplyEffects(effects) => {
       let mut current = input
       for tagged in effects {
         current = process_effect(current, tagged.effect)
       }
       current
     }
-    CfgNodeKind::ExecuteCommand(command_name) =>
+    ExecuteCommand(command_name) =>
       transfer_command(ctx, input, command_name, stack)
-    CfgNodeKind::ExecuteSubshell(_, entry, exit_) =>
+    ExecuteSubshell(_, entry, exit_) =>
       transfer_subshell(ctx, input, entry, exit_, stack)
-    CfgNodeKind::SetExitCode(id) => set_single_exit_code(input, id)
-    CfgNodeKind::ImpliedExit => input
-    CfgNodeKind::ResolvedExit => input
-    CfgNodeKind::UnresolvedExit => mark_unreachable(input)
-    CfgNodeKind::Unreachable => mark_unreachable(input)
-    CfgNodeKind::SetBackgroundPid(_) => input
+    SetExitCode(id) => set_single_exit_code(input, id)
+    ImpliedExit => input
+    ResolvedExit => input
+    UnresolvedExit => mark_unreachable(input)
+    Unreachable => mark_unreachable(input)
+    SetBackgroundPid(_) => input
   }
 }
 
@@ -1471,28 +1434,24 @@ fn complete_node_states(
 
 ///|
 fn straggler_state(root_exit : InternalState) -> InternalState {
-  { ..root_exit, exit_codes: Set::new() }
+  { ..root_exit, exit_codes: Set([]) }
 }
 
 ///|
 fn nested_straggler_state(state : InternalState) -> InternalState {
-  {
-    ..straggler_state(state),
-    local_values: Map::new(),
-    prefix_values: Map::new(),
-  }
+  { ..straggler_state(state), local_values: Map([]), prefix_values: Map([]) }
 }
 
 ///|
 fn declared_function_entries(
   state : InternalState,
 ) -> Map[CfgNodeId, FunctionTarget] {
-  let result : Map[CfgNodeId, FunctionTarget] = Map::new()
+  let result : Map[CfgNodeId, FunctionTarget] = Map([])
   state.function_targets.each(fn(_, targets) {
     for target in targets {
       match target {
-        FunctionTarget::Definition(_, entry, _) => result.set(entry, target)
-        FunctionTarget::Unknown => ()
+        Definition(_, entry, _) => result.set(entry, target)
+        Unknown => ()
       }
     }
   })
@@ -1516,7 +1475,7 @@ fn enqueue_declared_stragglers(
 ///|
 fn run_stragglers(ctx : AnalysisContext, state : InternalState) -> Unit {
   let queue : Array[PendingStraggler] = []
-  let seen : Set[CfgNodeId] = Set::new()
+  let seen : Set[CfgNodeId] = Set([])
   for entry in ctx.invoked_functions.val {
     seen.add(entry)
   }
@@ -1526,7 +1485,7 @@ fn run_stragglers(ctx : AnalysisContext, state : InternalState) -> Unit {
     let pending = queue[head]
     head += 1
     match pending.target {
-      FunctionTarget::Definition(_, entry, exit_) => {
+      Definition(_, entry, exit_) => {
         let result = run_invocation(ctx, entry, exit_, pending.input, [entry])
         enqueue_declared_stragglers(
           queue,
@@ -1534,7 +1493,7 @@ fn run_stragglers(ctx : AnalysisContext, state : InternalState) -> Unit {
           nested_straggler_state(result.exit_state),
         )
       }
-      FunctionTarget::Unknown => ()
+      Unknown => ()
     }
   }
 }
@@ -1687,8 +1646,8 @@ pub fn variable_may_be_assigned_integer(
 ) -> Bool {
   match variable_state_in_scope(state, name) {
     Some(variable) =>
-      variable.variable_value.numerical_status >= NumericalStatus::Maybe ||
-      kind_is_possible(variable.variable_value, VariableKind::Integer)
+      variable.variable_value.numerical_status >= Maybe ||
+      kind_is_possible(variable.variable_value, Integer)
     None => false
   }
 }
@@ -1698,7 +1657,7 @@ pub fn variable_may_be_assigned_integer(
 pub fn variable_may_be_array(state : ProgramState, name : String) -> Bool {
   match variable_state_in_scope(state, name) {
     Some(variable) =>
-      kind_is_possible(variable.variable_value, VariableKind::Array) ||
+      kind_is_possible(variable.variable_value, Array) ||
       property_sets_have_array(variable.variable_properties)
     None => false
   }
@@ -1708,8 +1667,7 @@ pub fn variable_may_be_array(state : ProgramState, name : String) -> Bool {
 /// Reports whether a variable may currently be unset.
 pub fn variable_may_be_unset(state : ProgramState, name : String) -> Bool {
   match variable_state_in_scope(state, name) {
-    Some(variable) =>
-      kind_is_possible(variable.variable_value, VariableKind::Unset)
+    Some(variable) => kind_is_possible(variable.variable_value, Unset)
     None => false
   }
 }

@@ -158,7 +158,7 @@ test "analytics batch d keeps env split-string and loop-local keywords quiet" {
         #|
       ),
     ),
-    @semantics.ShellDialect::Ksh,
+    Ksh,
     false,
     [],
   )

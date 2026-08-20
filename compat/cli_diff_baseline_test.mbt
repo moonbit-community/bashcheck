@@ -51,7 +51,7 @@ fn shellcheck_list_optional_output() -> String {
 async test "phase 5 cli help output matches shellcheck help text" {
   assert_cli_output_matches(
     "help",
-    @driver.CliAction::ShowHelp,
+    ShowHelp,
     0,
     shellcheck_compatible_help_output(),
   )
@@ -61,7 +61,7 @@ async test "phase 5 cli help output matches shellcheck help text" {
 async test "phase 5 cli list-optional output matches shellcheck baseline" {
   assert_cli_output_matches(
     "list-optional",
-    @driver.CliAction::ListOptional,
+    ListOptional,
     0,
     shellcheck_list_optional_output(),
   )

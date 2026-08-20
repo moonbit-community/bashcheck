@@ -96,42 +96,42 @@ pub enum NodeRef {
 /// Returns the `NodeKind` corresponding to a `NodeRef`.
 pub fn NodeRef::kind(self : NodeRef) -> NodeKind {
   match self {
-    Script(_) => NodeKind::Script
-    Annotation(_) => NodeKind::Annotation
-    ListItem(_) => NodeKind::ListItem
-    AndOrList(_) => NodeKind::AndOrList
-    Pipeline(_) => NodeKind::Pipeline
-    PipelineSegment(_) => NodeKind::PipelineSegment
-    Command(_) => NodeKind::Command
-    SimpleCommand(_) => NodeKind::SimpleCommand
-    SourceCommand(_) => NodeKind::SourceCommand
-    ArithmeticExpr(_) => NodeKind::ArithmeticExpr
-    ArithmeticToken(_) => NodeKind::ArithmeticToken
-    ArrayIndex(_) => NodeKind::ArrayIndex
-    TimeClause(_) => NodeKind::TimeClause
-    Assignment(_) => NodeKind::Assignment
-    ArrayElement(_) => NodeKind::ArrayElement
-    IfClause(_) => NodeKind::IfClause
-    IfArm(_) => NodeKind::IfArm
-    LoopClause(_) => NodeKind::LoopClause
-    ForClause(_) => NodeKind::ForClause
-    ArithmeticForClause(_) => NodeKind::ArithmeticForClause
-    SelectClause(_) => NodeKind::SelectClause
-    CaseClause(_) => NodeKind::CaseClause
-    CaseItem(_) => NodeKind::CaseItem
-    ConditionCommand(_) => NodeKind::ConditionCommand
-    ConditionExpr(_) => NodeKind::ConditionExpr
-    ArithmeticCommand(_) => NodeKind::ArithmeticCommand
-    CoProcClause(_) => NodeKind::CoProcClause
-    BatsTestClause(_) => NodeKind::BatsTestClause
-    FunctionDef(_) => NodeKind::FunctionDef
-    Redirection(_) => NodeKind::Redirection
-    HereDoc(_) => NodeKind::HereDoc
-    ExtGlobPattern(_) => NodeKind::ExtGlobPattern
-    BraceExpansion(_) => NodeKind::BraceExpansion
-    Word(_) => NodeKind::Word
-    WordPart(_) => NodeKind::WordPart
-    ParameterExpansion(_) => NodeKind::ParameterExpansion
+    Script(_) => Script
+    Annotation(_) => Annotation
+    ListItem(_) => ListItem
+    AndOrList(_) => AndOrList
+    Pipeline(_) => Pipeline
+    PipelineSegment(_) => PipelineSegment
+    Command(_) => Command
+    SimpleCommand(_) => SimpleCommand
+    SourceCommand(_) => SourceCommand
+    ArithmeticExpr(_) => ArithmeticExpr
+    ArithmeticToken(_) => ArithmeticToken
+    ArrayIndex(_) => ArrayIndex
+    TimeClause(_) => TimeClause
+    Assignment(_) => Assignment
+    ArrayElement(_) => ArrayElement
+    IfClause(_) => IfClause
+    IfArm(_) => IfArm
+    LoopClause(_) => LoopClause
+    ForClause(_) => ForClause
+    ArithmeticForClause(_) => ArithmeticForClause
+    SelectClause(_) => SelectClause
+    CaseClause(_) => CaseClause
+    CaseItem(_) => CaseItem
+    ConditionCommand(_) => ConditionCommand
+    ConditionExpr(_) => ConditionExpr
+    ArithmeticCommand(_) => ArithmeticCommand
+    CoProcClause(_) => CoProcClause
+    BatsTestClause(_) => BatsTestClause
+    FunctionDef(_) => FunctionDef
+    Redirection(_) => Redirection
+    HereDoc(_) => HereDoc
+    ExtGlobPattern(_) => ExtGlobPattern
+    BraceExpansion(_) => BraceExpansion
+    Word(_) => Word
+    WordPart(_) => WordPart
+    ParameterExpansion(_) => ParameterExpansion
   }
 }
 
@@ -416,11 +416,7 @@ fn IndexBuilder::visit_script(
   self : IndexBuilder,
   script : @parser.Script,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::Script(script),
-    script.span,
-    Some(script.span),
-  )
+  let id = self.start_node(Script(script), script.span, Some(script.span))
   for annotation in script.annotations {
     let _ = self.visit_annotation(annotation, script.span)
   }
@@ -437,7 +433,7 @@ fn IndexBuilder::visit_annotation(
   annotation : @parser.Annotation,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::Annotation(annotation), fallback_span, None)
+  let id = self.start_node(Annotation(annotation), fallback_span, None)
   self.finish_node()
   id
 }
@@ -447,7 +443,7 @@ fn IndexBuilder::visit_list_item(
   self : IndexBuilder,
   item : @parser.ListItem,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ListItem(item), item.span, Some(item.span))
+  let id = self.start_node(ListItem(item), item.span, Some(item.span))
   for annotation in item.annotations {
     let _ = self.visit_annotation(annotation, item.span)
   }
@@ -461,7 +457,7 @@ fn IndexBuilder::visit_and_or_list(
   self : IndexBuilder,
   list : @parser.AndOrList,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::AndOrList(list), list.span, Some(list.span))
+  let id = self.start_node(AndOrList(list), list.span, Some(list.span))
   let _ = self.visit_pipeline(list.head)
   for pair in list.tail {
     let (_, pipeline) = pair
@@ -477,7 +473,7 @@ fn IndexBuilder::visit_pipeline(
   pipeline : @parser.Pipeline,
 ) -> NodeId {
   let id = self.start_node(
-    NodeRef::Pipeline(pipeline),
+    Pipeline(pipeline),
     pipeline.span,
     Some(pipeline.span),
   )
@@ -494,7 +490,7 @@ fn IndexBuilder::visit_pipeline_segment(
   segment : @parser.PipelineSegment,
 ) -> NodeId {
   let id = self.start_node(
-    NodeRef::PipelineSegment(segment),
+    PipelineSegment(segment),
     segment.span,
     Some(segment.span),
   )
@@ -508,11 +504,7 @@ fn IndexBuilder::visit_command(
   self : IndexBuilder,
   command : @parser.Command,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::Command(command),
-    command.span,
-    Some(command.span),
-  )
+  let id = self.start_node(Command(command), command.span, Some(command.span))
   self.visit_command_kind(command.kind, command.span)
   for redirect in command.redirects {
     let _ = self.visit_redirection(redirect)
@@ -528,55 +520,55 @@ fn IndexBuilder::visit_command_kind(
   fallback_span : @parser.Span,
 ) -> Unit {
   match kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       let _ = self.visit_simple_command(simple, fallback_span)
     }
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       let _ = self.visit_source_command(source, fallback_span)
     }
-    @parser.CommandKind::Time(clause) => {
+    Time(clause) => {
       let _ = self.visit_time_clause(clause, fallback_span)
     }
-    @parser.CommandKind::Subshell(script) => {
+    Subshell(script) => {
       let _ = self.visit_script(script)
     }
-    @parser.CommandKind::BraceGroup(script) => {
+    BraceGroup(script) => {
       let _ = self.visit_script(script)
     }
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       let _ = self.visit_if_clause(clause, fallback_span)
     }
-    @parser.CommandKind::While(clause) => {
+    While(clause) => {
       let _ = self.visit_loop_clause(clause, fallback_span)
     }
-    @parser.CommandKind::Until(clause) => {
+    Until(clause) => {
       let _ = self.visit_loop_clause(clause, fallback_span)
     }
-    @parser.CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       let _ = self.visit_for_clause(clause, fallback_span)
     }
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       let _ = self.visit_arithmetic_for_clause(clause, fallback_span)
     }
-    @parser.CommandKind::Select(clause) => {
+    Select(clause) => {
       let _ = self.visit_select_clause(clause, fallback_span)
     }
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       let _ = self.visit_case_clause(clause, fallback_span)
     }
-    @parser.CommandKind::Condition(condition) => {
+    Condition(condition) => {
       let _ = self.visit_condition_command(condition, fallback_span)
     }
-    @parser.CommandKind::Arithmetic(command) => {
+    Arithmetic(command) => {
       let _ = self.visit_arithmetic_command(command, fallback_span)
     }
-    @parser.CommandKind::Function(function_def) => {
+    Function(function_def) => {
       let _ = self.visit_function_def(function_def, fallback_span)
     }
-    @parser.CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       let _ = self.visit_co_proc_clause(clause, fallback_span)
     }
-    @parser.CommandKind::BatsTest(clause) => {
+    BatsTest(clause) => {
       let _ = self.visit_bats_test_clause(clause, fallback_span)
     }
   }
@@ -588,7 +580,7 @@ fn IndexBuilder::visit_simple_command(
   simple : @parser.SimpleCommand,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::SimpleCommand(simple), fallback_span, None)
+  let id = self.start_node(SimpleCommand(simple), fallback_span, None)
   for assignment in simple.assignments {
     let _ = self.visit_assignment(assignment)
   }
@@ -605,7 +597,7 @@ fn IndexBuilder::visit_source_command(
   source : @parser.SourceCommand,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::SourceCommand(source), fallback_span, None)
+  let id = self.start_node(SourceCommand(source), fallback_span, None)
   for assignment in source.assignments {
     let _ = self.visit_assignment(assignment)
   }
@@ -626,7 +618,7 @@ fn IndexBuilder::visit_time_clause(
   clause : @parser.TimeClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::TimeClause(clause), fallback_span, None)
+  let id = self.start_node(TimeClause(clause), fallback_span, None)
   for flag in clause.flags {
     let _ = self.visit_word(flag)
   }
@@ -641,7 +633,7 @@ fn IndexBuilder::visit_assignment(
   assignment : @parser.Assignment,
 ) -> NodeId {
   let id = self.start_node(
-    NodeRef::Assignment(assignment),
+    Assignment(assignment),
     assignment.span,
     Some(assignment.span),
   )
@@ -660,11 +652,11 @@ fn IndexBuilder::visit_assignment_value(
   fallback_span : @parser.Span,
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Empty => ()
-    @parser.AssignmentValue::Word(word) => {
+    Empty => ()
+    Word(word) => {
       let _ = self.visit_word(word)
     }
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for element in elements {
         let _ = self.visit_array_element(element, fallback_span)
       }
@@ -677,7 +669,7 @@ fn IndexBuilder::visit_array_element(
   element : @parser.ArrayElement,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ArrayElement(element), fallback_span, None)
+  let id = self.start_node(ArrayElement(element), fallback_span, None)
   for index in element.indexes {
     let _ = self.visit_array_index(index, fallback_span)
   }
@@ -692,7 +684,7 @@ fn IndexBuilder::visit_if_clause(
   clause : @parser.IfClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::IfClause(clause), fallback_span, None)
+  let id = self.start_node(IfClause(clause), fallback_span, None)
   for arm in clause.arms {
     let _ = self.visit_if_arm(arm, fallback_span)
   }
@@ -712,7 +704,7 @@ fn IndexBuilder::visit_if_arm(
   arm : @parser.IfArm,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::IfArm(arm), fallback_span, None)
+  let id = self.start_node(IfArm(arm), fallback_span, None)
   let _ = self.visit_script(arm.condition)
   let _ = self.visit_script(arm.body)
   self.finish_node()
@@ -725,7 +717,7 @@ fn IndexBuilder::visit_loop_clause(
   clause : @parser.LoopClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::LoopClause(clause), fallback_span, None)
+  let id = self.start_node(LoopClause(clause), fallback_span, None)
   let _ = self.visit_script(clause.condition)
   let _ = self.visit_script(clause.body)
   self.finish_node()
@@ -738,7 +730,7 @@ fn IndexBuilder::visit_for_clause(
   clause : @parser.ForClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ForClause(clause), fallback_span, None)
+  let id = self.start_node(ForClause(clause), fallback_span, None)
   for value in clause.values {
     let _ = self.visit_word(value)
   }
@@ -753,11 +745,7 @@ fn IndexBuilder::visit_arithmetic_for_clause(
   clause : @parser.ArithmeticForClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::ArithmeticForClause(clause),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(ArithmeticForClause(clause), fallback_span, None)
   let _ = self.visit_arithmetic_expr(clause.init, fallback_span)
   let _ = self.visit_arithmetic_expr(clause.condition, fallback_span)
   let _ = self.visit_arithmetic_expr(clause.step, fallback_span)
@@ -772,7 +760,7 @@ fn IndexBuilder::visit_select_clause(
   clause : @parser.SelectClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::SelectClause(clause), fallback_span, None)
+  let id = self.start_node(SelectClause(clause), fallback_span, None)
   for value in clause.values {
     let _ = self.visit_word(value)
   }
@@ -787,7 +775,7 @@ fn IndexBuilder::visit_case_clause(
   clause : @parser.CaseClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::CaseClause(clause), fallback_span, None)
+  let id = self.start_node(CaseClause(clause), fallback_span, None)
   let _ = self.visit_word(clause.word)
   for item in clause.items {
     let _ = self.visit_case_item(item, fallback_span)
@@ -802,7 +790,7 @@ fn IndexBuilder::visit_case_item(
   item : @parser.CaseItem,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::CaseItem(item), fallback_span, None)
+  let id = self.start_node(CaseItem(item), fallback_span, None)
   for pattern in item.patterns {
     let _ = self.visit_word(pattern)
   }
@@ -817,11 +805,7 @@ fn IndexBuilder::visit_condition_command(
   condition : @parser.ConditionCommand,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::ConditionCommand(condition),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(ConditionCommand(condition), fallback_span, None)
   let _ = self.visit_condition_expr(condition.expr, fallback_span)
   self.finish_node()
   id
@@ -833,30 +817,30 @@ fn IndexBuilder::visit_condition_expr(
   expr : @parser.ConditionExpr,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ConditionExpr(expr), fallback_span, None)
+  let id = self.start_node(ConditionExpr(expr), fallback_span, None)
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) => {
+    Empty => ()
+    Word(word) => {
       let _ = self.visit_word(word)
     }
-    @parser.ConditionExpr::Unary(_, _, word) => {
+    Unary(_, _, word) => {
       let _ = self.visit_word(word)
     }
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Binary(_, _, lhs, rhs) => {
       let _ = self.visit_word(lhs)
       let _ = self.visit_word(rhs)
     }
-    @parser.ConditionExpr::Group(inner) => {
+    Group(inner) => {
       let _ = self.visit_condition_expr(inner, fallback_span)
     }
-    @parser.ConditionExpr::Not(inner) => {
+    Not(inner) => {
       let _ = self.visit_condition_expr(inner, fallback_span)
     }
-    @parser.ConditionExpr::And(_, lhs, rhs) => {
+    And(_, lhs, rhs) => {
       let _ = self.visit_condition_expr(lhs, fallback_span)
       let _ = self.visit_condition_expr(rhs, fallback_span)
     }
-    @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Or(_, lhs, rhs) => {
       let _ = self.visit_condition_expr(lhs, fallback_span)
       let _ = self.visit_condition_expr(rhs, fallback_span)
     }
@@ -871,11 +855,7 @@ fn IndexBuilder::visit_arithmetic_command(
   command : @parser.ArithmeticCommand,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::ArithmeticCommand(command),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(ArithmeticCommand(command), fallback_span, None)
   let _ = self.visit_arithmetic_expr(command.expr, fallback_span)
   self.finish_node()
   id
@@ -887,7 +867,7 @@ fn IndexBuilder::visit_co_proc_clause(
   clause : @parser.CoProcClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::CoProcClause(clause), fallback_span, None)
+  let id = self.start_node(CoProcClause(clause), fallback_span, None)
   match clause.name {
     Some(name) => {
       let _ = self.visit_word(name)
@@ -905,7 +885,7 @@ fn IndexBuilder::visit_bats_test_clause(
   clause : @parser.BatsTestClause,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::BatsTestClause(clause), fallback_span, None)
+  let id = self.start_node(BatsTestClause(clause), fallback_span, None)
   let _ = self.visit_script(clause.body)
   self.finish_node()
   id
@@ -917,11 +897,7 @@ fn IndexBuilder::visit_function_def(
   function_def : @parser.FunctionDef,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::FunctionDef(function_def),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(FunctionDef(function_def), fallback_span, None)
   let _ = self.visit_command(function_def.body)
   self.finish_node()
   id
@@ -933,15 +909,15 @@ fn IndexBuilder::visit_redirection(
   redirect : @parser.Redirection,
 ) -> NodeId {
   let id = self.start_node(
-    NodeRef::Redirection(redirect),
+    Redirection(redirect),
     redirect.span,
     Some(redirect.span),
   )
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) => {
+    Word(word) => {
       let _ = self.visit_word(word)
     }
-    @parser.RedirectionTarget::HereDoc(doc) => {
+    HereDoc(doc) => {
       let _ = self.visit_here_doc(doc, redirect.span)
     }
   }
@@ -955,7 +931,7 @@ fn IndexBuilder::visit_here_doc(
   doc : @parser.HereDoc,
   fallback_span : @parser.Span,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::HereDoc(doc), fallback_span, None)
+  let id = self.start_node(HereDoc(doc), fallback_span, None)
   match doc.parts {
     Some(parts) =>
       for part in parts {
@@ -981,7 +957,7 @@ fn IndexBuilder::visit_word_with_mode(
 ) -> NodeId {
   let enclosing_span = if exact_spans { word.span } else { fallback_span }
   let id = self.start_node(
-    NodeRef::Word(word),
+    Word(word),
     enclosing_span,
     if exact_spans {
       Some(word.span)
@@ -1012,22 +988,22 @@ fn IndexBuilder::visit_word_part_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::WordPart(part), fallback_span, None)
+  let id = self.start_node(WordPart(part), fallback_span, None)
   match part {
-    @parser.WordPart::Literal(_) => ()
-    @parser.WordPart::SingleQuoted(_) => ()
-    @parser.WordPart::DoubleQuoted(parts) =>
+    Literal(_) => ()
+    SingleQuoted(_) => ()
+    DoubleQuoted(parts) =>
       for part in parts {
         let _ = self.visit_word_part_with_mode(part, fallback_span, exact_spans)
       }
-    @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DollarDoubleQuoted(parts) =>
       for part in parts {
         let _ = self.visit_word_part_with_mode(part, fallback_span, exact_spans)
       }
-    @parser.WordPart::DollarSingleQuoted(_) => ()
-    @parser.WordPart::Parameter(_) => ()
-    @parser.WordPart::SpecialParameter(_) => ()
-    @parser.WordPart::BracedParameter(expansion) => {
+    DollarSingleQuoted(_) => ()
+    Parameter(_) => ()
+    SpecialParameter(_) => ()
+    BracedParameter(expansion) => {
       let _ = if exact_spans {
         self.visit_parameter_expansion(expansion, fallback_span)
       } else {
@@ -1036,30 +1012,30 @@ fn IndexBuilder::visit_word_part_with_mode(
         )
       }
     }
-    @parser.WordPart::BraceCommandSubstitution(_, script) => {
+    BraceCommandSubstitution(_, script) => {
       let _ = self.visit_script(script)
     }
-    @parser.WordPart::CommandSubstitution(script) => {
+    CommandSubstitution(script) => {
       let _ = self.visit_script(script)
     }
-    @parser.WordPart::BackQuoted(script) => {
+    BackQuoted(script) => {
       let _ = self.visit_script(script)
     }
-    @parser.WordPart::ArithmeticExpansion(expr) => {
+    ArithmeticExpansion(expr) => {
       let _ = if exact_spans {
         self.visit_arithmetic_expr(expr, fallback_span)
       } else {
         self.visit_arithmetic_expr_with_mode(expr, fallback_span, exact_spans)
       }
     }
-    @parser.WordPart::DollarBracket(expr) => {
+    DollarBracket(expr) => {
       let _ = if exact_spans {
         self.visit_arithmetic_expr(expr, fallback_span)
       } else {
         self.visit_arithmetic_expr_with_mode(expr, fallback_span, exact_spans)
       }
     }
-    @parser.WordPart::ExtGlob(pattern) => {
+    ExtGlob(pattern) => {
       let _ = if exact_spans {
         self.visit_extglob_pattern(pattern, fallback_span)
       } else {
@@ -1068,10 +1044,10 @@ fn IndexBuilder::visit_word_part_with_mode(
         )
       }
     }
-    @parser.WordPart::ProcessSubstitution(_, script) => {
+    ProcessSubstitution(_, script) => {
       let _ = self.visit_script(script)
     }
-    @parser.WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       let _ = if exact_spans {
         self.visit_brace_expansion(expansion, fallback_span)
       } else {
@@ -1080,7 +1056,7 @@ fn IndexBuilder::visit_word_part_with_mode(
         )
       }
     }
-    @parser.WordPart::Glob(_) => ()
+    Glob(_) => ()
   }
   self.finish_node()
   id
@@ -1102,11 +1078,7 @@ fn IndexBuilder::visit_parameter_expansion_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::ParameterExpansion(expansion),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(ParameterExpansion(expansion), fallback_span, None)
   match expansion.index {
     Some(index) => {
       let _ = self.visit_array_index_with_mode(
@@ -1140,7 +1112,7 @@ fn IndexBuilder::visit_parameter_operator_with_mode(
   fallback_span : @parser.Span,
 ) -> Unit {
   match operator {
-    Some(@parser.ParameterOperator::Slice(offset, length)) => {
+    Some(Slice(offset, length)) => {
       let _ = self.visit_arithmetic_expr_with_mode(
         @parser.parse_arithmetic_expr(offset),
         fallback_span,
@@ -1158,7 +1130,7 @@ fn IndexBuilder::visit_parameter_operator_with_mode(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::Replace(_, pattern, replacement)) => {
+    Some(Replace(_, pattern, replacement)) => {
       let _ = self.visit_word_with_mode(
         @parser.parse_text_as_word(pattern),
         fallback_span,
@@ -1176,32 +1148,30 @@ fn IndexBuilder::visit_parameter_operator_with_mode(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::CaseModify(_, Some(pattern))) => {
+    Some(CaseModify(_, Some(pattern))) => {
       let _ = self.visit_word_with_mode(
         @parser.parse_text_as_word(pattern),
         fallback_span,
         false,
       )
     }
-    Some(@parser.ParameterOperator::DefaultValue(text))
-    | Some(@parser.ParameterOperator::AssignDefault(text))
-    | Some(@parser.ParameterOperator::ErrorValue(text))
-    | Some(@parser.ParameterOperator::AlternateValue(text))
-    | Some(@parser.ParameterOperator::RemoveShortestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveShortestSuffix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestSuffix(text))
-    | Some(@parser.ParameterOperator::Transform(text))
-    | Some(@parser.ParameterOperator::Raw(text)) => {
+    Some(DefaultValue(text))
+    | Some(AssignDefault(text))
+    | Some(ErrorValue(text))
+    | Some(AlternateValue(text))
+    | Some(RemoveShortestPrefix(text))
+    | Some(RemoveLongestPrefix(text))
+    | Some(RemoveShortestSuffix(text))
+    | Some(RemoveLongestSuffix(text))
+    | Some(Transform(text))
+    | Some(Raw(text)) => {
       let _ = self.visit_word_with_mode(
         @parser.parse_text_as_word(text),
         fallback_span,
         false,
       )
     }
-    Some(@parser.ParameterOperator::Names(_))
-    | Some(@parser.ParameterOperator::CaseModify(_, None))
-    | None => ()
+    Some(Names(_)) | Some(CaseModify(_, None)) | None => ()
   }
 }
 
@@ -1221,11 +1191,7 @@ fn IndexBuilder::visit_extglob_pattern_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::ExtGlobPattern(pattern),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(ExtGlobPattern(pattern), fallback_span, None)
   for alternative in pattern.alternatives {
     let _ = self.visit_word_with_mode(alternative, fallback_span, exact_spans)
   }
@@ -1249,11 +1215,7 @@ fn IndexBuilder::visit_brace_expansion_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(
-    NodeRef::BraceExpansion(expansion),
-    fallback_span,
-    None,
-  )
+  let id = self.start_node(BraceExpansion(expansion), fallback_span, None)
   for element in expansion.elements {
     let _ = self.visit_word_with_mode(element, fallback_span, exact_spans)
   }
@@ -1277,7 +1239,7 @@ fn IndexBuilder::visit_array_index_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ArrayIndex(index), fallback_span, None)
+  let id = self.start_node(ArrayIndex(index), fallback_span, None)
   for part in index.parts {
     let _ = self.visit_word_part_with_mode(part, fallback_span, exact_spans)
   }
@@ -1309,7 +1271,7 @@ fn IndexBuilder::visit_arithmetic_expr_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ArithmeticExpr(expr), fallback_span, None)
+  let id = self.start_node(ArithmeticExpr(expr), fallback_span, None)
   for token in expr.tokens {
     let _ = if exact_spans {
       self.visit_arithmetic_token(token, fallback_span)
@@ -1337,20 +1299,20 @@ fn IndexBuilder::visit_arithmetic_token_with_mode(
   fallback_span : @parser.Span,
   exact_spans : Bool,
 ) -> NodeId {
-  let id = self.start_node(NodeRef::ArithmeticToken(token), fallback_span, None)
+  let id = self.start_node(ArithmeticToken(token), fallback_span, None)
   match token {
-    @parser.ArithmeticToken::Literal(_) => ()
-    @parser.ArithmeticToken::Operator(_) => ()
-    @parser.ArithmeticToken::Variable(_, indexes) =>
+    Literal(_) => ()
+    Operator(_) => ()
+    Variable(_, indexes) =>
       for index in indexes {
         let _ = self.visit_array_index_with_mode(
           index, fallback_span, exact_spans,
         )
       }
-    @parser.ArithmeticToken::Expansion(word) => {
+    Expansion(word) => {
       let _ = self.visit_word_with_mode(word, fallback_span, exact_spans)
     }
-    @parser.ArithmeticToken::Group(expr) => {
+    Group(expr) => {
       let _ = self.visit_arithmetic_expr_with_mode(
         expr, fallback_span, exact_spans,
       )

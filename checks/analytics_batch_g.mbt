@@ -12,151 +12,151 @@ fn analytics_batch_g_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2004,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Use $foo or ${foo} directly in arithmetic expressions.",
     },
     {
       code: 2017,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Prefer multiplying before dividing when the divisor repeats.",
     },
     {
       code: 2071,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "String-style comparison operators are being used for numeric comparisons.",
     },
     {
       code: 2072,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Decimals are not supported in shell numeric comparisons.",
     },
     {
       code: 2073,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Escape < and > in [ ] comparisons so they are not treated as redirections.",
     },
     {
       code: 2107,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use separate [ ] tests instead of && inside a single-bracket condition.",
     },
     {
       code: 2108,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use && instead of -a inside a double-bracket condition.",
     },
     {
       code: 2109,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use separate [ ] tests instead of || inside a single-bracket condition.",
     },
     {
       code: 2110,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use || instead of -o inside a double-bracket condition.",
     },
     {
       code: 2122,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use numeric operators that match the shell's test syntax.",
     },
     {
       code: 2144,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Unary test operators do not work on glob expansions.",
     },
     {
       code: 2170,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Numeric test operators need numeric operands in single-bracket tests.",
     },
     {
       code: 2198,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Arrays do not work as operands in single-bracket tests.",
     },
     {
       code: 2199,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Arrays implicitly concatenate in double-bracket tests.",
     },
     {
       code: 2200,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Brace expansions do not work as operands in single-bracket tests.",
     },
     {
       code: 2201,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Brace expansion does not happen in double-bracket tests.",
     },
     {
       code: 2202,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Globs do not work as operands in single-bracket tests.",
     },
     {
       code: 2203,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Globs are ignored in double-bracket tests except for pattern comparisons.",
     },
     {
       code: 2208,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Single-bracket -v checks need quoting or double brackets around globs.",
     },
     {
       code: 2245,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "In ksh single-bracket tests, unary operators only inspect the first glob expansion.",
     },
     {
       code: 2057,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Unknown binary condition operator.",
     },
     {
       code: 2058,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Unknown unary condition operator.",
     },
     {
       code: 2254,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quote expansions in case patterns when literal matching is intended.",
     },
     {
       code: 2255,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Single-bracket numeric comparisons do not do arithmetic evaluation.",
     },
     {
       code: 2309,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quoted or literal strings are being compared numerically.",
     },
@@ -185,7 +185,7 @@ fn check_bad_conditional_and_or_ops(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         g_visit_bad_conditional_and_or_ops(
           condition.kind,
           condition.expr,
@@ -203,17 +203,17 @@ fn g_visit_bad_conditional_and_or_ops(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::And(op, lhs, rhs) => {
+    And(op, lhs, rhs) => {
       g_maybe_push_bad_conditional_and_or_op(kind, op, diagnostics)
       g_visit_bad_conditional_and_or_ops(kind, lhs, diagnostics)
       g_visit_bad_conditional_and_or_ops(kind, rhs, diagnostics)
     }
-    @parser.ConditionExpr::Or(op, lhs, rhs) => {
+    Or(op, lhs, rhs) => {
       g_maybe_push_bad_conditional_and_or_op(kind, op, diagnostics)
       g_visit_bad_conditional_and_or_ops(kind, lhs, diagnostics)
       g_visit_bad_conditional_and_or_ops(kind, rhs, diagnostics)
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       g_visit_bad_conditional_and_or_ops(kind, inner, diagnostics)
     _ => ()
   }
@@ -226,35 +226,35 @@ fn g_maybe_push_bad_conditional_and_or_op(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match (kind, op.text) {
-    (@parser.ConditionKind::SingleBracket, "&&") =>
+    (SingleBracket, "&&") =>
       push_diagnostic(
         diagnostics,
         op.span,
-        CheckSeverity::Error,
+        Error,
         2107,
         "Instead of [ a && b ], use [ a ] && [ b ].",
       )
-    (@parser.ConditionKind::DoubleBracket, "-a") =>
+    (DoubleBracket, "-a") =>
       push_diagnostic(
         diagnostics,
         op.span,
-        CheckSeverity::Error,
+        Error,
         2108,
         "In [[..]], use && instead of -a.",
       )
-    (@parser.ConditionKind::SingleBracket, "||") =>
+    (SingleBracket, "||") =>
       push_diagnostic(
         diagnostics,
         op.span,
-        CheckSeverity::Error,
+        Error,
         2109,
         "Instead of [ a || b ], use [ a ] || [ b ].",
       )
-    (@parser.ConditionKind::DoubleBracket, "-o") =>
+    (DoubleBracket, "-o") =>
       push_diagnostic(
         diagnostics,
         op.span,
-        CheckSeverity::Error,
+        Error,
         2110,
         "In [[..]], use || instead of -o.",
       )
@@ -269,8 +269,7 @@ fn check_valid_cond_ops(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
-        g_visit_condition_ops(condition.expr, diagnostics)
+      Condition(condition) => g_visit_condition_ops(condition.expr, diagnostics)
       _ => ()
     }
   })
@@ -282,36 +281,34 @@ fn g_visit_condition_ops(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, op_span, _) =>
+    Unary(op, op_span, _) =>
       if !@semantics.unary_test_operators().contains(op) {
         push_diagnostic(
           diagnostics,
           op_span,
-          CheckSeverity::Warning,
+          Warning,
           2058,
           "Unknown unary operator.",
         )
       }
-    @parser.ConditionExpr::Binary(op, op_span, _, _) => {
+    Binary(op, op_span, _, _) => {
       let normalized = g_normalize_cond_op(op)
       if !@semantics.binary_test_operators().contains(normalized) {
         push_diagnostic(
           diagnostics,
           op_span,
-          CheckSeverity::Warning,
+          Warning,
           2057,
           "Unknown binary operator.",
         )
       }
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      g_visit_condition_ops(inner, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Group(inner) | Not(inner) => g_visit_condition_ops(inner, diagnostics)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       g_visit_condition_ops(lhs, diagnostics)
       g_visit_condition_ops(rhs, diagnostics)
     }
-    @parser.ConditionExpr::Empty | @parser.ConditionExpr::Word(_) => ()
+    Empty | Word(_) => ()
   }
 }
 
@@ -323,7 +320,7 @@ fn check_number_comparisons(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         g_visit_condition_binaries(condition.expr, fn(op, lhs, rhs) {
           let op = g_normalize_cond_op(op)
           if g_is_numeric_test_op(op) {
@@ -356,11 +353,9 @@ fn g_visit_condition_binaries(
   visit : (String, @parser.Word, @parser.Word) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      g_visit_condition_binaries(inner, visit)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
+    Group(inner) | Not(inner) => g_visit_condition_binaries(inner, visit)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       g_visit_condition_binaries(lhs, visit)
       g_visit_condition_binaries(rhs, visit)
     }
@@ -402,7 +397,7 @@ fn g_maybe_push_numeric_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       lhs.span,
-      CheckSeverity::Error,
+      Error,
       2072,
       "Decimals are not supported in shell numeric comparisons.",
     )
@@ -414,7 +409,7 @@ fn g_maybe_push_numeric_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       rhs.span,
-      CheckSeverity::Error,
+      Error,
       2170,
       "Invalid number for this test operator. Use a string comparison instead.",
     )
@@ -426,7 +421,7 @@ fn g_maybe_push_numeric_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       rhs.span,
-      CheckSeverity::Warning,
+      Warning,
       2309,
       "Quoted or literal strings are being compared numerically.",
     )
@@ -445,7 +440,7 @@ fn g_maybe_push_string_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       rhs.span,
-      CheckSeverity::Error,
+      Error,
       2073,
       "Escape < and > in [ ] comparisons so they are not treated as redirections.",
     )
@@ -456,7 +451,7 @@ fn g_maybe_push_string_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       rhs.span,
-      CheckSeverity::Error,
+      Error,
       2122,
       g_invalid_numeric_operator_message(op),
     )
@@ -467,7 +462,7 @@ fn g_maybe_push_string_comparison_diagnostic(
     push_diagnostic(
       diagnostics,
       rhs.span,
-      CheckSeverity::Error,
+      Error,
       2071,
       g_numeric_operator_message(op),
     )
@@ -511,8 +506,7 @@ fn g_word_is_numeric_like(word : @parser.Word) -> Bool {
     Some(text) => text != "" && g_string_is_all_digits(text)
     None =>
       match word.parts {
-        [@parser.WordPart::ArithmeticExpansion(_)]
-        | [@parser.WordPart::DollarBracket(_)] => true
+        [ArithmeticExpansion(_)] | [DollarBracket(_)] => true
         _ => false
       }
   }
@@ -521,9 +515,7 @@ fn g_word_is_numeric_like(word : @parser.Word) -> Bool {
 ///|
 fn g_word_is_plain_literal(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Literal(_)]
-    | [@parser.WordPart::SingleQuoted(_)]
-    | [@parser.WordPart::DollarSingleQuoted(_)] => true
+    [Literal(_)] | [SingleQuoted(_)] | [DollarSingleQuoted(_)] => true
     _ => false
   }
 }
@@ -545,7 +537,7 @@ fn check_condition_operand_splitting(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         g_visit_condition_operand_splitting(
           condition.kind,
           condition.expr,
@@ -565,16 +557,16 @@ fn g_visit_condition_operand_splitting(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Word(word) => {
+    Word(word) => {
       g_maybe_push_brace_operand_diagnostic(kind, word, diagnostics)
       g_maybe_push_glob_operand_diagnostic(kind, word, diagnostics)
       if g_condition_kind_is_double_bracket(kind) {
         g_maybe_push_array_operand_diagnostic(kind, word, diagnostics)
       }
     }
-    @parser.ConditionExpr::Unary(op, _, word) =>
+    Unary(op, _, word) =>
       g_check_unary_condition_operand(kind, op, word, shell, diagnostics)
-    @parser.ConditionExpr::Binary(op, _, lhs, rhs) =>
+    Binary(op, _, lhs, rhs) =>
       g_check_binary_condition_operands(
         kind,
         g_normalize_cond_op(op),
@@ -583,14 +575,13 @@ fn g_visit_condition_operand_splitting(
         shell,
         diagnostics,
       )
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       g_visit_condition_operand_splitting(kind, inner, shell, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       g_visit_condition_operand_splitting(kind, lhs, shell, diagnostics)
       g_visit_condition_operand_splitting(kind, rhs, shell, diagnostics)
     }
-    @parser.ConditionExpr::Empty => ()
+    Empty => ()
   }
 }
 
@@ -608,7 +599,7 @@ fn g_check_unary_condition_operand(
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Error,
+          Error,
           2208,
           "Use [[ ]] or quote arguments to -v to avoid glob expansion.",
         )
@@ -616,12 +607,12 @@ fn g_check_unary_condition_operand(
       return
     }
     if g_condition_kind_is_single_bracket(kind) &&
-      shell == @semantics.ShellDialect::Ksh &&
+      shell == Ksh &&
       g_ksh_glob_unary_ops().contains(op) {
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Warning,
+        Warning,
         2245,
         "\{op} only applies to the first expansion of this glob. Use a loop to check any/all.",
       )
@@ -629,7 +620,7 @@ fn g_check_unary_condition_operand(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Error,
+        Error,
         2144,
         "\{op} doesn't work with globs. Use a for loop.",
       )
@@ -700,7 +691,7 @@ fn g_maybe_push_array_operand_diagnostic(
     )
   } else {
     (
-      CheckSeverity::Error,
+      Error,
       2199,
       "Arrays implicitly concatenate in [[ ]]. Use a loop (or explicit * instead of @).",
     )
@@ -722,11 +713,7 @@ fn g_maybe_push_brace_operand_diagnostic(
       "Brace expansions don't work as operands in [ ]. Use a loop.",
     )
   } else {
-    (
-      CheckSeverity::Error,
-      2201,
-      "Brace expansion doesn't happen in [[ ]]. Use a loop.",
-    )
+    (Error, 2201, "Brace expansion doesn't happen in [[ ]]. Use a loop.")
   }
   push_diagnostic(diagnostics, word.span, severity, code, message)
 }
@@ -746,7 +733,7 @@ fn g_maybe_push_glob_operand_diagnostic(
     )
   } else {
     (
-      CheckSeverity::Error,
+      Error,
       2203,
       "Globs are ignored in [[ ]] except right of =/!=. Use a loop.",
     )
@@ -760,12 +747,12 @@ fn g_maybe_push_numeric_glob_operand_diagnostic(
   word : @parser.Word,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell != @semantics.ShellDialect::Ksh else { return }
+  guard shell != Ksh else { return }
   guard @semantics.is_glob_word(word) else { return }
   push_diagnostic(
     diagnostics,
     word.span,
-    CheckSeverity::Error,
+    Error,
     2255,
     "[ ] does not apply arithmetic evaluation. Evaluate with $((..)) for numbers, or use string comparator for strings.",
   )
@@ -779,7 +766,7 @@ fn g_word_has_brace_expansion(word : @parser.Word) -> Bool {
       return
     }
     match part {
-      @parser.WordPart::BraceExpansion(_) => found = true
+      BraceExpansion(_) => found = true
       _ => ()
     }
   })
@@ -815,17 +802,17 @@ fn g_visit_command_arithmetic_exprs(
     g_visit_word_arithmetic_exprs(word, visit)
   })
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       for assignment in simple.assignments {
         g_visit_assignment_index_arithmetic_exprs(assignment, visit)
       }
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       for assignment in source.assignments {
         g_visit_assignment_index_arithmetic_exprs(assignment, visit)
       }
-    @parser.CommandKind::Arithmetic(arithmetic) =>
+    Arithmetic(arithmetic) =>
       visit(arithmetic.expr, command.span, Some(arithmetic.raw))
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       visit(clause.init, command.span, None)
       visit(clause.condition, command.span, None)
       visit(clause.step, command.span, None)
@@ -840,78 +827,76 @@ fn g_visit_direct_words_in_command(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       for assignment in simple.assignments {
         g_visit_assignment_value_words(assignment.value, visit)
       }
       if simple.words.length() > 0 {
-        visit(simple.words[0], WordPlace::CommandName)
+        visit(simple.words[0], CommandName)
       }
       let mut i = 1
       while i < simple.words.length() {
-        visit(simple.words[i], WordPlace::CommandArgument)
+        visit(simple.words[i], CommandArgument)
         i += 1
       }
     }
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       for assignment in source.assignments {
         g_visit_assignment_value_words(assignment.value, visit)
       }
       for option in source.options {
-        visit(option, WordPlace::SourceOption)
+        visit(option, SourceOption)
       }
-      visit(source.path, WordPlace::SourcePath)
+      visit(source.path, SourcePath)
       for arg in source.args {
-        visit(arg, WordPlace::SourceArgument)
+        visit(arg, SourceArgument)
       }
     }
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       for flag in clause.flags {
-        visit(flag, WordPlace::TimeFlag)
+        visit(flag, TimeFlag)
       }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       for value in clause.values {
-        visit(value, WordPlace::ForValue)
+        visit(value, ForValue)
       }
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       for value in clause.values {
-        visit(value, WordPlace::SelectValue)
+        visit(value, SelectValue)
       }
-    @parser.CommandKind::Case(clause) => {
-      visit(clause.word, WordPlace::CaseWord)
+    Case(clause) => {
+      visit(clause.word, CaseWord)
       for item in clause.items {
         for pattern in item.patterns {
-          visit(pattern, WordPlace::CasePattern)
+          visit(pattern, CasePattern)
         }
       }
     }
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       g_visit_condition_expr_words(condition.expr, condition.kind, visit)
-    @parser.CommandKind::Arithmetic(command) =>
-      g_visit_arithmetic_expr_words(command.expr, visit)
-    @parser.CommandKind::ForArithmetic(clause) => {
+    Arithmetic(command) => g_visit_arithmetic_expr_words(command.expr, visit)
+    ForArithmetic(clause) => {
       g_visit_arithmetic_expr_words(clause.init, visit)
       g_visit_arithmetic_expr_words(clause.condition, visit)
       g_visit_arithmetic_expr_words(clause.step, visit)
     }
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       match clause.name {
-        Some(name) => visit(name, WordPlace::CoProcName)
+        Some(name) => visit(name, CoProcName)
         None => ()
       }
-    @parser.CommandKind::Subshell(_)
-    | @parser.CommandKind::BraceGroup(_)
-    | @parser.CommandKind::If(_)
-    | @parser.CommandKind::While(_)
-    | @parser.CommandKind::Until(_)
-    | @parser.CommandKind::Function(_)
-    | @parser.CommandKind::BatsTest(_) => ()
+    Subshell(_)
+    | BraceGroup(_)
+    | If(_)
+    | While(_)
+    | Until(_)
+    | Function(_)
+    | BatsTest(_) => ()
   }
   for redirect in command.redirects {
     match redirect.target {
-      @parser.RedirectionTarget::Word(word) =>
-        visit(word, WordPlace::RedirectionTarget)
-      @parser.RedirectionTarget::HereDoc(_) => ()
+      Word(word) => visit(word, RedirectionTarget)
+      HereDoc(_) => ()
     }
   }
 }
@@ -922,10 +907,9 @@ fn g_visit_assignment_value_words(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Empty => ()
-    @parser.AssignmentValue::Word(word) =>
-      visit(word, WordPlace::AssignmentValue)
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    Empty => ()
+    Word(word) => visit(word, AssignmentValue)
+    ArrayLiteral(elements) =>
       for element in elements {
         g_visit_array_element_words(element, visit)
       }
@@ -947,21 +931,20 @@ fn g_visit_condition_expr_words(
   visit : (@parser.Word, WordPlace) -> Unit,
 ) -> Unit {
   let place = match kind {
-    @parser.ConditionKind::SingleBracket => WordPlace::ConditionSingleBracket
-    @parser.ConditionKind::DoubleBracket => WordPlace::ConditionDoubleBracket
+    SingleBracket => WordPlace::ConditionSingleBracket
+    DoubleBracket => ConditionDoubleBracket
   }
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word) => visit(word, place)
-    @parser.ConditionExpr::Unary(_, _, word) => visit(word, place)
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Empty => ()
+    Word(word) => visit(word, place)
+    Unary(_, _, word) => visit(word, place)
+    Binary(_, _, lhs, rhs) => {
       visit(lhs, place)
       visit(rhs, place)
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       g_visit_condition_expr_words(inner, kind, visit)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       g_visit_condition_expr_words(lhs, kind, visit)
       g_visit_condition_expr_words(rhs, kind, visit)
     }
@@ -975,10 +958,8 @@ fn g_visit_arithmetic_expr_words(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Expansion(word) =>
-        visit(word, WordPlace::ArithmeticWord)
-      @parser.ArithmeticToken::Group(inner) =>
-        g_visit_arithmetic_expr_words(inner, visit)
+      Expansion(word) => visit(word, ArithmeticWord)
+      Group(inner) => g_visit_arithmetic_expr_words(inner, visit)
       _ => ()
     }
   }
@@ -993,7 +974,7 @@ fn g_visit_assignment_index_arithmetic_exprs(
     g_visit_array_index_arithmetic_exprs(index, assignment.span, None, visit)
   }
   match assignment.value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for element in elements {
         g_visit_array_element_index_arithmetic_exprs(
           element,
@@ -1001,7 +982,7 @@ fn g_visit_assignment_index_arithmetic_exprs(
           visit,
         )
       }
-    @parser.AssignmentValue::Word(_) | @parser.AssignmentValue::Empty => ()
+    Word(_) | Empty => ()
   }
 }
 
@@ -1015,11 +996,11 @@ fn g_visit_array_element_index_arithmetic_exprs(
     g_visit_array_index_arithmetic_exprs(index, span, None, visit)
   }
   match element.value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for nested in elements {
         g_visit_array_element_index_arithmetic_exprs(nested, span, visit)
       }
-    @parser.AssignmentValue::Word(_) | @parser.AssignmentValue::Empty => ()
+    Word(_) | Empty => ()
   }
 }
 
@@ -1062,19 +1043,18 @@ fn g_visit_word_part_arithmetic_exprs(
   visit : (@parser.ArithmeticExpr, @parser.Span, String?) -> Unit,
 ) -> Unit {
   match part {
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       for nested in parts {
         g_visit_word_part_arithmetic_exprs(nested, span, source, visit)
       }
-    @parser.WordPart::BracedParameter(expansion) => {
+    BracedParameter(expansion) => {
       match expansion.index {
         Some(index) =>
           g_visit_array_index_arithmetic_exprs(index, span, source, visit)
         None => ()
       }
       match expansion.operator {
-        Some(@parser.ParameterOperator::Slice(offset, length)) => {
+        Some(Slice(offset, length)) => {
           visit(@parser.parse_arithmetic_expr(offset), span, source)
           match length {
             Some(length) =>
@@ -1085,13 +1065,12 @@ fn g_visit_word_part_arithmetic_exprs(
         _ => ()
       }
     }
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) => visit(expr, span, source)
-    @parser.WordPart::ExtGlob(pattern) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) => visit(expr, span, source)
+    ExtGlob(pattern) =>
       for alternative in pattern.alternatives {
         g_visit_word_arithmetic_exprs(alternative, visit)
       }
-    @parser.WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       for element in expansion.elements {
         g_visit_word_arithmetic_exprs(element, visit)
       }
@@ -1111,7 +1090,7 @@ fn g_maybe_push_div_before_mult_diagnostic(
   let mut current : Array[@parser.ArithmeticToken] = []
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Operator(op) if op == "/" || op == "*" => {
+      Operator(op) if op == "/" || op == "*" => {
         terms.push(g_arithmetic_tokens_signature(current))
         current = []
         ops.push(op)
@@ -1133,7 +1112,7 @@ fn g_maybe_push_div_before_mult_diagnostic(
       push_diagnostic(
         diagnostics,
         diagnostic_span,
-        CheckSeverity::Info,
+        Info,
         2017,
         "Increase precision by replacing a/b*c with a*c/b.",
       )
@@ -1158,9 +1137,9 @@ fn g_arithmetic_tokens_signature(
 ///|
 fn g_arithmetic_token_signature(token : @parser.ArithmeticToken) -> String {
   match token {
-    @parser.ArithmeticToken::Literal(text) => "L:" + text
-    @parser.ArithmeticToken::Operator(op) => "O:" + op
-    @parser.ArithmeticToken::Variable(name, indexes) => {
+    Literal(text) => "L:" + text
+    Operator(op) => "O:" + op
+    Variable(name, indexes) => {
       let buf = StringBuilder::new()
       buf.write_string("V:")
       buf.write_string(name)
@@ -1171,8 +1150,8 @@ fn g_arithmetic_token_signature(token : @parser.ArithmeticToken) -> String {
       }
       buf.to_string()
     }
-    @parser.ArithmeticToken::Expansion(word) => "E:" + word.source
-    @parser.ArithmeticToken::Group(expr) => "G:" + expr.raw
+    Expansion(word) => "E:" + word.source
+    Group(expr) => "G:" + expr.raw
   }
 }
 
@@ -1199,32 +1178,32 @@ fn g_maybe_push_arithmetic_deref_diagnostic(
   let mut i = 0
   while i < tokens.length() {
     match tokens[i] {
-      @parser.ArithmeticToken::Expansion(word) =>
+      Expansion(word) =>
         if !g_token_is_base_prefix(tokens, i) &&
           g_word_is_arithmetic_deref(word) {
           push_diagnostic(
             diagnostics,
             g_arithmetic_fragment_span(span, source, word.source),
-            CheckSeverity::Style,
+            Style,
             2004,
             "$/${} is unnecessary on arithmetic variables.",
           )
           return
         }
-      @parser.ArithmeticToken::Variable(_, indexes) =>
+      Variable(_, indexes) =>
         for index in indexes {
           if g_array_index_is_arithmetic_deref(index) {
             push_diagnostic(
               diagnostics,
               span,
-              CheckSeverity::Style,
+              Style,
               2004,
               "$/${} is unnecessary on arithmetic variables.",
             )
             return
           }
         }
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         g_maybe_push_arithmetic_deref_diagnostic(
           inner, span, source, diagnostics,
         )
@@ -1243,7 +1222,7 @@ fn g_token_is_base_prefix(
     return false
   }
   match tokens[index - 1] {
-    @parser.ArithmeticToken::Literal(text) => text.has_suffix("#")
+    Literal(text) => text.has_suffix("#")
     _ => false
   }
 }
@@ -1251,9 +1230,9 @@ fn g_token_is_base_prefix(
 ///|
 fn g_word_is_arithmetic_deref(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Parameter(name)] => !g_is_special_parameter(name)
-    [@parser.WordPart::SpecialParameter(name)] => !g_is_special_parameter(name)
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(name)] => !g_is_special_parameter(name)
+    [SpecialParameter(name)] => !g_is_special_parameter(name)
+    [BracedParameter(expansion)] =>
       g_braced_parameter_is_arithmetic_deref(expansion)
     _ => false
   }
@@ -1389,9 +1368,9 @@ fn g_array_index_is_arithmetic_deref(index : @parser.ArrayIndex) -> Bool {
     return false
   }
   match index.parts[0] {
-    @parser.WordPart::Parameter(name) => !g_is_special_parameter(name)
-    @parser.WordPart::SpecialParameter(name) => !g_is_special_parameter(name)
-    @parser.WordPart::BracedParameter(expansion) =>
+    Parameter(name) => !g_is_special_parameter(name)
+    SpecialParameter(name) => !g_is_special_parameter(name)
+    BracedParameter(expansion) =>
       g_braced_parameter_is_arithmetic_deref(expansion)
     _ => false
   }
@@ -1404,7 +1383,7 @@ fn check_case_against_glob(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Case(clause) =>
+      Case(clause) =>
         for item in clause.items {
           for pattern in item.patterns {
             if !@semantics.is_glob_word(pattern) &&
@@ -1412,7 +1391,7 @@ fn check_case_against_glob(
               push_diagnostic(
                 diagnostics,
                 pattern.span,
-                CheckSeverity::Warning,
+                Warning,
                 2254,
                 "Quote expansions in case patterns to match literally rather than as a glob.",
               )
@@ -1432,15 +1411,15 @@ fn g_word_contains_quoteable_expansion(word : @parser.Word) -> Bool {
       return
     }
     match part {
-      @parser.WordPart::Parameter(_)
-      | @parser.WordPart::SpecialParameter(_)
-      | @parser.WordPart::BracedParameter(_)
-      | @parser.WordPart::CommandSubstitution(_)
-      | @parser.WordPart::BraceCommandSubstitution(_, _)
-      | @parser.WordPart::BackQuoted(_)
-      | @parser.WordPart::ArithmeticExpansion(_)
-      | @parser.WordPart::DollarBracket(_)
-      | @parser.WordPart::DollarSingleQuoted(_) => found = true
+      Parameter(_)
+      | SpecialParameter(_)
+      | BracedParameter(_)
+      | CommandSubstitution(_)
+      | BraceCommandSubstitution(_, _)
+      | BackQuoted(_)
+      | ArithmeticExpansion(_)
+      | DollarBracket(_)
+      | DollarSingleQuoted(_) => found = true
       _ => ()
     }
   })
@@ -1450,16 +1429,16 @@ fn g_word_contains_quoteable_expansion(word : @parser.Word) -> Bool {
 ///|
 fn g_condition_kind_is_single_bracket(kind : @parser.ConditionKind) -> Bool {
   match kind {
-    @parser.ConditionKind::SingleBracket => true
-    @parser.ConditionKind::DoubleBracket => false
+    SingleBracket => true
+    DoubleBracket => false
   }
 }
 
 ///|
 fn g_condition_kind_is_double_bracket(kind : @parser.ConditionKind) -> Bool {
   match kind {
-    @parser.ConditionKind::SingleBracket => false
-    @parser.ConditionKind::DoubleBracket => true
+    SingleBracket => false
+    DoubleBracket => true
   }
 }
 

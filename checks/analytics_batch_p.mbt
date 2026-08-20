@@ -12,79 +12,79 @@ fn analytics_batch_p_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2270,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use set -- instead of assigning positional parameters as command names.",
     },
     {
       code: 2271,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Dynamic assignment targets become command names instead of assignments.",
     },
     {
       code: 2272,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Command names containing == are usually mistaken comparisons.",
     },
     {
       code: 2273,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "A command name made only of === often indicates a conflict marker.",
     },
     {
       code: 2274,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Command names starting with === are likely commented borders.",
     },
     {
       code: 2275,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "A command name starting with = usually indicates a bad line break.",
     },
     {
       code: 2276,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Command names containing = are often malformed assignments or comparisons.",
     },
     {
       code: 2277,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Assign to BASH_ARGV0 instead of $0 in Bash.",
     },
     {
       code: 2278,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "$0 can not be assigned in Ksh.",
     },
     {
       code: 2279,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "$0 assignments become command names in Dash and BusyBox Ash.",
     },
     {
       code: 2280,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "$0 can not be assigned portably.",
     },
     {
       code: 2281,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Do not put $ or ${} on the left side of assignments.",
     },
     {
       code: 2282,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Variable names can not start with numbers.",
     },
@@ -108,7 +108,7 @@ fn check_equals_in_command(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.words.length() > 0 {
           p_check_equals_command_word(
             command.span,
@@ -154,7 +154,7 @@ fn p_check_equals_command_word(
       push_diagnostic(
         diagnostics,
         command_span,
-        CheckSeverity::Error,
+        Error,
         2273,
         "Sequence of ===s found. Merge conflict or intended as a commented border?",
       )
@@ -162,7 +162,7 @@ fn p_check_equals_command_word(
       push_diagnostic(
         diagnostics,
         command_span,
-        CheckSeverity::Error,
+        Error,
         2274,
         "Command name starts with ===. Intended as a commented border?",
       )
@@ -170,7 +170,7 @@ fn p_check_equals_command_word(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Error,
+        Error,
         2275,
         "Command name starts with =. Bad line break?",
       )
@@ -182,7 +182,7 @@ fn p_check_equals_command_word(
     push_diagnostic(
       diagnostics,
       word.span,
-      CheckSeverity::Error,
+      Error,
       2272,
       "Command name contains ==. For comparison, use [ \"$var\" = value ].",
     )
@@ -210,7 +210,7 @@ fn p_check_equals_command_word(
           push_diagnostic(
             diagnostics,
             span_prefix(word.span, width),
-            CheckSeverity::Error,
+            Error,
             2270,
             "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
           )
@@ -220,7 +220,7 @@ fn p_check_equals_command_word(
           push_diagnostic(
             diagnostics,
             word.span,
-            CheckSeverity::Error,
+            Error,
             2282,
             "Variable names can't start with numbers, so this is interpreted as a command.",
           )
@@ -239,7 +239,7 @@ fn p_check_equals_command_word(
     push_diagnostic(
       diagnostics,
       word.span,
-      CheckSeverity::Error,
+      Error,
       2271,
       "For indirection, use arrays, declare \"var$n=value\", or (for sh) read/eval.",
     )
@@ -249,7 +249,7 @@ fn p_check_equals_command_word(
   push_diagnostic(
     diagnostics,
     word.span,
-    CheckSeverity::Error,
+    Error,
     2276,
     "This is interpreted as a command name containing '='. Bad assignment or comparison?",
   )
@@ -265,16 +265,16 @@ fn p_push_direct_reference_assignment_diagnostic(
 ) -> Unit {
   let target_span = span_prefix(word.span, target_width)
   match target {
-    @parser.WordPart::Parameter(_) =>
+    Parameter(_) =>
       push_diagnostic_with_fix(
         diagnostics,
         target_span,
-        CheckSeverity::Error,
+        Error,
         2281,
         "Don't use $ on the left side of assignments.",
         p_remove_dollar_fix(word.span.start),
       )
-    @parser.WordPart::SpecialParameter(name) =>
+    SpecialParameter(name) =>
       if name == "0" {
         p_push_zero_assignment_with_optional_fix(
           diagnostics,
@@ -286,7 +286,7 @@ fn p_push_direct_reference_assignment_diagnostic(
         push_diagnostic(
           diagnostics,
           target_span,
-          CheckSeverity::Error,
+          Error,
           2270,
           "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
         )
@@ -294,12 +294,12 @@ fn p_push_direct_reference_assignment_diagnostic(
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Error,
+          Error,
           2276,
           "This is interpreted as a command name containing '='. Bad assignment or comparison?",
         )
       }
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       p_push_braced_assignment_diagnostic(
         word.span.start,
         target_span,
@@ -329,7 +329,7 @@ fn p_push_braced_assignment_diagnostic(
     push_diagnostic(
       diagnostics,
       target_span,
-      CheckSeverity::Error,
+      Error,
       2276,
       "This is interpreted as a command name containing '='. Bad assignment or comparison?",
     )
@@ -365,7 +365,7 @@ fn p_push_braced_assignment_diagnostic(
     push_diagnostic(
       diagnostics,
       target_span,
-      CheckSeverity::Error,
+      Error,
       2270,
       "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
     )
@@ -377,7 +377,7 @@ fn p_push_braced_assignment_diagnostic(
     push_diagnostic_with_fix(
       diagnostics,
       target_span,
-      CheckSeverity::Error,
+      Error,
       2281,
       "Don't use ${} on the left side of assignments.",
       p_remove_braced_reference_fix(word_start, target_width),
@@ -390,7 +390,7 @@ fn p_push_braced_assignment_diagnostic(
       word_start,
       analytics_position_offset(word_start, target_width),
     ),
-    CheckSeverity::Error,
+    Error,
     2271,
     "For indirection, use arrays, declare \"var$n=value\", or (for sh) read/eval.",
   )
@@ -419,13 +419,13 @@ fn p_push_zero_assignment_with_optional_fix(
   bash_fix : @fixer.Fix?,
 ) -> Unit {
   match shell {
-    @semantics.ShellDialect::Bash =>
+    Bash =>
       match bash_fix {
         Some(fix) =>
           push_diagnostic_with_fix(
             diagnostics,
             span,
-            CheckSeverity::Error,
+            Error,
             2277,
             "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
             fix,
@@ -434,40 +434,40 @@ fn p_push_zero_assignment_with_optional_fix(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Error,
+            Error,
             2277,
             "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
           )
       }
-    @semantics.ShellDialect::Ksh =>
+    Ksh =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Error,
+        Error,
         2278,
         "$0 can't be assigned in Ksh (but it does reflect the current function).",
       )
-    @semantics.ShellDialect::Dash =>
+    Dash =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Error,
+        Error,
         2279,
         "$0 can't be assigned in Dash. This becomes a command name.",
       )
-    @semantics.ShellDialect::BusyboxSh =>
+    BusyboxSh =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Error,
+        Error,
         2279,
         "$0 can't be assigned in Busybox Ash. This becomes a command name.",
       )
-    @semantics.ShellDialect::Sh =>
+    Sh =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Error,
+        Error,
         2280,
         "$0 can't be assigned this way, and there is no portable alternative.",
       )
@@ -479,11 +479,7 @@ fn p_assignment_target_is_direct_reference(
   parts : Array[@parser.WordPart],
 ) -> Bool {
   match parts {
-    [
-      @parser.WordPart::Parameter(_)
-      | @parser.WordPart::SpecialParameter(_)
-      | @parser.WordPart::BracedParameter(_),
-    ] => true
+    [Parameter(_) | SpecialParameter(_) | BracedParameter(_)] => true
     _ => false
   }
 }
@@ -495,8 +491,7 @@ fn p_first_literal_with_equals(
   let mut i = 0
   while i < parts.length() {
     match parts[i] {
-      @parser.WordPart::Literal(text) if text.contains("=") =>
-        return Some((i, text))
+      Literal(text) if text.contains("=") => return Some((i, text))
       _ => ()
     }
     i += 1
@@ -511,7 +506,7 @@ fn p_parts_before_first_equals(
   let leading : Array[@parser.WordPart] = []
   for part in parts {
     match part {
-      @parser.WordPart::Literal(text) if text.contains("=") => break
+      Literal(text) if text.contains("=") => break
       _ => leading.push(part)
     }
   }
@@ -525,7 +520,7 @@ fn p_strip_single_plus(
   let stripped : Array[@parser.WordPart] = []
   let mut end_ = parts.length()
   match parts.last() {
-    Some(@parser.WordPart::Literal("+")) => end_ -= 1
+    Some(Literal("+")) => end_ -= 1
     _ => ()
   }
   let mut i = 0
@@ -585,18 +580,18 @@ fn p_may_be_variable_name(parts : Array[@parser.WordPart]) -> Bool {
 ///|
 fn p_variable_name_placeholder(part : @parser.WordPart) -> String? {
   match part {
-    @parser.WordPart::Literal(text) => Some(text)
-    @parser.WordPart::BracedParameter(expansion) =>
+    Literal(text) => Some(text)
+    BracedParameter(expansion) =>
       if p_braced_parameter_can_stand_in_identifier(expansion) {
         Some("x")
       } else {
         None
       }
-    @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BackQuoted(_) => Some("x")
+    ArithmeticExpansion(_)
+    | DollarBracket(_)
+    | BraceCommandSubstitution(_, _)
+    | CommandSubstitution(_)
+    | BackQuoted(_) => Some("x")
     _ => None
   }
 }
@@ -609,7 +604,7 @@ fn p_braced_parameter_can_stand_in_identifier(
     return false
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::Names(_)) => false
+    Some(Names(_)) => false
     Some(_) => false
     None =>
       match expansion.name {

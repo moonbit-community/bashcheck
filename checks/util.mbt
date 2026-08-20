@@ -23,19 +23,17 @@ fn walk_word_part_deep(
 ) -> Unit {
   visit(part)
   match part {
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       walk_word_parts_deep(parts, visit)
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       walk_parameter_expansion_parts(expansion, visit)
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       walk_arithmetic_expr_word_parts(expr, visit)
-    @parser.WordPart::ExtGlob(pattern) =>
+    ExtGlob(pattern) =>
       for alternative in pattern.alternatives {
         walk_word_deep(alternative, visit)
       }
-    @parser.WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       for element in expansion.elements {
         walk_word_deep(element, visit)
       }
@@ -61,7 +59,7 @@ fn walk_parameter_operator_parts(
   visit : (@parser.WordPart) -> Unit,
 ) -> Unit {
   match operator {
-    Some(@parser.ParameterOperator::Slice(offset, length)) => {
+    Some(Slice(offset, length)) => {
       walk_arithmetic_expr_word_parts(
         @parser.parse_arithmetic_expr(offset),
         visit,
@@ -75,7 +73,7 @@ fn walk_parameter_operator_parts(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::Replace(_, pattern, replacement)) => {
+    Some(Replace(_, pattern, replacement)) => {
       walk_word_deep(@parser.parse_text_as_word(pattern), visit)
       match replacement {
         Some(replacement) =>
@@ -83,22 +81,19 @@ fn walk_parameter_operator_parts(
         None => ()
       }
     }
-    Some(@parser.ParameterOperator::CaseModify(_, Some(pattern))) =>
+    Some(CaseModify(_, Some(pattern))) =>
       walk_word_deep(@parser.parse_text_as_word(pattern), visit)
-    Some(@parser.ParameterOperator::DefaultValue(text))
-    | Some(@parser.ParameterOperator::AssignDefault(text))
-    | Some(@parser.ParameterOperator::ErrorValue(text))
-    | Some(@parser.ParameterOperator::AlternateValue(text))
-    | Some(@parser.ParameterOperator::RemoveShortestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveShortestSuffix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestSuffix(text))
-    | Some(@parser.ParameterOperator::Transform(text))
-    | Some(@parser.ParameterOperator::Raw(text)) =>
-      walk_word_deep(@parser.parse_text_as_word(text), visit)
-    Some(@parser.ParameterOperator::Names(_))
-    | Some(@parser.ParameterOperator::CaseModify(_, None))
-    | None => ()
+    Some(DefaultValue(text))
+    | Some(AssignDefault(text))
+    | Some(ErrorValue(text))
+    | Some(AlternateValue(text))
+    | Some(RemoveShortestPrefix(text))
+    | Some(RemoveLongestPrefix(text))
+    | Some(RemoveShortestSuffix(text))
+    | Some(RemoveLongestSuffix(text))
+    | Some(Transform(text))
+    | Some(Raw(text)) => walk_word_deep(@parser.parse_text_as_word(text), visit)
+    Some(Names(_)) | Some(CaseModify(_, None)) | None => ()
   }
 }
 
@@ -109,10 +104,9 @@ fn walk_arithmetic_expr_word_parts(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Expansion(word) => walk_word_deep(word, visit)
-      @parser.ArithmeticToken::Group(inner) =>
-        walk_arithmetic_expr_word_parts(inner, visit)
-      @parser.ArithmeticToken::Variable(_, indexes) =>
+      Expansion(word) => walk_word_deep(word, visit)
+      Group(inner) => walk_arithmetic_expr_word_parts(inner, visit)
+      Variable(_, indexes) =>
         for index in indexes {
           walk_word_parts_deep(index.parts, visit)
         }
@@ -126,8 +120,7 @@ fn word_has_backquoted_part(word : @parser.Word) -> Bool {
   let mut found = false
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::BackQuoted(script) if script.items.length() > 0 =>
-        found = true
+      BackQuoted(script) if script.items.length() > 0 => found = true
       _ => ()
     }
   })
@@ -138,12 +131,9 @@ fn word_has_backquoted_part(word : @parser.Word) -> Bool {
 fn word_has_top_level_command_substitution(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) =>
-        if script.items.length() > 0 {
-          return true
-        }
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => if script.items.length() > 0 { return true }
       _ => ()
     }
   }
@@ -153,7 +143,7 @@ fn word_has_top_level_command_substitution(word : @parser.Word) -> Bool {
 ///|
 fn word_is_plain_double_quoted(word : @parser.Word) -> Array[@parser.WordPart]? {
   match word.parts {
-    [@parser.WordPart::DoubleQuoted(parts)] => Some(parts)
+    [DoubleQuoted(parts)] => Some(parts)
     _ => None
   }
 }
@@ -161,7 +151,7 @@ fn word_is_plain_double_quoted(word : @parser.Word) -> Array[@parser.WordPart]? 
 ///|
 fn word_is_plain_single_quoted(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::SingleQuoted(_)] => true
+    [SingleQuoted(_)] => true
     _ => false
   }
 }
@@ -179,9 +169,9 @@ fn word_single_top_level_substitution_script(
   word : @parser.Word,
 ) -> @parser.Script? {
   match word.parts {
-    [@parser.WordPart::CommandSubstitution(script)]
-    | [@parser.WordPart::BraceCommandSubstitution(_, script)]
-    | [@parser.WordPart::BackQuoted(script)] => Some(script)
+    [CommandSubstitution(script)]
+    | [BraceCommandSubstitution(_, script)]
+    | [BackQuoted(script)] => Some(script)
     _ => None
   }
 }
@@ -207,22 +197,16 @@ fn shell_is_one_of(
 
 ///|
 fn shell_is_posix_sh(shell : @semantics.ShellDialect) -> Bool {
-  shell_is_one_of(shell, [
-    @semantics.ShellDialect::Sh,
-    @semantics.ShellDialect::Dash,
-    @semantics.ShellDialect::BusyboxSh,
-  ])
+  shell_is_one_of(shell, [Sh, Dash, BusyboxSh])
 }
 
 ///|
 fn word_is_just_command_output(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::CommandSubstitution(script)]
-    | [@parser.WordPart::BraceCommandSubstitution(_, script)]
-    | [@parser.WordPart::BackQuoted(script)] =>
-      substitution_script_has_named_command(script)
-    [@parser.WordPart::DoubleQuoted(parts)]
-    | [@parser.WordPart::DollarDoubleQuoted(parts)] =>
+    [CommandSubstitution(script)]
+    | [BraceCommandSubstitution(_, script)]
+    | [BackQuoted(script)] => substitution_script_has_named_command(script)
+    [DoubleQuoted(parts)] | [DollarDoubleQuoted(parts)] =>
       quoted_parts_are_just_command_output(parts)
     _ => false
   }
@@ -233,10 +217,9 @@ fn quoted_parts_are_just_command_output(
   parts : Array[@parser.WordPart],
 ) -> Bool {
   match parts {
-    [@parser.WordPart::CommandSubstitution(script)]
-    | [@parser.WordPart::BraceCommandSubstitution(_, script)]
-    | [@parser.WordPart::BackQuoted(script)] =>
-      substitution_script_has_named_command(script)
+    [CommandSubstitution(script)]
+    | [BraceCommandSubstitution(_, script)]
+    | [BackQuoted(script)] => substitution_script_has_named_command(script)
     _ => false
   }
 }
@@ -273,7 +256,7 @@ fn first_command_name_in_script(script : @parser.Script) -> String? {
 ///|
 fn parameter_has_names_operator(expansion : @parser.ParameterExpansion) -> Bool {
   match expansion.operator {
-    Some(@parser.ParameterOperator::Names(_)) => true
+    Some(Names(_)) => true
     _ => false
   }
 }
@@ -302,11 +285,11 @@ fn parameter_expansion_allows_unset(
     return true
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::DefaultValue(_))
-    | Some(@parser.ParameterOperator::AssignDefault(_))
-    | Some(@parser.ParameterOperator::ErrorValue(_))
-    | Some(@parser.ParameterOperator::AlternateValue(_)) => true
-    Some(@parser.ParameterOperator::Raw(text)) =>
+    Some(DefaultValue(_))
+    | Some(AssignDefault(_))
+    | Some(ErrorValue(_))
+    | Some(AlternateValue(_)) => true
+    Some(Raw(text)) =>
       text.has_prefix("-") || text.has_prefix("?") || text.has_prefix("+")
     _ => false
   }
@@ -449,11 +432,8 @@ fn command_keyword_span(
 ///|
 fn redirect_operator_span(redirect : @parser.Redirection) -> @parser.Span {
   match (redirect.op, redirect.target) {
-    (
-      @parser.RedirectionOperator::HereDoc
-      | @parser.RedirectionOperator::HereDocStrip,
-      @parser.RedirectionTarget::HereDoc(doc),
-    ) => return span_suffix(redirect.span, here_doc_delimiter_width(doc))
+    (HereDoc | HereDocStrip, HereDoc(doc)) =>
+      return span_suffix(redirect.span, here_doc_delimiter_width(doc))
     _ => ()
   }
   span_prefix(redirect.span, redirection_operator_width(redirect))
@@ -471,18 +451,12 @@ fn here_doc_delimiter_width(doc : @parser.HereDoc) -> Int {
 ///|
 fn redirection_operator_width(redirect : @parser.Redirection) -> Int {
   let base = match redirect.op {
-    @parser.RedirectionOperator::Read | @parser.RedirectionOperator::Write => 1
-    @parser.RedirectionOperator::Append
-    | @parser.RedirectionOperator::ReadWrite
-    | @parser.RedirectionOperator::Clobber
-    | @parser.RedirectionOperator::HereDoc
-    | @parser.RedirectionOperator::DupInput
-    | @parser.RedirectionOperator::DupOutput => 2
-    @parser.RedirectionOperator::HereDocStrip
-    | @parser.RedirectionOperator::HereString => 3
+    Read | Write => 1
+    Append | ReadWrite | Clobber | HereDoc | DupInput | DupOutput => 2
+    HereDocStrip | HereString => 3
   }
   match redirect.source {
-    Some(@parser.RedirectionSource::All) => base + 1
+    Some(All) => base + 1
     _ => base
   }
 }

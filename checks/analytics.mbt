@@ -3,145 +3,145 @@ fn analytics_descriptions() -> Array[CheckDescription] {
   let descriptions : Array[CheckDescription] = [
     {
       code: 2036,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use $(...) if you meant to assign pipeline output.",
     },
     {
       code: 2037,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use $(...) if you meant to assign command output.",
     },
     {
       code: 2006,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Use $(...) notation instead of legacy backticks `...`.",
     },
     {
       code: 2041,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Single-quoted loop values are literal strings, not commands.",
     },
     {
       code: 2042,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use spaces, not commas, to separate loop elements.",
     },
     {
       code: 2043,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A for-loop value that never expands will only run once.",
     },
     {
       code: 2044,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "For loops over find output are fragile.",
     },
     {
       code: 2045,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Iterating over ls output is fragile.",
     },
     {
       code: 2046,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quote command substitutions to prevent word splitting.",
     },
     {
       code: 2048,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Prefer quoted $@ or ${array[@]} over unquoted star expansions.",
     },
     {
       code: 2066,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Quoted loop expansions will not split and only run once.",
     },
     {
       code: 2068,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Double quote array expansions to avoid re-splitting elements.",
     },
     {
       code: 2076,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Unquote =~ regex operands so they behave as regexes.",
     },
     {
       code: 2097,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Prefix assignments are only visible to the invoked command.",
     },
     {
       code: 2098,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This expansion will not see a prefix assignment from the same command.",
     },
     {
       code: 2166,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Prefer separate [ ] tests over -a / -o in single brackets.",
     },
     {
       code: 2204,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "(..) is a subshell, not a test expression.",
     },
     {
       code: 2205,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "(..) is a subshell, not a binary test expression.",
     },
     {
       code: 2206,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quote array elements to avoid split/glob behavior.",
     },
     {
       code: 2207,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Prefer mapfile/read -a over splitting command output into arrays.",
     },
     {
       code: 2231,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Quote expansions in for-loop globs.",
     },
     {
       code: 2269,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Self-assignments do nothing.",
     },
     {
       code: 2074,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Use [[ .. ]] rather than [ .. ] with =~.",
     },
     {
       code: 2075,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Escaped < and > are invalid in [[ .. ]].",
     },
@@ -190,7 +190,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2002,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Useless cat. Consider redirecting or passing the file directly.",
       },
@@ -205,7 +205,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2249,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "analytics",
         summary: "Consider adding a default *) case.",
       },
@@ -220,7 +220,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2248,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Prefer double quoting even when variables look clean.",
       },
@@ -235,7 +235,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2244,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Prefer explicit -n checks for string-like conditions.",
       },
@@ -250,7 +250,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2335,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Prefer direct condition operators over extra negation.",
       },
@@ -265,7 +265,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2250,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Prefer ${var} over bare $var references.",
       },
@@ -280,7 +280,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2154,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "control-flow",
         summary: "Referenced uppercase variable may not be assigned.",
       },
@@ -295,7 +295,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2292,
-        severity: CheckSeverity::Style,
+        severity: Style,
         category: "analytics",
         summary: "Prefer [[ .. ]] over [ .. ] in Bash/Ksh/Busybox.",
       },
@@ -310,7 +310,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2310,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "analytics",
         summary: "Warn when set -e is suppressed for function invocations.",
       },
@@ -325,7 +325,7 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2312,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "analytics",
         summary: "Warn when command failures get masked by shell contexts.",
       },
@@ -413,7 +413,7 @@ fn check_backticks(
         push_diagnostic_with_fix(
           diagnostics,
           word.span,
-          CheckSeverity::Style,
+          Style,
           2006,
           "Use $(...) notation instead of legacy backticks `...`.",
           backtick_fix(word),
@@ -438,7 +438,7 @@ fn check_useless_use_of_cat(
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Style,
+          Style,
           2002,
           "Useless cat. Consider 'cmd < file | ..' or 'cmd file | ..' instead.",
         )
@@ -459,12 +459,12 @@ fn check_add_default_case(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Case(clause) =>
+      Case(clause) =>
         if !case_clause_has_default_pattern(clause) {
           push_diagnostic(
             diagnostics,
             command.span,
-            CheckSeverity::Info,
+            Info,
             2249,
             "Consider adding a default *) case, even if it just exits with error.",
           )
@@ -595,7 +595,7 @@ fn check_for_in_quoted(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::ForIn(clause) if clause.values.length() == 1 => {
+      ForIn(clause) if clause.values.length() == 1 => {
         let value = clause.values[0]
         match word_is_plain_double_quoted(value) {
           Some(parts) =>
@@ -607,7 +607,7 @@ fn check_for_in_quoted(
               push_diagnostic(
                 diagnostics,
                 value.span,
-                CheckSeverity::Error,
+                Error,
                 2066,
                 "Since you double quoted this, it will not word split, and the loop will only run once.",
               )
@@ -617,7 +617,7 @@ fn check_for_in_quoted(
               push_diagnostic(
                 diagnostics,
                 value.span,
-                CheckSeverity::Warning,
+                Warning,
                 2041,
                 "This is a literal string. To run as a command, use $(..) instead of '..' . ",
               )
@@ -625,7 +625,7 @@ fn check_for_in_quoted(
               push_diagnostic(
                 diagnostics,
                 value.span,
-                CheckSeverity::Warning,
+                Warning,
                 2042,
                 "Use spaces, not commas, to separate loop elements.",
               )
@@ -633,7 +633,7 @@ fn check_for_in_quoted(
               push_diagnostic(
                 diagnostics,
                 value.span,
-                CheckSeverity::Warning,
+                Warning,
                 2043,
                 "This loop will only ever run once. Bad quoting or missing glob/expansion?",
               )
@@ -652,7 +652,7 @@ fn check_for_in_ls(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::ForIn(clause) if clause.values.length() == 1 =>
+      ForIn(clause) if clause.values.length() == 1 =>
         match word_single_top_level_substitution_script(clause.values[0]) {
           Some(inner) =>
             match first_command_in_script(inner) {
@@ -672,7 +672,7 @@ fn check_for_in_ls(
                     let severity = if has_flag {
                       CheckSeverity::Warning
                     } else {
-                      CheckSeverity::Error
+                      Error
                     }
                     push_diagnostic(
                       diagnostics,
@@ -686,7 +686,7 @@ fn check_for_in_ls(
                     push_diagnostic(
                       diagnostics,
                       clause.values[0].span,
-                      CheckSeverity::Warning,
+                      Warning,
                       2044,
                       "For loops over find output are fragile. Use find -exec or a while read loop.",
                     )
@@ -716,7 +716,7 @@ fn check_unquoted_expansions(
       if !word_has_top_level_command_substitution(word) {
         return
       }
-      if allow_split && place == WordPlace::CommandArgument {
+      if allow_split && place == CommandArgument {
         return
       }
       if word_is_split_command_output(word) {
@@ -725,7 +725,7 @@ fn check_unquoted_expansions(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Warning,
+        Warning,
         2046,
         "Quote this to prevent word splitting.",
       )
@@ -745,13 +745,7 @@ fn check_dollar_star(
       }
       match dollar_star_message(word) {
         Some(message) =>
-          push_diagnostic(
-            diagnostics,
-            word.span,
-            CheckSeverity::Warning,
-            2048,
-            message,
-          )
+          push_diagnostic(diagnostics, word.span, Warning, 2048, message)
         None => ()
       }
     })
@@ -774,7 +768,7 @@ fn check_unquoted_dollar_at(
       push_diagnostic(
         diagnostics,
         word.span,
-        CheckSeverity::Error,
+        Error,
         2068,
         "Double quote array expansions to avoid re-splitting elements.",
       )
@@ -788,21 +782,20 @@ fn check_single_bracket_operators(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  if shell != @semantics.ShellDialect::Bash &&
-    shell != @semantics.ShellDialect::Ksh {
+  if shell != Bash && shell != Ksh {
     return
   }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.kind {
-          @parser.ConditionKind::SingleBracket =>
+          SingleBracket =>
             match condition_binary_op_span(condition.expr, "=~") {
               Some(op_span) =>
                 push_diagnostic(
                   diagnostics,
                   op_span,
-                  CheckSeverity::Error,
+                  Error,
                   2074,
                   "Can't use =~ in [ ]. Use [[..]] instead.",
                 )
@@ -822,9 +815,9 @@ fn check_double_bracket_operators(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.kind {
-          @parser.ConditionKind::DoubleBracket =>
+          DoubleBracket =>
             match condition_raw_escaped_angle_operator(condition.raw) {
               Some(escaped_op) =>
                 match
@@ -840,7 +833,7 @@ fn check_double_bracket_operators(
                     push_diagnostic(
                       diagnostics,
                       op_span,
-                      CheckSeverity::Error,
+                      Error,
                       2075,
                       "Escaping \{escaped_op} is required in [..], but invalid in [[..]]",
                     )
@@ -864,12 +857,12 @@ fn check_piped_assignment(
     guard pipeline.segments.length() >= 2 else { return }
     let first = pipeline.segments[0].command
     match first.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.assignments.length() > 0 && simple.words.length() == 0 {
           push_diagnostic(
             diagnostics,
             simple.assignments[0].span,
-            CheckSeverity::Warning,
+            Warning,
             2036,
             "If you wanted to assign the output of the pipeline, use a=$(b | c) .",
           )
@@ -886,7 +879,7 @@ fn check_assignment_ate_command(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.assignments.length() == 1 && simple.words.length() > 0 {
           let first_word = simple.words[0]
           if @semantics.is_unquoted_flag(first_word) ||
@@ -894,7 +887,7 @@ fn check_assignment_ate_command(
             push_diagnostic(
               diagnostics,
               simple.assignments[0].span,
-              CheckSeverity::Error,
+              Error,
               2037,
               "To assign the output of a command, use var=$(cmd) .",
             )
@@ -912,7 +905,7 @@ fn check_prefix_assignment_reference(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.assignments.length() > 0 && simple.words.length() > 0 {
           let references : Array[(String, @parser.Span)] = []
           for word in simple.words {
@@ -928,7 +921,7 @@ fn check_prefix_assignment_reference(
                     push_diagnostic(
                       diagnostics,
                       assignment.span,
-                      CheckSeverity::Warning,
+                      Warning,
                       2097,
                       "This assignment is only seen by the forked process.",
                     )
@@ -937,7 +930,7 @@ fn check_prefix_assignment_reference(
                   push_diagnostic(
                     diagnostics,
                     span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2098,
                     "This expansion will not see the mentioned assignment.",
                   )
@@ -958,14 +951,14 @@ fn check_for_loop_glob_variables(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::ForIn(clause) =>
+      ForIn(clause) =>
         for value in clause.values {
           if @semantics.is_glob_word(value) &&
             word_has_quoteable_top_level_expansion(value) {
             push_diagnostic(
               diagnostics,
               value.span,
-              CheckSeverity::Info,
+              Info,
               2231,
               "Quote expansions in this for loop glob to prevent wordsplitting, e.g. \"$dir\"/*.txt .",
             )
@@ -988,7 +981,7 @@ fn check_splitting_in_arrays(
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Warning,
+          Warning,
           2207,
           array_command_split_message(shell),
         )
@@ -996,7 +989,7 @@ fn check_splitting_in_arrays(
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Warning,
+          Warning,
           2206,
           array_parameter_split_message(shell),
         )
@@ -1012,16 +1005,16 @@ fn check_assign_to_self(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.words.length() == 0 =>
+      Simple(simple) if simple.words.length() == 0 =>
         for assignment in simple.assignments {
           if !assignment.append && assignment.indexes.length() == 0 {
             match assignment.value {
-              @parser.AssignmentValue::Word(word) =>
+              Word(word) =>
                 if word_is_plain_self_reference(word, assignment.name) {
                   push_diagnostic(
                     diagnostics,
                     assignment.span,
-                    CheckSeverity::Info,
+                    Info,
                     2269,
                     "This variable is assigned to itself, so the assignment does nothing.",
                   )
@@ -1042,35 +1035,35 @@ fn check_conditional_and_ors(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) => {
+      Condition(condition) => {
         if condition_expr_has_and(condition.expr) {
           match condition.kind {
-            @parser.ConditionKind::SingleBracket =>
+            SingleBracket =>
               if condition_raw_contains_token(condition.raw, "-a") {
                 push_diagnostic(
                   diagnostics,
                   command.span,
-                  CheckSeverity::Warning,
+                  Warning,
                   2166,
                   "Prefer [ p ] && [ q ] as [ p -a q ] is not well defined.",
                 )
               }
-            @parser.ConditionKind::DoubleBracket => ()
+            DoubleBracket => ()
           }
         }
         if condition_expr_has_or(condition.expr) {
           match condition.kind {
-            @parser.ConditionKind::SingleBracket =>
+            SingleBracket =>
               if condition_raw_contains_token(condition.raw, "-o") {
                 push_diagnostic(
                   diagnostics,
                   command.span,
-                  CheckSeverity::Warning,
+                  Warning,
                   2166,
                   "Prefer [ p ] || [ q ] as [ p -o q ] is not well defined.",
                 )
               }
-            @parser.ConditionKind::DoubleBracket => ()
+            DoubleBracket => ()
           }
         }
       }
@@ -1086,9 +1079,9 @@ fn check_quoted_condition_regex(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.kind {
-          @parser.ConditionKind::DoubleBracket =>
+          DoubleBracket =>
             visit_condition_binary_rhs(condition.expr, "=~", fn(rhs) {
               if word_is_plain_single_quoted(rhs) ||
                 word_is_plain_double_quoted(rhs) is Some(_) {
@@ -1096,7 +1089,7 @@ fn check_quoted_condition_regex(
                   push_diagnostic(
                     diagnostics,
                     rhs.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2076,
                     "Remove quotes from right-hand side of =~ to match as a regex rather than literally.",
                   )
@@ -1119,11 +1112,11 @@ fn check_subshell_as_test(
   let binary_ops = @semantics.binary_test_operators()
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Subshell(inner) =>
+      Subshell(inner) =>
         match first_command_in_script(inner) {
           Some(inner_command) =>
             match inner_command.kind {
-              @parser.CommandKind::Simple(simple) =>
+              Simple(simple) =>
                 match simple.words.get(0) {
                   Some(first_word) =>
                     match @semantics.literal_text(first_word) {
@@ -1131,7 +1124,7 @@ fn check_subshell_as_test(
                         push_diagnostic(
                           diagnostics,
                           command.span,
-                          CheckSeverity::Error,
+                          Error,
                           2204,
                           "(..) is a subshell. Did you mean [ .. ], a test expression?",
                         )
@@ -1145,7 +1138,7 @@ fn check_subshell_as_test(
                                 push_diagnostic(
                                   diagnostics,
                                   command.span,
-                                  CheckSeverity::Warning,
+                                  Warning,
                                   2205,
                                   "(..) is a subshell. Did you mean [ .. ], a test expression?",
                                 )
@@ -1241,10 +1234,7 @@ fn uint16_to_string(ch : UInt16) -> String {
 ///|
 fn word_place_checks_unquoted_expansions(place : WordPlace) -> Bool {
   match place {
-    WordPlace::CommandName
-    | WordPlace::AssignmentValue
-    | WordPlace::ForValue
-    | WordPlace::ConditionDoubleBracket => false
+    CommandName | AssignmentValue | ForValue | ConditionDoubleBracket => false
     _ => true
   }
 }
@@ -1252,9 +1242,7 @@ fn word_place_checks_unquoted_expansions(place : WordPlace) -> Bool {
 ///|
 fn word_place_checks_star_or_at(place : WordPlace) -> Bool {
   match place {
-    WordPlace::AssignmentValue
-    | WordPlace::ConditionSingleBracket
-    | WordPlace::ConditionDoubleBracket => false
+    AssignmentValue | ConditionSingleBracket | ConditionDoubleBracket => false
     _ => true
   }
 }
@@ -1271,17 +1259,16 @@ fn single_for_value_uses_commas(word : @parser.Word) -> Bool {
 fn quoted_parts_would_split(parts : Array[@parser.WordPart]) -> Bool {
   for part in parts {
     match part {
-      @parser.WordPart::Parameter(_)
-      | @parser.WordPart::SpecialParameter(_)
-      | @parser.WordPart::CommandSubstitution(_)
-      | @parser.WordPart::BraceCommandSubstitution(_, _)
-      | @parser.WordPart::BackQuoted(_) => return true
-      @parser.WordPart::BracedParameter(expansion) =>
+      Parameter(_)
+      | SpecialParameter(_)
+      | CommandSubstitution(_)
+      | BraceCommandSubstitution(_, _)
+      | BackQuoted(_) => return true
+      BracedParameter(expansion) =>
         if braced_parameter_would_split_when_unquoted(expansion) {
           return true
         }
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         if quoted_parts_would_split(nested) {
           return true
         }
@@ -1317,25 +1304,22 @@ fn word_part_may_expand_to_multiple(
   quoted : Bool,
 ) -> Bool {
   match part {
-    @parser.WordPart::Parameter(_) => !quoted
-    @parser.WordPart::SpecialParameter(name) =>
+    Parameter(_) => !quoted
+    SpecialParameter(name) =>
       if quoted {
         name == "@"
       } else {
         name == "@" || name == "*"
       }
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       braced_parameter_may_expand_to_multiple(expansion, quoted)
-    @parser.WordPart::CommandSubstitution(script)
-    | @parser.WordPart::BraceCommandSubstitution(_, script)
-    | @parser.WordPart::BackQuoted(script) =>
-      !quoted && script.items.length() > 0
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    CommandSubstitution(script)
+    | BraceCommandSubstitution(_, script)
+    | BackQuoted(script) => !quoted && script.items.length() > 0
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       quoted_parts_may_expand_to_multiple(parts)
-    @parser.WordPart::ExtGlob(_) | @parser.WordPart::BraceExpansion(_) =>
-      !quoted
-    @parser.WordPart::Glob(_) => !quoted
+    ExtGlob(_) | BraceExpansion(_) => !quoted
+    Glob(_) => !quoted
     _ => false
   }
 }
@@ -1413,9 +1397,9 @@ fn word_is_split_command_output(word : @parser.Word) -> Bool {
 fn dollar_star_message(word : @parser.Word) -> String? {
   for part in word.parts {
     match part {
-      @parser.WordPart::SpecialParameter("*") =>
+      SpecialParameter("*") =>
         return Some("Use \"$@\" (with quotes) to prevent whitespace problems.")
-      @parser.WordPart::BracedParameter(expansion) => {
+      BracedParameter(expansion) => {
         if expansion.length_prefix {
           continue
         }
@@ -1444,8 +1428,8 @@ fn dollar_star_message(word : @parser.Word) -> String? {
 fn word_has_unquoted_array_expansion(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::SpecialParameter("@") => return true
-      @parser.WordPart::BracedParameter(expansion) =>
+      SpecialParameter("@") => return true
+      BracedParameter(expansion) =>
         if braced_parameter_is_unquoted_array_expansion(expansion) {
           return true
         }
@@ -1463,7 +1447,7 @@ fn braced_parameter_is_unquoted_array_expansion(
     return false
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::AlternateValue(_)) => return false
+    Some(AlternateValue(_)) => return false
     _ => ()
   }
   parameter_index_is(expansion, "@") || expansion.name == Some("@")
@@ -1475,16 +1459,14 @@ fn condition_binary_op_span(
   op : String,
 ) -> @parser.Span? {
   match expr {
-    @parser.ConditionExpr::Binary(current, op_span, _, _) =>
+    Binary(current, op_span, _, _) =>
       if current == op {
         Some(op_span)
       } else {
         None
       }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      condition_binary_op_span(inner, op)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) =>
+    Group(inner) | Not(inner) => condition_binary_op_span(inner, op)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) =>
       match condition_binary_op_span(lhs, op) {
         Some(span) => Some(span)
         None => condition_binary_op_span(rhs, op)
@@ -1500,8 +1482,8 @@ fn collect_word_reference_spans(
 ) -> Unit {
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::Parameter(name) => references.push((name, word.span))
-      @parser.WordPart::BracedParameter(expansion) =>
+      Parameter(name) => references.push((name, word.span))
+      BracedParameter(expansion) =>
         match expansion.name {
           Some(name) => references.push((name, word.span))
           None => ()
@@ -1517,11 +1499,11 @@ fn visit_array_literal_words_in_command(
   visit : (@parser.Word) -> Unit,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       for assignment in simple.assignments {
         visit_array_literal_words_in_value(assignment.value, visit)
       }
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       for assignment in source.assignments {
         visit_array_literal_words_in_value(assignment.value, visit)
       }
@@ -1535,7 +1517,7 @@ fn visit_array_literal_words_in_value(
   visit : (@parser.Word) -> Unit,
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       for element in elements {
         visit_array_literal_words_in_element(element, visit)
       }
@@ -1549,18 +1531,18 @@ fn visit_array_literal_words_in_element(
   visit : (@parser.Word) -> Unit,
 ) -> Unit {
   match element.value {
-    @parser.AssignmentValue::Word(word) => visit(word)
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    Word(word) => visit(word)
+    ArrayLiteral(elements) =>
       for nested in elements {
         visit_array_literal_words_in_element(nested, visit)
       }
-    @parser.AssignmentValue::Empty => ()
+    Empty => ()
   }
 }
 
 ///|
 fn array_parameter_split_message(shell : @semantics.ShellDialect) -> String {
-  if shell == @semantics.ShellDialect::Ksh {
+  if shell == Ksh {
     "Quote to prevent word splitting/globbing, or split robustly with read -A or while read."
   } else {
     "Quote to prevent word splitting/globbing, or split robustly with mapfile or read -a."
@@ -1569,7 +1551,7 @@ fn array_parameter_split_message(shell : @semantics.ShellDialect) -> String {
 
 ///|
 fn array_command_split_message(shell : @semantics.ShellDialect) -> String {
-  if shell == @semantics.ShellDialect::Ksh {
+  if shell == Ksh {
     "Prefer read -A or while read to split command output (or quote to avoid splitting)."
   } else {
     "Prefer mapfile or read -a to split command output (or quote to avoid splitting)."
@@ -1580,15 +1562,15 @@ fn array_command_split_message(shell : @semantics.ShellDialect) -> String {
 fn word_has_split_prone_parameter_in_array(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::Parameter(name) =>
+      Parameter(name) =>
         if !@semantics.is_variable_without_spaces(name) {
           return true
         }
-      @parser.WordPart::SpecialParameter(name) =>
+      SpecialParameter(name) =>
         if !@semantics.is_special_variable_without_spaces(name) {
           return true
         }
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         if braced_parameter_should_warn_in_array(expansion) {
           return true
         }
@@ -1606,7 +1588,7 @@ fn braced_parameter_should_warn_in_array(
     return false
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::AlternateValue(_)) => return false
+    Some(AlternateValue(_)) => return false
     _ => ()
   }
   if expansion.indirect ||
@@ -1629,14 +1611,14 @@ fn braced_parameter_should_warn_in_array(
 fn word_has_quoteable_top_level_expansion(word : @parser.Word) -> Bool {
   for part in word.parts {
     match part {
-      @parser.WordPart::Parameter(_)
-      | @parser.WordPart::SpecialParameter(_)
-      | @parser.WordPart::BracedParameter(_)
-      | @parser.WordPart::BraceCommandSubstitution(_, _)
-      | @parser.WordPart::CommandSubstitution(_)
-      | @parser.WordPart::BackQuoted(_)
-      | @parser.WordPart::ArithmeticExpansion(_)
-      | @parser.WordPart::DollarBracket(_) => return true
+      Parameter(_)
+      | SpecialParameter(_)
+      | BracedParameter(_)
+      | BraceCommandSubstitution(_, _)
+      | CommandSubstitution(_)
+      | BackQuoted(_)
+      | ArithmeticExpansion(_)
+      | DollarBracket(_) => return true
       _ => ()
     }
   }
@@ -1646,11 +1628,10 @@ fn word_has_quoteable_top_level_expansion(word : @parser.Word) -> Bool {
 ///|
 fn word_is_plain_self_reference(word : @parser.Word, name : String) -> Bool {
   match word.parts {
-    [@parser.WordPart::Parameter(reference)] => reference == name
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(reference)] => reference == name
+    [BracedParameter(expansion)] =>
       braced_parameter_is_plain_name_reference(expansion, name)
-    [@parser.WordPart::DoubleQuoted(parts)] =>
-      quoted_parts_are_plain_self_reference(parts, name)
+    [DoubleQuoted(parts)] => quoted_parts_are_plain_self_reference(parts, name)
     _ => false
   }
 }
@@ -1661,8 +1642,8 @@ fn quoted_parts_are_plain_self_reference(
   name : String,
 ) -> Bool {
   match parts {
-    [@parser.WordPart::Parameter(reference)] => reference == name
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(reference)] => reference == name
+    [BracedParameter(expansion)] =>
       braced_parameter_is_plain_name_reference(expansion, name)
     _ => false
   }
@@ -1683,10 +1664,9 @@ fn braced_parameter_is_plain_name_reference(
 ///|
 fn condition_expr_has_and(expr : @parser.ConditionExpr) -> Bool {
   match expr {
-    @parser.ConditionExpr::And(_, _, _) => true
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      condition_expr_has_and(inner)
-    @parser.ConditionExpr::Or(_, lhs, rhs) =>
+    And(_, _, _) => true
+    Group(inner) | Not(inner) => condition_expr_has_and(inner)
+    Or(_, lhs, rhs) =>
       condition_expr_has_and(lhs) || condition_expr_has_and(rhs)
     _ => false
   }
@@ -1695,11 +1675,9 @@ fn condition_expr_has_and(expr : @parser.ConditionExpr) -> Bool {
 ///|
 fn condition_expr_has_or(expr : @parser.ConditionExpr) -> Bool {
   match expr {
-    @parser.ConditionExpr::Or(_, _, _) => true
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      condition_expr_has_or(inner)
-    @parser.ConditionExpr::And(_, lhs, rhs) =>
-      condition_expr_has_or(lhs) || condition_expr_has_or(rhs)
+    Or(_, _, _) => true
+    Group(inner) | Not(inner) => condition_expr_has_or(inner)
+    And(_, lhs, rhs) => condition_expr_has_or(lhs) || condition_expr_has_or(rhs)
     _ => false
   }
 }
@@ -1711,14 +1689,9 @@ fn visit_condition_binary_rhs(
   visit : (@parser.Word) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(current, _, _, rhs) =>
-      if current == op {
-        visit(rhs)
-      }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      visit_condition_binary_rhs(inner, op, visit)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Binary(current, _, _, rhs) => if current == op { visit(rhs) }
+    Group(inner) | Not(inner) => visit_condition_binary_rhs(inner, op, visit)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       visit_condition_binary_rhs(lhs, op, visit)
       visit_condition_binary_rhs(rhs, op, visit)
     }

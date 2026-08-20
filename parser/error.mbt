@@ -22,6 +22,6 @@ fn parse_error_message(err : ParseError) -> String {
 
 ///|
 /// Formats a parse error as user-facing text.
-pub impl Show for ParseError with output(self, logger) {
+pub impl Show for ParseError with fn output(self, logger) {
   logger.write_string(parse_error_message(self))
 }

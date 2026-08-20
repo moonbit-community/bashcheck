@@ -43,8 +43,8 @@ fn literal_variables_compat(source : String) -> Array[String] {
   for part in word.parts {
     @semantics.walk_word_part(part, fn(current) {
       match current {
-        @parser.WordPart::Parameter(name) => names.push(name)
-        @parser.WordPart::BracedParameter(expansion) =>
+        Parameter(name) => names.push(name)
+        BracedParameter(expansion) =>
           match expansion.name {
             Some(name) => names.push(name)
             None => ()
@@ -64,7 +64,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/sh
       #|
     ),
-    @semantics.ShellDialect::Sh,
+    Sh,
   )
   assert_determine_shell_case(
     "prop_determineShell1",
@@ -72,20 +72,16 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/usr/bin/env ksh
       #|
     ),
-    @semantics.ShellDialect::Ksh,
+    Ksh,
   )
-  assert_determine_shell_case(
-    "prop_determineShell2",
-    "",
-    @semantics.ShellDialect::Bash,
-  )
+  assert_determine_shell_case("prop_determineShell2", "", Bash)
   assert_determine_shell_case(
     "prop_determineShell3",
     (
       #|#!/bin/sh -e
       #|
     ),
-    @semantics.ShellDialect::Sh,
+    Sh,
   )
   assert_determine_shell_case(
     "prop_determineShell4",
@@ -95,7 +91,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|foo
       #|
     ),
-    @semantics.ShellDialect::Sh,
+    Sh,
   )
   assert_determine_shell_case(
     "prop_determineShell5",
@@ -104,7 +100,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|foo
       #|
     ),
-    @semantics.ShellDialect::Sh,
+    Sh,
   )
   assert_determine_shell_case(
     "prop_determineShell6",
@@ -112,7 +108,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#! /bin/sh
       #|
     ),
-    @semantics.ShellDialect::Sh,
+    Sh,
   )
   assert_determine_shell_case(
     "prop_determineShell7",
@@ -120,7 +116,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#! /bin/ash
       #|
     ),
-    @semantics.ShellDialect::Dash,
+    Dash,
   )
   assert_determine_shell_case_with_fallback(
     "prop_determineShell8",
@@ -128,8 +124,8 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/sh
       #|
     ),
-    @semantics.ShellDialect::Sh,
-    @semantics.ShellDialect::Ksh,
+    Sh,
+    Ksh,
   )
   assert_determine_shell_case(
     "prop_determineShell9",
@@ -137,7 +133,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/env -S dash -x
       #|
     ),
-    @semantics.ShellDialect::Dash,
+    Dash,
   )
   assert_determine_shell_case(
     "prop_determineShell10",
@@ -145,7 +141,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/env --split-string= dash -x
       #|
     ),
-    @semantics.ShellDialect::Dash,
+    Dash,
   )
   assert_determine_shell_case(
     "prop_determineShell11",
@@ -153,7 +149,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/busybox sh
       #|
     ),
-    @semantics.ShellDialect::BusyboxSh,
+    BusyboxSh,
   )
   assert_determine_shell_case(
     "prop_determineShell12",
@@ -161,7 +157,7 @@ test "shellcheck analyzerlib determineShell props" {
       #|#!/bin/busybox ash
       #|
     ),
-    @semantics.ShellDialect::BusyboxSh,
+    BusyboxSh,
   )
 }
 

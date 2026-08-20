@@ -174,9 +174,7 @@ test "phase 4 command alignment closes command-specialized gaps" {
         2176, 2, 1, "'time' is undefined for pipelines. time single stage or bash -c instead.",
       ),
     ],
-    spec=@checker.CheckSpec::default().with_shell_override(
-      Some(@semantics.ShellDialect::Sh),
-    ),
+    spec=@checker.CheckSpec::default().with_shell_override(Some(Sh)),
   )
 
   assert_diagnostics_match(

@@ -34,7 +34,9 @@ fn assert_compat_codes(
 ) -> Unit {
   let actual = compat_codes(source, spec~)
   if actual != expected {
-    compat_fail("\{label}: expected \{expected}, got \{actual}")
+    compat_fail(
+      "\{label}: expected \{@debug.to_string(expected)}, got \{@debug.to_string(actual)}",
+    )
   }
 }
 
@@ -47,7 +49,9 @@ fn assert_compat_contains_code(
 ) -> Unit {
   let actual = compat_codes(source, spec~)
   if !actual.contains(expected) {
-    compat_fail("\{label}: expected code \{expected}, got \{actual}")
+    compat_fail(
+      "\{label}: expected code \{expected}, got \{@debug.to_string(actual)}",
+    )
   }
 }
 
@@ -88,7 +92,7 @@ fn external_sources_annotation(
   let mut flag : Bool? = None
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::ExternalSources(enabled) => flag = Some(enabled)
+      ExternalSources(enabled) => flag = Some(enabled)
       _ => ()
     }
   }
@@ -217,9 +221,7 @@ test "shellcheck checker basic compatibility props" {
       #|
     ),
     [],
-    spec=CheckSpec::default().with_shell_override(
-      Some(@semantics.ShellDialect::Sh),
-    ),
+    spec=CheckSpec::default().with_shell_override(Some(Sh)),
   )
   assert_compat_codes("prop_canParseDevNull", "source /dev/null", [])
 }
@@ -597,7 +599,7 @@ test "shellcheck checker source-path and external sources compatibility props" {
     ),
     3,
     1091,
-    DiagnosticSeverity::Info,
+    Info,
     spec=file_disable_external_spec,
   )
   assert_compat_diagnostic_at_line(
@@ -612,7 +614,7 @@ test "shellcheck checker source-path and external sources compatibility props" {
     ),
     5,
     1091,
-    DiagnosticSeverity::Warning,
+    Warning,
     spec=file_disable_external_spec,
   )
 

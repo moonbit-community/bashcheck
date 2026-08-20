@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit-community/bashcheck/bashcheck"
+package "moonbit-community/bashcheck"
 
 // Values
 
@@ -10,4 +10,3 @@ package "moonbit-community/bashcheck/bashcheck"
 // Type aliases
 
 // Traits
-

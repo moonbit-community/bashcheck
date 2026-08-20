@@ -14,7 +14,7 @@ fn run_quote_safe_variables_optional_check(
   let analysis = @cfg.analyze_control_flow(cfg)
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Word(word)) =>
+      Some(Word(word)) =>
         match word_unquoted_single_variable_name(word) {
           Some(name) =>
             if quote_safe_word_context_allows(cfg, id, word) &&
@@ -22,7 +22,7 @@ fn run_quote_safe_variables_optional_check(
               push_diagnostic_with_fix(
                 diagnostics,
                 word.span,
-                CheckSeverity::Style,
+                Style,
                 2248,
                 "Prefer double quoting even when variables don't contain special characters.",
                 shellcheck_surround_span_fix(word.span, "\"", 7),
@@ -38,14 +38,14 @@ fn run_quote_safe_variables_optional_check(
 ///|
 fn word_unquoted_single_variable_name(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::Parameter(name)] =>
+    [Parameter(name)] =>
       if is_identifier_name(name) {
         Some(name)
       } else {
         None
       }
     [
-      @parser.WordPart::BracedParameter(
+      BracedParameter(
         {
           length_prefix: false,
           indirect: false,
@@ -71,21 +71,21 @@ fn quote_safe_word_context_allows(
     match current {
       Some(node_id) =>
         match @cfg.ast_ref_of(cfg, node_id) {
-          Some(@semantics.NodeRef::Assignment(_))
-          | Some(@semantics.NodeRef::ArrayElement(_))
-          | Some(@semantics.NodeRef::ArrayIndex(_))
-          | Some(@semantics.NodeRef::ArithmeticExpr(_))
-          | Some(@semantics.NodeRef::ArithmeticToken(_))
-          | Some(@semantics.NodeRef::ForClause(_))
-          | Some(@semantics.NodeRef::SelectClause(_))
-          | Some(@semantics.NodeRef::CaseClause(_))
-          | Some(@semantics.NodeRef::CaseItem(_)) => return false
-          Some(@semantics.NodeRef::ConditionCommand(condition)) =>
+          Some(Assignment(_))
+          | Some(ArrayElement(_))
+          | Some(ArrayIndex(_))
+          | Some(ArithmeticExpr(_))
+          | Some(ArithmeticToken(_))
+          | Some(ForClause(_))
+          | Some(SelectClause(_))
+          | Some(CaseClause(_))
+          | Some(CaseItem(_)) => return false
+          Some(ConditionCommand(condition)) =>
             match condition.kind {
-              @parser.ConditionKind::DoubleBracket => return false
+              DoubleBracket => return false
               _ => ()
             }
-          Some(@semantics.NodeRef::Command(command)) =>
+          Some(Command(command)) =>
             if word_is_effective_command_name(command, word) {
               return false
             }
@@ -124,8 +124,8 @@ fn variable_state_is_quote_safe(
       match state.variables_in_scope.get(name) {
         Some(variable) =>
           match variable.variable_value.space_status {
-            @cfg.SpaceStatus::Dirty => false
-            @cfg.SpaceStatus::Clean | @cfg.SpaceStatus::Empty => true
+            Dirty => false
+            Clean | Empty => true
           }
         None => false
       }
@@ -142,15 +142,15 @@ fn run_avoid_nullary_conditions_optional_check(
   ignore(shell)
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.expr {
-          @parser.ConditionExpr::Word(word) =>
+          Word(word) =>
             match word_single_top_level_substitution_script(word) {
               Some(_) =>
                 push_diagnostic_with_fix(
                   diagnostics,
                   word.span,
-                  CheckSeverity::Style,
+                  Style,
                   2243,
                   "Prefer explicit -n to check for output (or run command without [/[[ to check for success).",
                   insert_after_position_fix(word.span.start, "-n ", 7),
@@ -160,7 +160,7 @@ fn run_avoid_nullary_conditions_optional_check(
                   push_diagnostic_with_fix(
                     diagnostics,
                     word.span,
-                    CheckSeverity::Style,
+                    Style,
                     2244,
                     "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer).",
                     insert_after_position_fix(word.span.start, "-n ", 7),
@@ -182,14 +182,11 @@ fn word_is_pure_dynamic_expansion(word : @parser.Word) -> Bool {
 ///|
 fn word_part_is_pure_dynamic_expansion(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::BracedParameter(_) => true
-    @parser.WordPart::CommandSubstitution(script)
-    | @parser.WordPart::BraceCommandSubstitution(_, script)
-    | @parser.WordPart::BackQuoted(script) => script.items.length() > 0
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Parameter(_) | SpecialParameter(_) | BracedParameter(_) => true
+    CommandSubstitution(script)
+    | BraceCommandSubstitution(_, script)
+    | BackQuoted(script) => script.items.length() > 0
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       parts.length() > 0 && parts.all(word_part_is_pure_dynamic_expansion)
     _ => false
   }
@@ -204,7 +201,7 @@ fn run_avoid_negated_conditions_optional_check(
   ignore(shell)
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         check_unnecessarily_inverted_condition_expr(
           condition.kind,
           condition.expr,
@@ -220,7 +217,7 @@ fn run_avoid_negated_conditions_optional_check(
         continue
       }
       match segment.command.kind {
-        @parser.CommandKind::Condition(condition) =>
+        Condition(condition) =>
           check_unnecessarily_inverted_banged_condition(
             condition.kind,
             condition.expr,
@@ -259,13 +256,13 @@ fn check_unnecessarily_inverted_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Not(@parser.ConditionExpr::Unary(op, _, _)) =>
+    Not(Unary(op, _, _)) =>
       match op {
         "-n" =>
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2236,
             "Use -z instead of ! -n.",
           )
@@ -273,30 +270,29 @@ fn check_unnecessarily_inverted_condition_expr(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2236,
             "Use -n instead of ! -z.",
           )
         _ => ()
       }
-    @parser.ConditionExpr::Not(@parser.ConditionExpr::Binary(op, _, _, _)) =>
+    Not(Binary(op, _, _, _)) =>
       match inverted_condition_operator(op) {
         Some(new_op) =>
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2335,
             "Use a " + new_op + " b instead of ! a " + op + " b.",
           )
         None => ()
       }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       check_unnecessarily_inverted_condition_expr(
         kind, inner, span, diagnostics,
       )
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       check_unnecessarily_inverted_condition_expr(kind, lhs, span, diagnostics)
       check_unnecessarily_inverted_condition_expr(kind, rhs, span, diagnostics)
     }
@@ -313,13 +309,13 @@ fn check_unnecessarily_inverted_banged_condition(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, _, _) =>
+    Unary(op, _, _) =>
       match op {
         "-n" =>
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2237,
             "Use [ -z .. ] instead of ! [ -n .. ].",
           )
@@ -327,19 +323,19 @@ fn check_unnecessarily_inverted_banged_condition(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2237,
             "Use [ -n .. ] instead of ! [ -z .. ].",
           )
         _ => ()
       }
-    @parser.ConditionExpr::Binary(op, _, _, _) =>
+    Binary(op, _, _, _) =>
       match inverted_condition_operator(op) {
         Some(new_op) =>
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2335,
             "Use " +
             condition_example(kind, "a " + new_op + " b") +
@@ -371,8 +367,8 @@ fn inverted_condition_operator(op : String) -> String? {
 ///|
 fn condition_example(kind : @parser.ConditionKind, body : String) -> String {
   match kind {
-    @parser.ConditionKind::SingleBracket => "[ " + body + " ]"
-    @parser.ConditionKind::DoubleBracket => "[[ " + body + " ]]"
+    SingleBracket => "[ " + body + " ]"
+    DoubleBracket => "[[ " + body + " ]]"
   }
 }
 
@@ -385,13 +381,13 @@ fn run_require_variable_braces_optional_check(
   ignore(shell)
   visit_script_commands(script, fn(command) {
     visit_direct_words_in_command(command, fn(word, place) {
-      if place == WordPlace::CommandName {
+      if place == CommandName {
         return
       }
       match first_unbraced_named_parameter(word) {
         Some(name) => {
           let fix = match word.parts {
-            [@parser.WordPart::Parameter(single)] if single == name =>
+            [Parameter(single)] if single == name =>
               Some(shellcheck_brace_parameter_span_fix(word.span, 7))
             _ => None
           }
@@ -400,7 +396,7 @@ fn run_require_variable_braces_optional_check(
               push_diagnostic_with_fix(
                 diagnostics,
                 word.span,
-                CheckSeverity::Style,
+                Style,
                 2250,
                 "Prefer putting braces around variable references even when not strictly required.",
                 fix,
@@ -409,7 +405,7 @@ fn run_require_variable_braces_optional_check(
               push_diagnostic(
                 diagnostics,
                 word.span,
-                CheckSeverity::Style,
+                Style,
                 2250,
                 "Prefer putting braces around variable references even when not strictly required.",
               )
@@ -425,8 +421,7 @@ fn run_require_variable_braces_optional_check(
 fn first_unbraced_named_parameter(word : @parser.Word) -> String? {
   for part in word.parts {
     match part {
-      @parser.WordPart::Parameter(name) if is_identifier_name(name) =>
-        return Some(name)
+      Parameter(name) if is_identifier_name(name) => return Some(name)
       _ => ()
     }
   }
@@ -439,39 +434,27 @@ fn run_require_double_brackets_optional_check(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell_is_one_of(shell, [
-    @semantics.ShellDialect::Bash,
-    @semantics.ShellDialect::Ksh,
-    @semantics.ShellDialect::BusyboxSh,
-  ]) else {
-    return
-  }
+  guard shell_is_one_of(shell, [Bash, Ksh, BusyboxSh]) else { return }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.kind {
-          @parser.ConditionKind::SingleBracket => {
+          SingleBracket => {
             let message = "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox."
             if condition_expr_has_double_bracket_fix(condition.expr) {
               push_diagnostic_with_fix(
                 diagnostics,
                 command.span,
-                CheckSeverity::Style,
+                Style,
                 2292,
                 message,
                 double_bracket_condition_fix(command.span),
               )
             } else {
-              push_diagnostic(
-                diagnostics,
-                command.span,
-                CheckSeverity::Style,
-                2292,
-                message,
-              )
+              push_diagnostic(diagnostics, command.span, Style, 2292, message)
             }
           }
-          @parser.ConditionKind::DoubleBracket => ()
+          DoubleBracket => ()
         }
       _ => ()
     }
@@ -481,10 +464,8 @@ fn run_require_double_brackets_optional_check(
 ///|
 fn condition_expr_has_double_bracket_fix(expr : @parser.ConditionExpr) -> Bool {
   match expr {
-    @parser.ConditionExpr::Word(_) | @parser.ConditionExpr::Unary(_, _, _) =>
-      true
-    @parser.ConditionExpr::Binary(op, _, _, _) =>
-      !op.contains("<") && !op.contains(">")
+    Word(_) | Unary(_, _, _) => true
+    Binary(op, _, _, _) => !op.contains("<") && !op.contains(">")
     _ => false
   }
 }
@@ -522,15 +503,14 @@ fn run_set_e_suppressed_optional_check(
   let function_names : Array[String] = []
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_) =>
-        push_unique_string(function_names, function_.name)
+      Function(function_) => push_unique_string(function_names, function_.name)
       _ => ()
     }
   })
   let inherit_errexit = @semantics.has_inherit_errexit(script, shell)
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Command(command)) =>
         if command_is_function_invocation(command, function_names) &&
           !indexed_command_has_function_ancestor(indexed, id) {
           check_set_e_suppressed_context(
@@ -559,7 +539,7 @@ fn command_is_function_invocation(
   function_names : Array[String],
 ) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(_) =>
+    Simple(_) =>
       match @semantics.command_name(command) {
         Some(name) => function_names.contains(name)
         None => false
@@ -575,7 +555,7 @@ fn indexed_command_has_function_ancestor(
 ) -> Bool {
   for ancestor in @semantics.find_ancestors(indexed, id) {
     match @semantics.node_ref_of(indexed, ancestor) {
-      Some(@semantics.NodeRef::FunctionDef(_)) => return true
+      Some(FunctionDef(_)) => return true
       _ => ()
     }
   }
@@ -598,24 +578,24 @@ fn check_set_e_suppressed_context(
       None => break
     }
     match @semantics.node_ref_of(indexed, parent) {
-      Some(@semantics.NodeRef::PipelineSegment(segment)) =>
+      Some(PipelineSegment(segment)) =>
         if segment.bangs % 2 != 0 && segment.command == command {
           push_diagnostic(
             diagnostics,
             effective_command_span(command),
-            CheckSeverity::Info,
+            Info,
             2310,
             "This function is invoked in a ! condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
           )
           return
         }
-      Some(@semantics.NodeRef::AndOrList(list)) =>
+      Some(AndOrList(list)) =>
         match and_or_condition_type_for_span(list, command.span) {
           Some(cond_type) => {
             push_diagnostic(
               diagnostics,
               effective_command_span(command),
-              CheckSeverity::Info,
+              Info,
               2310,
               "This function is invoked in " +
               cond_type +
@@ -625,45 +605,37 @@ fn check_set_e_suppressed_context(
           }
           None => ()
         }
-      Some(@semantics.NodeRef::IfArm(arm)) =>
+      Some(IfArm(arm)) =>
         if span_contains(arm.condition.span, command.span) {
           push_diagnostic(
             diagnostics,
             effective_command_span(command),
-            CheckSeverity::Info,
+            Info,
             2310,
             "This function is invoked in an 'if' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
           )
           return
         }
-      Some(@semantics.NodeRef::LoopClause(clause)) =>
+      Some(LoopClause(clause)) =>
         if span_contains(clause.condition.span, command.span) {
           match @semantics.parent_of(indexed, parent) {
             Some(grandparent) =>
               match @semantics.node_ref_of(indexed, grandparent) {
-                Some(
-                  @semantics.NodeRef::Command(
-                    { kind: @parser.CommandKind::While(_), .. }
-                  )
-                ) => {
+                Some(Command({ kind: While(_), .. })) => {
                   push_diagnostic(
                     diagnostics,
                     effective_command_span(command),
-                    CheckSeverity::Info,
+                    Info,
                     2310,
                     "This function is invoked in a 'while' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
                   )
                   return
                 }
-                Some(
-                  @semantics.NodeRef::Command(
-                    { kind: @parser.CommandKind::Until(_), .. }
-                  )
-                ) => {
+                Some(Command({ kind: Until(_), .. })) => {
                   push_diagnostic(
                     diagnostics,
                     effective_command_span(command),
-                    CheckSeverity::Info,
+                    Info,
                     2310,
                     "This function is invoked in an 'until' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
                   )
@@ -674,21 +646,15 @@ fn check_set_e_suppressed_context(
             None => ()
           }
         }
-      Some(
-        @semantics.NodeRef::WordPart(@parser.WordPart::CommandSubstitution(_))
-      )
-      | Some(
-        @semantics.NodeRef::WordPart(
-          @parser.WordPart::BraceCommandSubstitution(_, _)
-        )
-      )
-      | Some(@semantics.NodeRef::WordPart(@parser.WordPart::BackQuoted(_))) =>
+      Some(WordPart(CommandSubstitution(_)))
+      | Some(WordPart(BraceCommandSubstitution(_, _)))
+      | Some(WordPart(BackQuoted(_))) =>
         if !inherit_errexit &&
           substitution_child_needs_inherit_errexit(indexed, child) {
           push_diagnostic(
             diagnostics,
             effective_command_span(command),
-            CheckSeverity::Info,
+            Info,
             2311,
             "Bash implicitly disabled set -e for this function invocation because it's inside a command substitution. Add set -e; before it or enable inherit_errexit.",
           )
@@ -726,8 +692,8 @@ fn and_or_condition_type_for_span(
 ///|
 fn and_or_condition_label(op : @parser.AndOrOperator) -> String {
   match op {
-    @parser.AndOrOperator::AndIf => "an && condition"
-    @parser.AndOrOperator::OrIf => "an || condition"
+    AndIf => "an && condition"
+    OrIf => "an || condition"
   }
 }
 
@@ -737,7 +703,7 @@ fn substitution_child_needs_inherit_errexit(
   child : @semantics.NodeId,
 ) -> Bool {
   match @semantics.node_ref_of(indexed, child) {
-    Some(@semantics.NodeRef::Script(script)) => !@semantics.has_set_e(script)
+    Some(Script(script)) => !@semantics.has_set_e(script)
     _ => true
   }
 }
@@ -764,7 +730,7 @@ fn check_masked_pipeline_returns(
   let indexed = @semantics.build_index(script)
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Pipeline(pipeline)) =>
+      Some(Pipeline(pipeline)) =>
         if pipeline.segments.length() > 1 &&
           !pipeline_is_deliberately_ignored(indexed, id, pipeline) {
           let mut i = 0
@@ -793,10 +759,10 @@ fn pipeline_is_deliberately_ignored(
     match current {
       Some(node_id) =>
         match @semantics.node_ref_of(indexed, node_id) {
-          Some(@semantics.NodeRef::AndOrList(list)) =>
+          Some(AndOrList(list)) =>
             if span_contains(list.head.span, pipeline.span) &&
               list.tail.length() > 0 &&
-              list.tail[0].0 is @parser.AndOrOperator::OrIf &&
+              list.tail[0].0 is OrIf &&
               pipeline_is_true_or_colon(list.tail[0].1) {
               return true
             } else {
@@ -831,7 +797,7 @@ fn check_masked_embedded_returns(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       let masked : Array[@parser.Command] = []
       if simple.words.length() == 0 {
         collect_assignment_value_masked_commands(simple.assignments, masked)
@@ -843,7 +809,7 @@ fn check_masked_embedded_returns(
         push_all_masked_commands(diagnostics, masked)
       }
     }
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       let masked : Array[@parser.Command] = []
       collect_assignment_value_masked_commands(source.assignments, masked)
       collect_word_masked_commands(source.options, masked)
@@ -852,7 +818,7 @@ fn check_masked_embedded_returns(
       collect_redirect_masked_commands(command.redirects, masked)
       push_all_masked_commands(diagnostics, masked)
     }
-    @parser.CommandKind::Condition(condition) => {
+    Condition(condition) => {
       let masked : Array[@parser.Command] = []
       collect_condition_masked_commands(condition.expr, masked)
       push_all_masked_commands(diagnostics, masked)
@@ -877,10 +843,9 @@ fn collect_assignment_value_embedded_commands(
   masked : Array[@parser.Command],
 ) -> Unit {
   match value {
-    @parser.AssignmentValue::Empty => ()
-    @parser.AssignmentValue::Word(word) =>
-      collect_word_embedded_commands(word, masked)
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    Empty => ()
+    Word(word) => collect_word_embedded_commands(word, masked)
+    ArrayLiteral(elements) =>
       for element in elements {
         collect_assignment_value_embedded_commands(element.value, masked)
       }
@@ -904,10 +869,10 @@ fn collect_word_embedded_commands(
 ) -> Unit {
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script)
-      | @parser.WordPart::ProcessSubstitution(_, script) =>
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script)
+      | ProcessSubstitution(_, script) =>
         match single_maskable_command_in_script(script) {
           Some(command) => masked.push(command)
           None => ()
@@ -924,15 +889,14 @@ fn collect_redirect_masked_commands(
 ) -> Unit {
   for redirect in redirects {
     match redirect.target {
-      @parser.RedirectionTarget::Word(word) =>
-        collect_word_embedded_commands(word, masked)
-      @parser.RedirectionTarget::HereDoc({ parts: Some(parts), .. }) =>
+      Word(word) => collect_word_embedded_commands(word, masked)
+      HereDoc({ parts: Some(parts), .. }) =>
         for part in parts {
           match part {
-            @parser.WordPart::CommandSubstitution(script)
-            | @parser.WordPart::BraceCommandSubstitution(_, script)
-            | @parser.WordPart::BackQuoted(script)
-            | @parser.WordPart::ProcessSubstitution(_, script) =>
+            CommandSubstitution(script)
+            | BraceCommandSubstitution(_, script)
+            | BackQuoted(script)
+            | ProcessSubstitution(_, script) =>
               match single_maskable_command_in_script(script) {
                 Some(command) => masked.push(command)
                 None => ()
@@ -951,18 +915,16 @@ fn collect_condition_masked_commands(
   masked : Array[@parser.Command],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Empty => ()
-    @parser.ConditionExpr::Word(word)
-    | @parser.ConditionExpr::Unary(_, _, word) =>
+    Empty => ()
+    Word(word) | Unary(_, _, word) =>
       collect_word_embedded_commands(word, masked)
-    @parser.ConditionExpr::Binary(_, _, lhs, rhs) => {
+    Binary(_, _, lhs, rhs) => {
       collect_word_embedded_commands(lhs, masked)
       collect_word_embedded_commands(rhs, masked)
     }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       collect_condition_masked_commands(inner, masked)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       collect_condition_masked_commands(lhs, masked)
       collect_condition_masked_commands(rhs, masked)
     }
@@ -983,7 +945,7 @@ fn single_maskable_command_in_script(
 ///|
 fn single_maskable_command(command : @parser.Command) -> @parser.Command? {
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       if clause.body.segments.length() == 1 {
         single_maskable_command(clause.body.segments[0].command)
       } else {
@@ -1059,7 +1021,7 @@ fn maybe_push_masked_return_diagnostic(
   push_diagnostic(
     diagnostics,
     effective_command_span(command),
-    CheckSeverity::Info,
+    Info,
     2312,
     "Consider invoking this command separately to avoid masking its return value (or use '|| true' to ignore).",
   )

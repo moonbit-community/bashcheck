@@ -120,7 +120,7 @@ fn assert_config_ok(label : String, source : String) -> Unit {
     } catch {
       err =>
         abort(
-          "\{label}: config parse raised \{err.to_string()} on line \{line}",
+          "\{label}: config parse raised \{Show::to_string(err)} on line \{line}",
         )
     }
     for diagnostic in line_diagnostics {
@@ -161,7 +161,7 @@ fn shebang_status(source : String) -> String {
     return status_not_ok()
   }
   match classify_shebang_line(lines[0]) {
-    Some(ShebangLineKind::Correct) => status_ok()
+    Some(Correct) => status_ok()
     Some(_) => status_warning()
     None => {
       let mut i = 0
