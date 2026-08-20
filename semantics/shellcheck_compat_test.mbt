@@ -4,10 +4,10 @@ fn determine_shell_compat(
   fallback : @semantics.ShellDialect?,
 ) -> @semantics.ShellDialect {
   let script = parse_shell_ok(source)
-  match fallback {
-    Some(shell) =>
-      @semantics.determine_shell_with_fallback(script, None, None, Some(shell))
-    None => @semantics.determine_shell(script)
+  if fallback is Some(shell) {
+    @semantics.determine_shell_with_fallback(script, None, None, Some(shell))
+  } else {
+    @semantics.determine_shell(script)
   }
 }
 
@@ -45,9 +45,8 @@ fn literal_variables_compat(source : String) -> Array[String] {
       match current {
         Parameter(name) => names.push(name)
         BracedParameter(expansion) =>
-          match expansion.name {
-            Some(name) => names.push(name)
-            None => ()
+          if expansion.name is Some(name) {
+            names.push(name)
           }
         _ => ()
       }

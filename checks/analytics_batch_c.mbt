@@ -232,12 +232,10 @@ fn check_array_without_index(
           cfg, analysis, id, name, diagnostics,
         )
       Some(ParameterExpansion(expansion)) =>
-        match plain_array_parameter_name(expansion) {
-          Some(name) =>
-            maybe_push_array_without_index_diagnostic(
-              cfg, analysis, id, name, diagnostics,
-            )
-          None => ()
+        if plain_array_parameter_name(expansion) is Some(name) {
+          maybe_push_array_without_index_diagnostic(
+            cfg, analysis, id, name, diagnostics,
+          )
         }
       _ => ()
     }
@@ -290,9 +288,8 @@ fn collect_first_function_command_spans(
   visit_script_commands(script, fn(command) {
     match command.kind {
       Function(function_) =>
-        match first_executable_command(function_.body) {
-          Some(first) => spans.push(first.span)
-          None => ()
+        if first_executable_command(function_.body) is Some(first) {
+          spans.push(first.span)
         }
       _ => ()
     }
@@ -307,9 +304,10 @@ fn first_executable_command(command : @parser.Command) -> @parser.Command? {
     Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       first_executable_command_in_script(script)
     If(clause) =>
-      match clause.arms.get(0) {
-        Some(arm) => first_executable_command_in_script(arm.condition)
-        None => Some(command)
+      if clause.arms.get(0) is Some(arm) {
+        first_executable_command_in_script(arm.condition)
+      } else {
+        Some(command)
       }
     While(clause) | Until(clause) =>
       first_executable_command_in_script(clause.condition)
@@ -317,9 +315,10 @@ fn first_executable_command(command : @parser.Command) -> @parser.Command? {
     ForArithmetic(clause) => first_executable_command_in_script(clause.body)
     Select(clause) => first_executable_command_in_script(clause.body)
     Case(clause) =>
-      match clause.items.get(0) {
-        Some(item) => first_executable_command_in_script(item.body)
-        None => Some(command)
+      if clause.items.get(0) is Some(item) {
+        first_executable_command_in_script(item.body)
+      } else {
+        Some(command)
       }
     CoProc(clause) => first_executable_command(clause.body)
     Function(function_) => first_executable_command(function_.body)
@@ -332,9 +331,8 @@ fn first_executable_command_in_script(
   script : @parser.Script,
 ) -> @parser.Command? {
   for item in script.items {
-    match first_executable_command_in_and_or(item.and_or) {
-      Some(command) => return Some(command)
-      None => ()
+    if first_executable_command_in_and_or(item.and_or) is Some(command) {
+      return Some(command)
     }
   }
   None
@@ -344,15 +342,13 @@ fn first_executable_command_in_script(
 fn first_executable_command_in_and_or(
   list : @parser.AndOrList,
 ) -> @parser.Command? {
-  match first_executable_command_in_pipeline(list.head) {
-    Some(command) => return Some(command)
-    None => ()
+  if first_executable_command_in_pipeline(list.head) is Some(command) {
+    return Some(command)
   }
   for pair in list.tail {
     let (_, pipeline) = pair
-    match first_executable_command_in_pipeline(pipeline) {
-      Some(command) => return Some(command)
-      None => ()
+    if first_executable_command_in_pipeline(pipeline) is Some(command) {
+      return Some(command)
     }
   }
   None
@@ -363,9 +359,8 @@ fn first_executable_command_in_pipeline(
   pipeline : @parser.Pipeline,
 ) -> @parser.Command? {
   for segment in pipeline.segments {
-    match first_executable_command(segment.command) {
-      Some(command) => return Some(command)
-      None => ()
+    if first_executable_command(segment.command) is Some(command) {
+      return Some(command)
     }
   }
   None
@@ -419,9 +414,10 @@ fn word_starts_with_dollar_quote_paren(word : @parser.Word) -> Bool {
 
 ///|
 fn here_doc_has_expansion(doc : @parser.HereDoc) -> Bool {
-  match doc.parts {
-    Some(parts) => word_parts_have_dynamic_expansion(parts)
-    None => false
+  if doc.parts is Some(parts) {
+    word_parts_have_dynamic_expansion(parts)
+  } else {
+    false
   }
 }
 
@@ -500,18 +496,16 @@ fn check_use_before_definition(
       Some(SimpleCommand(simple)) =>
         match simple_command_name_word(simple) {
           Some((name, word)) =>
-            match functions.get(name) {
-              Some(definitions) =>
-                if function_is_only_defined_later(analysis, id, definitions) {
-                  push_diagnostic(
-                    diagnostics,
-                    word.span,
-                    Error,
-                    2218,
-                    "This function is only defined later. Move the definition up.",
-                  )
-                }
-              None => ()
+            if functions.get(name) is Some(definitions) {
+              if function_is_only_defined_later(analysis, id, definitions) {
+                push_diagnostic(
+                  diagnostics,
+                  word.span,
+                  Error,
+                  2218,
+                  "This function is only defined later. Move the definition up.",
+                )
+              }
             }
           None => ()
         }
@@ -527,16 +521,15 @@ fn push_function_definition(
   name : String,
   id : @cfg.CfgAstId,
 ) -> Unit {
-  match functions.get(name) {
-    Some(definitions) => {
-      let updated : Array[@cfg.CfgAstId] = []
-      for definition in definitions {
-        updated.push(definition)
-      }
-      updated.push(id)
-      functions.set(name, updated)
+  if functions.get(name) is Some(definitions) {
+    let updated : Array[@cfg.CfgAstId] = []
+    for definition in definitions {
+      updated.push(definition)
     }
-    None => functions.set(name, [id])
+    updated.push(id)
+    functions.set(name, updated)
+  } else {
+    functions.set(name, [id])
   }
 }
 
@@ -544,13 +537,14 @@ fn push_function_definition(
 fn simple_command_name_word(
   simple : @parser.SimpleCommand,
 ) -> (String, @parser.Word)? {
-  match simple.words.get(0) {
-    Some(word) =>
-      match @semantics.literal_text(word) {
-        Some(name) => Some((name, word))
-        None => None
-      }
-    None => None
+  if simple.words.get(0) is Some(word) {
+    if @semantics.literal_text(word) is Some(name) {
+      Some((name, word))
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 
@@ -662,9 +656,10 @@ fn check_overwritten_exit_code_use(
 
 ///|
 fn precise_ast_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
-  match @cfg.ast_span_of(cfg, id) {
-    Some(span) => span
-    None => ast_effect_span(cfg, id)
+  if @cfg.ast_span_of(cfg, id) is Some(span) {
+    span
+  } else {
+    ast_effect_span(cfg, id)
   }
 }
 
@@ -672,22 +667,24 @@ fn precise_ast_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
 fn exit_code_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, id) {
     Some(WordPart(SpecialParameter("?"))) =>
-      match parent_word_of(cfg, id) {
-        Some(word) =>
-          match word_subspan(word, "$?") {
-            Some(span) => span
-            None => precise_ast_span(cfg, id)
-          }
-        None => precise_ast_span(cfg, id)
+      if parent_word_of(cfg, id) is Some(word) {
+        if word_subspan(word, "$?") is Some(span) {
+          span
+        } else {
+          precise_ast_span(cfg, id)
+        }
+      } else {
+        precise_ast_span(cfg, id)
       }
     Some(ParameterExpansion(_)) =>
-      match parent_word_of(cfg, id) {
-        Some(word) =>
-          match word_subspan(word, "${?}") {
-            Some(span) => span
-            None => precise_ast_span(cfg, id)
-          }
-        None => precise_ast_span(cfg, id)
+      if parent_word_of(cfg, id) is Some(word) {
+        if word_subspan(word, "${?}") is Some(span) {
+          span
+        } else {
+          precise_ast_span(cfg, id)
+        }
+      } else {
+        precise_ast_span(cfg, id)
       }
     _ => precise_ast_span(cfg, id)
   }
@@ -695,34 +692,33 @@ fn exit_code_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
 
 ///|
 fn parent_word_of(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Word? {
-  match @cfg.ast_parent_of(cfg, id) {
-    Some(parent) =>
-      match @cfg.ast_ref_of(cfg, parent) {
-        Some(Word(word)) => Some(word)
-        Some(WordPart(_)) => parent_word_of(cfg, parent)
-        _ => None
-      }
-    None => None
+  if @cfg.ast_parent_of(cfg, id) is Some(parent) {
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(Word(word)) => Some(word)
+      Some(WordPart(_)) => parent_word_of(cfg, parent)
+      _ => None
+    }
+  } else {
+    None
   }
 }
 
 ///|
 fn word_subspan(word : @parser.Word, needle : String) -> @parser.Span? {
-  match string_index_of(word.source, needle) {
-    Some(index) => {
-      let start = @parser.Position::new(
-        word.span.start.offset + index,
-        word.span.start.line,
-        word.span.start.column + index,
-      )
-      let end_ = @parser.Position::new(
-        start.offset + needle.length(),
-        start.line,
-        start.column + needle.length(),
-      )
-      Some(@parser.Span::new(start, end_))
-    }
-    None => None
+  if string_index_of(word.source, needle) is Some(index) {
+    let start = @parser.Position::new(
+      word.span.start.offset + index,
+      word.span.start.line,
+      word.span.start.column + index,
+    )
+    let end_ = @parser.Position::new(
+      start.offset + needle.length(),
+      start.line,
+      start.column + needle.length(),
+    )
+    Some(@parser.Span::new(start, end_))
+  } else {
+    None
   }
 }
 
@@ -764,9 +760,10 @@ fn exit_code_is_condition_like(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
         _ => command_matches_basename(command, "test")
       }
     Some(SimpleCommand(_)) =>
-      match parent_command_of(cfg, id) {
-        Some(command) => command_matches_basename(command, "test")
-        None => false
+      if parent_command_of(cfg, id) is Some(command) {
+        command_matches_basename(command, "test")
+      } else {
+        false
       }
     _ => false
   }
@@ -779,11 +776,11 @@ fn exit_code_is_printing_command(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
       command_matches_basename(command, "echo") ||
       command_matches_basename(command, "printf")
     Some(SimpleCommand(_)) =>
-      match parent_command_of(cfg, id) {
-        Some(command) =>
-          command_matches_basename(command, "echo") ||
-          command_matches_basename(command, "printf")
-        None => false
+      if parent_command_of(cfg, id) is Some(command) {
+        command_matches_basename(command, "echo") ||
+        command_matches_basename(command, "printf")
+      } else {
+        false
       }
     _ => false
   }
@@ -791,13 +788,13 @@ fn exit_code_is_printing_command(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
 
 ///|
 fn parent_command_of(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Command? {
-  match @cfg.ast_parent_of(cfg, id) {
-    Some(parent) =>
-      match @cfg.ast_ref_of(cfg, parent) {
-        Some(Command(command)) => Some(command)
-        _ => None
-      }
-    None => None
+  if @cfg.ast_parent_of(cfg, id) is Some(parent) {
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(Command(command)) => Some(command)
+      _ => None
+    }
+  } else {
+    None
   }
 }
 

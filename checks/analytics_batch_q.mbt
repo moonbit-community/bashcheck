@@ -160,9 +160,11 @@ fn check_pipe_to_nowhere(
   while i < pipeline.segments.length() {
     let segment = pipeline.segments[i]
     let command = segment.command
-    let command_name = match @semantics.effective_command_name(command) {
-      Some(name) => name
-      None => ""
+    let command_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      name
+    } else {
+      ""
     }
     let has_input_pipe = i > 0
     let has_output_pipe = i + 1 < pipeline.segments.length()
@@ -203,32 +205,28 @@ fn check_pipe_to_nowhere(
     if has_input_pipe &&
       command_has_stdin_redirect(command) &&
       !command_has_additional_consumers(command) {
-      match first_redirect_with_fd(command.redirects, 0) {
-        Some(redirect) =>
-          push_diagnostic(
-            diagnostics,
-            redirect_operator_span(redirect),
-            Error,
-            2259,
-            "This redirection overrides piped input. To use both, merge or pass filenames.",
-          )
-        None => ()
+      if first_redirect_with_fd(command.redirects, 0) is Some(redirect) {
+        push_diagnostic(
+          diagnostics,
+          redirect_operator_span(redirect),
+          Error,
+          2259,
+          "This redirection overrides piped input. To use both, merge or pass filenames.",
+        )
       }
     }
 
     match output_pipe {
       Some(Pipe) =>
         if !command_has_additional_producers(command) {
-          match first_redirect_with_fd(command.redirects, 1) {
-            Some(redirect) =>
-              push_diagnostic(
-                diagnostics,
-                redirect_operator_span(redirect),
-                Error,
-                2260,
-                "This redirection overrides the output pipe. Use 'tee' to output to both.",
-              )
-            None => ()
+          if first_redirect_with_fd(command.redirects, 1) is Some(redirect) {
+            push_diagnostic(
+              diagnostics,
+              redirect_operator_span(redirect),
+              Error,
+              2260,
+              "This redirection overrides the output pipe. Use 'tee' to output to both.",
+            )
           }
         }
       _ => ()
@@ -360,10 +358,7 @@ fn q_command_output_is_captured(
   }
   let mut current = Some(id)
   while current is Some(_) {
-    let node_id = match current {
-      Some(node_id) => node_id
-      None => break
-    }
+    let node_id = if current is Some(node_id) { node_id } else { break }
     match @semantics.node_ref_of(indexed, node_id) {
       Some(Command(_)) =>
         if q_command_is_pipeline_producer(indexed, node_id) {
@@ -381,31 +376,32 @@ fn q_command_is_pipeline_producer(
   indexed : @semantics.IndexedScript,
   id : @semantics.NodeId,
 ) -> Bool {
-  let segment_id = match @semantics.parent_of(indexed, id) {
-    Some(parent) =>
-      match @semantics.node_ref_of(indexed, parent) {
-        Some(PipelineSegment(_)) => parent
-        _ => return false
-      }
-    None => return false
+  let segment_id = if @semantics.parent_of(indexed, id) is Some(parent) {
+    match @semantics.node_ref_of(indexed, parent) {
+      Some(PipelineSegment(_)) => parent
+      _ => return false
+    }
+  } else {
+    return false
   }
-  let pipeline_id = match @semantics.parent_of(indexed, segment_id) {
-    Some(parent) =>
-      match @semantics.node_ref_of(indexed, parent) {
-        Some(Pipeline(pipeline)) =>
-          if pipeline.segments.length() > 1 {
-            parent
-          } else {
-            return false
-          }
-        _ => return false
-      }
-    None => return false
+  let pipeline_id = if @semantics.parent_of(indexed, segment_id) is Some(parent) {
+    match @semantics.node_ref_of(indexed, parent) {
+      Some(Pipeline(pipeline)) =>
+        if pipeline.segments.length() > 1 {
+          parent
+        } else {
+          return false
+        }
+      _ => return false
+    }
+  } else {
+    return false
   }
   let segment_ids = q_pipeline_segment_ids(indexed, pipeline_id)
-  match segment_ids.get(segment_ids.length() - 1) {
-    Some(last_segment) => last_segment != segment_id
-    None => false
+  if segment_ids.get(segment_ids.length() - 1) is Some(last_segment) {
+    last_segment != segment_id
+  } else {
+    false
   }
 }
 
@@ -459,16 +455,14 @@ fn q_advance_multiple_appends(
       if state.target == target {
         let next_run_length = state.run_length + 1
         if next_run_length >= 3 && !state.warned {
-          match state.first_span {
-            Some(first_span) =>
-              push_diagnostic(
-                diagnostics,
-                first_span,
-                Style,
-                2129,
-                "Consider using { cmd1; cmd2; } >> file instead of individual redirects.",
-              )
-            None => ()
+          if state.first_span is Some(first_span) {
+            push_diagnostic(
+              diagnostics,
+              first_span,
+              Style,
+              2129,
+              "Consider using { cmd1; cmd2; } >> file instead of individual redirects.",
+            )
           }
           { ..state, run_length: next_run_length, warned: true }
         } else {
@@ -485,13 +479,14 @@ fn q_advance_multiple_appends(
 fn q_multiple_append_target(
   pipeline : @parser.Pipeline,
 ) -> (String, @parser.Span)? {
-  match pipeline.segments.get(pipeline.segments.length() - 1) {
-    Some(last_segment) =>
-      match q_first_append_redirect_target(last_segment.command) {
-        Some(target) => Some((target, last_segment.command.span))
-        None => None
-      }
-    None => None
+  if pipeline.segments.get(pipeline.segments.length() - 1) is Some(last_segment) {
+    if q_first_append_redirect_target(last_segment.command) is Some(target) {
+      Some((target, last_segment.command.span))
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 
@@ -541,9 +536,8 @@ fn q_check_multiple_appends_nested_in_command(
         check_multiple_appends_q(arm.condition, diagnostics)
         check_multiple_appends_q(arm.body, diagnostics)
       }
-      match clause.else_body {
-        Some(body) => check_multiple_appends_q(body, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        check_multiple_appends_q(body, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -588,31 +582,26 @@ fn q_check_condition_for_grep_q(
 ) -> Unit {
   match expr {
     Word(word) =>
-      match q_final_grep_name_from_condition_word(word) {
-        Some(name) =>
-          push_diagnostic(
-            diagnostics,
-            q_nullary_condition_word_span(word),
-            Style,
-            2143,
-            "Use \{name} -q instead of comparing output with [ -n .. ].",
-          )
-        None => ()
+      if q_final_grep_name_from_condition_word(word) is Some(name) {
+        push_diagnostic(
+          diagnostics,
+          q_nullary_condition_word_span(word),
+          Style,
+          2143,
+          "Use \{name} -q instead of comparing output with [ -n .. ].",
+        )
       }
     Unary(op, op_span, word) =>
       if op == "-n" || op == "-z" {
-        match q_final_grep_name_from_condition_word(word) {
-          Some(name) => {
-            let prefix = if op == "-z" { "! " } else { "" }
-            push_diagnostic(
-              diagnostics,
-              op_span,
-              Style,
-              2143,
-              "Use \{prefix}\{name} -q instead of comparing output with [ \{op} .. ].",
-            )
-          }
-          None => ()
+        if q_final_grep_name_from_condition_word(word) is Some(name) {
+          let prefix = if op == "-z" { "! " } else { "" }
+          push_diagnostic(
+            diagnostics,
+            op_span,
+            Style,
+            2143,
+            "Use \{prefix}\{name} -q instead of comparing output with [ \{op} .. ].",
+          )
         }
       }
     Group(inner) => q_check_condition_for_grep_q(inner, diagnostics)
@@ -626,9 +615,10 @@ fn q_check_condition_for_grep_q(
 
 ///|
 fn q_final_grep_name_from_condition_word(word : @parser.Word) -> String? {
-  match q_condition_word_substitution_script(word) {
-    Some(script) => q_final_grep_name_from_substitution_script(script)
-    None => None
+  if q_condition_word_substitution_script(word) is Some(script) {
+    q_final_grep_name_from_substitution_script(script)
+  } else {
+    None
   }
 }
 
@@ -653,9 +643,10 @@ fn q_final_grep_name_from_substitution_script(
   guard list.tail.length() == 0 else { return None }
   guard list.head.segments.length() > 0 else { return None }
   let command = list.head.segments[list.head.segments.length() - 1].command
-  let name = match @semantics.effective_command_name(command) {
-    Some(name) => analytics_path_basename(name)
-    None => return None
+  let name = if @semantics.effective_command_name(command) is Some(name) {
+    analytics_path_basename(name)
+  } else {
+    return None
   }
   if q_grep_like_commands().contains(name) {
     Some(name)
@@ -729,14 +720,12 @@ fn command_arguments_contain_any(
   prefixes : Array[String],
 ) -> Bool {
   for argument in @semantics.effective_command_arguments(command) {
-    match @semantics.literal_text(argument) {
-      Some(text) =>
-        for prefix in prefixes {
-          if text == prefix || text.has_prefix(prefix + "=") {
-            return true
-          }
+    if @semantics.literal_text(argument) is Some(text) {
+      for prefix in prefixes {
+        if text == prefix || text.has_prefix(prefix + "=") {
+          return true
         }
-      None => ()
+      }
     }
   }
   false
@@ -760,13 +749,11 @@ fn command_has_additional_consumers(command : @parser.Command) -> Bool {
     for redirect in current.redirects {
       match redirect.target {
         HereDoc(doc) =>
-          match doc.parts {
-            Some(parts) =>
-              if here_doc_parts_have_additional_consumers(parts) {
-                found = true
-                return
-              }
-            None => ()
+          if doc.parts is Some(parts) {
+            if here_doc_parts_have_additional_consumers(parts) {
+              found = true
+              return
+            }
           }
         _ => ()
       }
@@ -793,13 +780,11 @@ fn command_has_additional_producers(command : @parser.Command) -> Bool {
     for redirect in current.redirects {
       match redirect.target {
         HereDoc(doc) =>
-          match doc.parts {
-            Some(parts) =>
-              if here_doc_parts_have_additional_producers(parts) {
-                found = true
-                return
-              }
-            None => ()
+          if doc.parts is Some(parts) {
+            if here_doc_parts_have_additional_producers(parts) {
+              found = true
+              return
+            }
           }
         _ => ()
       }
@@ -1223,16 +1208,14 @@ fn q_visit_command_for_useless_bang(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          q_visit_script_for_useless_bang(
-            body,
-            compound_depth + 1,
-            function_depth,
-            false,
-            diagnostics,
-          )
-        None => ()
+      if clause.else_body is Some(body) {
+        q_visit_script_for_useless_bang(
+          body,
+          compound_depth + 1,
+          function_depth,
+          false,
+          diagnostics,
+        )
       }
     }
     While(clause) | Until(clause) => {
@@ -1321,12 +1304,10 @@ fn q_check_redirection_for_modified_arithmetic(
         q_check_redirection_word_part(part, word, diagnostics)
       }
     HereDoc(doc) =>
-      match doc.parts {
-        Some(parts) =>
-          for part in parts {
-            q_check_redirection_here_doc_part(part, redirect.span, diagnostics)
-          }
-        None => ()
+      if doc.parts is Some(parts) {
+        for part in parts {
+          q_check_redirection_here_doc_part(part, redirect.span, diagnostics)
+        }
       }
   }
 }
@@ -1369,16 +1350,14 @@ fn q_maybe_push_modified_arithmetic_diagnostic(
   source : String?,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match q_assignment_effect_span(expr, span, source) {
-    Some(effect_span) =>
-      push_diagnostic(
-        diagnostics,
-        effect_span,
-        Warning,
-        2257,
-        "Arithmetic modifications in command redirections may be discarded. Do them separately.",
-      )
-    None => ()
+  if q_assignment_effect_span(expr, span, source) is Some(effect_span) {
+    push_diagnostic(
+      diagnostics,
+      effect_span,
+      Warning,
+      2257,
+      "Arithmetic modifications in command redirections may be discarded. Do them separately.",
+    )
   }
 }
 
@@ -1390,14 +1369,14 @@ fn q_assignment_effect_span(
 ) -> @parser.Span? {
   match q_first_assignment_effect_offset(expr.raw) {
     Some((offset, op)) =>
-      match source {
-        Some(source_text) =>
-          match q_string_index_of(source_text, expr.raw) {
-            Some(expr_offset) =>
-              Some(q_span_offset(span, expr_offset + offset, op[:].length()))
-            None => Some(q_span_offset(span, offset, op[:].length()))
-          }
-        None => Some(q_span_offset(span, offset, op[:].length()))
+      if source is Some(source_text) {
+        if q_string_index_of(source_text, expr.raw) is Some(expr_offset) {
+          Some(q_span_offset(span, expr_offset + offset, op[:].length()))
+        } else {
+          Some(q_span_offset(span, offset, op[:].length()))
+        }
+      } else {
+        Some(q_span_offset(span, offset, op[:].length()))
       }
     None => None
   }
@@ -1481,9 +1460,10 @@ fn q_first_assignment_effect_offset(raw : String) -> (Int, String)? {
       }
       _ =>
         if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0 {
-          match q_assignment_effect_operator_at(raw, i) {
-            Some(op) => return Some((i, op))
-            None => i += 1
+          if q_assignment_effect_operator_at(raw, i) is Some(op) {
+            return Some((i, op))
+          } else {
+            i += 1
           }
         } else {
           i += 1
@@ -1591,9 +1571,10 @@ fn q_and_or_last_command_is_test(list : @parser.AndOrList) -> Bool {
     Some((_, pipeline)) => pipeline
     None => list.head
   }
-  match pipeline.segments.get(pipeline.segments.length() - 1) {
-    Some(segment) => q_command_is_test_command(segment.command)
-    None => false
+  if pipeline.segments.get(pipeline.segments.length() - 1) is Some(segment) {
+    q_command_is_test_command(segment.command)
+  } else {
+    false
   }
 }
 
@@ -1733,15 +1714,13 @@ fn q_visit_command_for_bad_test_and_or(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          q_visit_script_for_bad_test_and_or(
-            body,
-            compound_depth + 1,
-            function_depth,
-            diagnostics,
-          )
-        None => ()
+      if clause.else_body is Some(body) {
+        q_visit_script_for_bad_test_and_or(
+          body,
+          compound_depth + 1,
+          function_depth,
+          diagnostics,
+        )
       }
     }
     While(clause) | Until(clause) => {
@@ -1833,17 +1812,16 @@ fn q_pipe_operator_span(
   operator_index : Int,
   width : Int,
 ) -> @parser.Span {
-  match pipeline.segments.get(operator_index) {
-    Some(current_segment) => {
-      let start = current_segment.span.end
-      let end_ = @parser.Position::new(
-        start.offset + width,
-        start.line,
-        start.column + width,
-      )
-      @parser.Span::new(start, end_)
-    }
-    None => pipeline.span
+  if pipeline.segments.get(operator_index) is Some(current_segment) {
+    let start = current_segment.span.end
+    let end_ = @parser.Position::new(
+      start.offset + width,
+      start.line,
+      start.column + width,
+    )
+    @parser.Span::new(start, end_)
+  } else {
+    pipeline.span
   }
 }
 

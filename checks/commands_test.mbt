@@ -29,58 +29,52 @@ test "command checks attach fixes for read without r" {
   })
   assert_eq(read_diagnostics.length(), 2)
 
-  match read_diagnostics[0].fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 1)
-      assert_eq(replacement.start.column, 13)
-      assert_eq(replacement.end.line, 1)
-      assert_eq(replacement.end.column, 13)
-      assert_eq(replacement.text, " -r")
-      assert_eq(replacement.precedence, 0)
-      assert_true(
-        replacement.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|builtin read -r foo
-            #|read<file
-            #|
-          ),
+  if read_diagnostics[0].fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 1)
+    assert_eq(replacement.start.column, 13)
+    assert_eq(replacement.end.line, 1)
+    assert_eq(replacement.end.column, 13)
+    assert_eq(replacement.text, " -r")
+    assert_eq(replacement.precedence, 0)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|builtin read -r foo
+          #|read<file
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2162 fix on wrapped read")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2162 fix on wrapped read")
   }
 
-  match read_diagnostics[1].fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 2)
-      assert_eq(replacement.start.column, 5)
-      assert_eq(replacement.end.line, 2)
-      assert_eq(replacement.end.column, 5)
-      assert_eq(replacement.text, " -r")
-      assert_eq(replacement.precedence, 0)
-      assert_true(
-        replacement.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|builtin read foo
-            #|read -r<file
-            #|
-          ),
+  if read_diagnostics[1].fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 2)
+    assert_eq(replacement.start.column, 5)
+    assert_eq(replacement.end.line, 2)
+    assert_eq(replacement.end.column, 5)
+    assert_eq(replacement.text, " -r")
+    assert_eq(replacement.precedence, 0)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|builtin read foo
+          #|read -r<file
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2162 fix on redirected read")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2162 fix on redirected read")
   }
 }
 

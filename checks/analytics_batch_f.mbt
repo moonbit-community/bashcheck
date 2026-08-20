@@ -116,9 +116,8 @@ fn analytics_walk_command_for_shorthand_if(
         analytics_walk_script_for_shorthand_if(arm.condition, false, visit)
         analytics_walk_script_for_shorthand_if(arm.body, true, visit)
       }
-      match clause.else_body {
-        Some(body) => analytics_walk_script_for_shorthand_if(body, true, visit)
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_walk_script_for_shorthand_if(body, true, visit)
       }
     }
     While(clause) | Until(clause) => {
@@ -340,10 +339,8 @@ fn analytics_walk_command_tree(
         analytics_walk_script_tree(arm.condition, visit_script, visit_command)
         analytics_walk_script_tree(arm.body, visit_script, visit_command)
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_walk_script_tree(body, visit_script, visit_command)
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_walk_script_tree(body, visit_script, visit_command)
       }
     }
     While(clause) | Until(clause) => {
@@ -412,23 +409,29 @@ fn analytics_maybe_push_command_level_or_neq(
   rhs_pipeline : @parser.Pipeline,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let lhs_binary = match
-    analytics_pipeline_single_condition_binary(lhs_pipeline) {
-    Some(binary) => binary
-    None => return
+  let lhs_binary = if analytics_pipeline_single_condition_binary(lhs_pipeline)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs_binary = match
-    analytics_pipeline_single_condition_binary(rhs_pipeline) {
-    Some(binary) => binary
-    None => return
+  let rhs_binary = if analytics_pipeline_single_condition_binary(rhs_pipeline)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let lhs_binary = match analytics_condition_binary_oriented(lhs_binary) {
-    Some(binary) => binary
-    None => return
+  let lhs_binary = if analytics_condition_binary_oriented(lhs_binary)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs_binary = match analytics_condition_binary_oriented(rhs_binary) {
-    Some(binary) => binary
-    None => return
+  let rhs_binary = if analytics_condition_binary_oriented(rhs_binary)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
   guard analytics_condition_binary_is_neq(lhs_binary.op) else { return }
   guard lhs_binary.op == rhs_binary.op else { return }
@@ -451,23 +454,29 @@ fn analytics_maybe_push_command_level_and_eq(
   rhs_pipeline : @parser.Pipeline,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let lhs_binary = match
-    analytics_pipeline_single_condition_binary(lhs_pipeline) {
-    Some(binary) => binary
-    None => return
+  let lhs_binary = if analytics_pipeline_single_condition_binary(lhs_pipeline)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs_binary = match
-    analytics_pipeline_single_condition_binary(rhs_pipeline) {
-    Some(binary) => binary
-    None => return
+  let rhs_binary = if analytics_pipeline_single_condition_binary(rhs_pipeline)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let lhs_binary = match analytics_condition_binary_oriented(lhs_binary) {
-    Some(binary) => binary
-    None => return
+  let lhs_binary = if analytics_condition_binary_oriented(lhs_binary)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs_binary = match analytics_condition_binary_oriented(rhs_binary) {
-    Some(binary) => binary
-    None => return
+  let rhs_binary = if analytics_condition_binary_oriented(rhs_binary)
+    is Some(binary) {
+    binary
+  } else {
+    return
   }
   guard analytics_condition_binary_is_eq(lhs_binary.op) else { return }
   guard lhs_binary.op == rhs_binary.op else { return }
@@ -516,18 +525,20 @@ fn analytics_simple_test_binary(
     [open, lhs, op_word, rhs, close] =>
       if word_single_literal_text(open) == Some("[") &&
         word_single_literal_text(close) == Some("]") {
-        match @semantics.literal_text(op_word) {
-          Some(op) => Some({ lhs, op, rhs })
-          None => None
+        if @semantics.literal_text(op_word) is Some(op) {
+          Some({ lhs, op, rhs })
+        } else {
+          None
         }
       } else {
         None
       }
     [name, lhs, op_word, rhs] =>
       if word_single_literal_text(name) == Some("test") {
-        match @semantics.literal_text(op_word) {
-          Some(op) => Some({ lhs, op, rhs })
-          None => None
+        if @semantics.literal_text(op_word) is Some(op) {
+          Some({ lhs, op, rhs })
+        } else {
+          None
         }
       } else {
         None
@@ -615,13 +626,15 @@ fn analytics_maybe_push_condition_or_neq(
   rhs_expr : @parser.ConditionExpr,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let lhs = match analytics_condition_expr_binary(lhs_expr) {
-    Some(binary) => binary
-    None => return
+  let lhs = if analytics_condition_expr_binary(lhs_expr) is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs = match analytics_condition_expr_binary(rhs_expr) {
-    Some(binary) => binary
-    None => return
+  let rhs = if analytics_condition_expr_binary(rhs_expr) is Some(binary) {
+    binary
+  } else {
+    return
   }
   guard analytics_condition_binary_is_neq(lhs.op) else { return }
   guard lhs.op == rhs.op else { return }
@@ -651,13 +664,15 @@ fn analytics_maybe_push_condition_and_eq(
   rhs_expr : @parser.ConditionExpr,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let lhs = match analytics_condition_expr_binary(lhs_expr) {
-    Some(binary) => binary
-    None => return
+  let lhs = if analytics_condition_expr_binary(lhs_expr) is Some(binary) {
+    binary
+  } else {
+    return
   }
-  let rhs = match analytics_condition_expr_binary(rhs_expr) {
-    Some(binary) => binary
-    None => return
+  let rhs = if analytics_condition_expr_binary(rhs_expr) is Some(binary) {
+    binary
+  } else {
+    return
   }
   guard analytics_condition_binary_is_eq(lhs.op) else { return }
   guard lhs.op == rhs.op else { return }
@@ -756,9 +771,10 @@ fn analytics_condition_check_and_eq_operands(
 
 ///|
 fn analytics_condition_word_is_literal_number(word : @parser.Word) -> Bool {
-  let text = match @semantics.literal_text(word) {
-    Some(text) => text
-    None => return false
+  let text = if @semantics.literal_text(word) is Some(text) {
+    text
+  } else {
+    return false
   }
   guard text != "" else { return false }
   for ch in text {
@@ -830,13 +846,17 @@ fn analytics_maybe_push_arithmetic_logical_diagnostic(
   span : @parser.Span,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let lhs = match analytics_arithmetic_tokens_as_comparison(lhs_tokens) {
-    Some(comparison) => comparison
-    None => return
+  let lhs = if analytics_arithmetic_tokens_as_comparison(lhs_tokens)
+    is Some(comparison) {
+    comparison
+  } else {
+    return
   }
-  let rhs = match analytics_arithmetic_tokens_as_comparison(rhs_tokens) {
-    Some(comparison) => comparison
-    None => return
+  let rhs = if analytics_arithmetic_tokens_as_comparison(rhs_tokens)
+    is Some(comparison) {
+    comparison
+  } else {
+    return
   }
   guard lhs.op == comparison_op else { return }
   guard rhs.op == comparison_op else { return }

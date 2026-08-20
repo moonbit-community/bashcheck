@@ -321,15 +321,12 @@ fn m_array_assignment_equals_kind(
   while part_index < word.parts.length() {
     match word.parts[part_index] {
       Literal(text) =>
-        match m_find_char(text, '=') {
-          Some(index) => {
-            let before = text.view(end_offset=index).to_owned()
-            if part_index == 0 && m_is_identifier_name(before) {
-              return PlainIdentifierEquals
-            }
-            return LiteralEquals(m_span_for_literal_fragment(word, text))
+        if m_find_char(text, '=') is Some(index) {
+          let before = text.view(end_offset=index).to_owned()
+          if part_index == 0 && m_is_identifier_name(before) {
+            return PlainIdentifierEquals
           }
-          None => ()
+          return LiteralEquals(m_span_for_literal_fragment(word, text))
         }
       _ => ()
     }
@@ -384,12 +381,9 @@ fn m_empty_indexed_element_span(
   assignment_span : @parser.Span,
 ) -> @parser.Span {
   if index + 1 < elements.length() && elements[index + 1].indexes.length() == 0 {
-    match m_array_element_word(elements[index + 1]) {
-      Some(word) => {
-        let point = m_position_offset(word.span.start, -1)
-        return @parser.Span::new(point, point)
-      }
-      None => ()
+    if m_array_element_word(elements[index + 1]) is Some(word) {
+      let point = m_position_offset(word.span.start, -1)
+      return @parser.Span::new(point, point)
     }
   }
   let point = m_position_offset(assignment_span.end, -1)
@@ -414,9 +408,10 @@ fn m_collect_associative_names_from_simple(
   names : Array[String],
 ) -> Unit {
   guard simple.words.length() > 0 else { return }
-  let command_name = match m_word_plain_text(simple.words[0]) {
-    Some(name) => name
-    None => return
+  let command_name = if m_word_plain_text(simple.words[0]) is Some(name) {
+    name
+  } else {
+    return
   }
   if command_name != "declare" &&
     command_name != "local" &&
@@ -445,9 +440,8 @@ fn m_collect_associative_names_from_simple(
       Some(text) if text == "--" => ()
       Some(text) if text.has_prefix("-") => ()
       _ =>
-        match m_word_plain_identifier(simple.words[i]) {
-          Some(name) => m_push_unique_name(names, name)
-          None => ()
+        if m_word_plain_identifier(simple.words[i]) is Some(name) {
+          m_push_unique_name(names, name)
         }
     }
     i += 1
@@ -487,9 +481,10 @@ fn m_array_element_word(element : @parser.ArrayElement) -> @parser.Word? {
 
 ///|
 fn m_word_is_bracketed_index_candidate(word : @parser.Word) -> Bool {
-  match m_word_plain_text(word) {
-    Some(text) => text.has_prefix("[") && text.has_suffix("]")
-    None => false
+  if m_word_plain_text(word) is Some(text) {
+    text.has_prefix("[") && text.has_suffix("]")
+  } else {
+    false
   }
 }
 
@@ -503,9 +498,10 @@ fn m_span_for_literal_fragment(
   word : @parser.Word,
   fragment : String,
 ) -> @parser.Span {
-  match m_string_offset(word.source, fragment) {
-    Some(offset) => m_span_offset(word.span, offset, fragment.length())
-    None => word.span
+  if m_string_offset(word.source, fragment) is Some(offset) {
+    m_span_offset(word.span, offset, fragment.length())
+  } else {
+    word.span
   }
 }
 
@@ -688,36 +684,33 @@ fn check_unmatchable_cases(
         let mut left_index = 0
         while left_index < break_patterns.length() {
           let (_, left_pattern, maybe_glob, _) = break_patterns[left_index]
-          match maybe_glob {
-            Some(left_glob) => {
-              let mut rest_index = left_index + 1
-              while rest_index < break_patterns.length() {
-                let (_, right_pattern, _, right_glob) = break_patterns[rest_index]
-                if pseudo_glob_is_superset_of(left_glob, right_glob) {
-                  push_diagnostic(
-                    diagnostics,
-                    left_pattern.span,
-                    Warning,
-                    2221,
-                    "This pattern always overrides a later one on line " +
-                    right_pattern.span.start.line.to_string() +
-                    ".",
-                  )
-                  push_diagnostic(
-                    diagnostics,
-                    right_pattern.span,
-                    Warning,
-                    2222,
-                    "This pattern never matches because of a previous pattern on line " +
-                    left_pattern.span.start.line.to_string() +
-                    ".",
-                  )
-                  break
-                }
-                rest_index += 1
+          if maybe_glob is Some(left_glob) {
+            let mut rest_index = left_index + 1
+            while rest_index < break_patterns.length() {
+              let (_, right_pattern, _, right_glob) = break_patterns[rest_index]
+              if pseudo_glob_is_superset_of(left_glob, right_glob) {
+                push_diagnostic(
+                  diagnostics,
+                  left_pattern.span,
+                  Warning,
+                  2221,
+                  "This pattern always overrides a later one on line " +
+                  right_pattern.span.start.line.to_string() +
+                  ".",
+                )
+                push_diagnostic(
+                  diagnostics,
+                  right_pattern.span,
+                  Warning,
+                  2222,
+                  "This pattern never matches because of a previous pattern on line " +
+                  left_pattern.span.start.line.to_string() +
+                  ".",
+                )
+                break
               }
+              rest_index += 1
             }
-            None => ()
           }
           left_index += 1
         }
@@ -736,9 +729,10 @@ priv enum PseudoGlob {
 
 ///|
 fn word_to_pseudo_glob(word : @parser.Word) -> Array[PseudoGlob] {
-  match word_to_pseudo_glob_impl(word, false) {
-    Some(glob) => glob
-    None => [Many]
+  if word_to_pseudo_glob_impl(word, false) is Some(glob) {
+    glob
+  } else {
+    [Many]
   }
 }
 

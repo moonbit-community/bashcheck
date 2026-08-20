@@ -19,13 +19,13 @@ fn load_config(spec : CheckSpec) -> LoadedConfig {
   if spec.ignore_rc {
     return empty_loaded_config()
   }
-  match spec.config_path_override {
-    Some(path) => return load_config_from_path(path, spec.config_files)
-    None => ()
+  if spec.config_path_override is Some(path) {
+    return load_config_from_path(path, spec.config_files)
   }
-  let filename = match current_path_for_parse(spec.filename) {
-    Some(filename) => filename
-    None => return empty_loaded_config()
+  let filename = if current_path_for_parse(spec.filename) is Some(filename) {
+    filename
+  } else {
+    return empty_loaded_config()
   }
   match
     read_first_config_file(config_candidate_paths(filename), spec.config_files) {
@@ -40,9 +40,10 @@ fn load_config_from_path(
   path : String,
   config_files : Array[(String, String)],
 ) -> LoadedConfig {
-  match lookup_config_file(config_files, path) {
-    Some(contents) => parse_loaded_config(path, contents)
-    None => empty_loaded_config()
+  if lookup_config_file(config_files, path) is Some(contents) {
+    parse_loaded_config(path, contents)
+  } else {
+    empty_loaded_config()
   }
 }
 
@@ -62,13 +63,11 @@ fn empty_loaded_config() -> LoadedConfig {
 /// diagnostic so callers get a focused message instead of a noisy cascade.
 fn parse_loaded_config(path : String, contents : String) -> LoadedConfig {
   let report = @parser.parse_config_report(contents)
-  match first_config_error(report.diagnostics) {
-    Some(diagnostic) =>
-      return {
-        annotations: [],
-        diagnostics: [positioned_config_parse_error(path, contents, diagnostic)],
-      }
-    None => ()
+  if first_config_error(report.diagnostics) is Some(diagnostic) {
+    return {
+      annotations: [],
+      diagnostics: [positioned_config_parse_error(path, contents, diagnostic)],
+    }
   }
   {
     annotations: copy_parser_annotations(report.annotations),
@@ -290,9 +289,10 @@ fn expand_source_path(path : String, filename : String?) -> String {
   if !path.has_prefix("SCRIPTDIR") {
     return path
   }
-  let scriptdir = match filename {
-    Some(filename) => path_dirname(filename)
-    None => "."
+  let scriptdir = if filename is Some(filename) {
+    path_dirname(filename)
+  } else {
+    "."
   }
   if path == "SCRIPTDIR" {
     return scriptdir
@@ -313,9 +313,8 @@ fn read_first_config_file(
   config_files : Array[(String, String)],
 ) -> (String, String)? {
   for path in paths {
-    match lookup_config_file(config_files, path) {
-      Some(contents) => return Some((path, contents))
-      None => ()
+    if lookup_config_file(config_files, path) is Some(contents) {
+      return Some((path, contents))
     }
   }
   None

@@ -240,9 +240,11 @@ fn w_default_assignment_target_spans(
   for part in word.parts {
     let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
-    let fragment_offset = match analytics_string_offset(remaining, fragment) {
-      Some(inner) => offset + inner
-      None => offset
+    let fragment_offset = if analytics_string_offset(remaining, fragment)
+      is Some(inner) {
+      offset + inner
+    } else {
+      offset
     }
     let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
@@ -337,10 +339,8 @@ fn w_visit_command_for_subshelled_tests(
         w_visit_script_for_subshelled_tests(arm.condition, true, diagnostics)
         w_visit_script_for_subshelled_tests(arm.body, false, diagnostics)
       }
-      match clause.else_body {
-        Some(body) =>
-          w_visit_script_for_subshelled_tests(body, false, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        w_visit_script_for_subshelled_tests(body, false, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -533,9 +533,10 @@ fn w_command_has_assignment_effect(command : @parser.Command) -> Bool {
           return true
         }
       }
-      match clause.else_body {
-        Some(body) => w_script_has_assignment_effect(body)
-        None => false
+      if clause.else_body is Some(body) {
+        w_script_has_assignment_effect(body)
+      } else {
+        false
       }
     }
     While(clause) | Until(clause) =>

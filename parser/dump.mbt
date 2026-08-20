@@ -186,9 +186,10 @@ fn dump_parameter_case_mode(mode : ParameterCaseMode) -> String {
 fn dump_parameter_operator(operator : ParameterOperator) -> String {
   match operator {
     Slice(offset, length) => {
-      let suffix = match length {
-        None => ""
-        Some(length) => ", len=\{dump_quoted(length)}"
+      let suffix = if length is Some(length) {
+        ", len=\{dump_quoted(length)}"
+      } else {
+        ""
       }
       "slice(offset=\{dump_quoted(offset)}\{suffix})"
     }
@@ -202,17 +203,19 @@ fn dump_parameter_operator(operator : ParameterOperator) -> String {
     RemoveShortestSuffix(value) => "trim_suffix(\{dump_quoted(value)})"
     RemoveLongestSuffix(value) => "trim_suffix_long(\{dump_quoted(value)})"
     Replace(mode, pattern, replacement) => {
-      let replacement = match replacement {
-        None => ""
-        Some(value) => ", replace=\{dump_quoted(value)}"
+      let replacement = if replacement is Some(value) {
+        ", replace=\{dump_quoted(value)}"
+      } else {
+        ""
       }
       "replace(mode=\{dump_parameter_replace_mode(mode)}, pattern=\{dump_quoted(pattern)}\{replacement})"
     }
     Transform(kind) => "transform(\{dump_quoted(kind)})"
     CaseModify(mode, pattern) => {
-      let pattern = match pattern {
-        None => ""
-        Some(value) => ", pattern=\{dump_quoted(value)}"
+      let pattern = if pattern is Some(value) {
+        ", pattern=\{dump_quoted(value)}"
+      } else {
+        ""
       }
       "case(mode=\{dump_parameter_case_mode(mode)}\{pattern})"
     }
@@ -229,17 +232,14 @@ fn dump_parameter_expansion(expansion : ParameterExpansion) -> String {
   if expansion.indirect {
     fields.push("indirect=true")
   }
-  match expansion.name {
-    None => ()
-    Some(name) => fields.push("name=\{dump_quoted(name)}")
+  if expansion.name is Some(name) {
+    fields.push("name=\{dump_quoted(name)}")
   }
-  match expansion.index {
-    None => ()
-    Some(index) => fields.push("index=\{dump_array_index(index)}")
+  if expansion.index is Some(index) {
+    fields.push("index=\{dump_array_index(index)}")
   }
-  match expansion.operator {
-    None => ()
-    Some(operator) => fields.push("op=\{dump_parameter_operator(operator)}")
+  if expansion.operator is Some(operator) {
+    fields.push("op=\{dump_parameter_operator(operator)}")
   }
   let dumped = join(fields, ", ")
   "braced(\{dumped})"
@@ -295,9 +295,10 @@ fn dump_assignment(assignment : Assignment) -> String {
 ///|
 fn dump_array_index(index : ArrayIndex) -> String {
   let dumped = join(index.parts.map(dump_word_part), ", ")
-  let arithmetic = match index.arithmetic {
-    None => ""
-    Some(expr) => ", arith=\{dump_arithmetic_expr(expr)}"
+  let arithmetic = if index.arithmetic is Some(expr) {
+    ", arith=\{dump_arithmetic_expr(expr)}"
+  } else {
+    ""
   }
   "idx(raw=\{dump_quoted(index.raw)}, parts=[\{dumped}]\{arithmetic})"
 }
@@ -317,12 +318,11 @@ fn dump_redirection_target(target : RedirectionTarget) -> String {
   match target {
     Word(word) => dump_word(word)
     HereDoc(doc) => {
-      let parts = match doc.parts {
-        None => ""
-        Some(parts) => {
-          let dumped = join(parts.map(dump_word_part), ", ")
-          ", parts=[\{dumped}]"
-        }
+      let parts = if doc.parts is Some(parts) {
+        let dumped = join(parts.map(dump_word_part), ", ")
+        ", parts=[\{dumped}]"
+      } else {
+        ""
       }
       "heredoc(delim=\{dump_quoted(doc.delimiter)}, quoted=\{doc.quoted}, strip=\{doc.strip_tabs}, body=\{dump_quoted(doc.body)}\{parts})"
     }
@@ -355,13 +355,15 @@ fn dump_command_kind(kind : CommandKind) -> String {
       let assignments = join(source.assignments.map(dump_assignment), ", ")
       let options = join(source.options.map(dump_word), ", ")
       let args = join(source.args.map(dump_word), ", ")
-      let resolved_path = match source.resolved_path {
-        None => ""
-        Some(path) => ", resolved=\{dump_quoted(path)}"
+      let resolved_path = if source.resolved_path is Some(path) {
+        ", resolved=\{dump_quoted(path)}"
+      } else {
+        ""
       }
-      let included = match source.included {
-        None => ""
-        Some(script) => ", include=\{dump_script(script)}"
+      let included = if source.included is Some(script) {
+        ", include=\{dump_script(script)}"
+      } else {
+        ""
       }
       "source(assign=[\{assignments}], keyword=\{dump_quoted(source.keyword)}, opts=[\{options}], path=\{dump_word(source.path)}, args=[\{args}]\{resolved_path}\{included})"
     }
@@ -373,9 +375,10 @@ fn dump_command_kind(kind : CommandKind) -> String {
     BraceGroup(script) => "brace(\{dump_script(script)})"
     If(clause) => {
       let arms = join(clause.arms.map(dump_if_arm), ", ")
-      let else_part = match clause.else_body {
-        None => ""
-        Some(script) => ", else=\{dump_script(script)}"
+      let else_part = if clause.else_body is Some(script) {
+        ", else=\{dump_script(script)}"
+      } else {
+        ""
       }
       "if([\{arms}]\{else_part})"
     }
@@ -404,9 +407,10 @@ fn dump_command_kind(kind : CommandKind) -> String {
     Function(function_) =>
       "function(name=\{function_.name}, keyword=\{function_.uses_keyword}, parens=\{function_.has_parentheses}, body=\{dump_command(function_.body)})"
     CoProc(clause) => {
-      let name = match clause.name {
-        None => "None"
-        Some(word) => dump_word(word)
+      let name = if clause.name is Some(word) {
+        dump_word(word)
+      } else {
+        "None"
       }
       "coproc(name=\{name}, body=\{dump_command(clause.body)})"
     }
@@ -478,7 +482,7 @@ fn dump_pipeline(pipeline : Pipeline) -> String {
     let mut prefix = ""
     let mut bangs = 0
     while bangs < segment.bangs {
-      prefix = prefix + "! "
+      prefix += "! "
       bangs += 1
     }
     parts.push(prefix + dump_command(segment.command))
@@ -514,9 +518,8 @@ fn dump_script(script : Script) -> String {
   if script.has_bom {
     prefix.push("bom")
   }
-  match script.shebang {
-    None => ()
-    Some(shebang) => prefix.push("shebang=\{dump_quoted(shebang)}")
+  if script.shebang is Some(shebang) {
+    prefix.push("shebang=\{dump_quoted(shebang)}")
   }
   if script.annotations.length() > 0 {
     let annotations = join(script.annotations.map(dump_annotation), ", ")

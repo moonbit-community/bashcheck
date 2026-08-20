@@ -15,20 +15,18 @@ fn run_quote_safe_variables_optional_check(
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
       Some(Word(word)) =>
-        match word_unquoted_single_variable_name(word) {
-          Some(name) =>
-            if quote_safe_word_context_allows(cfg, id, word) &&
-              variable_state_is_quote_safe(analysis, id, name) {
-              push_diagnostic_with_fix(
-                diagnostics,
-                word.span,
-                Style,
-                2248,
-                "Prefer double quoting even when variables don't contain special characters.",
-                shellcheck_surround_span_fix(word.span, "\"", 7),
-              )
-            }
-          None => ()
+        if word_unquoted_single_variable_name(word) is Some(name) {
+          if quote_safe_word_context_allows(cfg, id, word) &&
+            variable_state_is_quote_safe(analysis, id, name) {
+            push_diagnostic_with_fix(
+              diagnostics,
+              word.span,
+              Style,
+              2248,
+              "Prefer double quoting even when variables don't contain special characters.",
+              shellcheck_surround_span_fix(word.span, "\"", 7),
+            )
+          }
         }
       _ => ()
     }
@@ -68,34 +66,33 @@ fn quote_safe_word_context_allows(
 ) -> Bool {
   let mut current = Some(id)
   while current is Some(_) {
-    match current {
-      Some(node_id) =>
-        match @cfg.ast_ref_of(cfg, node_id) {
-          Some(Assignment(_))
-          | Some(ArrayElement(_))
-          | Some(ArrayIndex(_))
-          | Some(ArithmeticExpr(_))
-          | Some(ArithmeticToken(_))
-          | Some(ForClause(_))
-          | Some(SelectClause(_))
-          | Some(CaseClause(_))
-          | Some(CaseItem(_)) => return false
-          Some(ConditionCommand(condition)) =>
-            match condition.kind {
-              DoubleBracket => return false
-              _ => ()
-            }
-          Some(Command(command)) =>
-            if word_is_effective_command_name(command, word) {
-              return false
-            }
-          _ => ()
-        }
-      None => ()
+    if current is Some(node_id) {
+      match @cfg.ast_ref_of(cfg, node_id) {
+        Some(Assignment(_))
+        | Some(ArrayElement(_))
+        | Some(ArrayIndex(_))
+        | Some(ArithmeticExpr(_))
+        | Some(ArithmeticToken(_))
+        | Some(ForClause(_))
+        | Some(SelectClause(_))
+        | Some(CaseClause(_))
+        | Some(CaseItem(_)) => return false
+        Some(ConditionCommand(condition)) =>
+          match condition.kind {
+            DoubleBracket => return false
+            _ => ()
+          }
+        Some(Command(command)) =>
+          if word_is_effective_command_name(command, word) {
+            return false
+          }
+        _ => ()
+      }
     }
-    current = match current {
-      Some(node_id) => @cfg.ast_parent_of(cfg, node_id)
-      None => None
+    current = if current is Some(node_id) {
+      @cfg.ast_parent_of(cfg, node_id)
+    } else {
+      None
     }
   }
   true
@@ -106,9 +103,10 @@ fn word_is_effective_command_name(
   command : @parser.Command,
   word : @parser.Word,
 ) -> Bool {
-  match @semantics.effective_command_words(command).get(0) {
-    Some(first) => first == word
-    None => false
+  if @semantics.effective_command_words(command).get(0) is Some(first) {
+    first == word
+  } else {
+    false
   }
 }
 
@@ -121,13 +119,13 @@ fn variable_state_is_quote_safe(
   match @cfg.incoming_state_of_ast(analysis, id) {
     Some(state) if state.state_is_reachable &&
       !@cfg.variable_may_be_unset(state, name) =>
-      match state.variables_in_scope.get(name) {
-        Some(variable) =>
-          match variable.variable_value.space_status {
-            Dirty => false
-            Clean | Empty => true
-          }
-        None => false
+      if state.variables_in_scope.get(name) is Some(variable) {
+        match variable.variable_value.space_status {
+          Dirty => false
+          Clean | Empty => true
+        }
+      } else {
+        false
       }
     _ => false
   }
@@ -145,27 +143,24 @@ fn run_avoid_nullary_conditions_optional_check(
       Condition(condition) =>
         match condition.expr {
           Word(word) =>
-            match word_single_top_level_substitution_script(word) {
-              Some(_) =>
-                push_diagnostic_with_fix(
-                  diagnostics,
-                  word.span,
-                  Style,
-                  2243,
-                  "Prefer explicit -n to check for output (or run command without [/[[ to check for success).",
-                  insert_after_position_fix(word.span.start, "-n ", 7),
-                )
-              None =>
-                if word_is_pure_dynamic_expansion(word) {
-                  push_diagnostic_with_fix(
-                    diagnostics,
-                    word.span,
-                    Style,
-                    2244,
-                    "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer).",
-                    insert_after_position_fix(word.span.start, "-n ", 7),
-                  )
-                }
+            if word_single_top_level_substitution_script(word) is Some(_) {
+              push_diagnostic_with_fix(
+                diagnostics,
+                word.span,
+                Style,
+                2243,
+                "Prefer explicit -n to check for output (or run command without [/[[ to check for success).",
+                insert_after_position_fix(word.span.start, "-n ", 7),
+              )
+            } else if word_is_pure_dynamic_expansion(word) {
+              push_diagnostic_with_fix(
+                diagnostics,
+                word.span,
+                Style,
+                2244,
+                "Prefer explicit -n to check non-empty string (or use =/-ne to check boolean/integer).",
+                insert_after_position_fix(word.span.start, "-n ", 7),
+              )
             }
           _ => ()
         }
@@ -277,16 +272,14 @@ fn check_unnecessarily_inverted_condition_expr(
         _ => ()
       }
     Not(Binary(op, _, _, _)) =>
-      match inverted_condition_operator(op) {
-        Some(new_op) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Style,
-            2335,
-            "Use a " + new_op + " b instead of ! a " + op + " b.",
-          )
-        None => ()
+      if inverted_condition_operator(op) is Some(new_op) {
+        push_diagnostic(
+          diagnostics,
+          span,
+          Style,
+          2335,
+          "Use a " + new_op + " b instead of ! a " + op + " b.",
+        )
       }
     Group(inner) | Not(inner) =>
       check_unnecessarily_inverted_condition_expr(
@@ -330,20 +323,18 @@ fn check_unnecessarily_inverted_banged_condition(
         _ => ()
       }
     Binary(op, _, _, _) =>
-      match inverted_condition_operator(op) {
-        Some(new_op) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Style,
-            2335,
-            "Use " +
-            condition_example(kind, "a " + new_op + " b") +
-            " instead of ! " +
-            condition_example(kind, "a " + op + " b") +
-            ".",
-          )
-        None => ()
+      if inverted_condition_operator(op) is Some(new_op) {
+        push_diagnostic(
+          diagnostics,
+          span,
+          Style,
+          2335,
+          "Use " +
+          condition_example(kind, "a " + new_op + " b") +
+          " instead of ! " +
+          condition_example(kind, "a " + op + " b") +
+          ".",
+        )
       }
     _ => ()
   }
@@ -384,34 +375,30 @@ fn run_require_variable_braces_optional_check(
       if place == CommandName {
         return
       }
-      match first_unbraced_named_parameter(word) {
-        Some(name) => {
-          let fix = match word.parts {
-            [Parameter(single)] if single == name =>
-              Some(shellcheck_brace_parameter_span_fix(word.span, 7))
-            _ => None
-          }
-          match fix {
-            Some(fix) =>
-              push_diagnostic_with_fix(
-                diagnostics,
-                word.span,
-                Style,
-                2250,
-                "Prefer putting braces around variable references even when not strictly required.",
-                fix,
-              )
-            None =>
-              push_diagnostic(
-                diagnostics,
-                word.span,
-                Style,
-                2250,
-                "Prefer putting braces around variable references even when not strictly required.",
-              )
-          }
+      if first_unbraced_named_parameter(word) is Some(name) {
+        let fix = match word.parts {
+          [Parameter(single)] if single == name =>
+            Some(shellcheck_brace_parameter_span_fix(word.span, 7))
+          _ => None
         }
-        None => ()
+        if fix is Some(fix) {
+          push_diagnostic_with_fix(
+            diagnostics,
+            word.span,
+            Style,
+            2250,
+            "Prefer putting braces around variable references even when not strictly required.",
+            fix,
+          )
+        } else {
+          push_diagnostic(
+            diagnostics,
+            word.span,
+            Style,
+            2250,
+            "Prefer putting braces around variable references even when not strictly required.",
+          )
+        }
       }
     })
   })
@@ -540,9 +527,10 @@ fn command_is_function_invocation(
 ) -> Bool {
   match command.kind {
     Simple(_) =>
-      match @semantics.command_name(command) {
-        Some(name) => function_names.contains(name)
-        None => false
+      if @semantics.command_name(command) is Some(name) {
+        function_names.contains(name)
+      } else {
+        false
       }
     _ => false
   }
@@ -573,10 +561,7 @@ fn check_set_e_suppressed_context(
   let mut child = id
   let mut current = @semantics.parent_of(indexed, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     match @semantics.node_ref_of(indexed, parent) {
       Some(PipelineSegment(segment)) =>
         if segment.bangs % 2 != 0 && segment.command == command {
@@ -590,20 +575,17 @@ fn check_set_e_suppressed_context(
           return
         }
       Some(AndOrList(list)) =>
-        match and_or_condition_type_for_span(list, command.span) {
-          Some(cond_type) => {
-            push_diagnostic(
-              diagnostics,
-              effective_command_span(command),
-              Info,
-              2310,
-              "This function is invoked in " +
-              cond_type +
-              " so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
-            )
-            return
-          }
-          None => ()
+        if and_or_condition_type_for_span(list, command.span) is Some(cond_type) {
+          push_diagnostic(
+            diagnostics,
+            effective_command_span(command),
+            Info,
+            2310,
+            "This function is invoked in " +
+            cond_type +
+            " so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
+          )
+          return
         }
       Some(IfArm(arm)) =>
         if span_contains(arm.condition.span, command.span) {
@@ -618,32 +600,30 @@ fn check_set_e_suppressed_context(
         }
       Some(LoopClause(clause)) =>
         if span_contains(clause.condition.span, command.span) {
-          match @semantics.parent_of(indexed, parent) {
-            Some(grandparent) =>
-              match @semantics.node_ref_of(indexed, grandparent) {
-                Some(Command({ kind: While(_), .. })) => {
-                  push_diagnostic(
-                    diagnostics,
-                    effective_command_span(command),
-                    Info,
-                    2310,
-                    "This function is invoked in a 'while' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
-                  )
-                  return
-                }
-                Some(Command({ kind: Until(_), .. })) => {
-                  push_diagnostic(
-                    diagnostics,
-                    effective_command_span(command),
-                    Info,
-                    2310,
-                    "This function is invoked in an 'until' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
-                  )
-                  return
-                }
-                _ => ()
+          if @semantics.parent_of(indexed, parent) is Some(grandparent) {
+            match @semantics.node_ref_of(indexed, grandparent) {
+              Some(Command({ kind: While(_), .. })) => {
+                push_diagnostic(
+                  diagnostics,
+                  effective_command_span(command),
+                  Info,
+                  2310,
+                  "This function is invoked in a 'while' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
+                )
+                return
               }
-            None => ()
+              Some(Command({ kind: Until(_), .. })) => {
+                push_diagnostic(
+                  diagnostics,
+                  effective_command_span(command),
+                  Info,
+                  2310,
+                  "This function is invoked in an 'until' condition so set -e will be disabled. Invoke separately if failures should cause the script to exit.",
+                )
+                return
+              }
+              _ => ()
+            }
           }
         }
       Some(WordPart(CommandSubstitution(_)))
@@ -735,10 +715,9 @@ fn check_masked_pipeline_returns(
           !pipeline_is_deliberately_ignored(indexed, id, pipeline) {
           let mut i = 0
           while i + 1 < pipeline.segments.length() {
-            match single_maskable_command(pipeline.segments[i].command) {
-              Some(command) =>
-                maybe_push_masked_return_diagnostic(diagnostics, command)
-              None => ()
+            if single_maskable_command(pipeline.segments[i].command)
+              is Some(command) {
+              maybe_push_masked_return_diagnostic(diagnostics, command)
             }
             i += 1
           }
@@ -756,25 +735,24 @@ fn pipeline_is_deliberately_ignored(
 ) -> Bool {
   let mut current = @semantics.parent_of(indexed, id)
   while current is Some(_) {
-    match current {
-      Some(node_id) =>
-        match @semantics.node_ref_of(indexed, node_id) {
-          Some(AndOrList(list)) =>
-            if span_contains(list.head.span, pipeline.span) &&
-              list.tail.length() > 0 &&
-              list.tail[0].0 is OrIf &&
-              pipeline_is_true_or_colon(list.tail[0].1) {
-              return true
-            } else {
-              return false
-            }
-          _ => ()
-        }
-      None => ()
+    if current is Some(node_id) {
+      match @semantics.node_ref_of(indexed, node_id) {
+        Some(AndOrList(list)) =>
+          if span_contains(list.head.span, pipeline.span) &&
+            list.tail.length() > 0 &&
+            list.tail[0].0 is OrIf &&
+            pipeline_is_true_or_colon(list.tail[0].1) {
+            return true
+          } else {
+            return false
+          }
+        _ => ()
+      }
     }
-    current = match current {
-      Some(node_id) => @semantics.parent_of(indexed, node_id)
-      None => None
+    current = if current is Some(node_id) {
+      @semantics.parent_of(indexed, node_id)
+    } else {
+      None
     }
   }
   false
@@ -873,9 +851,8 @@ fn collect_word_embedded_commands(
       | BraceCommandSubstitution(_, script)
       | BackQuoted(script)
       | ProcessSubstitution(_, script) =>
-        match single_maskable_command_in_script(script) {
-          Some(command) => masked.push(command)
-          None => ()
+        if single_maskable_command_in_script(script) is Some(command) {
+          masked.push(command)
         }
       _ => ()
     }
@@ -897,9 +874,8 @@ fn collect_redirect_masked_commands(
             | BraceCommandSubstitution(_, script)
             | BackQuoted(script)
             | ProcessSubstitution(_, script) =>
-              match single_maskable_command_in_script(script) {
-                Some(command) => masked.push(command)
-                None => ()
+              if single_maskable_command_in_script(script) is Some(command) {
+                masked.push(command)
               }
             _ => ()
           }

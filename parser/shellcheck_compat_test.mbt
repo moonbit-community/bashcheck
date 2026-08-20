@@ -2,53 +2,49 @@
 fn assert_ok(label : String, source : String) -> Unit {
   let report = @parser.parse_script_report(source)
   if report.diagnostics.length() != 0 {
-    match report.script {
-      Some(script) =>
-        abort(
-          "\{label}: expected clean parse, got diagnostics \{@debug.to_string(report.diagnostics)} with script \{script.dump()}",
-        )
-      None =>
-        abort(
-          "\{label}: expected clean parse, got failure \{@debug.to_string(report.diagnostics)}",
-        )
+    if report.script is Some(script) {
+      abort(
+        "\{label}: expected clean parse, got diagnostics \{@debug.to_string(report.diagnostics)} with script \{script.dump()}",
+      )
+    } else {
+      abort(
+        "\{label}: expected clean parse, got failure \{@debug.to_string(report.diagnostics)}",
+      )
     }
   }
-  match report.script {
-    Some(_) => ()
-    None => abort("\{label}: expected clean parse, got parse failure")
+  if report.script is Some(_) {
+    ()
+  } else {
+    abort("\{label}: expected clean parse, got parse failure")
   }
 }
 
 ///|
 fn assert_not_ok(label : String, source : String) -> Unit {
   let report = @parser.parse_script_report(source)
-  match report.script {
-    Some(script) =>
-      abort(
-        "\{label}: expected parse failure, got \{script.dump()} with diagnostics \{@debug.to_string(report.diagnostics)}",
-      )
-    None => ()
+  if report.script is Some(script) {
+    abort(
+      "\{label}: expected parse failure, got \{script.dump()} with diagnostics \{@debug.to_string(report.diagnostics)}",
+    )
   }
 }
 
 ///|
 fn assert_no_commands(label : String, source : String) -> Unit {
   let report = @parser.parse_script_report(source)
-  match report.script {
-    Some(script) => {
-      if report.diagnostics.length() != 0 {
-        abort(
-          "\{label}: expected comment-only script, got diagnostics \{@debug.to_string(report.diagnostics)}",
-        )
-      }
-      if script.items.length() != 0 {
-        abort("\{label}: expected no parsed commands, got \{script.dump()}")
-      }
-    }
-    None =>
+  if report.script is Some(script) {
+    if report.diagnostics.length() != 0 {
       abort(
-        "\{label}: expected comment-only script, got parse failure \{@debug.to_string(report.diagnostics)}",
+        "\{label}: expected comment-only script, got diagnostics \{@debug.to_string(report.diagnostics)}",
       )
+    }
+    if script.items.length() != 0 {
+      abort("\{label}: expected no parsed commands, got \{script.dump()}")
+    }
+  } else {
+    abort(
+      "\{label}: expected comment-only script, got parse failure \{@debug.to_string(report.diagnostics)}",
+    )
   }
 }
 
@@ -56,20 +52,18 @@ fn assert_no_commands(label : String, source : String) -> Unit {
 fn assert_warning(label : String, source : String) -> Unit {
   let report = @parser.parse_script_report(source)
   if report.diagnostics.length() == 0 {
-    match report.script {
-      Some(script) =>
-        abort(
-          "\{label}: expected diagnostics, got clean parse \{script.dump()}",
-        )
-      None => abort("\{label}: expected parse with diagnostics, got failure")
+    if report.script is Some(script) {
+      abort("\{label}: expected diagnostics, got clean parse \{script.dump()}")
+    } else {
+      abort("\{label}: expected parse with diagnostics, got failure")
     }
   }
-  match report.script {
-    Some(_) => ()
-    None =>
-      abort(
-        "\{label}: expected parse with diagnostics, got failure \{@debug.to_string(report.diagnostics)}",
-      )
+  if report.script is Some(_) {
+    ()
+  } else {
+    abort(
+      "\{label}: expected parse with diagnostics, got failure \{@debug.to_string(report.diagnostics)}",
+    )
   }
 }
 

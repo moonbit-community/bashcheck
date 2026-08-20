@@ -53,15 +53,12 @@ fn render_tty(
         )
         remember_wiki_entry(wiki_entries, diagnostic)
       }
-      match render_group_fix_excerpt(result.source, group) {
-        Some(excerpt) => {
-          // When multiple diagnostics on the same line contribute compatible
-          // fixes, show the merged replacement result directly below them.
-          lines.push("")
-          lines.push(tty_color("message", "Did you mean:", options))
-          lines.push(excerpt)
-        }
-        None => ()
+      if render_group_fix_excerpt(result.source, group) is Some(excerpt) {
+        // When multiple diagnostics on the same line contribute compatible
+        // fixes, show the merged replacement result directly below them.
+        lines.push("")
+        lines.push(tty_color("message", "Did you mean:", options))
+        lines.push(excerpt)
       }
       i += group.length()
     }
@@ -97,16 +94,14 @@ fn remember_wiki_entry(
   wiki_entries : Array[WikiEntry],
   diagnostic : @checker.PositionedDiagnostic,
 ) -> Unit {
-  match diagnostic.code {
-    Some(code) =>
-      if !wiki_entries_contains(wiki_entries, code) {
-        wiki_entries.push({
-          severity: diagnostic.severity,
-          code,
-          message: diagnostic.message,
-        })
-      }
-    None => ()
+  if diagnostic.code is Some(code) {
+    if !wiki_entries_contains(wiki_entries, code) {
+      wiki_entries.push({
+        severity: diagnostic.severity,
+        code,
+        message: diagnostic.message,
+      })
+    }
   }
 }
 
@@ -216,21 +211,21 @@ fn render_group_fix_excerpt(
 ) -> String? {
   let fixes : Array[@fixer.Fix] = []
   for diagnostic in diagnostics {
-    match diagnostic.fix {
-      Some(fix) => fixes.push(fix)
-      None => ()
+    if diagnostic.fix is Some(fix) {
+      fixes.push(fix)
     }
   }
   if fixes.length() == 0 {
     return None
   }
-  match @fixer.merge_fixes(fixes) {
-    Some(merged) =>
-      match @fixer.apply_fix(merged, source) {
-        Some(updated) => render_fixed_excerpt(updated, merged)
-        None => None
-      }
-    None => None
+  if @fixer.merge_fixes(fixes) is Some(merged) {
+    if @fixer.apply_fix(merged, source) is Some(updated) {
+      render_fixed_excerpt(updated, merged)
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 

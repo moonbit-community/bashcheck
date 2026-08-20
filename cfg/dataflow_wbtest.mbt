@@ -18,9 +18,10 @@ fn parse_dataflow_with_options(
   options : @parser.ParseOptions,
 ) -> @parser.Script {
   let report = @parser.parse_script_with_options(source, options)
-  match report.script {
-    Some(script) => script
-    None => dataflow_fail("expected script")
+  if report.script is Some(script) {
+    script
+  } else {
+    dataflow_fail("expected script")
   }
 }
 
@@ -68,17 +69,19 @@ fn nth_command_ast_id(cfg : CFG, name : String, nth : Int) -> CfgAstId {
 
 ///|
 fn outgoing_ast_state(analysis : CfgAnalysis, id : CfgAstId) -> ProgramState {
-  match outgoing_state_of_ast(analysis, id) {
-    Some(state) => state
-    None => dataflow_fail("missing outgoing state")
+  if outgoing_state_of_ast(analysis, id) is Some(state) {
+    state
+  } else {
+    dataflow_fail("missing outgoing state")
   }
 }
 
 ///|
 fn incoming_ast_state(analysis : CfgAnalysis, id : CfgAstId) -> ProgramState {
-  match incoming_state_of_ast(analysis, id) {
-    Some(state) => state
-    None => dataflow_fail("missing incoming state")
+  if incoming_state_of_ast(analysis, id) is Some(state) {
+    state
+  } else {
+    dataflow_fail("missing incoming state")
   }
 }
 
@@ -88,12 +91,12 @@ fn expect_literal(
   name : String,
   literal : String,
 ) -> Unit {
-  match state.variables_in_scope.get(name) {
-    Some(variable) =>
-      if variable.variable_value.literal_value != Some(literal) {
-        dataflow_fail("unexpected literal value")
-      }
-    None => dataflow_fail("missing variable")
+  if state.variables_in_scope.get(name) is Some(variable) {
+    if variable.variable_value.literal_value != Some(literal) {
+      dataflow_fail("unexpected literal value")
+    }
+  } else {
+    dataflow_fail("missing variable")
   }
 }
 
@@ -580,9 +583,10 @@ test "dataflow marks commands after exit as unreachable" {
   let echo_cmd = nth_command_ast_id(cfg, "echo", 0)
 
   assert_true(!command_is_reachable(analysis, echo_cmd))
-  match incoming_state_of_ast(analysis, echo_cmd) {
-    Some(state) => assert_true(!state.state_is_reachable)
-    None => dataflow_fail("missing incoming state for unreachable command")
+  if incoming_state_of_ast(analysis, echo_cmd) is Some(state) {
+    assert_true(!state.state_is_reachable)
+  } else {
+    dataflow_fail("missing incoming state for unreachable command")
   }
 }
 
@@ -616,9 +620,10 @@ test "dataflow analyzes nested functions discovered from stragglers" {
 
   assert_true(!command_is_reachable(analysis, nested))
   assert_true(command_is_reachable(analysis, live))
-  match incoming_state_of_ast(analysis, nested) {
-    Some(state) => assert_true(state.state_is_reachable)
-    None => dataflow_fail("missing incoming state for nested straggler")
+  if incoming_state_of_ast(analysis, nested) is Some(state) {
+    assert_true(state.state_is_reachable)
+  } else {
+    dataflow_fail("missing incoming state for nested straggler")
   }
 }
 
@@ -634,9 +639,10 @@ test "dataflow keeps dead functions analyzable after explicit exit" {
   let hidden = nth_command_ast_id(cfg, "echo", 0)
 
   assert_true(!command_is_reachable(analysis, hidden))
-  match incoming_state_of_ast(analysis, hidden) {
-    Some(state) => assert_true(state.state_is_reachable)
-    None => dataflow_fail("missing incoming state for dead function")
+  if incoming_state_of_ast(analysis, hidden) is Some(state) {
+    assert_true(state.state_is_reachable)
+  } else {
+    dataflow_fail("missing incoming state for dead function")
   }
 }
 

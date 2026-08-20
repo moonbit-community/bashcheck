@@ -491,9 +491,10 @@ fn g_invalid_numeric_operator_message(op : String) -> String {
 
 ///|
 fn g_word_looks_decimal(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.contains(".") && g_string_contains_digit(text)
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.contains(".") && g_string_contains_digit(text)
+  } else {
+    false
   }
 }
 
@@ -502,13 +503,13 @@ fn g_word_is_numeric_like(word : @parser.Word) -> Bool {
   if g_word_looks_decimal(word) {
     return true
   }
-  match @semantics.literal_text(word) {
-    Some(text) => text != "" && g_string_is_all_digits(text)
-    None =>
-      match word.parts {
-        [ArithmeticExpansion(_)] | [DollarBracket(_)] => true
-        _ => false
-      }
+  if @semantics.literal_text(word) is Some(text) {
+    text != "" && g_string_is_all_digits(text)
+  } else {
+    match word.parts {
+      [ArithmeticExpansion(_)] | [DollarBracket(_)] => true
+      _ => false
+    }
   }
 }
 
@@ -880,11 +881,7 @@ fn g_visit_direct_words_in_command(
       g_visit_arithmetic_expr_words(clause.condition, visit)
       g_visit_arithmetic_expr_words(clause.step, visit)
     }
-    CoProc(clause) =>
-      match clause.name {
-        Some(name) => visit(name, CoProcName)
-        None => ()
-      }
+    CoProc(clause) => if clause.name is Some(name) { visit(name, CoProcName) }
     Subshell(_)
     | BraceGroup(_)
     | If(_)
@@ -1011,9 +1008,8 @@ fn g_visit_array_index_arithmetic_exprs(
   source : String?,
   visit : (@parser.ArithmeticExpr, @parser.Span, String?) -> Unit,
 ) -> Unit {
-  match index.arithmetic {
-    Some(expr) => visit(expr, span, source)
-    None => ()
+  if index.arithmetic is Some(expr) {
+    visit(expr, span, source)
   }
   for part in index.parts {
     g_visit_word_part_arithmetic_exprs(part, span, source, visit)
@@ -1048,18 +1044,14 @@ fn g_visit_word_part_arithmetic_exprs(
         g_visit_word_part_arithmetic_exprs(nested, span, source, visit)
       }
     BracedParameter(expansion) => {
-      match expansion.index {
-        Some(index) =>
-          g_visit_array_index_arithmetic_exprs(index, span, source, visit)
-        None => ()
+      if expansion.index is Some(index) {
+        g_visit_array_index_arithmetic_exprs(index, span, source, visit)
       }
       match expansion.operator {
         Some(Slice(offset, length)) => {
           visit(@parser.parse_arithmetic_expr(offset), span, source)
-          match length {
-            Some(length) =>
-              visit(@parser.parse_arithmetic_expr(length), span, source)
-            None => ()
+          if length is Some(length) {
+            visit(@parser.parse_arithmetic_expr(length), span, source)
           }
         }
         _ => ()
@@ -1248,9 +1240,10 @@ fn g_braced_parameter_is_arithmetic_deref(
   if expansion.index is Some(_) || expansion.operator is Some(_) {
     return false
   }
-  match expansion.name {
-    Some(name) => !g_is_special_parameter(name)
-    None => false
+  if expansion.name is Some(name) {
+    !g_is_special_parameter(name)
+  } else {
+    false
   }
 }
 
@@ -1261,18 +1254,19 @@ fn g_arithmetic_mul_div_operator_span(
   source : String?,
   operator_index : Int,
 ) -> @parser.Span {
-  match source {
-    Some(source_text) =>
-      match string_index_of(source_text, expr.raw) {
-        Some(expr_offset) =>
-          match g_nth_top_level_mul_div_offset(expr.raw, operator_index) {
-            Some(op_offset) =>
-              analytics_span_offset(span, expr_offset + op_offset, 1)
-            None => span
-          }
-        None => span
+  if source is Some(source_text) {
+    if string_index_of(source_text, expr.raw) is Some(expr_offset) {
+      if g_nth_top_level_mul_div_offset(expr.raw, operator_index)
+        is Some(op_offset) {
+        analytics_span_offset(span, expr_offset + op_offset, 1)
+      } else {
+        span
       }
-    None => span
+    } else {
+      span
+    }
+  } else {
+    span
   }
 }
 
@@ -1282,13 +1276,14 @@ fn g_arithmetic_fragment_span(
   source : String?,
   fragment : String,
 ) -> @parser.Span {
-  match source {
-    Some(source_text) =>
-      match string_index_of(source_text, fragment) {
-        Some(offset) => analytics_span_offset(span, offset, fragment.length())
-        None => span
-      }
-    None => span
+  if source is Some(source_text) {
+    if string_index_of(source_text, fragment) is Some(offset) {
+      analytics_span_offset(span, offset, fragment.length())
+    } else {
+      span
+    }
+  } else {
+    span
   }
 }
 

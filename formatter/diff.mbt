@@ -28,28 +28,25 @@ fn render_diff(
   for result in results {
     let fixes : Array[@fixer.Fix] = []
     for diagnostic in result.diagnostics {
-      match diagnostic.fix {
-        Some(fix) => fixes.push(fix)
-        None => ()
+      if diagnostic.fix is Some(fix) {
+        fixes.push(fix)
       }
     }
-    match @fixer.merge_fixes(fixes) {
-      Some(fix) =>
-        match @fixer.apply_fix(fix, result.source) {
-          Some(updated) if updated != result.source =>
-            // Only emit a diff when applying the merged fix actually changes
-            // the file contents.
-            outputs.push(
-              render_unified_diff(
-                result.filename,
-                result.source,
-                updated,
-                options,
-              ),
-            )
-          _ => ()
-        }
-      None => ()
+    if @fixer.merge_fixes(fixes) is Some(fix) {
+      match @fixer.apply_fix(fix, result.source) {
+        Some(updated) if updated != result.source =>
+          // Only emit a diff when applying the merged fix actually changes
+          // the file contents.
+          outputs.push(
+            render_unified_diff(
+              result.filename,
+              result.source,
+              updated,
+              options,
+            ),
+          )
+        _ => ()
+      }
     }
   }
   outputs.join("\n")

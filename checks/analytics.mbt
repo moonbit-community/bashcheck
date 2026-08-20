@@ -597,47 +597,44 @@ fn check_for_in_quoted(
     match command.kind {
       ForIn(clause) if clause.values.length() == 1 => {
         let value = clause.values[0]
-        match word_is_plain_double_quoted(value) {
-          Some(parts) =>
-            if (
-                quoted_parts_would_split(parts) &&
-                !word_may_expand_to_multiple(value)
-              ) ||
-              word_would_have_been_glob(value) {
-              push_diagnostic(
-                diagnostics,
-                value.span,
-                Error,
-                2066,
-                "Since you double quoted this, it will not word split, and the loop will only run once.",
-              )
-            }
-          None =>
-            if word_is_plain_single_quoted(value) {
-              push_diagnostic(
-                diagnostics,
-                value.span,
-                Warning,
-                2041,
-                "This is a literal string. To run as a command, use $(..) instead of '..' . ",
-              )
-            } else if single_for_value_uses_commas(value) {
-              push_diagnostic(
-                diagnostics,
-                value.span,
-                Warning,
-                2042,
-                "Use spaces, not commas, to separate loop elements.",
-              )
-            } else if !word_may_expand_to_multiple(value) {
-              push_diagnostic(
-                diagnostics,
-                value.span,
-                Warning,
-                2043,
-                "This loop will only ever run once. Bad quoting or missing glob/expansion?",
-              )
-            }
+        if word_is_plain_double_quoted(value) is Some(parts) {
+          if (
+              quoted_parts_would_split(parts) &&
+              !word_may_expand_to_multiple(value)
+            ) ||
+            word_would_have_been_glob(value) {
+            push_diagnostic(
+              diagnostics,
+              value.span,
+              Error,
+              2066,
+              "Since you double quoted this, it will not word split, and the loop will only run once.",
+            )
+          }
+        } else if word_is_plain_single_quoted(value) {
+          push_diagnostic(
+            diagnostics,
+            value.span,
+            Warning,
+            2041,
+            "This is a literal string. To run as a command, use $(..) instead of '..' . ",
+          )
+        } else if single_for_value_uses_commas(value) {
+          push_diagnostic(
+            diagnostics,
+            value.span,
+            Warning,
+            2042,
+            "Use spaces, not commas, to separate loop elements.",
+          )
+        } else if !word_may_expand_to_multiple(value) {
+          push_diagnostic(
+            diagnostics,
+            value.span,
+            Warning,
+            2043,
+            "This loop will only ever run once. Bad quoting or missing glob/expansion?",
+          )
         }
       }
       _ => ()
@@ -653,49 +650,45 @@ fn check_for_in_ls(
   visit_script_commands(script, fn(command) {
     match command.kind {
       ForIn(clause) if clause.values.length() == 1 =>
-        match word_single_top_level_substitution_script(clause.values[0]) {
-          Some(inner) =>
-            match first_command_in_script(inner) {
-              Some(inner_command) => {
-                let words = @semantics.oversimplify_command(inner_command)
-                match words.get(0) {
-                  Some("ls") => {
-                    let mut has_flag = false
-                    let mut i = 1
-                    while i < words.length() {
-                      if words[i].has_prefix("-") {
-                        has_flag = true
-                        break
-                      }
-                      i += 1
-                    }
-                    let severity = if has_flag {
-                      CheckSeverity::Warning
-                    } else {
-                      Error
-                    }
-                    push_diagnostic(
-                      diagnostics,
-                      clause.values[0].span,
-                      severity,
-                      2045,
-                      "Iterating over ls output is fragile. Use globs.",
-                    )
+        if word_single_top_level_substitution_script(clause.values[0])
+          is Some(inner) {
+          if first_command_in_script(inner) is Some(inner_command) {
+            let words = @semantics.oversimplify_command(inner_command)
+            match words.get(0) {
+              Some("ls") => {
+                let mut has_flag = false
+                let mut i = 1
+                while i < words.length() {
+                  if words[i].has_prefix("-") {
+                    has_flag = true
+                    break
                   }
-                  Some("find") =>
-                    push_diagnostic(
-                      diagnostics,
-                      clause.values[0].span,
-                      Warning,
-                      2044,
-                      "For loops over find output are fragile. Use find -exec or a while read loop.",
-                    )
-                  _ => ()
+                  i += 1
                 }
+                let severity = if has_flag {
+                  CheckSeverity::Warning
+                } else {
+                  Error
+                }
+                push_diagnostic(
+                  diagnostics,
+                  clause.values[0].span,
+                  severity,
+                  2045,
+                  "Iterating over ls output is fragile. Use globs.",
+                )
               }
-              None => ()
+              Some("find") =>
+                push_diagnostic(
+                  diagnostics,
+                  clause.values[0].span,
+                  Warning,
+                  2044,
+                  "For loops over find output are fragile. Use find -exec or a while read loop.",
+                )
+              _ => ()
             }
-          None => ()
+          }
         }
       _ => ()
     }
@@ -743,10 +736,8 @@ fn check_dollar_star(
       if !word_place_checks_star_or_at(place) {
         return
       }
-      match dollar_star_message(word) {
-        Some(message) =>
-          push_diagnostic(diagnostics, word.span, Warning, 2048, message)
-        None => ()
+      if dollar_star_message(word) is Some(message) {
+        push_diagnostic(diagnostics, word.span, Warning, 2048, message)
       }
     })
   })
@@ -790,16 +781,14 @@ fn check_single_bracket_operators(
       Condition(condition) =>
         match condition.kind {
           SingleBracket =>
-            match condition_binary_op_span(condition.expr, "=~") {
-              Some(op_span) =>
-                push_diagnostic(
-                  diagnostics,
-                  op_span,
-                  Error,
-                  2074,
-                  "Can't use =~ in [ ]. Use [[..]] instead.",
-                )
-              None => ()
+            if condition_binary_op_span(condition.expr, "=~") is Some(op_span) {
+              push_diagnostic(
+                diagnostics,
+                op_span,
+                Error,
+                2074,
+                "Can't use =~ in [ ]. Use [[..]] instead.",
+              )
             }
           _ => ()
         }
@@ -818,28 +807,25 @@ fn check_double_bracket_operators(
       Condition(condition) =>
         match condition.kind {
           DoubleBracket =>
-            match condition_raw_escaped_angle_operator(condition.raw) {
-              Some(escaped_op) =>
-                match
-                  condition_binary_op_span(
-                    condition.expr,
-                    if escaped_op == "\\<" {
-                      "<"
-                    } else {
-                      ">"
-                    },
-                  ) {
-                  Some(op_span) =>
-                    push_diagnostic(
-                      diagnostics,
-                      op_span,
-                      Error,
-                      2075,
-                      "Escaping \{escaped_op} is required in [..], but invalid in [[..]]",
-                    )
-                  None => ()
-                }
-              None => ()
+            if condition_raw_escaped_angle_operator(condition.raw)
+              is Some(escaped_op) {
+              if condition_binary_op_span(
+                  condition.expr,
+                  if escaped_op == "\\<" {
+                    "<"
+                  } else {
+                    ">"
+                  },
+                )
+                is Some(op_span) {
+                push_diagnostic(
+                  diagnostics,
+                  op_span,
+                  Error,
+                  2075,
+                  "Escaping \{escaped_op} is required in [..], but invalid in [[..]]",
+                )
+              }
             }
           _ => ()
         }
@@ -1113,45 +1099,37 @@ fn check_subshell_as_test(
   visit_script_commands(script, fn(command) {
     match command.kind {
       Subshell(inner) =>
-        match first_command_in_script(inner) {
-          Some(inner_command) =>
-            match inner_command.kind {
-              Simple(simple) =>
-                match simple.words.get(0) {
-                  Some(first_word) =>
-                    match @semantics.literal_text(first_word) {
-                      Some(op) if unary_ops.any(fn(current) { current == op }) =>
-                        push_diagnostic(
-                          diagnostics,
-                          command.span,
-                          Error,
-                          2204,
-                          "(..) is a subshell. Did you mean [ .. ], a test expression?",
-                        )
-                      _ =>
-                        match simple.words.get(1) {
-                          Some(second_word) =>
-                            match @semantics.literal_text(second_word) {
-                              Some(op) if binary_ops.any(fn(current) {
-                                  current == op
-                                }) =>
-                                push_diagnostic(
-                                  diagnostics,
-                                  command.span,
-                                  Warning,
-                                  2205,
-                                  "(..) is a subshell. Did you mean [ .. ], a test expression?",
-                                )
-                              _ => ()
-                            }
-                          None => ()
-                        }
+        if first_command_in_script(inner) is Some(inner_command) {
+          match inner_command.kind {
+            Simple(simple) =>
+              if simple.words.get(0) is Some(first_word) {
+                match @semantics.literal_text(first_word) {
+                  Some(op) if unary_ops.any(fn(current) { current == op }) =>
+                    push_diagnostic(
+                      diagnostics,
+                      command.span,
+                      Error,
+                      2204,
+                      "(..) is a subshell. Did you mean [ .. ], a test expression?",
+                    )
+                  _ =>
+                    if simple.words.get(1) is Some(second_word) {
+                      match @semantics.literal_text(second_word) {
+                        Some(op) if binary_ops.any(fn(current) { current == op }) =>
+                          push_diagnostic(
+                            diagnostics,
+                            command.span,
+                            Warning,
+                            2205,
+                            "(..) is a subshell. Did you mean [ .. ], a test expression?",
+                          )
+                        _ => ()
+                      }
                     }
-                  None => ()
                 }
-              _ => ()
-            }
-          None => ()
+              }
+            _ => ()
+          }
         }
       _ => ()
     }
@@ -1249,9 +1227,10 @@ fn word_place_checks_star_or_at(place : WordPlace) -> Bool {
 
 ///|
 fn single_for_value_uses_commas(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.contains(",")
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.contains(",")
+  } else {
+    false
   }
 }
 
@@ -1375,21 +1354,22 @@ fn command_allows_intentional_splitting(command : @parser.Command) -> Bool {
   if @semantics.effective_command_name(command) != Some("set") {
     return false
   }
-  match @semantics.effective_command_arguments(command).get(0) {
-    Some(word) => @semantics.literal_text(word) == Some("--")
-    None => false
+  if @semantics.effective_command_arguments(command).get(0) is Some(word) {
+    @semantics.literal_text(word) == Some("--")
+  } else {
+    false
   }
 }
 
 ///|
 fn word_is_split_command_output(word : @parser.Word) -> Bool {
-  match word_single_top_level_substitution_script(word) {
-    Some(script) =>
-      match first_command_name_in_script(script) {
-        Some("seq") | Some("pgrep") => true
-        _ => false
-      }
-    None => false
+  if word_single_top_level_substitution_script(word) is Some(script) {
+    match first_command_name_in_script(script) {
+      Some("seq") | Some("pgrep") => true
+      _ => false
+    }
+  } else {
+    false
   }
 }
 
@@ -1467,9 +1447,10 @@ fn condition_binary_op_span(
       }
     Group(inner) | Not(inner) => condition_binary_op_span(inner, op)
     And(_, lhs, rhs) | Or(_, lhs, rhs) =>
-      match condition_binary_op_span(lhs, op) {
-        Some(span) => Some(span)
-        None => condition_binary_op_span(rhs, op)
+      if condition_binary_op_span(lhs, op) is Some(span) {
+        Some(span)
+      } else {
+        condition_binary_op_span(rhs, op)
       }
     _ => None
   }
@@ -1484,9 +1465,8 @@ fn collect_word_reference_spans(
     match part {
       Parameter(name) => references.push((name, word.span))
       BracedParameter(expansion) =>
-        match expansion.name {
-          Some(name) => references.push((name, word.span))
-          None => ()
+        if expansion.name is Some(name) {
+          references.push((name, word.span))
         }
       _ => ()
     }
@@ -1596,14 +1576,14 @@ fn braced_parameter_should_warn_in_array(
     parameter_has_index(expansion) {
     return true
   }
-  match expansion.name {
-    Some(name) =>
-      if @semantics.is_special_variable(name) {
-        !@semantics.is_special_variable_without_spaces(name)
-      } else {
-        !@semantics.is_variable_without_spaces(name)
-      }
-    None => false
+  if expansion.name is Some(name) {
+    if @semantics.is_special_variable(name) {
+      !@semantics.is_special_variable_without_spaces(name)
+    } else {
+      !@semantics.is_variable_without_spaces(name)
+    }
+  } else {
+    false
   }
 }
 
@@ -1701,9 +1681,10 @@ fn visit_condition_binary_rhs(
 
 ///|
 fn word_is_constant_non_regex(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => !string_has_regex_metacharacters(text)
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    !string_has_regex_metacharacters(text)
+  } else {
+    false
   }
 }
 

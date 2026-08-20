@@ -49,9 +49,10 @@ test "checker filters included and excluded codes" {
 
 ///|
 test "checker honors severity thresholds and annotations" {
-  let error = match parse_diagnostic_severity("error") {
-    Some(severity) => severity
-    None => panic()
+  let error = if parse_diagnostic_severity("error") is Some(severity) {
+    severity
+  } else {
+    panic()
   }
   let threshold = check_script(
     (
@@ -364,19 +365,18 @@ test "checker localizes lint fixes to the reported filename" {
   )
   let diagnostic = checker_first_code(result.diagnostics, 2006)
 
-  match diagnostic.fix {
-    Some(fix) => {
-      assert_eq(fix.replacements[0].filename, "script.sh")
-      @test.assert_eq(
-        @fixer.apply_fix(fix, result.source),
-        Some(
-          (
-            #|echo $(foo)
-            #|
-          ),
+  if diagnostic.fix is Some(fix) {
+    assert_eq(fix.replacements[0].filename, "script.sh")
+    @test.assert_eq(
+      @fixer.apply_fix(fix, result.source),
+      Some(
+        (
+          #|echo $(foo)
+          #|
         ),
-      )
-    }
-    None => panic()
+      ),
+    )
+  } else {
+    panic()
   }
 }

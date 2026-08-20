@@ -46,16 +46,14 @@ fn check_concatenated_dollar_at(
       if !analytics_word_has_mixed_array_and_string(word) {
         return
       }
-      match analytics_word_first_array_span(word) {
-        Some(span) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Error,
-            2145,
-            "Argument mixes string and array. Use * or separate argument.",
-          )
-        None => ()
+      if analytics_word_first_array_span(word) is Some(span) {
+        push_diagnostic(
+          diagnostics,
+          span,
+          Error,
+          2145,
+          "Argument mixes string and array. Use * or separate argument.",
+        )
       }
     })
   })
@@ -106,9 +104,8 @@ fn analytics_word_part_content(part : @parser.WordPart) -> AnalyticsWordContent 
 ///|
 fn analytics_word_first_array_span(word : @parser.Word) -> @parser.Span? {
   for part in word.parts {
-    match analytics_word_part_array_span(word, part) {
-      Some(span) => return Some(span)
-      None => ()
+    if analytics_word_part_array_span(word, part) is Some(span) {
+      return Some(span)
     }
   }
   None
@@ -133,9 +130,8 @@ fn analytics_word_part_array_span(
         if found is Some(_) {
           continue
         }
-        match analytics_word_part_array_span(word, nested) {
-          Some(span) => found = Some(span)
-          None => ()
+        if analytics_word_part_array_span(word, nested) is Some(span) {
+          found = Some(span)
         }
       }
       found
@@ -149,10 +145,10 @@ fn analytics_word_fragment_span(
   word : @parser.Word,
   fragment : String,
 ) -> @parser.Span? {
-  match analytics_string_offset(word.source, fragment) {
-    Some(offset) =>
-      Some(analytics_span_offset(word.span, offset, fragment.length()))
-    None => None
+  if analytics_string_offset(word.source, fragment) is Some(offset) {
+    Some(analytics_span_offset(word.span, offset, fragment.length()))
+  } else {
+    None
   }
 }
 
@@ -193,22 +189,22 @@ fn analytics_check_parameter_pattern(
   quoted : Bool,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let pattern = match analytics_parameter_pattern_text(expansion) {
-    Some(pattern) => pattern
-    None => return
+  let pattern = if analytics_parameter_pattern_text(expansion) is Some(pattern) {
+    pattern
+  } else {
+    return
   }
   let pattern_word = @parser.parse_text_as_word(pattern)
   for part in pattern_word.parts {
-    match analytics_parameter_pattern_part_fragment(part, pattern_word.source) {
-      Some(fragment) =>
-        analytics_warn_parameter_pattern_part(
-          word,
-          "${\{expansion.raw}}",
-          fragment,
-          quoted,
-          diagnostics,
-        )
-      None => ()
+    if analytics_parameter_pattern_part_fragment(part, pattern_word.source)
+      is Some(fragment) {
+      analytics_warn_parameter_pattern_part(
+        word,
+        "${\{expansion.raw}}",
+        fragment,
+        quoted,
+        diagnostics,
+      )
     }
   }
 }
@@ -222,28 +218,26 @@ fn analytics_parameter_pattern_part_fragment(
     Parameter(name) | SpecialParameter(name) => Some("$\{name}")
     BracedParameter(expansion) => Some("${\{expansion.raw}}")
     CommandSubstitution(_) =>
-      match analytics_string_offset(raw, "$(") {
-        Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_owned()
-          Some(
-            fragment
-            .view(end_offset=analytics_command_substitution_width(fragment))
-            .to_owned(),
-          )
-        }
-        None => None
+      if analytics_string_offset(raw, "$(") is Some(offset) {
+        let fragment = raw.view(start_offset=offset).to_owned()
+        Some(
+          fragment
+          .view(end_offset=analytics_command_substitution_width(fragment))
+          .to_owned(),
+        )
+      } else {
+        None
       }
     BackQuoted(_) =>
-      match analytics_string_offset(raw, "`") {
-        Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_owned()
-          Some(
-            fragment
-            .view(end_offset=analytics_backquoted_width(fragment))
-            .to_owned(),
-          )
-        }
-        None => None
+      if analytics_string_offset(raw, "`") is Some(offset) {
+        let fragment = raw.view(start_offset=offset).to_owned()
+        Some(
+          fragment
+          .view(end_offset=analytics_backquoted_width(fragment))
+          .to_owned(),
+        )
+      } else {
+        None
       }
     _ => None
   }

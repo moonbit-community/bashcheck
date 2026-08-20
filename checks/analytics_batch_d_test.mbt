@@ -269,31 +269,28 @@ test "analytics batch d attaches shellcheck-style unchecked cd fix" {
     #|
   let diagnostics = check_source(source)
 
-  match first_code(diagnostics, 2164).fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 2)
-      assert_eq(replacement.start.column, 7)
-      assert_eq(replacement.end.line, 2)
-      assert_eq(replacement.end.column, 7)
-      assert_eq(replacement.text, " || exit")
-      assert_eq(replacement.precedence, 3)
-      assert_true(
-        replacement.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|#!/bin/bash
-            #|cd foo || exit
-            #|
-          ),
+  if first_code(diagnostics, 2164).fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 2)
+    assert_eq(replacement.start.column, 7)
+    assert_eq(replacement.end.line, 2)
+    assert_eq(replacement.end.column, 7)
+    assert_eq(replacement.text, " || exit")
+    assert_eq(replacement.precedence, 3)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|#!/bin/bash
+          #|cd foo || exit
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2164 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2164 fix")
   }
 }
 

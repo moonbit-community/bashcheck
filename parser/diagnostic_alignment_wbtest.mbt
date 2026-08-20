@@ -27,25 +27,24 @@ fn expect_diagnostic(
   column : Int,
   message : String,
 ) -> Unit {
-  match find_diagnostic(diagnostics, code) {
-    Some(diagnostic) => {
-      if diagnostic.span.start.line != line {
-        abort(
-          "diagnostic \{code}: expected line \{line}, got \{diagnostic.span.start.line}",
-        )
-      }
-      if diagnostic.span.start.column != column {
-        abort(
-          "diagnostic \{code}: expected column \{column}, got \{diagnostic.span.start.column}",
-        )
-      }
-      if diagnostic.message != message {
-        abort(
-          "diagnostic \{code}: expected message \{message}, got \{diagnostic.message}",
-        )
-      }
+  if find_diagnostic(diagnostics, code) is Some(diagnostic) {
+    if diagnostic.span.start.line != line {
+      abort(
+        "diagnostic \{code}: expected line \{line}, got \{diagnostic.span.start.line}",
+      )
     }
-    None => abort("missing diagnostic \{code}")
+    if diagnostic.span.start.column != column {
+      abort(
+        "diagnostic \{code}: expected column \{column}, got \{diagnostic.span.start.column}",
+      )
+    }
+    if diagnostic.message != message {
+      abort(
+        "diagnostic \{code}: expected message \{message}, got \{diagnostic.message}",
+      )
+    }
+  } else {
+    abort("missing diagnostic \{code}")
   }
 }
 
@@ -73,9 +72,10 @@ fn expect_diagnostic_at(
 ///|
 test "condition trailing tokens include shellcheck parse-stop diagnostic" {
   let report = parse_script_report("[[ x ]] foo")
-  match report.script {
-    Some(_) => ()
-    None => fail("expected recoverable parse")
+  if report.script is Some(_) {
+    ()
+  } else {
+    fail("expected recoverable parse")
   }
   expect_diagnostic(
     report.diagnostics,
@@ -149,9 +149,10 @@ test "here documents surface nested parse errors with here-doc context" {
       #|foo
     ),
   )
-  match report.script {
-    Some(_) => ()
-    None => fail("expected recoverable parse")
+  if report.script is Some(_) {
+    ()
+  } else {
+    fail("expected recoverable parse")
   }
   expect_diagnostic(
     report.diagnostics,
@@ -665,9 +666,10 @@ test "bats recovery keeps shellcheck's leading-space 1072 wording" {
       #|
     ),
   )
-  match report.script {
-    Some(_) => ()
-    None => fail("expected recoverable parse")
+  if report.script is Some(_) {
+    ()
+  } else {
+    fail("expected recoverable parse")
   }
   expect_diagnostic(
     report.diagnostics,

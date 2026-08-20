@@ -117,21 +117,19 @@ fn check_comparison_with_leading_x(
     match analytics_command_condition_binary(command) {
       Some(binary) if binary.op == "=" || binary.op == "==" || binary.op == "!=" => {
         let precedence = analytics_comparison_fix_precedence(command)
-        match analytics_leading_x_replacement(binary.lhs, precedence) {
-          Some(lhs_fix) =>
-            match analytics_leading_x_replacement(binary.rhs, precedence) {
-              Some(rhs_fix) =>
-                push_diagnostic_with_fix(
-                  diagnostics,
-                  binary.lhs.span,
-                  Style,
-                  2268,
-                  "Avoid x-prefix in comparisons as it no longer serves a purpose.",
-                  @fixer.Fix::from_replacements([lhs_fix, rhs_fix]),
-                )
-              None => ()
-            }
-          None => ()
+        if analytics_leading_x_replacement(binary.lhs, precedence)
+          is Some(lhs_fix) {
+          if analytics_leading_x_replacement(binary.rhs, precedence)
+            is Some(rhs_fix) {
+            push_diagnostic_with_fix(
+              diagnostics,
+              binary.lhs.span,
+              Style,
+              2268,
+              "Avoid x-prefix in comparisons as it no longer serves a purpose.",
+              @fixer.Fix::from_replacements([lhs_fix, rhs_fix]),
+            )
+          }
         }
       }
       _ => ()
@@ -158,23 +156,22 @@ fn analytics_leading_x_replacement(
       )
     _ => ()
   }
-  match analytics_leading_x_offset(word.parts, 0) {
-    Some(offset) => {
-      let text = if word.source.length() == 1 { "\"\"" } else { "" }
-      let start = analytics_position_offset(word.span.start, offset)
-      let end = analytics_position_offset(start, 1)
-      Some(
-        @fixer.Replacement::new(
-          "",
-          start,
-          end,
-          text,
-          precedence,
-          @fixer.InsertionPoint::after(),
-        ),
-      )
-    }
-    None => None
+  if analytics_leading_x_offset(word.parts, 0) is Some(offset) {
+    let text = if word.source.length() == 1 { "\"\"" } else { "" }
+    let start = analytics_position_offset(word.span.start, offset)
+    let end = analytics_position_offset(start, 1)
+    Some(
+      @fixer.Replacement::new(
+        "",
+        start,
+        end,
+        text,
+        precedence,
+        @fixer.InsertionPoint::after(),
+      ),
+    )
+  } else {
+    None
   }
 }
 

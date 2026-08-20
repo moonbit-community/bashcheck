@@ -87,12 +87,11 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
             Ok((raw, next)) => {
               i = next
               if !format_locked {
-                match @formatter.parse_output_format(raw) {
-                  Some(parsed) => {
-                    format = parsed
-                    format_locked = true
-                  }
-                  None => return Err(unknown_format_error(raw))
+                if @formatter.parse_output_format(raw) is Some(parsed) {
+                  format = parsed
+                  format_locked = true
+                } else {
+                  return Err(unknown_format_error(raw))
                 }
               }
             }
@@ -102,9 +101,10 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
           match read_required_value(value, args, i, "--shell") {
             Ok((shell, next)) => {
               i = next
-              match parse_shell(shell) {
-                Some(parsed) => spec = spec.with_shell_override(Some(parsed))
-                None => return Err(support_error("Unknown shell: " + shell))
+              if parse_shell(shell) is Some(parsed) {
+                spec = spec.with_shell_override(Some(parsed))
+              } else {
+                return Err(support_error("Unknown shell: " + shell))
               }
             }
             Err(error) => return Err(error)
@@ -113,9 +113,10 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
           match read_required_value(value, args, i, "--severity") {
             Ok((severity, next)) => {
               i = next
-              match parse_severity(severity) {
-                Some(parsed) => spec = spec.with_min_severity(parsed)
-                None => return Err(unknown_severity_error())
+              if parse_severity(severity) is Some(parsed) {
+                spec = spec.with_min_severity(parsed)
+              } else {
+                return Err(unknown_severity_error())
               }
             }
             Err(error) => return Err(error)
@@ -199,14 +200,14 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
           match read_required_value(value, args, i, "--extended-analysis") {
             Ok((enabled, next)) => {
               i = next
-              match parse_bool_value(enabled) {
-                Some(parsed) => spec = spec.with_extended_analysis(parsed)
-                None =>
-                  return Err(
-                    usage_error(
-                      "Invalid boolean, expected true/false: " + enabled,
-                    ),
-                  )
+              if parse_bool_value(enabled) is Some(parsed) {
+                spec = spec.with_extended_analysis(parsed)
+              } else {
+                return Err(
+                  usage_error(
+                    "Invalid boolean, expected true/false: " + enabled,
+                  ),
+                )
               }
             }
             Err(error) => return Err(error)
@@ -227,21 +228,17 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
       Ok((next, parsed)) => {
         i = next
         spec = parsed.0
-        match parsed.1 {
-          Some(parsed_format) =>
-            if !format_locked {
-              format = parsed_format
-              format_locked = true
-            }
-          None => ()
+        if parsed.1 is Some(parsed_format) {
+          if !format_locked {
+            format = parsed_format
+            format_locked = true
+          }
         }
-        match parsed.2 {
-          Some(parsed_color) => color = parsed_color
-          None => ()
+        if parsed.2 is Some(parsed_color) {
+          color = parsed_color
         }
-        match parsed.3 {
-          Some(count) => wiki_link_count = count
-          None => ()
+        if parsed.3 is Some(count) {
+          wiki_link_count = count
         }
         action = choose_action(action, parsed.4)
       }
@@ -326,9 +323,10 @@ fn parse_short_options(
         }
         next = consumed
         if !ignore_format {
-          match @formatter.parse_output_format(raw) {
-            Some(parsed) => format = Some(parsed)
-            None => return Err(unknown_format_error(raw))
+          if @formatter.parse_output_format(raw) is Some(parsed) {
+            format = Some(parsed)
+          } else {
+            return Err(unknown_format_error(raw))
           }
         }
         return Ok((next, (spec, format, color, wiki_link_count, action)))
@@ -339,9 +337,10 @@ fn parse_short_options(
           Err(error) => return Err(error)
         }
         next = consumed
-        match parse_shell(raw) {
-          Some(parsed) => spec = spec.with_shell_override(Some(parsed))
-          None => return Err(support_error("Unknown shell: " + raw))
+        if parse_shell(raw) is Some(parsed) {
+          spec = spec.with_shell_override(Some(parsed))
+        } else {
+          return Err(support_error("Unknown shell: " + raw))
         }
         return Ok((next, (spec, format, color, wiki_link_count, action)))
       }
@@ -351,9 +350,10 @@ fn parse_short_options(
           Err(error) => return Err(error)
         }
         next = consumed
-        match parse_severity(raw) {
-          Some(parsed) => spec = spec.with_min_severity(parsed)
-          None => return Err(unknown_severity_error())
+        if parse_severity(raw) is Some(parsed) {
+          spec = spec.with_min_severity(parsed)
+        } else {
+          return Err(unknown_severity_error())
         }
         return Ok((next, (spec, format, color, wiki_link_count, action)))
       }
@@ -470,14 +470,12 @@ fn read_required_value(
   index : Int,
   flag : String,
 ) -> Result[(String, Int), CliError] {
-  match inline {
-    Some(value) => Ok((value, index))
-    None =>
-      if index + 1 < args.length() {
-        Ok((args[index + 1], index + 1))
-      } else {
-        Err(usage_error("Missing value for " + flag))
-      }
+  if inline is Some(value) {
+    Ok((value, index))
+  } else if index + 1 < args.length() {
+    Ok((args[index + 1], index + 1))
+  } else {
+    Err(usage_error("Missing value for " + flag))
   }
 }
 
@@ -531,11 +529,10 @@ fn resolve_color(color : CliColorOption) -> Bool {
     Auto =>
       if @env.get_env_var("NO_COLOR") is Some(_) {
         false
+      } else if @env.get_env_var("TERM") is Some(term) {
+        term != "" && term != "dumb"
       } else {
-        match @env.get_env_var("TERM") {
-          Some(term) => term != "" && term != "dumb"
-          None => false
-        }
+        false
       }
   }
 }
@@ -578,9 +575,10 @@ fn parse_severity(text : String) -> @checker.DiagnosticSeverity? {
 fn parse_code_list(text : String) -> Result[Array[Int], CliError] {
   let codes : Array[Int] = []
   for value in split_csv(text) {
-    match parse_code(value) {
-      Some(code) => codes.push(code)
-      None => return Err(usage_error("Invalid number: " + value))
+    if parse_code(value) is Some(code) {
+      codes.push(code)
+    } else {
+      return Err(usage_error("Invalid number: " + value))
     }
   }
   Ok(codes)
@@ -618,9 +616,10 @@ fn parse_code(text : String) -> Int? {
 /// Parses a non-negative integer and reuses the same validation rules as code
 /// parsing so diagnostics stay consistent.
 fn parse_nonnegative_int(text : String) -> Result[Int, CliError] {
-  match parse_code(text) {
-    Some(value) => Ok(value)
-    None => Err(usage_error("Invalid number: " + text))
+  if parse_code(text) is Some(value) {
+    Ok(value)
+  } else {
+    Err(usage_error("Invalid number: " + text))
   }
 }
 

@@ -103,9 +103,10 @@ pub fn severity_text(diagnostic : @checker.PositionedDiagnostic) -> String {
 ///|
 /// Formats a diagnostic code in the `SC1234` style ShellCheck users expect.
 fn code_text(diagnostic : @checker.PositionedDiagnostic) -> String {
-  match diagnostic.code {
-    Some(code) => "SC" + code.to_string()
-    None => "SC?"
+  if diagnostic.code is Some(code) {
+    "SC" + code.to_string()
+  } else {
+    "SC?"
   }
 }
 
@@ -241,24 +242,24 @@ fn render_replacement_json(replacement : @fixer.Replacement) -> String {
 ///|
 /// Renders an optional fix as either a JSON object or `null`.
 fn render_fix_json(fix : @fixer.Fix?) -> String {
-  match fix {
-    Some(fix) => {
-      let replacements : Array[String] = []
-      for replacement in fix.replacements {
-        replacements.push(render_replacement_json(replacement))
-      }
-      "{\"replacements\":[" + replacements.join(",") + "]}"
+  if fix is Some(fix) {
+    let replacements : Array[String] = []
+    for replacement in fix.replacements {
+      replacements.push(render_replacement_json(replacement))
     }
-    None => "null"
+    "{\"replacements\":[" + replacements.join(",") + "]}"
+  } else {
+    "null"
   }
 }
 
 ///|
 /// Renders one diagnostic as a ShellCheck-style JSON comment object.
 fn render_comment_json(diagnostic : @checker.PositionedDiagnostic) -> String {
-  let code_json = match diagnostic.code {
-    Some(code) => code.to_string()
-    None => "null"
+  let code_json = if diagnostic.code is Some(code) {
+    code.to_string()
+  } else {
+    "null"
   }
   "{\"file\":\{json_escape(diagnostic.filename)},\"line\":\{diagnostic.span.start.line},\"endLine\":\{diagnostic.span.end.line},\"column\":\{diagnostic.span.start.column},\"endColumn\":\{diagnostic.span.end.column},\"level\":\{json_escape(severity_text(diagnostic))},\"code\":\{code_json},\"message\":\{json_escape(diagnostic.message)},\"fix\":\{render_fix_json(diagnostic.fix)}}"
 }

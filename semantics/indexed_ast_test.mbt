@@ -18,9 +18,10 @@ fn parse_with_options(
   options : @parser.ParseOptions,
 ) -> @parser.Script {
   let report = @parser.parse_script_with_options(source, options)
-  match report.script {
-    Some(script) => script
-    None => fail("expected script")
+  if report.script is Some(script) {
+    script
+  } else {
+    fail("expected script")
   }
 }
 
@@ -114,15 +115,17 @@ test "indexed ast tracks parent chains and nearest word/command" {
   let ancestors = @semantics.find_ancestors(indexed, parameter)
   assert_true(ancestors.length() > 0)
 
-  let word = match @semantics.word_of(indexed, parameter) {
-    Some(word) => word
-    None => fail("expected containing word")
+  let word = if @semantics.word_of(indexed, parameter) is Some(word) {
+    word
+  } else {
+    fail("expected containing word")
   }
   assert_eq(word.source, "\"hi $USER\"")
 
-  let command = match @semantics.command_of(indexed, parameter) {
-    Some(command) => command
-    None => fail("expected containing command")
+  let command = if @semantics.command_of(indexed, parameter) is Some(command) {
+    command
+  } else {
+    fail("expected containing command")
   }
   match command.kind {
     Simple(simple) => {
@@ -186,9 +189,10 @@ test "indexed ast keeps sourced scripts out of the lexical tree" {
     Source(source) => source
     _ => fail("expected source command")
   }
-  let included = match source.included {
-    Some(script) => script
-    None => fail("expected included script")
+  let included = if source.included is Some(script) {
+    script
+  } else {
+    fail("expected included script")
   }
   let included_indexed = @semantics.build_index(included)
   let included_command = match
@@ -220,18 +224,21 @@ test "indexed ast exposes direct spans for span-carrying nodes" {
 
   let command = find_first_command(indexed)
   let word = find_first_word(indexed)
-  match @semantics.span_of(indexed, @semantics.root_id(indexed)) {
-    Some(span) => assert_true(span == script.span)
-    None => fail("expected root span")
+  if @semantics.span_of(indexed, @semantics.root_id(indexed)) is Some(span) {
+    assert_true(span == script.span)
+  } else {
+    fail("expected root span")
   }
 
-  let command_span = match @semantics.span_of(indexed, command) {
-    Some(span) => span
-    None => fail("expected command span")
+  let command_span = if @semantics.span_of(indexed, command) is Some(span) {
+    span
+  } else {
+    fail("expected command span")
   }
-  let word_span = match @semantics.span_of(indexed, word) {
-    Some(span) => span
-    None => fail("expected word span")
+  let word_span = if @semantics.span_of(indexed, word) is Some(span) {
+    span
+  } else {
+    fail("expected word span")
   }
 
   assert_eq(command_span.start.offset, 0)
@@ -248,13 +255,16 @@ test "indexed ast effective spans fall back to enclosing spans" {
   )
   let indexed = @semantics.build_index(script)
   let parameter = find_parameter_part(indexed)
-  let containing_word = match @semantics.word_of(indexed, parameter) {
-    Some(word) => word
-    None => fail("expected containing word")
+  let containing_word = if @semantics.word_of(indexed, parameter) is Some(word) {
+    word
+  } else {
+    fail("expected containing word")
   }
-  let effective_span = match @semantics.effective_span_of(indexed, parameter) {
-    Some(span) => span
-    None => fail("expected effective span")
+  let effective_span = if @semantics.effective_span_of(indexed, parameter)
+    is Some(span) {
+    span
+  } else {
+    fail("expected effective span")
   }
 
   assert_eq(effective_span.start.offset, containing_word.span.start.offset)
@@ -274,13 +284,16 @@ test "indexed ast distinguishes exact spans from enclosing fallback spans" {
 
   assert_true(@semantics.span_of(indexed, parameter) is None)
 
-  let enclosing_span = match @semantics.enclosing_span_of(indexed, parameter) {
-    Some(span) => span
-    None => fail("expected enclosing span")
+  let enclosing_span = if @semantics.enclosing_span_of(indexed, parameter)
+    is Some(span) {
+    span
+  } else {
+    fail("expected enclosing span")
   }
-  let containing_word = match @semantics.word_of(indexed, parameter) {
-    Some(word) => word
-    None => fail("expected containing word")
+  let containing_word = if @semantics.word_of(indexed, parameter) is Some(word) {
+    word
+  } else {
+    fail("expected containing word")
   }
 
   assert_eq(enclosing_span.start.offset, containing_word.span.start.offset)
@@ -299,10 +312,13 @@ test "indexed ast hides synthetic spans for reparsed parameter operator words" {
   let default_inner_word = find_word_with_source(default_indexed, "$bar")
 
   assert_true(@semantics.span_of(default_indexed, default_inner_word) is None)
-  let default_enclosing = match
-    @semantics.enclosing_span_of(default_indexed, default_inner_word) {
-    Some(span) => span
-    None => fail("expected fallback span for reparsed default word")
+  let default_enclosing = if @semantics.enclosing_span_of(
+      default_indexed, default_inner_word,
+    )
+    is Some(span) {
+    span
+  } else {
+    fail("expected fallback span for reparsed default word")
   }
   let default_command = simple_of(first_indexed_command(default_script))
   assert_eq(
@@ -324,10 +340,13 @@ test "indexed ast hides synthetic spans for reparsed parameter operator words" {
   let slice_inner_word = find_word_with_source(slice_indexed, "$bar")
 
   assert_true(@semantics.span_of(slice_indexed, slice_inner_word) is None)
-  let slice_enclosing = match
-    @semantics.enclosing_span_of(slice_indexed, slice_inner_word) {
-    Some(span) => span
-    None => fail("expected fallback span for reparsed slice word")
+  let slice_enclosing = if @semantics.enclosing_span_of(
+      slice_indexed, slice_inner_word,
+    )
+    is Some(span) {
+    span
+  } else {
+    fail("expected fallback span for reparsed slice word")
   }
   let slice_command = simple_of(first_indexed_command(slice_script))
   assert_eq(

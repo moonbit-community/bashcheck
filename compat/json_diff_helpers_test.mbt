@@ -59,7 +59,8 @@ async fn run_shellcheck_json_pair(
   let path = compat_diff_fixture_path(label)
   if !@fs.exists("_build/compat-diff") {
     ignore(@fs.mkdir("_build/compat-diff", permission=0o755, recursive=true)) catch {
-      _ => ()
+      @os_error.OSError(_) as err if err.is_EEXIST() => ()
+      err => raise err
     }
   }
   @fs.write_file(path, source)
@@ -78,9 +79,10 @@ async fn run_shellcheck_json_pair(
     Run,
     [path],
     spec,
-    match @formatter.parse_output_format("json") {
-      Some(format) => format
-      None => abort("missing json output format")
+    if @formatter.parse_output_format("json") is Some(format) {
+      format
+    } else {
+      abort("missing json output format")
     },
     @formatter.FormatOptions::default(),
   )
@@ -176,9 +178,10 @@ fn json_diff_expect_object(json : Json) -> Map[String, Json] {
 
 ///|
 fn json_diff_object_field(object : Map[String, Json], key : String) -> Json {
-  match object.get(key) {
-    Some(value) => value
-    None => abort("missing JSON field \{key}")
+  if object.get(key) is Some(value) {
+    value
+  } else {
+    abort("missing JSON field \{key}")
   }
 }
 
