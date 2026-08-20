@@ -4,31 +4,31 @@ fn control_flow_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2154,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "control-flow",
       summary: "Referenced variable may not be assigned on all paths.",
     },
     {
       code: 2178,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "control-flow",
       summary: "Variable was used as an array but is now assigned a string.",
     },
     {
       code: 2179,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "control-flow",
       summary: "Use array+=(\"item\") to append items to an array.",
     },
     {
       code: 2317,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "control-flow",
       summary: "Command appears to be unreachable.",
     },
     {
       code: 2329,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "control-flow",
       summary: "This function is never invoked.",
     },
@@ -59,27 +59,25 @@ fn run_control_flow_checks(
   let dead_subshell_reads = batch_v_dead_read_ids(cfg, lastpipe)
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Command(command)) => {
+      Some(Command(command)) => {
         check_unreachable_command(cfg, analysis, id, command, diagnostics)
         check_command_reads(
           cfg, analysis, id, command, false, dead_subshell_reads, diagnostics,
         )
       }
-      Some(@semantics.NodeRef::FunctionDef(function_def)) =>
+      Some(FunctionDef(function_def)) =>
         check_unreachable_function(cfg, analysis, id, function_def, diagnostics)
-      Some(@semantics.NodeRef::Assignment(assignment)) =>
+      Some(Assignment(assignment)) =>
         check_array_scalar_conflict(cfg, analysis, id, assignment, diagnostics)
-      Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
+      Some(WordPart(Parameter(name))) =>
         check_unassigned_read(
           cfg, analysis, id, name, false, dead_subshell_reads, diagnostics,
         )
-      Some(
-        @semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter(name))
-      ) =>
+      Some(WordPart(SpecialParameter(name))) =>
         check_unassigned_read(
           cfg, analysis, id, name, false, dead_subshell_reads, diagnostics,
         )
-      Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+      Some(ParameterExpansion(expansion)) =>
         check_parameter_expansion_read(
           cfg, analysis, id, expansion, false, dead_subshell_reads, diagnostics,
         )
@@ -103,21 +101,19 @@ fn run_unassigned_uppercase_optional_check(
   let dead_subshell_reads = batch_v_dead_read_ids(cfg, lastpipe)
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Command(command)) =>
         check_command_reads(
           cfg, analysis, id, command, true, dead_subshell_reads, diagnostics,
         )
-      Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
+      Some(WordPart(Parameter(name))) =>
         check_unassigned_read(
           cfg, analysis, id, name, true, dead_subshell_reads, diagnostics,
         )
-      Some(
-        @semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter(name))
-      ) =>
+      Some(WordPart(SpecialParameter(name))) =>
         check_unassigned_read(
           cfg, analysis, id, name, true, dead_subshell_reads, diagnostics,
         )
-      Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+      Some(ParameterExpansion(expansion)) =>
         check_parameter_expansion_read(
           cfg, analysis, id, expansion, true, dead_subshell_reads, diagnostics,
         )
@@ -137,7 +133,7 @@ fn check_command_reads(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Arithmetic(arithmetic) =>
+    Arithmetic(arithmetic) =>
       check_arithmetic_expr_reads(
         cfg,
         analysis,
@@ -147,7 +143,7 @@ fn check_command_reads(
         dead_subshell_reads,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       check_arithmetic_expr_reads(
         cfg,
         analysis,
@@ -196,7 +192,7 @@ fn check_unreachable_command(
   push_diagnostic(
     diagnostics,
     command.span,
-    CheckSeverity::Info,
+    Info,
     2317,
     "Command appears to be unreachable. Check usage (or ignore if invoked indirectly).",
   )
@@ -222,7 +218,7 @@ fn check_unreachable_function(
   push_diagnostic(
     diagnostics,
     control_flow_precise_ast_span(cfg, id),
-    CheckSeverity::Info,
+    Info,
     2329,
     "This function is never invoked. Check usage (or ignored if invoked indirectly).",
   )
@@ -231,32 +227,22 @@ fn check_unreachable_function(
 ///|
 fn function_body_has_reportable_command(body : @parser.Command) -> Bool {
   match body.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       simple.words.length() > 0 || simple.assignments.length() > 0
-    @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => true
-    @parser.CommandKind::Time(clause) =>
-      pipeline_has_reportable_command(clause.body)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Source(_) | Condition(_) | Arithmetic(_) => true
+    Time(clause) => pipeline_has_reportable_command(clause.body)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       script_has_reportable_command(script)
-    @parser.CommandKind::If(clause) => if_clause_has_reportable_command(clause)
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    If(clause) => if_clause_has_reportable_command(clause)
+    While(clause) | Until(clause) =>
       script_has_reportable_command(clause.condition) ||
       script_has_reportable_command(clause.body)
-    @parser.CommandKind::ForIn(clause) =>
-      script_has_reportable_command(clause.body)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      script_has_reportable_command(clause.body)
-    @parser.CommandKind::Select(clause) =>
-      script_has_reportable_command(clause.body)
-    @parser.CommandKind::Case(clause) =>
-      case_clause_has_reportable_command(clause)
-    @parser.CommandKind::CoProc(clause) =>
-      function_body_has_reportable_command(clause.body)
-    @parser.CommandKind::Function(_) => false
+    ForIn(clause) => script_has_reportable_command(clause.body)
+    ForArithmetic(clause) => script_has_reportable_command(clause.body)
+    Select(clause) => script_has_reportable_command(clause.body)
+    Case(clause) => case_clause_has_reportable_command(clause)
+    CoProc(clause) => function_body_has_reportable_command(clause.body)
+    Function(_) => false
   }
 }
 
@@ -329,7 +315,7 @@ fn has_unreachable_command_ancestor(
     match current {
       Some(parent) =>
         match @cfg.ast_ref_of(cfg, parent) {
-          Some(@semantics.NodeRef::Command(_)) =>
+          Some(Command(_)) =>
             if !@cfg.command_is_reachable(analysis, parent) {
               return true
             } else {
@@ -356,7 +342,7 @@ fn has_unreachable_function_ancestor(
       None => break
     }
     match @cfg.ast_ref_of(cfg, parent) {
-      Some(@semantics.NodeRef::FunctionDef(_)) =>
+      Some(FunctionDef(_)) =>
         if !function_def_is_reachable(cfg, analysis, parent) {
           return true
         }
@@ -388,7 +374,7 @@ fn has_reachable_terminal_script_command(
     guard @cfg.command_is_reachable(analysis, id) else { continue }
     guard command_is_top_level_script_command(cfg, id) else { continue }
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Command(command)) =>
         if command_is_terminal_for_unreachable_function(command) {
           return true
         }
@@ -410,9 +396,8 @@ fn command_is_top_level_script_command(
       None => break
     }
     match @cfg.ast_ref_of(cfg, parent) {
-      Some(@semantics.NodeRef::FunctionDef(_))
-      | Some(@semantics.NodeRef::BatsTestClause(_))
-      | Some(@semantics.NodeRef::SourceCommand(_)) => return false
+      Some(FunctionDef(_)) | Some(BatsTestClause(_)) | Some(SourceCommand(_)) =>
+        return false
       _ => current = @cfg.ast_parent_of(cfg, parent)
     }
   }
@@ -433,7 +418,7 @@ fn function_def_body_command_id(
 ) -> @cfg.CfgAstId? {
   for child in @cfg.ast_children_of(cfg, id) {
     match @cfg.ast_ref_of(cfg, child) {
-      Some(@semantics.NodeRef::Command(_)) => return Some(child)
+      Some(Command(_)) => return Some(child)
       _ => ()
     }
   }
@@ -449,10 +434,10 @@ fn has_source_command_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
       None => break
     }
     match @cfg.ast_ref_of(cfg, parent) {
-      Some(@semantics.NodeRef::SourceCommand(_)) => return true
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(SourceCommand(_)) => return true
+      Some(Command(command)) =>
         match command.kind {
-          @parser.CommandKind::Source(_) => return true
+          Source(_) => return true
           _ => ()
         }
       _ => ()
@@ -465,11 +450,7 @@ fn has_source_command_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
 ///|
 fn command_is_reportable(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_)
-    | @parser.CommandKind::Time(_) => true
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) | Time(_) => true
     _ => false
   }
 }
@@ -491,7 +472,7 @@ fn check_array_scalar_conflict(
           push_diagnostic(
             diagnostics,
             assignment_name_span(assignment),
-            CheckSeverity::Warning,
+            Warning,
             2179,
             "Use array+=(\"item\") to append items to an array.",
           )
@@ -499,7 +480,7 @@ fn check_array_scalar_conflict(
           push_diagnostic(
             diagnostics,
             assignment_name_span(assignment),
-            CheckSeverity::Warning,
+            Warning,
             2178,
             "Variable was used as an array but is now assigned a string.",
           )
@@ -513,7 +494,7 @@ fn check_array_scalar_conflict(
 ///|
 fn assignment_value_is_array_literal(value : @parser.AssignmentValue) -> Bool {
   match value {
-    @parser.AssignmentValue::ArrayLiteral(_) => true
+    ArrayLiteral(_) => true
     _ => false
   }
 }
@@ -559,7 +540,7 @@ fn check_unassigned_read(
         push_diagnostic(
           diagnostics,
           control_flow_unassigned_read_span(cfg, id),
-          CheckSeverity::Warning,
+          Warning,
           2154,
           "\{name} is referenced but not assigned.",
         )
@@ -577,7 +558,7 @@ fn has_parameter_expansion_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool 
       None => break
     }
     match @cfg.ast_ref_of(cfg, parent) {
-      Some(@semantics.NodeRef::ParameterExpansion(_)) => return true
+      Some(ParameterExpansion(_)) => return true
       _ => current = @cfg.ast_parent_of(cfg, parent)
     }
   }
@@ -601,11 +582,10 @@ fn guarded_by_alternate_parameter_expansion(
     match current {
       Some(parent) =>
         match @cfg.ast_ref_of(cfg, parent) {
-          Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+          Some(ParameterExpansion(expansion)) =>
             if expansion.name == Some(name) {
               match expansion.operator {
-                Some(@parser.ParameterOperator::AlternateValue(_)) =>
-                  return true
+                Some(AlternateValue(_)) => return true
                 _ => ()
               }
             }
@@ -651,7 +631,7 @@ fn if_arm_body_is_guarded(
 ) -> Bool {
   let target_span = ast_effect_span(cfg, target)
   match @cfg.ast_ref_of(cfg, candidate) {
-    Some(@semantics.NodeRef::IfArm(arm)) =>
+    Some(IfArm(arm)) =>
       span_contains(arm.body.span, target_span) &&
       script_success_proves_defined(arm.condition, name)
     _ => false
@@ -671,12 +651,9 @@ fn while_body_is_guarded(
     None => return false
   }
   match (@cfg.ast_ref_of(cfg, candidate), @cfg.ast_ref_of(cfg, parent)) {
-    (
-      Some(@semantics.NodeRef::LoopClause(clause)),
-      Some(@semantics.NodeRef::Command(command)),
-    ) =>
+    (Some(LoopClause(clause)), Some(Command(command))) =>
       match command.kind {
-        @parser.CommandKind::While(_) =>
+        While(_) =>
           span_contains(clause.body.span, target_span) &&
           script_success_proves_defined(clause.condition, name)
         _ => false
@@ -706,8 +683,8 @@ fn and_or_list_success_proves_defined(
     let (op, pipeline) = pair
     let next = pipeline_success_proves_defined(pipeline, name)
     proved = match op {
-      @parser.AndOrOperator::AndIf => proved || next
-      @parser.AndOrOperator::OrIf => proved && next
+      AndIf => proved || next
+      OrIf => proved && next
     }
   }
   proved
@@ -732,14 +709,11 @@ fn command_success_proves_defined(
   name : String,
 ) -> Bool {
   match command.kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       condition_expr_success_proves_defined(condition.expr, name)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       script_success_proves_defined(script, name)
-    @parser.CommandKind::Time(clause) =>
-      pipeline_success_proves_defined(clause.body, name)
+    Time(clause) => pipeline_success_proves_defined(clause.body, name)
     _ => false
   }
 }
@@ -763,13 +737,13 @@ fn check_arithmetic_expr_reads(
   let mut i = 0
   while i < expr.tokens.length() {
     match expr.tokens[i] {
-      @parser.ArithmeticToken::Variable(name, _) =>
+      Variable(name, _) =>
         if arithmetic_token_needs_read(expr.tokens, i) {
           check_unassigned_read(
             cfg, analysis, id, name, uppercase_only, dead_subshell_reads, diagnostics,
           )
         }
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         check_arithmetic_expr_reads(
           cfg, analysis, id, inner, uppercase_only, dead_subshell_reads, diagnostics,
         )
@@ -785,7 +759,7 @@ fn arithmetic_token_needs_read(
   index : Int,
 ) -> Bool {
   match tokens[index] {
-    @parser.ArithmeticToken::Variable(_, _) =>
+    Variable(_, _) =>
       match arithmetic_next_operator(tokens, index) {
         Some("=") => false
         _ => true
@@ -802,7 +776,7 @@ fn arithmetic_next_operator(
   let mut i = index + 1
   while i < tokens.length() {
     match tokens[i] {
-      @parser.ArithmeticToken::Operator(op) => return Some(op)
+      Operator(op) => return Some(op)
       _ => ()
     }
     i += 1
@@ -816,15 +790,14 @@ fn condition_expr_success_proves_defined(
   name : String,
 ) -> Bool {
   match expr {
-    @parser.ConditionExpr::Unary(op, _, word) =>
+    Unary(op, _, word) =>
       (op == "-v" || op == "-R") &&
       condition_test_target_name(word) == Some(name)
-    @parser.ConditionExpr::Group(inner) =>
-      condition_expr_success_proves_defined(inner, name)
-    @parser.ConditionExpr::And(_, lhs, rhs) =>
+    Group(inner) => condition_expr_success_proves_defined(inner, name)
+    And(_, lhs, rhs) =>
       condition_expr_success_proves_defined(lhs, name) ||
       condition_expr_success_proves_defined(rhs, name)
-    @parser.ConditionExpr::Or(_, lhs, rhs) =>
+    Or(_, lhs, rhs) =>
       condition_expr_success_proves_defined(lhs, name) &&
       condition_expr_success_proves_defined(rhs, name)
     _ => false
@@ -897,7 +870,7 @@ fn control_flow_unassigned_read_span(
   id : @cfg.CfgAstId,
 ) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, id) {
-    Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+    Some(ParameterExpansion(expansion)) =>
       match parent_word_of(cfg, id) {
         Some(word) =>
           match word_subspan(word, "${\{expansion.raw}}") {

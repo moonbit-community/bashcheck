@@ -6,25 +6,25 @@ fn append_commands_batch_d_descriptions(
     description in [
       {
         code: 2028,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "echo may not expand escape sequences. Use printf.",
       },
       {
         code: 2155,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Declare and assign separately to avoid masking return values.",
       },
       {
         code: 2172,
-        severity: CheckSeverity::Warning,
+        severity: Warning,
         category: "commands",
         summary: "Prefer trap signal names over non-portable signal numbers.",
       },
       {
         code: 2173,
-        severity: CheckSeverity::Error,
+        severity: Error,
         category: "commands",
         summary: "SIGKILL and SIGSTOP can not be trapped.",
       },
@@ -57,7 +57,7 @@ fn check_echo_escape_sequences(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Info,
+          Info,
           2028,
           "echo may not expand escape sequences. Use printf.",
         )
@@ -129,10 +129,8 @@ fn echo_word_part_has_escape_sequence(
   quoted : Bool,
 ) -> Bool {
   match part {
-    @parser.WordPart::SingleQuoted(text)
-    | @parser.WordPart::DollarSingleQuoted(text) => text.contains("\\")
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) => {
+    SingleQuoted(text) | DollarSingleQuoted(text) => text.contains("\\")
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) => {
       for nested in parts {
         if echo_word_part_has_escape_sequence(nested, true) {
           return true
@@ -140,8 +138,7 @@ fn echo_word_part_has_escape_sequence(
       }
       false
     }
-    @parser.WordPart::Literal(text) if quoted =>
-      double_quoted_literal_has_escape_sequence(text)
+    Literal(text) if quoted => double_quoted_literal_has_escape_sequence(text)
     _ => false
   }
 }
@@ -182,12 +179,12 @@ fn check_masked_declaration_returns(
     }
     for element in declaration_elements_in_command(command) {
       match element {
-        DeclarationCommandElement::Assignment(assignment) =>
+        Assignment(assignment) =>
           if assignment_masks_return_value(assignment) {
             push_diagnostic(
               diagnostics,
               assignment_name_span(assignment),
-              CheckSeverity::Warning,
+              Warning,
               2155,
               "Declare and assign separately to avoid masking return values.",
             )
@@ -216,10 +213,9 @@ fn assignment_masks_return_value(assignment : @parser.Assignment) -> Bool {
 ///|
 fn assignment_value_has_masked_return(value : @parser.AssignmentValue) -> Bool {
   match value {
-    @parser.AssignmentValue::Empty => false
-    @parser.AssignmentValue::Word(word) =>
-      word_has_command_substitution_deep(word)
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    Empty => false
+    Word(word) => word_has_command_substitution_deep(word)
+    ArrayLiteral(elements) => {
       for element in elements {
         for index in element.indexes {
           if array_index_has_command_substitution(index) {
@@ -243,12 +239,9 @@ fn array_index_has_command_substitution(index : @parser.ArrayIndex) -> Bool {
       return
     }
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) =>
-        if script.items.length() > 0 {
-          found = true
-        }
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => if script.items.length() > 0 { found = true }
       _ => ()
     }
   })
@@ -263,12 +256,9 @@ fn word_has_command_substitution_deep(word : @parser.Word) -> Bool {
       return
     }
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) =>
-        if script.items.length() > 0 {
-          found = true
-        }
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => if script.items.length() > 0 { found = true }
       _ => ()
     }
   })
@@ -294,7 +284,7 @@ fn check_trap_signal_literals(
           push_diagnostic(
             diagnostics,
             arguments[i].span,
-            CheckSeverity::Error,
+            Error,
             2173,
             "SIGKILL/SIGSTOP can not be trapped.",
           )
@@ -302,7 +292,7 @@ fn check_trap_signal_literals(
           push_diagnostic(
             diagnostics,
             arguments[i].span,
-            CheckSeverity::Warning,
+            Warning,
             2172,
             "Trapping signals by number is not well defined. Prefer signal names.",
           )

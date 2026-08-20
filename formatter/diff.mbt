@@ -280,25 +280,25 @@ fn build_line_diff(
   let mut j = 0
   while i < old_len && j < new_len {
     if old_lines[i] == new_lines[j] {
-      diffs.push(DiffLine::Both(old_lines[i]))
+      diffs.push(Both(old_lines[i]))
       i += 1
       j += 1
     } else if dp[dp_index(i + 1, j, width)] >= dp[dp_index(i, j + 1, width)] {
       // Dropping an old line keeps an LCS at least as long as dropping the new
       // one, so this line belongs only to the original side.
-      diffs.push(DiffLine::First(old_lines[i]))
+      diffs.push(First(old_lines[i]))
       i += 1
     } else {
-      diffs.push(DiffLine::Second(new_lines[j]))
+      diffs.push(Second(new_lines[j]))
       j += 1
     }
   }
   while i < old_len {
-    diffs.push(DiffLine::First(old_lines[i]))
+    diffs.push(First(old_lines[i]))
     i += 1
   }
   while j < new_len {
-    diffs.push(DiffLine::Second(new_lines[j]))
+    diffs.push(Second(new_lines[j]))
     j += 1
   }
   diffs

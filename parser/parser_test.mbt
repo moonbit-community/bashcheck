@@ -30,7 +30,7 @@ fn first_simple(
 ) -> (@parser.Command, @parser.SimpleCommand) {
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::Simple(simple) => (command, simple)
+    Simple(simple) => (command, simple)
     _ => abort("expected simple command, got \{script.dump()}")
   }
 }
@@ -42,7 +42,7 @@ fn simple_at(
 ) -> (@parser.Command, @parser.SimpleCommand) {
   let command = command_at(script, index)
   match command.kind {
-    @parser.CommandKind::Simple(simple) => (command, simple)
+    Simple(simple) => (command, simple)
     _ => abort("expected simple command, got \{script.dump()}")
   }
 }
@@ -115,7 +115,7 @@ fn index_raw(index : @parser.ArrayIndex) -> String {
 ///|
 fn assignment_word(value : @parser.AssignmentValue) -> @parser.Word {
   match value {
-    @parser.AssignmentValue::Word(word) => word
+    Word(word) => word
     _ => abort("expected assignment word value")
   }
 }
@@ -135,7 +135,7 @@ fn arithmetic_variable_index(
 ) -> @parser.ArrayIndex {
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Variable(token_name, indexes) =>
+      Variable(token_name, indexes) =>
         if token_name == name && indexes.length() > 0 {
           return indexes[0]
         }
@@ -148,7 +148,7 @@ fn arithmetic_variable_index(
 ///|
 fn braced_parameter(part : @parser.WordPart) -> @parser.ParameterExpansion {
   match part {
-    @parser.WordPart::BracedParameter(expansion) => expansion
+    BracedParameter(expansion) => expansion
     _ => abort("expected braced parameter")
   }
 }
@@ -159,7 +159,7 @@ test "fragment parsers keep direct word and arithmetic structure" {
   assert_eq(word.source, "\"$HOME\"/*.sh")
   assert_true(word.parts.length() >= 2)
   match word.parts[0] {
-    @parser.WordPart::DoubleQuoted(parts) => assert_true(parts.length() > 0)
+    DoubleQuoted(parts) => assert_true(parts.length() > 0)
     _ => fail("expected double-quoted prefix in direct word parse")
   }
 
@@ -167,7 +167,7 @@ test "fragment parsers keep direct word and arithmetic structure" {
   assert_eq(expr.raw, "x + arr[i]")
   assert_true(expr.tokens.length() >= 3)
   match expr.tokens[2] {
-    @parser.ArithmeticToken::Variable(name, indexes) => {
+    Variable(name, indexes) => {
       assert_eq(name, "arr")
       assert_eq(indexes.length(), 1)
       assert_eq(index_raw(indexes[0]), "i")
@@ -192,21 +192,21 @@ test "simple command with assignment, quotes, and redirect" {
   assert_eq(simple.words[0].source, "echo")
   assert_eq(simple.words[1].source, "\"hi $USER\"")
   match simple.words[1].parts[0] {
-    @parser.WordPart::DoubleQuoted(parts) => {
+    DoubleQuoted(parts) => {
       assert_eq(parts.length(), 2)
       match parts[0] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "hi ")
+        Literal(text) => assert_eq(text, "hi ")
         _ => fail("expected literal text, got \{script.dump()}")
       }
       match parts[1] {
-        @parser.WordPart::Parameter(name) => assert_eq(name, "USER")
+        Parameter(name) => assert_eq(name, "USER")
         _ => fail("expected parameter expansion, got \{script.dump()}")
       }
     }
     _ => fail("expected double quoted word, got \{script.dump()}")
   }
   match command.redirects[0].target {
-    @parser.RedirectionTarget::Word(word) => assert_eq(word.source, "out")
+    Word(word) => assert_eq(word.source, "out")
     _ => fail("expected file redirection target, got \{script.dump()}")
   }
 }
@@ -227,7 +227,7 @@ test "reserved-word prefixes remain ordinary words" {
   let script = parse_ok("while true; do done-thing; done")
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::While(clause) => {
+    While(clause) => {
       let (_, simple) = first_simple(clause.body)
       assert_eq(simple.words.length(), 1)
       assert_eq(simple.words[0].source, "done-thing")
@@ -251,16 +251,16 @@ test "function with brace body and if clause" {
   )
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::Function(function_) => {
+    Function(function_) => {
       assert_eq(function_.name, "foo")
       assert_eq(function_.uses_keyword, false)
       assert_eq(function_.has_parentheses, true)
       match function_.body.kind {
-        @parser.CommandKind::BraceGroup(body) => {
+        BraceGroup(body) => {
           assert_eq(body.items.length(), 1)
           let inner = first_command(body)
           match inner.kind {
-            @parser.CommandKind::If(clause) => {
+            If(clause) => {
               assert_eq(clause.arms.length(), 1)
               assert_true(clause.else_body is Some(_))
             }
@@ -288,7 +288,7 @@ test "function keyword accepts extended shellcheck-style names" {
   let script = parse_ok("function []!() { true; }")
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::Function(function_) => {
+    Function(function_) => {
       assert_eq(function_.name, "[]!")
       assert_true(function_.uses_keyword)
       assert_true(function_.has_parentheses)
@@ -307,13 +307,11 @@ test "bare function names follow shellcheck-style character rules" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::Function(function_) =>
-      assert_eq(function_.name, "@require")
+    Function(function_) => assert_eq(function_.name, "@require")
     _ => fail("expected first function definition")
   }
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Function(function_) =>
-      assert_eq(function_.name, "foo#bar")
+    Function(function_) => assert_eq(function_.name, "foo#bar")
     _ => fail("expected second function definition")
   }
 
@@ -339,7 +337,7 @@ test "function diagnostics remain recoverable" {
   assert_true(report_has_code(report, 1095))
 
   match first_command(script).kind {
-    @parser.CommandKind::Function(function_) => {
+    Function(function_) => {
       assert_eq(function_.name, "foo")
       assert_true(function_.has_parentheses)
     }
@@ -347,7 +345,7 @@ test "function diagnostics remain recoverable" {
   }
 
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Function(function_) => {
+    Function(function_) => {
       assert_eq(function_.name, "foo")
       assert_true(function_.uses_keyword)
       assert_true(!function_.has_parentheses)
@@ -360,11 +358,11 @@ test "function diagnostics remain recoverable" {
 test "time command wraps compound commands and pipelines" {
   let timed_if = parse_ok("time if true; then echo foo; fi")
   match first_command(timed_if).kind {
-    @parser.CommandKind::Time(clause) => {
+    Time(clause) => {
       assert_eq(clause.flags.length(), 0)
       assert_eq(clause.body.segments.length(), 1)
       match clause.body.segments[0].command.kind {
-        @parser.CommandKind::If(inner) => assert_eq(inner.arms.length(), 1)
+        If(inner) => assert_eq(inner.arms.length(), 1)
         _ => fail("expected timed if body")
       }
     }
@@ -375,7 +373,7 @@ test "time command wraps compound commands and pipelines" {
   assert_eq(timed_pipeline.items.length(), 1)
   assert_eq(timed_pipeline.items[0].and_or.tail.length(), 1)
   match timed_pipeline.items[0].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Time(clause) => {
+    Time(clause) => {
       assert_eq(clause.flags.length(), 1)
       assert_eq(clause.flags[0].source, "-p")
       assert_eq(clause.body.segments.length(), 2)
@@ -397,7 +395,7 @@ test "for loop with command substitution in double quotes" {
   )
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       assert_eq(clause.name, "name")
       assert_eq(clause.values.length(), 2)
       assert_eq(clause.values[0].source, "a")
@@ -405,9 +403,9 @@ test "for loop with command substitution in double quotes" {
       let (_, simple) = first_simple(clause.body)
       assert_eq(simple.words.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::DoubleQuoted(parts) =>
+        DoubleQuoted(parts) =>
           match parts[0] {
-            @parser.WordPart::CommandSubstitution(inner) =>
+            CommandSubstitution(inner) =>
               assert_true(inner.dump().contains("printf"))
             _ =>
               fail("expected command substitution, got \{clause.body.dump()}")
@@ -436,7 +434,7 @@ test "simple here doc stores parsed parts" {
   assert_eq(simple.words.length(), 1)
   assert_eq(command.redirects.length(), 1)
   match command.redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) => {
+    HereDoc(doc) => {
       assert_eq(doc.delimiter, "EOF")
       assert_eq(
         doc.body,
@@ -467,20 +465,20 @@ test "unquoted here doc keeps quote characters literal" {
   )
   let command = first_command(script)
   match command.redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) =>
+    HereDoc(doc) =>
       match doc.parts {
         Some(parts) => {
           assert_eq(parts.length(), 3)
           match parts[0] {
-            @parser.WordPart::Literal(text) => assert_eq(text, "\"")
+            Literal(text) => assert_eq(text, "\"")
             _ => fail("expected literal opening quote, got \{script.dump()}")
           }
           match parts[1] {
-            @parser.WordPart::Parameter(name) => assert_eq(name, "USER")
+            Parameter(name) => assert_eq(name, "USER")
             _ => fail("expected parameter expansion, got \{script.dump()}")
           }
           match parts[2] {
-            @parser.WordPart::Literal(text) =>
+            Literal(text) =>
               assert_eq(
                 text,
                 (
@@ -509,12 +507,12 @@ test "here doc can hang off command inside if" {
   )
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       let inner = first_command(clause.arms[0].body)
       match inner.kind {
-        @parser.CommandKind::Simple(_) =>
+        Simple(_) =>
           match inner.redirects[0].target {
-            @parser.RedirectionTarget::HereDoc(doc) =>
+            HereDoc(doc) =>
               assert_eq(
                 doc.body,
                 (
@@ -548,7 +546,7 @@ test "top level metadata and source command" {
   assert_eq(script.annotations.length(), 2)
   let command = first_command(script)
   match command.kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       assert_eq(source.assignments.length(), 0)
       assert_eq(source.keyword, "source")
       assert_eq(source.path.source, "lib.sh")
@@ -587,7 +585,7 @@ test "source command captures options and resolves includes from parse options" 
   )
   let script = report_script(report)
   match first_command(script).kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       assert_eq(source.assignments.length(), 0)
       assert_eq(source.options.length(), 2)
       assert_eq(source.options[0].source, "-p")
@@ -641,7 +639,7 @@ test "source resolution accepts quoted constants and source annotations" {
   )
   let quoted_script = report_script(quoted_report)
   match first_command(quoted_script).kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       match source.resolved_path {
         Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
         None => fail("expected resolved quoted source path")
@@ -663,7 +661,7 @@ test "source resolution accepts quoted constants and source annotations" {
   let override_script = report_script(override_report)
   assert_eq(override_script.items[1].annotations.length(), 1)
   match override_script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       match source.resolved_path {
         Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
         None => fail("expected source override to resolve include")
@@ -682,13 +680,11 @@ test "pipeline segments preserve repeated and inline bang prefixes" {
   assert_eq(pipeline.segments[0].bangs, 2)
   assert_eq(pipeline.segments[1].bangs, 1)
   match pipeline.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "true")
+    Simple(simple) => assert_eq(simple.words[0].source, "true")
     _ => fail("expected first negated simple command")
   }
   match pipeline.segments[1].command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "false")
+    Simple(simple) => assert_eq(simple.words[0].source, "false")
     _ => fail("expected second negated simple command")
   }
 }
@@ -721,7 +717,7 @@ test "shellcheck shell directive overrides shebang shell validation" {
   )
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
-    @parser.Annotation::Shell(shell) => assert_eq(shell, "bash")
+    Shell(shell) => assert_eq(shell, "bash")
     _ => fail("expected shell override annotation")
   }
 }
@@ -737,7 +733,7 @@ test "shellcheck shell directive accepts shellcheck-known aliases" {
   )
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
-    @parser.Annotation::Shell(shell) => assert_eq(shell, "busybox ash")
+    Shell(shell) => assert_eq(shell, "busybox ash")
     _ => fail("expected busybox ash shell annotation")
   }
 }
@@ -905,11 +901,11 @@ test "quoted shellcheck annotations preserve valid keys and report forbidden inl
   assert_eq(script.annotations.length(), 2)
   assert_eq(report.diagnostics.length(), 1)
   match script.annotations[0] {
-    @parser.Annotation::SourcePath(path) => assert_eq(path, "foo bar")
+    SourcePath(path) => assert_eq(path, "foo bar")
     _ => fail("expected quoted source-path annotation")
   }
   match script.annotations[1] {
-    @parser.Annotation::ExtendedAnalysis(flag) => assert_eq(flag, false)
+    ExtendedAnalysis(flag) => assert_eq(flag, false)
     _ => fail("expected extended_analysis annotation")
   }
   assert_true(
@@ -930,11 +926,11 @@ test "quoted shellcheck directive values preserve backslashes literally" {
   )
   assert_eq(script.annotations.length(), 2)
   match script.annotations[0] {
-    @parser.Annotation::Source(path) => assert_eq(path, "lib\\\\ name.sh")
+    Source(path) => assert_eq(path, "lib\\\\ name.sh")
     _ => fail("expected source directive with literal backslash")
   }
   match script.annotations[1] {
-    @parser.Annotation::SourcePath(path) => assert_eq(path, "foo\\\\bar")
+    SourcePath(path) => assert_eq(path, "foo\\\\bar")
     _ => fail("expected source-path directive with literal backslashes")
   }
 }
@@ -950,24 +946,23 @@ test "disable and enable directives accept shellcheck-style values" {
   )
   assert_eq(script.annotations.length(), 5)
   match script.annotations[0] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC1000")
+    Disable(code) => assert_eq(code, "SC1000")
     _ => fail("expected first disable code")
   }
   match script.annotations[1] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC2000-SC3000")
+    Disable(code) => assert_eq(code, "SC2000-SC3000")
     _ => fail("expected disable range")
   }
   match script.annotations[2] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "all")
+    Disable(code) => assert_eq(code, "all")
     _ => fail("expected disable all")
   }
   match script.annotations[3] {
-    @parser.Annotation::Enable(name) => assert_eq(name, "quote-safe")
+    Enable(name) => assert_eq(name, "quote-safe")
     _ => fail("expected first enable name")
   }
   match script.annotations[4] {
-    @parser.Annotation::Enable(name) =>
-      assert_eq(name, "require-variable-braces")
+    Enable(name) => assert_eq(name, "require-variable-braces")
     _ => fail("expected second enable name")
   }
 }
@@ -1009,11 +1004,11 @@ test "unknown shellcheck keys are ignored while valid ones still parse" {
   )
   assert_eq(script.annotations.length(), 2)
   match script.annotations[0] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC2086")
+    Disable(code) => assert_eq(code, "SC2086")
     _ => fail("expected disable annotation")
   }
   match script.annotations[1] {
-    @parser.Annotation::Source(path) => assert_eq(path, "lib.sh")
+    Source(path) => assert_eq(path, "lib.sh")
     _ => fail("expected source annotation")
   }
 }
@@ -1030,7 +1025,7 @@ test "invalid directive pairs ignore the rest of the line" {
   let script = report_script(report)
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC2086")
+    Disable(code) => assert_eq(code, "SC2086")
     _ => fail("expected disable annotation before invalid pair")
   }
   assert_true(report.diagnostics[0].message.contains("invalid key=value pair"))
@@ -1048,7 +1043,7 @@ test "invalid disable and enable values become diagnostics and stop the rest of 
   let disable_script = report_script(disable_report)
   assert_eq(disable_script.annotations.length(), 1)
   match disable_script.annotations[0] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC2086")
+    Disable(code) => assert_eq(code, "SC2086")
     _ => fail("expected only the valid disable before invalid one")
   }
   assert_true(disable_report.diagnostics[0].message.contains("invalid disable"))
@@ -1091,7 +1086,7 @@ test "directive values do not treat backslashes as shell escapes" {
   let script = report_script(report)
   assert_eq(script.annotations.length(), 1)
   match script.annotations[0] {
-    @parser.Annotation::Source(path) => assert_eq(path, "foo\\")
+    Source(path) => assert_eq(path, "foo\\")
     _ => fail("expected literal backslash source path")
   }
   assert_true(report.diagnostics[0].message.contains("invalid key=value pair"))
@@ -1113,11 +1108,11 @@ test "list items preserve shellcheck annotations beyond file metadata" {
   assert_eq(script.items[0].annotations.length(), 0)
   assert_eq(script.items[1].annotations.length(), 2)
   match script.items[1].annotations[0] {
-    @parser.Annotation::Disable(code) => assert_eq(code, "SC2086")
+    Disable(code) => assert_eq(code, "SC2086")
     _ => fail("expected disable annotation on second item")
   }
   match script.items[1].annotations[1] {
-    @parser.Annotation::Source(path) => assert_eq(path, "lib.sh")
+    Source(path) => assert_eq(path, "lib.sh")
     _ => fail("expected source annotation on second item")
   }
 }
@@ -1134,12 +1129,12 @@ test "nested compound bodies preserve shellcheck annotations on list items" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       assert_eq(clause.arms.length(), 1)
       assert_eq(clause.arms[0].body.items.length(), 1)
       assert_eq(clause.arms[0].body.items[0].annotations.length(), 1)
       match clause.arms[0].body.items[0].annotations[0] {
-        @parser.Annotation::Disable(code) => assert_eq(code, "SC2016")
+        Disable(code) => assert_eq(code, "SC2016")
         _ => fail("expected nested disable annotation")
       }
     }
@@ -1161,7 +1156,7 @@ test "command-leading braces become brace groups while literal braces still work
     None => fail(@debug.to_string(report))
   }
   match first_command(script).kind {
-    @parser.CommandKind::BraceGroup(body) => {
+    BraceGroup(body) => {
       let (_, simple) = first_simple(body)
       assert_eq(simple.words.length(), 1)
       assert_eq(simple.words[0].source, "foo")
@@ -1176,7 +1171,7 @@ test "command-leading braces become brace groups while literal braces still work
   }
   let command = script.items[1].and_or.head.segments[0].command
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words.length(), 4)
       assert_eq(simple.words[0].source, "echo")
       assert_eq(simple.words[1].source, "{bar}")
@@ -1202,14 +1197,14 @@ test "top-level closing brace reports reserved-word error" {
 test "single and double bracket conditions parse as dedicated commands" {
   let double_script = parse_ok("[[ -n $x ]]")
   match first_command(double_script).kind {
-    @parser.CommandKind::Condition(condition) => {
+    Condition(condition) => {
       match condition.kind {
-        @parser.ConditionKind::DoubleBracket => ()
+        DoubleBracket => ()
         _ => fail("expected double bracket kind")
       }
       assert_true(condition.raw.contains("$x"))
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, _, operand) => {
+        Unary(op, _, operand) => {
           assert_eq(op, "-n")
           assert_eq(operand.source, "$x")
         }
@@ -1220,14 +1215,14 @@ test "single and double bracket conditions parse as dedicated commands" {
   }
   let single_script = parse_ok("[ -n \"$x\" ]")
   match first_command(single_script).kind {
-    @parser.CommandKind::Condition(condition) => {
+    Condition(condition) => {
       match condition.kind {
-        @parser.ConditionKind::SingleBracket => ()
+        SingleBracket => ()
         _ => fail("expected single bracket kind")
       }
       assert_true(condition.raw.contains("\"$x\""))
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, _, operand) => {
+        Unary(op, _, operand) => {
           assert_eq(op, "-n")
           assert_eq(operand.source, "\"$x\"")
         }
@@ -1242,14 +1237,14 @@ test "single and double bracket conditions parse as dedicated commands" {
 test "condition expressions capture grouping and boolean operators" {
   let script = parse_ok("[[ (a == b) || (c == d) ]]")
   match first_command(script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Or(op, left, right) => {
+        Or(op, left, right) => {
           assert_eq(op.text, "||")
           match left {
-            @parser.ConditionExpr::Group(inner) =>
+            Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+                Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "==")
                   assert_eq(lhs.source, "a")
                   assert_eq(rhs.source, "b")
@@ -1259,9 +1254,9 @@ test "condition expressions capture grouping and boolean operators" {
             _ => fail("expected grouped lhs")
           }
           match right {
-            @parser.ConditionExpr::Group(inner) =>
+            Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+                Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "==")
                   assert_eq(lhs.source, "c")
                   assert_eq(rhs.source, "d")
@@ -1282,20 +1277,18 @@ test "condition parser preserves logical operator spellings across bracket style
   let single_and = parse_report("[ \"$a\" && \"$b\" ]")
   assert_true(!report_has_code(single_and, 1073))
   match first_command(report_script(single_and)).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::And(op, left, right) => {
+        And(op, left, right) => {
           assert_eq(op.text, "&&")
           assert_eq(op.span.start.column, 8)
           assert_eq(op.span.end.column, 10)
           match left {
-            @parser.ConditionExpr::Word(word) =>
-              assert_eq(word.source, "\"$a\"")
+            Word(word) => assert_eq(word.source, "\"$a\"")
             _ => fail("expected single-bracket logical-and lhs word")
           }
           match right {
-            @parser.ConditionExpr::Word(word) =>
-              assert_eq(word.source, "\"$b\"")
+            Word(word) => assert_eq(word.source, "\"$b\"")
             _ => fail("expected single-bracket logical-and rhs word")
           }
         }
@@ -1307,20 +1300,18 @@ test "condition parser preserves logical operator spellings across bracket style
   let double_and = parse_report("[[ \"$a\" -a \"$b\" ]]")
   assert_true(!report_has_code(double_and, 1073))
   match first_command(report_script(double_and)).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::And(op, left, right) => {
+        And(op, left, right) => {
           assert_eq(op.text, "-a")
           assert_eq(op.span.start.column, 9)
           assert_eq(op.span.end.column, 11)
           match left {
-            @parser.ConditionExpr::Word(word) =>
-              assert_eq(word.source, "\"$a\"")
+            Word(word) => assert_eq(word.source, "\"$a\"")
             _ => fail("expected double-bracket legacy-and lhs word")
           }
           match right {
-            @parser.ConditionExpr::Word(word) =>
-              assert_eq(word.source, "\"$b\"")
+            Word(word) => assert_eq(word.source, "\"$b\"")
             _ => fail("expected double-bracket legacy-and rhs word")
           }
         }
@@ -1332,9 +1323,9 @@ test "condition parser preserves logical operator spellings across bracket style
   let single_or = parse_report("[ \"$a\" || \"$b\" ]")
   assert_true(!report_has_code(single_or, 1073))
   match first_command(report_script(single_or)).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Or(op, _, _) => assert_eq(op.text, "||")
+        Or(op, _, _) => assert_eq(op.text, "||")
         _ => fail("expected single-bracket logical or expression")
       }
     _ => fail("expected condition command")
@@ -1343,9 +1334,9 @@ test "condition parser preserves logical operator spellings across bracket style
   let double_or = parse_report("[[ \"$a\" -o \"$b\" ]]")
   assert_true(!report_has_code(double_or, 1073))
   match first_command(report_script(double_or)).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Or(op, _, _) => assert_eq(op.text, "-o")
+        Or(op, _, _) => assert_eq(op.text, "-o")
         _ => fail("expected double-bracket legacy or expression")
       }
     _ => fail("expected condition command")
@@ -1365,11 +1356,11 @@ test "grouped conditions require closing parentheses" {
 test "condition expressions support negation, escaped groups, and regex words" {
   let negated = parse_ok("[[ ! -n $x ]]")
   match first_command(negated).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Not(inner) =>
+        Not(inner) =>
           match inner {
-            @parser.ConditionExpr::Unary(op, _, operand) => {
+            Unary(op, _, operand) => {
               assert_eq(op, "-n")
               assert_eq(operand.source, "$x")
             }
@@ -1382,14 +1373,14 @@ test "condition expressions support negation, escaped groups, and regex words" {
 
   let grouped = parse_ok("[ \\( a = b \\) -a \\( c = d \\) ]")
   match first_command(grouped).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::And(op, left, right) => {
+        And(op, left, right) => {
           assert_eq(op.text, "-a")
           match left {
-            @parser.ConditionExpr::Group(inner) =>
+            Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+                Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "=")
                   assert_eq(lhs.source, "a")
                   assert_eq(rhs.source, "b")
@@ -1399,9 +1390,9 @@ test "condition expressions support negation, escaped groups, and regex words" {
             _ => fail("expected grouped lhs")
           }
           match right {
-            @parser.ConditionExpr::Group(inner) =>
+            Group(inner) =>
               match inner {
-                @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+                Binary(op, _, lhs, rhs) => {
                   assert_eq(op, "=")
                   assert_eq(lhs.source, "c")
                   assert_eq(rhs.source, "d")
@@ -1418,9 +1409,9 @@ test "condition expressions support negation, escaped groups, and regex words" {
 
   let regex = parse_ok("[[ $1 =~ a(b)|c ]]")
   match first_command(regex).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "a(b)|c")
@@ -1435,9 +1426,9 @@ test "condition expressions support negation, escaped groups, and regex words" {
 test "double bracket string comparison operators parse like shellcheck" {
   let greater = parse_ok("[[ $cword > 1 ]]")
   match first_command(greater).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, ">")
           assert_eq(lhs.source, "$cword")
           assert_eq(rhs.source, "1")
@@ -1449,9 +1440,9 @@ test "double bracket string comparison operators parse like shellcheck" {
 
   let lesser = parse_ok("[[ $cword < 10 ]]")
   match first_command(lesser).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "<")
           assert_eq(lhs.source, "$cword")
           assert_eq(rhs.source, "10")
@@ -1468,9 +1459,9 @@ test "condition parser preserves unknown operators for checks" {
   assert_true(!report_has_code(unary, 1073))
   let unary_script = report_script(unary)
   match first_command(unary_script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, _, operand) => {
+        Unary(op, _, operand) => {
           assert_eq(op, "-M")
           assert_eq(operand.source, "a")
         }
@@ -1483,9 +1474,9 @@ test "condition parser preserves unknown operators for checks" {
   assert_true(!report_has_code(longer_unary, 1073))
   let longer_unary_script = report_script(longer_unary)
   match first_command(longer_unary_script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Unary(op, _, operand) => {
+        Unary(op, _, operand) => {
           assert_eq(op, "-abc")
           assert_eq(operand.source, "a")
         }
@@ -1498,9 +1489,9 @@ test "condition parser preserves unknown operators for checks" {
   assert_true(!report_has_code(binary, 1073))
   let binary_script = report_script(binary)
   match first_command(binary_script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "-xz")
           assert_eq(lhs.source, "a")
           assert_eq(rhs.source, "b")
@@ -1514,9 +1505,9 @@ test "condition parser preserves unknown operators for checks" {
   assert_true(!report_has_code(longer_binary, 1073))
   let longer_binary_script = report_script(longer_binary)
   match first_command(longer_binary_script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "-xyz")
           assert_eq(lhs.source, "a")
           assert_eq(rhs.source, "b")
@@ -1626,9 +1617,9 @@ test "compound commands require separators before following words" {
 test "regex conditions keep grouped patterns and embedded closing brackets" {
   let grouped = parse_ok("[[ $c =~ f( ]] )* ]]")
   match first_command(grouped).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$c")
           assert_eq(rhs.source, "f( ]] )*")
@@ -1640,9 +1631,9 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
 
   let embedded = parse_ok("[[ $c =~ f( ($var ]]) )* ]]")
   match first_command(embedded).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$c")
           assert_eq(rhs.source, "f( ($var ]]) )*")
@@ -1654,9 +1645,9 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
 
   let escaped = parse_ok("[[ $1 =~ ^(a\\ b)$ ]]")
   match first_command(escaped).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "^(a\\ b)$")
@@ -1668,9 +1659,9 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
 
   let logical_chars = parse_ok("[[ $v =~ a&&b|c||d ]]")
   match first_command(logical_chars).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$v")
           assert_eq(rhs.source, "a&&b|c||d")
@@ -1682,9 +1673,9 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
 
   let escaped_groups = parse_ok("[[ $1 =~ \\.a\\.(\\.b\\.)\\.c\\. ]]")
   match first_command(escaped_groups).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(op, _, lhs, rhs) => {
+        Binary(op, _, lhs, rhs) => {
           assert_eq(op, "=~")
           assert_eq(lhs.source, "$1")
           assert_eq(rhs.source, "\\.a\\.(\\.b\\.)\\.c\\.")
@@ -1699,13 +1690,12 @@ test "regex conditions keep grouped patterns and embedded closing brackets" {
 test "regex condition parts preserve backslashes" {
   let script = parse_ok("[[ $1 =~ \\.a\\.(\\.b\\.)\\.c\\. ]]")
   match first_command(script).kind {
-    @parser.CommandKind::Condition(condition) =>
+    Condition(condition) =>
       match condition.expr {
-        @parser.ConditionExpr::Binary(_, _, _, rhs) => {
+        Binary(_, _, _, rhs) => {
           assert_eq(rhs.source, "\\.a\\.(\\.b\\.)\\.c\\.")
           match rhs.parts[0] {
-            @parser.WordPart::Literal(text) =>
-              assert_eq(text, "\\.a\\.(\\.b\\.)\\.c\\.")
+            Literal(text) => assert_eq(text, "\\.a\\.(\\.b\\.)\\.c\\.")
             _ => fail("expected regex literal part")
           }
         }
@@ -1719,7 +1709,7 @@ test "regex condition parts preserve backslashes" {
 test "arithmetic command and arithmetic for loop" {
   let arithmetic = parse_ok("(( i += 1 ))")
   match first_command(arithmetic).kind {
-    @parser.CommandKind::Arithmetic(command) => {
+    Arithmetic(command) => {
       assert_true(command.raw.contains("i += 1"))
       assert_true(command.expr.tokens.length() >= 3)
     }
@@ -1727,7 +1717,7 @@ test "arithmetic command and arithmetic for loop" {
   }
   let for_script = parse_ok("for ((i = 0; i < 3; i++)); do echo $i; done")
   match first_command(for_script).kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "i = 0")
       assert_eq(arithmetic_raw(clause.condition), "i < 3")
       assert_eq(arithmetic_raw(clause.step), "i++")
@@ -1748,7 +1738,7 @@ test "arithmetic for loop delimiter diagnostics align more closely with shellche
   let spaced_script = report_script(spaced)
   assert_true(report_has_code(spaced, 1138))
   match first_command(spaced_script).kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       assert_eq(arithmetic_raw(clause.init), "i = 0")
       assert_eq(arithmetic_raw(clause.condition), "i < 3")
       assert_eq(arithmetic_raw(clause.step), "i++")
@@ -1770,11 +1760,11 @@ test "arithmetic for loop delimiter diagnostics align more closely with shellche
 test "arithmetic nodes preserve variable indices" {
   let script = parse_ok("(( arr[i + 1] += total ))")
   match first_command(script).kind {
-    @parser.CommandKind::Arithmetic(command) => {
+    Arithmetic(command) => {
       let mut saw_indexed = false
       for token in command.expr.tokens {
         match token {
-          @parser.ArithmeticToken::Variable(name, indexes) =>
+          Variable(name, indexes) =>
             if name == "arr" {
               saw_indexed = true
               assert_eq(indexes.length(), 1)
@@ -1802,7 +1792,7 @@ test "arithmetic expressions keep shell fragments and line continuations structu
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::Arithmetic(command) => {
+    Arithmetic(command) => {
       let mut saw_backtick = false
       let mut saw_parameter = false
       let mut saw_special = false
@@ -1811,29 +1801,23 @@ test "arithmetic expressions keep shell fragments and line continuations structu
       let mut saw_index = false
       for token in command.expr.tokens {
         match token {
-          @parser.ArithmeticToken::Expansion(word) =>
+          Expansion(word) =>
             match word.parts[0] {
-              @parser.WordPart::BackQuoted(inner) => {
+              BackQuoted(inner) => {
                 saw_backtick = true
                 assert_true(inner.dump().contains("echo"))
               }
-              @parser.WordPart::Parameter(name) =>
-                if name == "foo" {
-                  saw_parameter = true
-                }
-              @parser.WordPart::SpecialParameter(name) =>
-                if name == "?" {
-                  saw_special = true
-                }
+              Parameter(name) => if name == "foo" { saw_parameter = true }
+              SpecialParameter(name) => if name == "?" { saw_special = true }
               _ => ()
             }
-          @parser.ArithmeticToken::Literal(text) =>
+          Literal(text) =>
             if text == "10#08" || text == "16#f" {
               saw_base = true
             } else if text == "\\" {
               saw_continuation_literal = true
             }
-          @parser.ArithmeticToken::Variable(name, indexes) =>
+          Variable(name, indexes) =>
             if name == "foo" {
               saw_index = true
               assert_eq(index_raw(indexes[0]), "9*y+x")
@@ -1862,9 +1846,9 @@ test "ambiguous dollar-double-paren falls back to command substitution with a di
   let script = report_script(report)
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::CommandSubstitution(inner) =>
+    CommandSubstitution(inner) =>
       match first_command(inner).kind {
-        @parser.CommandKind::Subshell(body) => {
+        Subshell(body) => {
           let (_, nested) = first_simple(body)
           assert_eq(nested.words[0].source, "echo")
           assert_eq(nested.words[1].source, "hi")
@@ -1895,7 +1879,7 @@ test "ambiguous dollar-double-paren diagnostic keeps shellcheck severity and spa
     if diagnostic.code == Some(1102) {
       found = true
       match diagnostic.severity {
-        @parser.DiagnosticSeverity::Error => ()
+        Error => ()
         _ => fail("expected SC1102 to stay an error-severity diagnostic")
       }
       assert_eq(diagnostic.span.start.line, 1)
@@ -1917,7 +1901,7 @@ test "ambiguous double-paren compound commands fall back to subshells" {
   let script = report_script(report)
   assert_true(report_has_code(report, 1105))
   match first_command(script).kind {
-    @parser.CommandKind::Subshell(body) => assert_eq(body.items.length(), 1)
+    Subshell(body) => assert_eq(body.items.length(), 1)
     _ => fail("expected subshell fallback")
   }
 }
@@ -1926,7 +1910,7 @@ test "ambiguous double-paren compound commands fall back to subshells" {
 test "select, case, and coproc commands" {
   let select_script = parse_ok("select name in a b; do echo $name; done")
   match first_command(select_script).kind {
-    @parser.CommandKind::Select(clause) => {
+    Select(clause) => {
       assert_eq(clause.name, "name")
       assert_eq(clause.values.length(), 2)
     }
@@ -1937,11 +1921,11 @@ test "select, case, and coproc commands" {
     "case $x in a|b) echo one ;; c) echo two ;& d) echo three ;; esac",
   )
   match first_command(case_script).kind {
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       assert_eq(clause.items.length(), 3)
       assert_eq(clause.items[0].patterns.length(), 2)
       match clause.items[1].separator {
-        @parser.CaseSeparator::FallThrough => ()
+        FallThrough => ()
         _ => fail("expected fallthrough case separator")
       }
     }
@@ -1955,10 +1939,10 @@ test "select, case, and coproc commands" {
     ),
   )
   match first_command(implicit_break).kind {
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       assert_eq(clause.items.length(), 1)
       match clause.items[0].separator {
-        @parser.CaseSeparator::Break => ()
+        Break => ()
         _ => fail("expected implicit break before esac")
       }
     }
@@ -1967,13 +1951,13 @@ test "select, case, and coproc commands" {
 
   let coproc_script = parse_ok("coproc worker { echo hi; }")
   match first_command(coproc_script).kind {
-    @parser.CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       match clause.name {
         Some(word) => assert_eq(word.source, "worker")
         None => fail("expected coproc name")
       }
       match clause.body.kind {
-        @parser.CommandKind::BraceGroup(_) => ()
+        BraceGroup(_) => ()
         _ => fail("expected brace group body")
       }
     }
@@ -1982,10 +1966,10 @@ test "select, case, and coproc commands" {
 
   let anonymous_simple = parse_ok("coproc worker echo hi")
   match first_command(anonymous_simple).kind {
-    @parser.CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       assert_true(clause.name is None)
       match clause.body.kind {
-        @parser.CommandKind::Simple(simple) => {
+        Simple(simple) => {
           assert_eq(simple.words.length(), 3)
           assert_eq(simple.words[0].source, "worker")
           assert_eq(simple.words[1].source, "echo")
@@ -2008,7 +1992,7 @@ test "select loops accept newline separators before do without in clause" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::Select(clause) => {
+    Select(clause) => {
       assert_eq(clause.name, "choice")
       assert_eq(clause.values.length(), 0)
       let (_, simple) = first_simple(clause.body)
@@ -2068,7 +2052,7 @@ test "bats parser allows empty same-line test names like shellcheck" {
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::BatsTest(clause) => {
+    BatsTest(clause) => {
       assert_eq(clause.name, "")
       assert_eq(clause.body.items.length(), 1)
     }
@@ -2093,14 +2077,12 @@ test "comments terminate commands and inline shellcheck directives warn" {
 
   assert_eq(script.items.length(), 2)
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "bar")
+    Simple(simple) => assert_eq(simple.words[0].source, "bar")
     _ => fail("expected leading simple command after comment")
   }
   assert_eq(script.items[1].and_or.tail.length(), 1)
   match script.items[1].and_or.tail[0].1.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "baz")
+    Simple(simple) => assert_eq(simple.words[0].source, "baz")
     _ => fail("expected trailing simple command after comment")
   }
 
@@ -2208,7 +2190,7 @@ test "case branch annotations emit shellcheck-style diagnostics" {
   assert_true(report_has_code(report, 1072))
   assert_true(report_has_code(report, 1085))
   match first_command(script).kind {
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       assert_eq(clause.items.length(), 1)
       assert_eq(clause.items[0].patterns[0].source, "a")
     }
@@ -2230,7 +2212,7 @@ test "case items recover missing separators and pattern closers" {
   let separator_script = report_script(missing_separator)
   assert_true(report_has_code(missing_separator, 1074))
   match first_command(separator_script).kind {
-    @parser.CommandKind::Case(clause) => assert_eq(clause.items.length(), 2)
+    Case(clause) => assert_eq(clause.items.length(), 2)
     _ => fail("expected recovered case clause")
   }
 
@@ -2294,17 +2276,16 @@ test "case item bodies do not mistake function and arithmetic headers for patter
     ),
   )
   match first_command(script).kind {
-    @parser.CommandKind::Case(clause) => {
+    Case(clause) => {
       assert_eq(clause.items.length(), 1)
       let body_items = clause.items[0].body.items
       assert_eq(body_items.length(), 2)
       match body_items[0].and_or.head.segments[0].command.kind {
-        @parser.CommandKind::Function(function_def) =>
-          assert_eq(function_def.name, "func_usage")
+        Function(function_def) => assert_eq(function_def.name, "func_usage")
         _ => fail("expected function definition inside case item body")
       }
       match body_items[1].and_or.head.segments[0].command.kind {
-        @parser.CommandKind::ForArithmetic(_) => ()
+        ForArithmetic(_) => ()
         _ => fail("expected arithmetic for loop inside case item body")
       }
     }
@@ -2322,7 +2303,7 @@ test "bats tests are parsed as compound commands" {
     ),
   )
   match first_command(simple).kind {
-    @parser.CommandKind::BatsTest(clause) => {
+    BatsTest(clause) => {
       assert_eq(clause.name, "'can parse'")
       assert_eq(clause.body.items.length(), 1)
     }
@@ -2337,7 +2318,7 @@ test "bats tests are parsed as compound commands" {
     ),
   )
   match first_command(nested_name).kind {
-    @parser.CommandKind::BatsTest(clause) => {
+    BatsTest(clause) => {
       assert_eq(clause.name, "foo { bar { baz")
       assert_eq(clause.body.items.length(), 1)
     }
@@ -2352,7 +2333,7 @@ test "bats tests are parsed as compound commands" {
     ),
   )
   match first_command(quoted_brace).kind {
-    @parser.CommandKind::BatsTest(clause) => {
+    BatsTest(clause) => {
       assert_eq(clause.name, "'brace { in name'")
       assert_eq(clause.body.items.length(), 1)
     }
@@ -2368,32 +2349,30 @@ test "word forms cover bash expansions" {
   let (_, simple) = first_simple(script)
   assert_eq(simple.words.length(), 9)
   match simple.words[1].parts[0] {
-    @parser.WordPart::DollarSingleQuoted(text) => assert_eq(text, "hi")
+    DollarSingleQuoted(text) => assert_eq(text, "hi")
     _ => fail("expected dollar single quote")
   }
   match simple.words[2].parts[0] {
-    @parser.WordPart::DollarDoubleQuoted(parts) => assert_eq(parts.length(), 1)
+    DollarDoubleQuoted(parts) => assert_eq(parts.length(), 1)
     _ => fail("expected dollar double quote")
   }
   match simple.words[3].parts[0] {
-    @parser.WordPart::DollarBracket(expr) =>
-      assert_eq(arithmetic_raw(expr), "1+2")
+    DollarBracket(expr) => assert_eq(arithmetic_raw(expr), "1+2")
     _ => fail("expected dollar bracket expansion")
   }
   match simple.words[4].parts[0] {
-    @parser.WordPart::BackQuoted(inner) =>
-      assert_true(inner.dump().contains("printf"))
+    BackQuoted(inner) => assert_true(inner.dump().contains("printf"))
     _ => fail("expected backquoted substitution")
   }
   match simple.words[5].parts[0] {
-    @parser.WordPart::ProcessSubstitution(kind, inner) => {
+    ProcessSubstitution(kind, inner) => {
       assert_eq(kind, "<")
       assert_true(inner.dump().contains("echo"))
     }
     _ => fail("expected process substitution")
   }
   match simple.words[6].parts[1] {
-    @parser.WordPart::ExtGlob(pattern) => {
+    ExtGlob(pattern) => {
       assert_eq(pattern.raw, "@(bar)")
       assert_eq(pattern.alternatives.length(), 1)
       assert_eq(pattern.alternatives[0].source, "bar")
@@ -2401,7 +2380,7 @@ test "word forms cover bash expansions" {
     _ => fail("expected extglob")
   }
   match simple.words[7].parts[0] {
-    @parser.WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       assert_eq(expansion.raw, "{a,b}")
       assert_eq(expansion.elements.length(), 2)
       assert_eq(expansion.elements[0].source, "a")
@@ -2410,7 +2389,7 @@ test "word forms cover bash expansions" {
     _ => fail("expected brace expansion")
   }
   match simple.words[8].parts[0] {
-    @parser.WordPart::Glob(raw) => assert_eq(raw, "*.sh")
+    Glob(raw) => assert_eq(raw, "*.sh")
     _ => fail("expected glob")
   }
 }
@@ -2427,19 +2406,19 @@ test "brace expansion ignores separators inside quotes" {
   assert_eq(simple.words[1].source, "{\"a,b\"}")
   assert_eq(simple.words[1].parts.length(), 3)
   match simple.words[1].parts[0] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "{")
+    Literal(text) => assert_eq(text, "{")
     _ => fail("expected literal opening brace")
   }
   match simple.words[1].parts[1] {
-    @parser.WordPart::DoubleQuoted(parts) =>
+    DoubleQuoted(parts) =>
       match parts[0] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "a,b")
+        Literal(text) => assert_eq(text, "a,b")
         _ => fail("expected quoted comma to stay literal")
       }
     _ => fail("expected quoted middle section")
   }
   match simple.words[1].parts[2] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "}")
+    Literal(text) => assert_eq(text, "}")
     _ => fail("expected literal closing brace")
   }
 }
@@ -2452,18 +2431,18 @@ test "escaped words stay literal and quoted escapes keep backslashes" {
   assert_eq(simple.words[1].source, "\\*.sh")
   assert_eq(simple.words[1].parts.length(), 2)
   match simple.words[1].parts[0] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "*")
+    Literal(text) => assert_eq(text, "*")
     _ => fail("expected escaped glob prefix to stay literal")
   }
   match simple.words[1].parts[1] {
-    @parser.WordPart::Literal(text) => assert_eq(text, ".sh")
+    Literal(text) => assert_eq(text, ".sh")
     _ => fail("expected escaped glob suffix to stay literal")
   }
 
   match simple.words[2].parts[0] {
-    @parser.WordPart::DoubleQuoted(parts) =>
+    DoubleQuoted(parts) =>
       match parts[0] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "\\q")
+        Literal(text) => assert_eq(text, "\\q")
         _ => fail("expected ordinary double-quoted escape to keep backslash")
       }
     _ => fail("expected double quoted word")
@@ -2471,15 +2450,15 @@ test "escaped words stay literal and quoted escapes keep backslashes" {
 
   assert_eq(simple.words[3].parts.length(), 3)
   match simple.words[3].parts[0] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "{")
+    Literal(text) => assert_eq(text, "{")
     _ => fail("expected escaped brace prefix to stay literal")
   }
   match simple.words[3].parts[1] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "a,b")
+    Literal(text) => assert_eq(text, "a,b")
     _ => fail("expected escaped brace body to stay literal")
   }
   match simple.words[3].parts[2] {
-    @parser.WordPart::Literal(text) => assert_eq(text, "}")
+    Literal(text) => assert_eq(text, "}")
     _ => fail("expected escaped brace suffix to stay literal")
   }
 }
@@ -2489,7 +2468,7 @@ test "brace command substitution is parsed as a word part" {
   let script = parse_ok("echo ${ echo hi; }")
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BraceCommandSubstitution(false, inner) =>
+    BraceCommandSubstitution(false, inner) =>
       assert_true(inner.dump().contains("echo"))
     _ => fail("expected brace command substitution")
   }
@@ -2506,15 +2485,15 @@ test "brace command substitution handles comments, nested groups, and piped form
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BraceCommandSubstitution(false, inner) =>
+    BraceCommandSubstitution(false, inner) =>
       match first_command(inner).kind {
-        @parser.CommandKind::If(clause) => assert_eq(clause.arms.length(), 1)
+        If(clause) => assert_eq(clause.arms.length(), 1)
         _ => fail("expected if clause inside brace command substitution")
       }
     _ => fail("expected ordinary brace command substitution")
   }
   match simple.words[2].parts[0] {
-    @parser.WordPart::BraceCommandSubstitution(true, inner) => {
+    BraceCommandSubstitution(true, inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.assignments.length(), 1)
       assert_eq(nested.assignments[0].name, "REPLY")
@@ -2562,16 +2541,15 @@ test "braced parameter expansion is structured" {
 
   let defaulted = braced_parameter(simple.words[2].parts[0])
   match defaulted.operator {
-    Some(@parser.ParameterOperator::DefaultValue(value)) =>
-      assert_eq(value, "bar")
+    Some(DefaultValue(value)) => assert_eq(value, "bar")
     _ => fail("expected default operator")
   }
 
   let replaced = braced_parameter(simple.words[3].parts[0])
   match replaced.operator {
-    Some(@parser.ParameterOperator::Replace(mode, pattern, replacement)) => {
+    Some(Replace(mode, pattern, replacement)) => {
       match mode {
-        @parser.ParameterReplaceMode::First => ()
+        First => ()
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "bar")
@@ -2585,7 +2563,7 @@ test "braced parameter expansion is structured" {
 
   let sliced = braced_parameter(simple.words[4].parts[0])
   match sliced.operator {
-    Some(@parser.ParameterOperator::Slice(offset, Some(length))) => {
+    Some(Slice(offset, Some(length))) => {
       assert_eq(offset, "")
       assert_eq(length, "1")
     }
@@ -2613,15 +2591,15 @@ test "braced parameter expansion supports transforms and case operators" {
 
   let transformed = braced_parameter(simple.words[1].parts[0])
   match transformed.operator {
-    Some(@parser.ParameterOperator::Transform(kind)) => assert_eq(kind, "Q")
+    Some(Transform(kind)) => assert_eq(kind, "Q")
     _ => fail("expected transform operator")
   }
 
   let upper = braced_parameter(simple.words[2].parts[0])
   match upper.operator {
-    Some(@parser.ParameterOperator::CaseModify(mode, pattern)) => {
+    Some(CaseModify(mode, pattern)) => {
       match mode {
-        @parser.ParameterCaseMode::UpperAll => ()
+        UpperAll => ()
         _ => fail("expected upper-all mode")
       }
       match pattern {
@@ -2634,9 +2612,9 @@ test "braced parameter expansion supports transforms and case operators" {
 
   let lower = braced_parameter(simple.words[3].parts[0])
   match lower.operator {
-    Some(@parser.ParameterOperator::CaseModify(mode, pattern)) => {
+    Some(CaseModify(mode, pattern)) => {
       match mode {
-        @parser.ParameterCaseMode::LowerAll => ()
+        LowerAll => ()
         _ => fail("expected lower-all mode")
       }
       match pattern {
@@ -2649,9 +2627,9 @@ test "braced parameter expansion supports transforms and case operators" {
 
   let toggled = braced_parameter(simple.words[4].parts[0])
   match toggled.operator {
-    Some(@parser.ParameterOperator::CaseModify(mode, pattern)) => {
+    Some(CaseModify(mode, pattern)) => {
       match mode {
-        @parser.ParameterCaseMode::ToggleFirst => ()
+        ToggleFirst => ()
         _ => fail("expected toggle-first mode")
       }
       match pattern {
@@ -2672,24 +2650,22 @@ test "braced parameter expansion keeps nested content and names operators" {
 
   let nested = braced_parameter(simple.words[1].parts[0])
   match nested.operator {
-    Some(@parser.ParameterOperator::DefaultValue(value)) =>
-      assert_eq(value, "${bar}")
+    Some(DefaultValue(value)) => assert_eq(value, "${bar}")
     _ => fail("expected nested default expansion")
   }
 
   let command_sub = braced_parameter(simple.words[2].parts[0])
   match command_sub.operator {
-    Some(@parser.ParameterOperator::RemoveLongestSuffix(value)) =>
-      assert_eq(value, "$(echo cow\\})")
+    Some(RemoveLongestSuffix(value)) => assert_eq(value, "$(echo cow\\})")
     _ => fail("expected command-substitution suffix trim")
   }
 
   let star_names = braced_parameter(simple.words[3].parts[0])
   assert_true(star_names.indirect)
   match star_names.operator {
-    Some(@parser.ParameterOperator::Names(mode)) =>
+    Some(Names(mode)) =>
       match mode {
-        @parser.ParameterNamesMode::Star => ()
+        Star => ()
         _ => fail("expected star names mode")
       }
     _ => fail("expected names operator")
@@ -2698,9 +2674,9 @@ test "braced parameter expansion keeps nested content and names operators" {
   let at_names = braced_parameter(simple.words[4].parts[0])
   assert_true(at_names.indirect)
   match at_names.operator {
-    Some(@parser.ParameterOperator::Names(mode)) =>
+    Some(Names(mode)) =>
       match mode {
-        @parser.ParameterNamesMode::At => ()
+        At => ()
         _ => fail("expected at names mode")
       }
     _ => fail("expected names operator")
@@ -2716,7 +2692,7 @@ test "assignments, arrays, and named redirections are preserved" {
   assert_eq(simple.assignments[0].append, true)
   assert_eq(assignment_word(simple.assignments[0].value).source, "x")
   match simple.assignments[1].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    ArrayLiteral(elements) => {
       assert_eq(elements.length(), 2)
       assert_eq(elements[0].indexes.length(), 0)
       assert_eq(assignment_word(elements[0].value).source, "a")
@@ -2726,11 +2702,11 @@ test "assignments, arrays, and named redirections are preserved" {
   }
   assert_eq(command.redirects.length(), 2)
   match command.redirects[0].source {
-    Some(@parser.RedirectionSource::Named(name)) => assert_eq(name, "fd")
+    Some(Named(name)) => assert_eq(name, "fd")
     _ => fail("expected named redirection source")
   }
   match command.redirects[1].source {
-    Some(@parser.RedirectionSource::All) => ()
+    Some(All) => ()
     _ => fail("expected all-stream redirection source")
   }
 }
@@ -2743,7 +2719,7 @@ test "modifier commands accept assignment suffixes" {
   assert_eq(export_simple.words[0].source, "export")
   assert_eq(export_simple.assignments.length(), 1)
   match export_simple.assignments[0].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    ArrayLiteral(elements) => {
       assert_eq(elements.length(), 2)
       assert_eq(assignment_word(elements[0].value).source, "bar")
       assert_eq(assignment_word(elements[1].value).source, "baz")
@@ -2758,7 +2734,7 @@ test "modifier commands accept assignment suffixes" {
   assert_eq(typed_simple.words[1].source, "-a")
   assert_eq(typed_simple.assignments.length(), 1)
   match typed_simple.assignments[0].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       assert_eq(assignment_word(elements[0].value).source, "lol")
     _ => fail("expected typeset array assignment")
   }
@@ -2769,7 +2745,7 @@ test "array literal supports indexed and nested elements" {
   let script = parse_ok("arr=([2]=foo [3]=(bar baz) qux)")
   let (_, simple) = first_simple(script)
   match simple.assignments[0].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    ArrayLiteral(elements) => {
       assert_eq(elements.length(), 3)
       assert_eq(index_raw(elements[0].indexes[0]), "2")
       assert_eq(elements[0].append, false)
@@ -2777,7 +2753,7 @@ test "array literal supports indexed and nested elements" {
       assert_eq(index_raw(elements[1].indexes[0]), "3")
       assert_eq(elements[1].append, false)
       match elements[1].value {
-        @parser.AssignmentValue::ArrayLiteral(nested) => {
+        ArrayLiteral(nested) => {
           assert_eq(nested.length(), 2)
           assert_eq(assignment_word(nested[0].value).source, "bar")
           assert_eq(assignment_word(nested[1].value).source, "baz")
@@ -2795,7 +2771,7 @@ test "comma-separated associative array elements keep comma tokens in value word
   let script = parse_ok("arr=([a]=b,[c]=d,[e]=f)")
   let (_, simple) = first_simple(script)
   match simple.assignments[0].value {
-    @parser.AssignmentValue::ArrayLiteral(elements) => {
+    ArrayLiteral(elements) => {
       assert_eq(elements.length(), 1)
       assert_eq(index_raw(elements[0].indexes[0]), "a")
       assert_eq(assignment_word(elements[0].value).source, "b,[c]=d,[e]=f")
@@ -2809,7 +2785,7 @@ test "backquoted and heredoc escapes preserve backslashes" {
   let backquoted = parse_ok("echo `printf \\q`")
   let (_, simple) = first_simple(backquoted)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BackQuoted(inner) => {
+    BackQuoted(inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words.length(), 2)
       assert_eq(nested.words[0].source, "printf")
@@ -2829,7 +2805,7 @@ test "backquoted and heredoc escapes preserve backslashes" {
   )
   let (command, _) = first_simple(heredoc)
   match command.redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) => {
+    HereDoc(doc) => {
       assert_eq(
         doc.body,
         (
@@ -2841,7 +2817,7 @@ test "backquoted and heredoc escapes preserve backslashes" {
       match doc.parts {
         Some(parts) =>
           match parts[0] {
-            @parser.WordPart::Literal(text) =>
+            Literal(text) =>
               assert_eq(
                 text,
                 (
@@ -2877,12 +2853,12 @@ test "assignment diagnostics align more closely with shellcheck" {
   assert_true(report_has_code_on_line(report, 1116, 4))
 
   match first_command(script).kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.assignments.length(), 1)
       assert_eq(simple.words.length(), 1)
       assert_eq(simple.words[0].source, "bar")
       match simple.assignments[0].value {
-        @parser.AssignmentValue::Empty => ()
+        Empty => ()
         _ => fail("expected empty assignment value before spaced word")
       }
     }
@@ -2890,7 +2866,7 @@ test "assignment diagnostics align more closely with shellcheck" {
   }
 
   match script.items[2].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.assignments.length(), 1)
       assert_eq(assignment_word(simple.assignments[0].value).source, "=bar")
     }
@@ -2911,8 +2887,7 @@ test "bang spacing and dollar-left array assignments emit shellcheck diagnostics
   let segment = bang_script.items[0].and_or.head.segments[0]
   assert_eq(segment.bangs, 1)
   match segment.command.kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "foo")
+    Simple(simple) => assert_eq(simple.words[0].source, "foo")
     _ => fail("expected negated simple command")
   }
 
@@ -2951,18 +2926,18 @@ test "double-quoted lonely dollars and bare expansions emit shellcheck-style dia
   assert_true(report_has_code(report, 1087))
 
   match first_command(script).kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words[1].parts.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::DoubleQuoted(parts) =>
+        DoubleQuoted(parts) =>
           match parts[0] {
-            @parser.WordPart::Literal(text) => assert_eq(text, "$")
+            Literal(text) => assert_eq(text, "$")
             _ => fail("expected literal dollar in double quotes")
           }
         _ => fail("expected double-quoted literal dollar")
       }
       match simple.words[1].parts[1] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "5")
+        Literal(text) => assert_eq(text, "5")
         _ => fail("expected suffix literal after literal dollar")
       }
     }
@@ -2970,14 +2945,14 @@ test "double-quoted lonely dollars and bare expansions emit shellcheck-style dia
   }
 
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words[1].parts.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::SpecialParameter(name) => assert_eq(name, "1")
+        SpecialParameter(name) => assert_eq(name, "1")
         _ => fail("expected positional parameter token")
       }
       match simple.words[1].parts[1] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "0")
+        Literal(text) => assert_eq(text, "0")
         _ => fail("expected literal suffix for $10")
       }
     }
@@ -2985,14 +2960,14 @@ test "double-quoted lonely dollars and bare expansions emit shellcheck-style dia
   }
 
   match script.items[2].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words[1].parts.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::Parameter(name) => assert_eq(name, "arr")
+        Parameter(name) => assert_eq(name, "arr")
         _ => fail("expected array name parameter")
       }
       match simple.words[1].parts[1] {
-        @parser.WordPart::Glob(raw) => assert_eq(raw, "[@]")
+        Glob(raw) => assert_eq(raw, "[@]")
         _ => fail("expected glob suffix for unbraced array expansion")
       }
     }
@@ -3037,14 +3012,14 @@ test "bare dollar diagnostics preserve shellcheck-style spans and recovery" {
   assert_true(saw_1087)
 
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words[1].parts.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::SpecialParameter(name) => assert_eq(name, "1")
+        SpecialParameter(name) => assert_eq(name, "1")
         _ => fail("expected positional parameter recovery for $10")
       }
       match simple.words[1].parts[1] {
-        @parser.WordPart::Literal(text) => assert_eq(text, "0")
+        Literal(text) => assert_eq(text, "0")
         _ => fail("expected trailing digit to stay literal after $10")
       }
     }
@@ -3052,14 +3027,14 @@ test "bare dollar diagnostics preserve shellcheck-style spans and recovery" {
   }
 
   match script.items[2].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.words[1].parts.length(), 2)
       match simple.words[1].parts[0] {
-        @parser.WordPart::Parameter(name) => assert_eq(name, "arr")
+        Parameter(name) => assert_eq(name, "arr")
         _ => fail("expected bare parameter before array warning")
       }
       match simple.words[1].parts[1] {
-        @parser.WordPart::Glob(text) => assert_eq(text, "[@]")
+        Glob(text) => assert_eq(text, "[@]")
         _ => fail("expected trailing [@] to remain as glob text")
       }
     }
@@ -3127,7 +3102,7 @@ test "literal apostrophe escapes stay quiet like shellcheck" {
   )
   assert_true(!report_has_code(pattern, 1001))
   match first_command(report_script(pattern)).kind {
-    @parser.CommandKind::Case(clause) => assert_eq(clause.items.length(), 2)
+    Case(clause) => assert_eq(clause.items.length(), 2)
     _ => fail("expected case clause")
   }
 }
@@ -3144,7 +3119,7 @@ test "multiline single quotes can concatenate with adjacent double quotes" {
   assert_true(!report_has_code(report, 1078))
   assert_true(!report_has_code(report, 1079))
   match first_command(report_script(report)).kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       assert_eq(
         simple.words[1].source,
         (
@@ -3210,7 +3185,7 @@ test "here doc reports specific delimiter mismatches" {
   let trailing_space_script = report_script(trailing_space_report)
   assert_true(report_has_code(trailing_space_report, 1118))
   match first_command(trailing_space_script).redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) =>
+    HereDoc(doc) =>
       assert_eq(
         doc.body,
         (
@@ -3264,7 +3239,7 @@ test "here doc delimiter quote removal respects shell quoting rules" {
   )
   let command = first_command(script)
   match command.redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(doc) => {
+    HereDoc(doc) => {
       assert_eq(doc.delimiter, "\\\"foo")
       assert_eq(
         doc.body,
@@ -3291,7 +3266,7 @@ test "here doc delimiters do not emit ordinary word escape diagnostics" {
   )
   assert_true(!report_has_code(report, 1001))
   match first_command(report_script(report)).redirects[0].target {
-    @parser.RedirectionTarget::HereDoc(here_doc) => {
+    HereDoc(here_doc) => {
       assert_eq(here_doc.delimiter, "EOF")
       assert_true(here_doc.quoted)
     }
@@ -3349,8 +3324,7 @@ test "eval and let commands emit shellcheck-style diagnostics" {
   let let_script = report_script(let_report)
   assert_true(report_has_code(let_report, 1106))
   match first_command(let_script).kind {
-    @parser.CommandKind::Simple(simple) =>
-      assert_eq(simple.words[0].source, "let")
+    Simple(simple) => assert_eq(simple.words[0].source, "let")
     _ => fail("expected let simple command")
   }
 
@@ -3392,7 +3366,7 @@ test "source parse failure becomes a skip diagnostic" {
   let script = report_script(report)
   assert_true(report_has_code(report, 1094))
   match first_command(script).kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       match source.resolved_path {
         Some(path) => assert_eq(path, "scripts/lib/bad.sh")
         None => fail("expected resolved bad source path")
@@ -3427,7 +3401,7 @@ test "source commands keep leading assignments and path-focused diagnostics" {
   assert_eq(report.diagnostics[0].span.start.line, 1)
   assert_eq(report.diagnostics[0].span.start.column, 16)
   match first_command(script).kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       assert_eq(source.assignments.length(), 1)
       assert_eq(source.assignments[0].name, "FOO")
       assert_eq(source.path.source, "missing.sh")
@@ -3536,7 +3510,7 @@ test "here doc trailer and eof diagnostics align more closely with shellcheck" {
 test "for loops accept brace-group bodies" {
   let regular = parse_ok("for f in *; { rm \"$f\"; }")
   match first_command(regular).kind {
-    @parser.CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       assert_eq(clause.body.items.length(), 1)
       let (_, simple) = first_simple(clause.body)
       assert_eq(simple.words[0].source, "rm")
@@ -3546,8 +3520,7 @@ test "for loops accept brace-group bodies" {
 
   let arithmetic = parse_ok("for ((;;)) { true; }")
   match first_command(arithmetic).kind {
-    @parser.CommandKind::ForArithmetic(clause) =>
-      assert_eq(clause.body.items.length(), 1)
+    ForArithmetic(clause) => assert_eq(clause.body.items.length(), 1)
     _ => fail("expected arithmetic for loop")
   }
 }
@@ -3563,7 +3536,7 @@ test "for loops warn about dollar-prefixed iterator names" {
   let script = report_script(report)
   assert_true(report_has_code(report, 1086))
   match first_command(script).kind {
-    @parser.CommandKind::ForIn(clause) => assert_eq(clause.name, "a")
+    ForIn(clause) => assert_eq(clause.name, "a")
     _ => fail("expected recoverable for-in loop")
   }
 }
@@ -3578,7 +3551,7 @@ test "loop header separators align more closely with shellcheck" {
   )
   assert_true(report_has_code(for_report, 1063))
   match first_command(report_script(for_report)).kind {
-    @parser.CommandKind::ForIn(_) => ()
+    ForIn(_) => ()
     _ => fail("expected recoverable for loop")
   }
 
@@ -3590,7 +3563,7 @@ test "loop header separators align more closely with shellcheck" {
   )
   assert_true(report_has_code(select_report, 1063))
   match first_command(report_script(select_report)).kind {
-    @parser.CommandKind::Select(_) => ()
+    Select(_) => ()
     _ => fail("expected recoverable select loop")
   }
 
@@ -3625,7 +3598,7 @@ test "orphan shellcheck annotations before branch keywords become diagnostics" {
   assert_true(report.diagnostics.length() >= 1)
   @test.assert_eq(report.diagnostics[0].code, Some(1123))
   match first_command(script).kind {
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       assert_eq(clause.arms.length(), 2)
       assert_eq(clause.arms[0].body.items.length(), 1)
       assert_eq(clause.arms[1].body.items.length(), 1)
@@ -3645,7 +3618,7 @@ test "else if on the same line emits a shellcheck-style diagnostic" {
   let script = report_script(report)
   assert_true(report_has_code(report, 1075))
   match first_command(script).kind {
-    @parser.CommandKind::If(clause) => assert_true(clause.else_body is Some(_))
+    If(clause) => assert_true(clause.else_body is Some(_))
     _ => fail("expected if clause with recoverable else-if diagnostic")
   }
 }
@@ -3671,17 +3644,15 @@ test "if clauses recover missing keywords and empty branches" {
   assert_true(report_has_code(report, 1047))
 
   match first_command(script).kind {
-    @parser.CommandKind::If(clause) =>
-      assert_eq(clause.arms[0].body.items.length(), 0)
+    If(clause) => assert_eq(clause.arms[0].body.items.length(), 0)
     _ => fail("expected first recoverable if clause")
   }
   match script.items[1].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::If(clause) => assert_true(clause.else_body is Some(_))
+    If(clause) => assert_true(clause.else_body is Some(_))
     _ => fail("expected second recoverable if clause")
   }
   match script.items[2].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::If(clause) =>
-      assert_eq(clause.arms[0].body.items.length(), 1)
+    If(clause) => assert_eq(clause.arms[0].body.items.length(), 1)
     _ => fail("expected third recoverable if clause")
   }
 }
@@ -3706,13 +3677,11 @@ test "loop do groups recover missing keywords and direct semicolons" {
   assert_true(report_has_code(report, 1062))
 
   match first_command(script).kind {
-    @parser.CommandKind::While(clause) =>
-      assert_eq(clause.body.items.length(), 0)
+    While(clause) => assert_eq(clause.body.items.length(), 0)
     _ => fail("expected first recoverable while clause")
   }
   match script.items[2].and_or.head.segments[0].command.kind {
-    @parser.CommandKind::While(clause) =>
-      assert_eq(clause.body.items.length(), 1)
+    While(clause) => assert_eq(clause.body.items.length(), 1)
     _ => fail("expected third recoverable while clause")
   }
 }
@@ -3728,7 +3697,7 @@ test "brace groups recover missing closing braces at eof" {
   let script = report_script(report)
   assert_true(report_has_code(report, 1056))
   match first_command(script).kind {
-    @parser.CommandKind::BraceGroup(body) => assert_eq(body.items.length(), 1)
+    BraceGroup(body) => assert_eq(body.items.length(), 1)
     _ => fail("expected recoverable brace group")
   }
 }
@@ -3759,7 +3728,7 @@ test "array indices follow associative declarations like shellcheck" {
   }
 
   match command_at(regular, 2).kind {
-    @parser.CommandKind::Arithmetic(command) =>
+    Arithmetic(command) =>
       assert_eq(
         arithmetic_raw(
           arithmetic_index_expr(arithmetic_variable_index(command.expr, "arr")),
@@ -3797,7 +3766,7 @@ test "array indices follow associative declarations like shellcheck" {
   }
 
   match command_at(associative, 3).kind {
-    @parser.CommandKind::Arithmetic(command) => {
+    Arithmetic(command) => {
       let index = arithmetic_variable_index(command.expr, "map")
       assert_true(index.arithmetic is None)
       assert_eq(index_raw(index), "$expr + 3")
@@ -3834,8 +3803,7 @@ test "special diagnostics cover unicode input carriage returns and process subst
   let procsub_script = report_script(procsub)
   assert_true(report_has_code(procsub, 1142))
   match first_command(procsub_script).kind {
-    @parser.CommandKind::While(clause) =>
-      assert_eq(clause.body.items.length(), 1)
+    While(clause) => assert_eq(clause.body.items.length(), 1)
     _ => fail("expected while clause with process-substitution diagnostic")
   }
 }
@@ -3886,13 +3854,13 @@ test "backquoted substitutions unescape shell-special backslashes" {
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BackQuoted(inner) => {
+    BackQuoted(inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words.length(), 2)
       assert_eq(nested.words[0].source, "printf")
       assert_eq(nested.words[1].source, "$HOME")
       match nested.words[1].parts[0] {
-        @parser.WordPart::Parameter(name) => assert_eq(name, "HOME")
+        Parameter(name) => assert_eq(name, "HOME")
         _ => fail("expected parameter expansion inside backticks")
       }
     }
@@ -3912,7 +3880,7 @@ test "backquoted substitutions propagate nested diagnostics to outer report" {
   assert_true(report_has_code_on_line(report, 1131, 1))
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BackQuoted(inner) => {
+    BackQuoted(inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words[0].source, "ElseIf")
       assert_eq(nested.words[1].source, "foo")
@@ -3950,9 +3918,9 @@ test "backquoted substitutions inherit parse options for nested source resolutio
   let script = report_script(report)
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BackQuoted(inner) =>
+    BackQuoted(inner) =>
       match first_command(inner).kind {
-        @parser.CommandKind::Source(source) => {
+        Source(source) => {
           match source.resolved_path {
             Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
             None => fail("expected nested source path to resolve")
@@ -3995,9 +3963,9 @@ test "other nested script substitutions inherit parse options for source resolut
   let (_, simple) = first_simple(script)
 
   match simple.words[1].parts[0] {
-    @parser.WordPart::CommandSubstitution(inner) =>
+    CommandSubstitution(inner) =>
       match first_command(inner).kind {
-        @parser.CommandKind::Source(source) => {
+        Source(source) => {
           match source.resolved_path {
             Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
             None => fail("expected command substitution source to resolve")
@@ -4010,10 +3978,10 @@ test "other nested script substitutions inherit parse options for source resolut
   }
 
   match simple.words[2].parts[0] {
-    @parser.WordPart::ProcessSubstitution(kind, inner) => {
+    ProcessSubstitution(kind, inner) => {
       assert_eq(kind, "<")
       match first_command(inner).kind {
-        @parser.CommandKind::Source(source) => {
+        Source(source) => {
           match source.resolved_path {
             Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
             None => fail("expected process substitution source to resolve")
@@ -4027,9 +3995,9 @@ test "other nested script substitutions inherit parse options for source resolut
   }
 
   match simple.words[3].parts[0] {
-    @parser.WordPart::BraceCommandSubstitution(false, inner) =>
+    BraceCommandSubstitution(false, inner) =>
       match first_command(inner).kind {
-        @parser.CommandKind::Source(source) => {
+        Source(source) => {
           match source.resolved_path {
             Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
             None =>
@@ -4055,7 +4023,7 @@ test "acute-accent command substitutions emit shellcheck-style diagnostics" {
   assert_true(report_has_code(report, 1077))
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::BackQuoted(inner) => {
+    BackQuoted(inner) => {
       let (_, nested) = first_simple(inner)
       assert_eq(nested.words[0].source, "printf")
       assert_eq(nested.words[1].source, "x")
@@ -4074,9 +4042,9 @@ test "double-quoted backquoted substitutions unescape escaped quotes" {
   )
   let (_, simple) = first_simple(script)
   match simple.words[1].parts[0] {
-    @parser.WordPart::DoubleQuoted(parts) =>
+    DoubleQuoted(parts) =>
       match parts[0] {
-        @parser.WordPart::BackQuoted(inner) => {
+        BackQuoted(inner) => {
           let (_, nested) = first_simple(inner)
           assert_eq(nested.words[0].source, "printf")
           assert_eq(nested.words[1].source, "\"x\"")

@@ -12,13 +12,13 @@ fn analytics_batch_v_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2030,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Assignments in subshells do not affect the parent shell later.",
     },
     {
       code: 2031,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Later reads may miss assignments that only happened in a subshell.",
     },
@@ -114,7 +114,7 @@ fn run_batch_v_analysis(
 ) -> Unit {
   let effects = collect_batch_v_effects(cfg)
   let scopes : Array[BatchVScope] = []
-  let dead_vars : Map[String, BatchVDeadVar] = Map::new()
+  let dead_vars : Map[String, BatchVDeadVar] = Map([])
   let reported_origins : Array[@parser.Span] = []
   walk_batch_v_ast(
     cfg,
@@ -133,10 +133,10 @@ fn run_batch_v_analysis(
 fn collect_batch_v_effects(
   cfg : @cfg.CFG,
 ) -> Map[@cfg.CfgAstId, Array[BatchVEffect]] {
-  let effects : Map[@cfg.CfgAstId, Array[BatchVEffect]] = Map::new()
+  let effects : Map[@cfg.CfgAstId, Array[BatchVEffect]] = Map([])
   for node_id in @cfg.id_to_nodes(cfg, @cfg.root_ast_id(cfg)) {
     match @cfg.node_of(cfg, node_id) {
-      Some({ kind: @cfg.CfgNodeKind::ApplyEffects(tagged_effects), .. }) =>
+      Some({ kind: ApplyEffects(tagged_effects), .. }) =>
         for tagged in tagged_effects {
           match batch_v_effect_from_tagged(cfg, tagged) {
             Some(effect) => batch_v_push_effect(effects, tagged.ast_id, effect)
@@ -155,30 +155,28 @@ fn batch_v_effect_from_tagged(
   tagged : @cfg.CfgTaggedEffect,
 ) -> BatchVEffect? {
   match tagged.effect {
-    @cfg.CfgEffect::ReadVariable(name) =>
+    ReadVariable(name) =>
       Some({
         name,
         span: batch_v_read_effect_span(cfg, tagged.ast_id, name),
-        kind: BatchVEffectKind::Read,
+        kind: Read,
       })
-    @cfg.CfgEffect::WriteVariable(name, _)
-    | @cfg.CfgEffect::WriteGlobal(name, _)
-    | @cfg.CfgEffect::WriteLocal(name, _) =>
+    WriteVariable(name, _) | WriteGlobal(name, _) | WriteLocal(name, _) =>
       Some({
         name,
         span: batch_v_effect_span(cfg, tagged.ast_id, name),
-        kind: BatchVEffectKind::Write,
+        kind: Write,
       })
-    @cfg.CfgEffect::WritePrefix(_, _)
-    | @cfg.CfgEffect::SetProps(_, _, _)
-    | @cfg.CfgEffect::UnsetProps(_, _, _)
-    | @cfg.CfgEffect::DefineFunction(_, _, _, _)
-    | @cfg.CfgEffect::Undefine(_)
-    | @cfg.CfgEffect::UndefineVariable(_)
-    | @cfg.CfgEffect::UndefineFunction(_)
-    | @cfg.CfgEffect::UndefineNameref(_)
-    | @cfg.CfgEffect::HintArray(_)
-    | @cfg.CfgEffect::HintDefined(_) => None
+    WritePrefix(_, _)
+    | SetProps(_, _, _)
+    | UnsetProps(_, _, _)
+    | DefineFunction(_, _, _, _)
+    | Undefine(_)
+    | UndefineVariable(_)
+    | UndefineFunction(_)
+    | UndefineNameref(_)
+    | HintArray(_)
+    | HintDefined(_) => None
   }
 }
 
@@ -189,8 +187,7 @@ fn batch_v_read_effect_span(
   name : String,
 ) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, ast_id) {
-    Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(_)))
-    | Some(@semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter(_))) =>
+    Some(WordPart(Parameter(_))) | Some(WordPart(SpecialParameter(_))) =>
       match batch_v_parent_word(cfg, ast_id) {
         Some(word) =>
           match batch_t_string_offset(word.source, "$" + name) {
@@ -200,7 +197,7 @@ fn batch_v_read_effect_span(
           }
         None => batch_v_ast_span(cfg, ast_id)
       }
-    Some(@semantics.NodeRef::ParameterExpansion(_)) =>
+    Some(ParameterExpansion(_)) =>
       match batch_v_parent_word(cfg, ast_id) {
         Some(word) =>
           match batch_v_find_braced_parameter_span(word, name) {
@@ -220,17 +217,14 @@ fn batch_v_effect_span(
   name : String,
 ) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, ast_id) {
-    Some(@semantics.NodeRef::Assignment(assignment)) =>
-      assignment_name_span(assignment)
-    Some(@semantics.NodeRef::SimpleCommand(_))
-    | Some(@semantics.NodeRef::SourceCommand(_)) =>
+    Some(Assignment(assignment)) => assignment_name_span(assignment)
+    Some(SimpleCommand(_)) | Some(SourceCommand(_)) =>
       match batch_v_parent_command(cfg, ast_id) {
         Some(command) => batch_v_command_write_span(command, name)
         None => batch_v_ast_span(cfg, ast_id)
       }
-    Some(@semantics.NodeRef::ArithmeticExpr(_)) =>
-      batch_v_arithmetic_write_span(cfg, ast_id, name)
-    Some(@semantics.NodeRef::CoProcClause(clause)) =>
+    Some(ArithmeticExpr(_)) => batch_v_arithmetic_write_span(cfg, ast_id, name)
+    Some(CoProcClause(clause)) =>
       batch_v_coproc_name_span(cfg, ast_id, clause, name)
     _ => batch_v_ast_span(cfg, ast_id)
   }
@@ -245,7 +239,7 @@ fn batch_v_parent_word(cfg : @cfg.CFG, ast_id : @cfg.CfgAstId) -> @parser.Word? 
       None => break
     }
     match @cfg.ast_ref_of(cfg, parent) {
-      Some(@semantics.NodeRef::Word(word)) => return Some(word)
+      Some(Word(word)) => return Some(word)
       _ => current = @cfg.ast_parent_of(cfg, parent)
     }
   }
@@ -288,7 +282,7 @@ fn batch_v_parent_command(
   match @cfg.ast_parent_of(cfg, ast_id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::Command(command)) => Some(command)
+        Some(Command(command)) => Some(command)
         _ => None
       }
     None => None
@@ -301,13 +295,13 @@ fn batch_v_command_write_span(
   name : String,
 ) -> @parser.Span {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       for assignment in simple.assignments {
         if assignment.name == name {
           return assignment_name_span(assignment)
         }
       }
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       for assignment in source.assignments {
         if assignment.name == name {
           return assignment_name_span(assignment)
@@ -341,9 +335,9 @@ fn batch_v_arithmetic_write_span(
 ) -> @parser.Span {
   for child in @cfg.ast_children_of(cfg, ast_id) {
     match @cfg.ast_ref_of(cfg, child) {
-      Some(@semantics.NodeRef::ArithmeticToken(token)) =>
+      Some(ArithmeticToken(token)) =>
         match token {
-          @parser.ArithmeticToken::Variable(current, _) =>
+          Variable(current, _) =>
             if current == name {
               return batch_v_ast_span(cfg, child)
             }
@@ -412,9 +406,9 @@ fn walk_batch_v_ast(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match @cfg.ast_ref_of(cfg, ast_id) {
-    Some(@semantics.NodeRef::FunctionDef(_)) => {
+    Some(FunctionDef(_)) => {
       let isolated_scopes : Array[BatchVScope] = []
-      let isolated_dead_vars : Map[String, BatchVDeadVar] = Map::new()
+      let isolated_dead_vars : Map[String, BatchVDeadVar] = Map([])
       let isolated_reported : Array[@parser.Span] = []
       for child in @cfg.ast_children_of(cfg, ast_id) {
         walk_batch_v_ast(
@@ -466,9 +460,7 @@ fn batch_v_assigns_before_children(
   ast_id : @cfg.CfgAstId,
 ) -> Bool {
   match @cfg.ast_ref_of(cfg, ast_id) {
-    Some(@semantics.NodeRef::ForClause(_))
-    | Some(@semantics.NodeRef::SelectClause(_))
-    | Some(@semantics.NodeRef::BatsTestClause(_)) => true
+    Some(ForClause(_)) | Some(SelectClause(_)) | Some(BatsTestClause(_)) => true
     _ => false
   }
 }
@@ -480,15 +472,15 @@ fn batch_v_scope_reason(
   lastpipe : Bool,
 ) -> String? {
   match @cfg.ast_ref_of(cfg, ast_id) {
-    Some(@semantics.NodeRef::ListItem(item)) =>
+    Some(ListItem(item)) =>
       match item.terminator {
-        Some(@parser.Terminator::Background) => Some("backgrounding &")
+        Some(Background) => Some("backgrounding &")
         _ => None
       }
-    Some(@semantics.NodeRef::Command(command)) =>
+    Some(Command(command)) =>
       match command.kind {
-        @parser.CommandKind::Subshell(_) => Some("(..) group")
-        @parser.CommandKind::BatsTest(_) => Some("@bats test")
+        Subshell(_) => Some("(..) group")
+        BatsTest(_) => Some("@bats test")
         _ =>
           if batch_v_command_is_coproc_body(cfg, ast_id) {
             Some("coproc")
@@ -498,12 +490,11 @@ fn batch_v_scope_reason(
             None
           }
       }
-    Some(@semantics.NodeRef::WordPart(part)) =>
+    Some(WordPart(part)) =>
       match part {
-        @parser.WordPart::CommandSubstitution(_)
-        | @parser.WordPart::BraceCommandSubstitution(_, _) =>
+        CommandSubstitution(_) | BraceCommandSubstitution(_, _) =>
           Some("$(..) expansion")
-        @parser.WordPart::BackQuoted(_) => Some("`..` expansion")
+        BackQuoted(_) => Some("`..` expansion")
         _ => None
       }
     _ => None
@@ -518,7 +509,7 @@ fn batch_v_command_is_coproc_body(
   match @cfg.ast_parent_of(cfg, ast_id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::CoProcClause(_)) => true
+        Some(CoProcClause(_)) => true
         _ => false
       }
     None => false
@@ -534,7 +525,7 @@ fn batch_v_command_is_pipeline_subshell(
   let segment_id = match @cfg.ast_parent_of(cfg, ast_id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::PipelineSegment(_)) => parent
+        Some(PipelineSegment(_)) => parent
         _ => return false
       }
     None => return false
@@ -542,7 +533,7 @@ fn batch_v_command_is_pipeline_subshell(
   let pipeline_id = match @cfg.ast_parent_of(cfg, segment_id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::Pipeline(pipeline)) =>
+        Some(Pipeline(pipeline)) =>
           if pipeline.segments.length() > 1 {
             parent
           } else {
@@ -570,7 +561,7 @@ fn batch_v_pipeline_segment_ids(
   let ids : Array[@cfg.CfgAstId] = []
   for child in @cfg.ast_children_of(cfg, pipeline_id) {
     match @cfg.ast_ref_of(cfg, child) {
-      Some(@semantics.NodeRef::PipelineSegment(_)) => ids.push(child)
+      Some(PipelineSegment(_)) => ids.push(child)
       _ => ()
     }
   }
@@ -589,7 +580,7 @@ fn batch_v_process_ast_reads(
   match effects.get(ast_id) {
     Some(current) =>
       for effect in current {
-        guard effect.kind == BatchVEffectKind::Read else { continue }
+        guard effect.kind == Read else { continue }
         guard !batch_v_ignores_name(effect.name) else { continue }
         match dead_vars.get(effect.name) {
           Some(dead) => {
@@ -601,7 +592,7 @@ fn batch_v_process_ast_reads(
               push_diagnostic(
                 diagnostics,
                 dead.span,
-                CheckSeverity::Info,
+                Info,
                 2030,
                 "Modification of \{effect.name} is local (to subshell caused by \{dead.reason}).",
               )
@@ -609,7 +600,7 @@ fn batch_v_process_ast_reads(
             push_diagnostic(
               diagnostics,
               effect.span,
-              CheckSeverity::Info,
+              Info,
               2031,
               "\{effect.name} was modified in a subshell. That change might be lost.",
             )
@@ -631,7 +622,7 @@ fn batch_v_process_ast_writes(
   match effects.get(ast_id) {
     Some(current) =>
       for effect in current {
-        guard effect.kind == BatchVEffectKind::Write else { continue }
+        guard effect.kind == Write else { continue }
         dead_vars.remove(effect.name)
         if scopes.length() > 0 {
           match scopes.pop() {

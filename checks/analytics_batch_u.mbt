@@ -12,55 +12,55 @@ fn analytics_batch_u_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2009,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Consider using pgrep instead of grepping ps output.",
     },
     {
       code: 2010,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Don't use ls | grep for filtering filenames.",
     },
     {
       code: 2011,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Prefer find -print0/-exec+ over ls | xargs.",
     },
     {
       code: 2012,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Use find instead of ls for safer filename handling.",
     },
     {
       code: 2013,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Use while read for line-oriented command substitutions in loops.",
     },
     {
       code: 2014,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "find -exec arguments expand once before find runs.",
     },
     {
       code: 2038,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use find -print0/-exec+ with xargs to handle filenames safely.",
     },
     {
       code: 2067,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "find -exec requires a separate ';' or '+' terminator.",
     },
     {
       code: 2126,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Consider using grep -c instead of grep piped to wc -l.",
     },
@@ -98,7 +98,7 @@ fn check_pipeline_pitfalls_u(
             push_diagnostic(
               diagnostics,
               command_words_span_u(lhs),
-              CheckSeverity::Warning,
+              Warning,
               2038,
               "Use 'find .. -print0 | xargs -0 ..' or 'find .. -exec .. +' to allow non-alphanumeric filenames.",
             )
@@ -108,7 +108,7 @@ fn check_pipeline_pitfalls_u(
             push_diagnostic(
               diagnostics,
               command_words_span_u(lhs),
-              CheckSeverity::Info,
+              Info,
               2009,
               "Consider using pgrep instead of grepping ps output.",
             )
@@ -118,7 +118,7 @@ fn check_pipeline_pitfalls_u(
             push_diagnostic(
               diagnostics,
               command_words_span_u(lhs),
-              CheckSeverity::Style,
+              Style,
               2126,
               "Consider using 'grep -c' instead of 'grep|wc -l'.",
             )
@@ -128,7 +128,7 @@ fn check_pipeline_pitfalls_u(
           push_diagnostic(
             diagnostics,
             command_words_span_u(lhs),
-            CheckSeverity::Warning,
+            Warning,
             2010,
             "Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.",
           )
@@ -138,7 +138,7 @@ fn check_pipeline_pitfalls_u(
           push_diagnostic(
             diagnostics,
             command_words_span_u(lhs),
-            CheckSeverity::Warning,
+            Warning,
             2011,
             "Use 'find .. -print0 | xargs -0 ..' or 'find .. -exec .. +' to allow non-alphanumeric filenames.",
           )
@@ -160,7 +160,7 @@ fn check_pipeline_pitfalls_u(
         push_diagnostic(
           diagnostics,
           command_words_span_u(command),
-          CheckSeverity::Info,
+          Info,
           2012,
           "Use find instead of ls to better handle non-alphanumeric filenames.",
         )
@@ -340,7 +340,7 @@ fn check_for_in_line_based_commands_u(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::ForIn(clause) =>
+      ForIn(clause) =>
         match clause.values {
           [word] =>
             match word_single_top_level_substitution_script(word) {
@@ -348,7 +348,7 @@ fn check_for_in_line_based_commands_u(
                 push_diagnostic(
                   diagnostics,
                   word.span,
-                  CheckSeverity::Info,
+                  Info,
                   2013,
                   "To read lines rather than words, pipe/redirect to a 'while read' loop.",
                 )
@@ -410,7 +410,7 @@ fn check_find_exec_u(
       push_diagnostic(
         diagnostics,
         arguments[arguments.length() - 1].span,
-        CheckSeverity::Error,
+        Error,
         2067,
         "Missing ';' or + terminating -exec. You can't use |/||/&&, and ';' has to be a separate, quoted argument.",
       )
@@ -433,7 +433,7 @@ fn maybe_push_find_exec_preexpansion_u(
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Info,
+        Info,
         2014,
         "This will expand once before find runs, not per file found.",
       )
@@ -445,13 +445,10 @@ fn maybe_push_find_exec_preexpansion_u(
 fn find_exec_preexpansion_span_u(word : @parser.Word) -> @parser.Span? {
   for part in word.parts {
     match part {
-      @parser.WordPart::CommandSubstitution(_)
-      | @parser.WordPart::BraceCommandSubstitution(_, _)
-      | @parser.WordPart::BackQuoted(_) =>
+      CommandSubstitution(_) | BraceCommandSubstitution(_, _) | BackQuoted(_) =>
         return Some(command_substitution_span_u(word))
-      @parser.WordPart::Glob(text) =>
-        return Some(glob_indicator_span_u(word, text))
-      @parser.WordPart::ExtGlob(_) => return Some(span_prefix(word.span, 1))
+      Glob(text) => return Some(glob_indicator_span_u(word, text))
+      ExtGlob(_) => return Some(span_prefix(word.span, 1))
       _ => ()
     }
   }

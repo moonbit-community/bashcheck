@@ -62,7 +62,7 @@ async fn run_shellcheck_json_pair(
       _ => ()
     }
   }
-  @fs.write_file(path, source, create=0o644, truncate=true)
+  @fs.write_file(path, source)
 
   let (shellcheck_exit, shellcheck_stdout, shellcheck_stderr) = @process.collect_output(
     "shellcheck",
@@ -75,7 +75,7 @@ async fn run_shellcheck_json_pair(
   }
 
   let bashcheck = @driver.run_cli(
-    @driver.CliAction::Run,
+    Run,
     [path],
     spec,
     match @formatter.parse_output_format("json") {

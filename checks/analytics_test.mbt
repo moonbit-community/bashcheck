@@ -404,7 +404,7 @@ test "analytics batch b checks keep regex and comparison false positives in chec
         #|
       ),
     ),
-    @semantics.ShellDialect::BusyboxSh,
+    BusyboxSh,
     false,
     [],
   )
@@ -869,15 +869,10 @@ test "analytics optional checks require double brackets only in supporting shell
       #|
     ),
   )
-  let bash = run_checks_with_shell(
-    script,
-    @semantics.ShellDialect::Bash,
-    false,
-    ["require-double-brackets"],
-  )
-  let sh = run_checks_with_shell(script, @semantics.ShellDialect::Sh, false, [
+  let bash = run_checks_with_shell(script, Bash, false, [
     "require-double-brackets",
   ])
+  let sh = run_checks_with_shell(script, Sh, false, ["require-double-brackets"])
 
   assert_eq(count_code(bash, 2292), 1)
   assert_true(!has_code(sh, 2292))
@@ -952,7 +947,7 @@ test "analytics optional checks flag set-e suppression contexts for functions" {
         #|
       ),
     ),
-    @semantics.ShellDialect::Bash,
+    Bash,
     false,
     ["check-set-e-suppressed"],
   )

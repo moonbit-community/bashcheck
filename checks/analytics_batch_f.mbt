@@ -12,37 +12,37 @@ fn analytics_batch_f_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2015,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A && B || C is not if-then-else. C may run when A is true.",
     },
     {
       code: 2055,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use && instead of -o in test expressions that repeat the same lhs.",
     },
     {
       code: 2056,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use && instead of || when repeated != comparisons make the expression always true.",
     },
     {
       code: 2252,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use && instead of || when both test commands compare the same lhs.",
     },
     {
       code: 2333,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use || instead of -a/&& when both comparisons repeat the same lhs.",
     },
     {
       code: 2334,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use || instead of && in arithmetic comparisons that repeat the same lhs.",
     },
@@ -108,13 +108,10 @@ fn analytics_walk_command_for_shorthand_if(
   visit : (@parser.Script) -> Unit,
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
-      analytics_walk_pipeline_for_shorthand_if(clause.body, visit)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Time(clause) => analytics_walk_pipeline_for_shorthand_if(clause.body, visit)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_walk_script_for_shorthand_if(script, true, visit)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_walk_script_for_shorthand_if(arm.condition, false, visit)
         analytics_walk_script_for_shorthand_if(arm.body, true, visit)
@@ -124,28 +121,25 @@ fn analytics_walk_command_for_shorthand_if(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_walk_script_for_shorthand_if(clause.condition, false, visit)
       analytics_walk_script_for_shorthand_if(clause.body, true, visit)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_walk_script_for_shorthand_if(clause.body, true, visit)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_walk_script_for_shorthand_if(clause.body, true, visit)
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_walk_script_for_shorthand_if(clause.body, true, visit)
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_walk_script_for_shorthand_if(item.body, true, visit)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_walk_command_for_shorthand_if(function_.body, visit)
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_walk_command_for_shorthand_if(clause.body, visit)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -159,17 +153,17 @@ fn analytics_check_shorthand_if_and_or_list(
   for pair in and_or.tail {
     let (operator, pipeline) = pair
     match operator {
-      @parser.AndOrOperator::OrIf =>
+      OrIf =>
         if previous_was_and_if {
           analytics_maybe_push_shorthand_if_diagnostic(
             previous_pipeline, pipeline, diagnostics,
           )
         }
-      @parser.AndOrOperator::AndIf => ()
+      AndIf => ()
     }
     previous_was_and_if = match operator {
-      @parser.AndOrOperator::AndIf => true
-      @parser.AndOrOperator::OrIf => false
+      AndIf => true
+      OrIf => false
     }
     previous_pipeline = pipeline
   }
@@ -190,7 +184,7 @@ fn analytics_maybe_push_shorthand_if_diagnostic(
   push_diagnostic(
     diagnostics,
     rhs_command.span,
-    CheckSeverity::Warning,
+    Warning,
     2015,
     "Note that A && B || C is not if-then-else. C may run when A is true.",
   )
@@ -212,7 +206,7 @@ fn analytics_shorthand_if_rhs_is_ok(command : @parser.Command) -> Bool {
 ///|
 fn analytics_command_is_assignment_only(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       simple.words.length() == 0 && simple.assignments.length() > 0
     _ => false
   }
@@ -233,7 +227,7 @@ fn analytics_pipeline_single_command(
 ///|
 fn analytics_command_is_test(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Condition(_) => true
+    Condition(_) => true
     _ => false
   }
 }
@@ -252,13 +246,13 @@ fn check_or_neq(
     },
     fn(command) {
       match command.kind {
-        @parser.CommandKind::Condition(condition) =>
+        Condition(condition) =>
           analytics_check_condition_or_neq(
             condition.kind,
             condition.expr,
             diagnostics,
           )
-        @parser.CommandKind::Arithmetic(arithmetic) =>
+        Arithmetic(arithmetic) =>
           analytics_check_arithmetic_or_neq(
             arithmetic.expr,
             command.span,
@@ -284,13 +278,13 @@ fn check_and_eq(
     },
     fn(command) {
       match command.kind {
-        @parser.CommandKind::Condition(condition) =>
+        Condition(condition) =>
           analytics_check_condition_and_eq(
             condition.kind,
             condition.expr,
             diagnostics,
           )
-        @parser.CommandKind::Arithmetic(arithmetic) =>
+        Arithmetic(arithmetic) =>
           analytics_check_arithmetic_and_eq(
             arithmetic.expr,
             command.span,
@@ -337,13 +331,11 @@ fn analytics_walk_command_tree(
 ) -> Unit {
   visit_command(command)
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       analytics_walk_pipeline_tree(clause.body, visit_script, visit_command)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       analytics_walk_script_tree(script, visit_script, visit_command)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         analytics_walk_script_tree(arm.condition, visit_script, visit_command)
         analytics_walk_script_tree(arm.body, visit_script, visit_command)
@@ -354,28 +346,25 @@ fn analytics_walk_command_tree(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       analytics_walk_script_tree(clause.condition, visit_script, visit_command)
       analytics_walk_script_tree(clause.body, visit_script, visit_command)
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       analytics_walk_script_tree(clause.body, visit_script, visit_command)
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       analytics_walk_script_tree(clause.body, visit_script, visit_command)
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       analytics_walk_script_tree(clause.body, visit_script, visit_command)
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         analytics_walk_script_tree(item.body, visit_script, visit_command)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       analytics_walk_command_tree(function_.body, visit_script, visit_command)
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       analytics_walk_command_tree(clause.body, visit_script, visit_command)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -388,11 +377,11 @@ fn analytics_check_and_or_list_or_neq(
   for pair in and_or.tail {
     let (operator, pipeline) = pair
     match operator {
-      @parser.AndOrOperator::OrIf =>
+      OrIf =>
         analytics_maybe_push_command_level_or_neq(
           previous_pipeline, pipeline, diagnostics,
         )
-      @parser.AndOrOperator::AndIf => ()
+      AndIf => ()
     }
     previous_pipeline = pipeline
   }
@@ -407,11 +396,11 @@ fn analytics_check_and_or_list_and_eq(
   for pair in and_or.tail {
     let (operator, pipeline) = pair
     match operator {
-      @parser.AndOrOperator::AndIf =>
+      AndIf =>
         analytics_maybe_push_command_level_and_eq(
           previous_pipeline, pipeline, diagnostics,
         )
-      @parser.AndOrOperator::OrIf => ()
+      OrIf => ()
     }
     previous_pipeline = pipeline
   }
@@ -450,7 +439,7 @@ fn analytics_maybe_push_command_level_or_neq(
   push_diagnostic(
     diagnostics,
     rhs_binary.rhs_word.span,
-    CheckSeverity::Warning,
+    Warning,
     2252,
     "You probably wanted && here, otherwise it's always true.",
   )
@@ -494,7 +483,7 @@ fn analytics_maybe_push_command_level_and_eq(
   push_diagnostic(
     diagnostics,
     rhs_binary.rhs_word.span,
-    CheckSeverity::Warning,
+    Warning,
     2333,
     "You probably wanted || here, otherwise it's always false.",
   )
@@ -513,9 +502,8 @@ fn analytics_command_condition_binary(
   command : @parser.Command,
 ) -> AnalyticsConditionBinary? {
   match command.kind {
-    @parser.CommandKind::Condition(condition) =>
-      analytics_condition_expr_binary(condition.expr)
-    @parser.CommandKind::Simple(simple) => analytics_simple_test_binary(simple)
+    Condition(condition) => analytics_condition_expr_binary(condition.expr)
+    Simple(simple) => analytics_simple_test_binary(simple)
     _ => None
   }
 }
@@ -553,9 +541,8 @@ fn analytics_condition_expr_binary(
   expr : @parser.ConditionExpr,
 ) -> AnalyticsConditionBinary? {
   match expr {
-    @parser.ConditionExpr::Binary(op, _, lhs, rhs) => Some({ lhs, op, rhs })
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      analytics_condition_expr_binary(inner)
+    Binary(op, _, lhs, rhs) => Some({ lhs, op, rhs })
+    Group(inner) | Not(inner) => analytics_condition_expr_binary(inner)
     _ => None
   }
 }
@@ -601,16 +588,16 @@ fn analytics_check_condition_neq_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       analytics_check_condition_neq_expr(kind, inner, is_or, diagnostics)
-    @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Or(_, lhs, rhs) => {
       if is_or {
         analytics_maybe_push_condition_or_neq(kind, lhs, rhs, diagnostics)
       }
       analytics_check_condition_neq_expr(kind, lhs, is_or, diagnostics)
       analytics_check_condition_neq_expr(kind, rhs, is_or, diagnostics)
     }
-    @parser.ConditionExpr::And(_, lhs, rhs) => {
+    And(_, lhs, rhs) => {
       if !is_or {
         analytics_maybe_push_condition_and_eq(kind, lhs, rhs, diagnostics)
       }
@@ -651,7 +638,7 @@ fn analytics_maybe_push_condition_or_neq(
   push_diagnostic(
     diagnostics,
     rhs.rhs.span,
-    CheckSeverity::Warning,
+    Warning,
     analytics_condition_or_neq_code(kind),
     "You probably wanted && here, otherwise it's always true.",
   )
@@ -688,7 +675,7 @@ fn analytics_maybe_push_condition_and_eq(
   push_diagnostic(
     diagnostics,
     rhs.rhs.span,
-    CheckSeverity::Warning,
+    Warning,
     analytics_condition_and_eq_code(kind),
     "You probably wanted || here, otherwise it's always false.",
   )
@@ -697,16 +684,16 @@ fn analytics_maybe_push_condition_and_eq(
 ///|
 fn analytics_condition_or_neq_code(kind : @parser.ConditionKind) -> Int {
   match kind {
-    @parser.ConditionKind::SingleBracket => 2055
-    @parser.ConditionKind::DoubleBracket => 2056
+    SingleBracket => 2055
+    DoubleBracket => 2056
   }
 }
 
 ///|
 fn analytics_condition_and_eq_code(kind : @parser.ConditionKind) -> Int {
   match kind {
-    @parser.ConditionKind::SingleBracket => 2333
-    @parser.ConditionKind::DoubleBracket => 2333
+    SingleBracket => 2333
+    DoubleBracket => 2333
   }
 }
 
@@ -810,14 +797,14 @@ fn analytics_check_arithmetic_expr(
   let mut i = 0
   while i < expr.tokens.length() {
     match expr.tokens[i] {
-      @parser.ArithmeticToken::Operator(op) if op == logical_op => {
+      Operator(op) if op == logical_op => {
         let lhs = expr.tokens[:i].to_owned()
         let rhs = expr.tokens[i + 1:].to_owned()
         analytics_maybe_push_arithmetic_logical_diagnostic(
           lhs, rhs, comparison_op, code, span, diagnostics,
         )
       }
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         analytics_check_arithmetic_expr(
           inner, logical_op, comparison_op, code, span, diagnostics,
         )
@@ -858,7 +845,7 @@ fn analytics_maybe_push_arithmetic_logical_diagnostic(
   push_diagnostic(
     diagnostics,
     span,
-    CheckSeverity::Warning,
+    Warning,
     code,
     if code == 2334 {
       "You probably wanted || here, otherwise it's always false."
@@ -873,9 +860,8 @@ fn analytics_arithmetic_tokens_as_comparison(
   tokens : Array[@parser.ArithmeticToken],
 ) -> AnalyticsArithmeticComparison? {
   match tokens {
-    [@parser.ArithmeticToken::Group(inner)] =>
-      analytics_arithmetic_tokens_as_comparison(inner.tokens)
-    [lhs, @parser.ArithmeticToken::Operator(op), rhs] if analytics_arithmetic_binary_operator_is_compare(
+    [Group(inner)] => analytics_arithmetic_tokens_as_comparison(inner.tokens)
+    [lhs, Operator(op), rhs] if analytics_arithmetic_binary_operator_is_compare(
         op,
       ) =>
       Some({
@@ -895,9 +881,9 @@ fn analytics_arithmetic_binary_operator_is_compare(op : String) -> Bool {
 ///|
 fn analytics_arithmetic_token_key(token : @parser.ArithmeticToken) -> String {
   match token {
-    @parser.ArithmeticToken::Literal(text) => "lit:" + text
-    @parser.ArithmeticToken::Operator(op) => "op:" + op
-    @parser.ArithmeticToken::Variable(name, indexes) => {
+    Literal(text) => "lit:" + text
+    Operator(op) => "op:" + op
+    Variable(name, indexes) => {
       let buf = StringBuilder::new()
       buf.write_string("var:")
       buf.write_string(name)
@@ -908,7 +894,7 @@ fn analytics_arithmetic_token_key(token : @parser.ArithmeticToken) -> String {
       }
       buf.to_string()
     }
-    @parser.ArithmeticToken::Expansion(word) => "exp:" + word.source
-    @parser.ArithmeticToken::Group(expr) => "grp:" + expr.raw
+    Expansion(word) => "exp:" + word.source
+    Group(expr) => "grp:" + expr.raw
   }
 }

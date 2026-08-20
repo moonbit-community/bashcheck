@@ -13,133 +13,133 @@ fn analytics_batch_b_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2049,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use = instead of =~ when the right-hand side is a glob.",
     },
     {
       code: 2053,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quote variable right-hand sides in [[ ]] string comparisons.",
     },
     {
       code: 2065,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "test < and > are redirections, not comparison operators.",
     },
     {
       code: 2081,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "[ .. ] does not support glob matching.",
     },
     {
       code: 2083,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Do not write ./ with a separating space before the path.",
     },
     {
       code: 2099,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use $((..)) for arithmetic instead of invoking + - * / as commands.",
     },
     {
       code: 2100,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Use $((..)) for arithmetic-looking assignments.",
     },
     {
       code: 2101,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Named POSIX character classes need the outer [[:class:]] brackets.",
     },
     {
       code: 2102,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Bracket ranges only match single characters.",
     },
     {
       code: 2210,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Numeric redirection targets are files unless you use fd duplication syntax.",
     },
     {
       code: 2211,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A glob used as a command name is probably a syntax mistake.",
     },
     {
       code: 2212,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Use false instead of an empty [ ] or [[ ]] condition.",
     },
     {
       code: 2215,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A flag at command position is usually a bad line break or missing test brackets.",
     },
     {
       code: 2171,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A trailing ] or ]] outside test syntax usually means malformed test brackets.",
     },
     {
       code: 2238,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Redirect to a file path, not what looks like a command name.",
     },
     {
       code: 2286,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "An empty string command name is usually a syntax error.",
     },
     {
       code: 2287,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Command names ending in / usually indicate malformed syntax.",
     },
     {
       code: 2288,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Suspicious trailing punctuation in a command name likely indicates malformed syntax.",
     },
     {
       code: 2289,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Tabs or linefeeds inside a command name indicate malformed syntax.",
     },
     {
       code: 2327,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Redirecting output inside a command substitution can make it capture nothing.",
     },
     {
       code: 2328,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "This redirection steals output from the surrounding command substitution.",
     },
     {
       code: 2330,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "BusyBox [[ .. ]] does not support glob matching.",
     },
@@ -205,7 +205,7 @@ fn b_check_char_range_word(
       remaining_width
     }
     match part {
-      @parser.WordPart::Glob(text) => {
+      Glob(text) => {
         b_maybe_warn_named_char_class(word, fragment_offset, text, diagnostics)
         b_maybe_warn_duplicate_char_range(
           word, fragment_offset, text, diagnostics,
@@ -234,7 +234,7 @@ fn b_maybe_warn_named_char_class(
           word_offset + offset,
           fragment.length(),
         ),
-        CheckSeverity::Warning,
+        Warning,
         2101,
         "Named class needs outer [], e.g. [[:digit:]].",
       )
@@ -295,7 +295,7 @@ fn b_maybe_warn_duplicate_char_range(
   push_diagnostic(
     diagnostics,
     analytics_span_offset(word.span, word_offset, text.length()),
-    CheckSeverity::Info,
+    Info,
     2102,
     "Ranges can only match single chars (mentioned due to duplicates).",
   )
@@ -334,21 +334,21 @@ fn check_globbed_regex(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.kind {
-          @parser.ConditionKind::DoubleBracket =>
+          DoubleBracket =>
             visit_condition_binaries(condition.expr, fn(op, _, rhs) {
               if op == "=~" && word_looks_like_glob_regex_confusion(rhs) {
                 push_diagnostic(
                   diagnostics,
                   rhs.span,
-                  CheckSeverity::Warning,
+                  Warning,
                   2049,
                   "=~ is for regex, but this looks like a glob. Use = instead.",
                 )
               }
             })
-          @parser.ConditionKind::SingleBracket => ()
+          SingleBracket => ()
         }
       _ => ()
     }
@@ -363,37 +363,36 @@ fn check_comparison_against_glob(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         visit_condition_binaries(condition.expr, fn(op, _, rhs) {
           if op != "=" && op != "==" && op != "!=" {
             return
           }
           match condition.kind {
-            @parser.ConditionKind::DoubleBracket =>
+            DoubleBracket =>
               if word_is_plain_parameter_reference(rhs) {
                 push_diagnostic(
                   diagnostics,
                   rhs.span,
-                  CheckSeverity::Warning,
+                  Warning,
                   2053,
                   "Quote the right-hand side of \{op} in [[ ]] to prevent glob matching.",
                 )
-              } else if shell == @semantics.ShellDialect::BusyboxSh &&
-                @semantics.is_glob_word(rhs) {
+              } else if shell == BusyboxSh && @semantics.is_glob_word(rhs) {
                 push_diagnostic(
                   diagnostics,
                   rhs.span,
-                  CheckSeverity::Error,
+                  Error,
                   2330,
                   "BusyBox [[ .. ]] does not support glob matching. Use a case statement.",
                 )
               }
-            @parser.ConditionKind::SingleBracket =>
+            SingleBracket =>
               if @semantics.is_glob_word(rhs) {
                 push_diagnostic(
                   diagnostics,
                   rhs.span,
-                  CheckSeverity::Error,
+                  Error,
                   2081,
                   single_bracket_glob_message(shell),
                 )
@@ -417,7 +416,7 @@ fn check_test_redirects(
         push_diagnostic(
           diagnostics,
           redirect.span,
-          CheckSeverity::Warning,
+          Warning,
           2065,
           "This is interpreted as a shell file redirection, not a comparison.",
         )
@@ -433,13 +432,13 @@ fn check_lonely_dot_dash(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         match simple.words.get(0) {
           Some(word) if word_single_literal_text(word) == Some("./") =>
             push_diagnostic(
               diagnostics,
               word.span,
-              CheckSeverity::Error,
+              Error,
               2083,
               "Don't add spaces after the slash in './file'.",
             )
@@ -457,14 +456,14 @@ fn check_arithmetic_op_command(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.assignments.length() == 1 &&
+      Simple(simple) if simple.assignments.length() == 1 &&
         simple.words.length() > 0 =>
         match word_literal_or_glob_text(simple.words[0]) {
           Some(op) if op == "+" || op == "-" || op == "*" || op == "/" =>
             push_diagnostic(
               diagnostics,
               simple.words[0].span,
-              CheckSeverity::Warning,
+              Warning,
               2099,
               "Use $((..)) for arithmetics, e.g. i=$((i \{op} 2))",
             )
@@ -483,11 +482,11 @@ fn check_wrong_arithmetic_assignment(
   let seen_names : Array[String] = []
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) => {
+      Simple(simple) => {
         if simple.assignments.length() == 1 && simple.words.length() == 0 {
           let assignment = simple.assignments[0]
           match assignment.value {
-            @parser.AssignmentValue::Word(word) =>
+            Word(word) =>
               match
                 arithmetic_assignment_reference(
                   word,
@@ -498,7 +497,7 @@ fn check_wrong_arithmetic_assignment(
                   push_diagnostic(
                     diagnostics,
                     word.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2100,
                     "Use $((..)) for arithmetics, e.g. i=$((i \{op} 2))",
                   )
@@ -511,7 +510,7 @@ fn check_wrong_arithmetic_assignment(
           push_unique_string(seen_names, assignment.name)
         }
       }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           push_unique_string(seen_names, assignment.name)
         }
@@ -534,7 +533,7 @@ fn check_redirection_to_number(
         push_diagnostic(
           diagnostics,
           redirect.span,
-          CheckSeverity::Warning,
+          Warning,
           2210,
           "This is a file redirection. Was it supposed to be a comparison or fd operation?",
         )
@@ -550,13 +549,13 @@ fn check_glob_as_command(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         match simple.words.get(0) {
           Some(word) if @semantics.is_glob_word(word) =>
             push_diagnostic(
               diagnostics,
               word.span,
-              CheckSeverity::Warning,
+              Warning,
               2211,
               "This is a glob used as a command name. Was it supposed to be in ${..}, array, or is it missing quoting?",
             )
@@ -578,14 +577,14 @@ fn check_flag_as_command(
       return
     }
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.assignments.length() == 0 &&
+      Simple(simple) if simple.assignments.length() == 0 &&
         simple.words.length() > 0 => {
         let first = simple.words[0]
         if @semantics.is_unquoted_flag(first) {
           push_diagnostic(
             diagnostics,
             first.span,
-            CheckSeverity::Warning,
+            Warning,
             2215,
             "This flag is used as a command name. Bad line break or missing [ .. ]?",
           )
@@ -603,13 +602,13 @@ fn check_empty_condition(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         match condition.expr {
-          @parser.ConditionExpr::Empty =>
+          Empty =>
             push_diagnostic(
               diagnostics,
               command.span,
-              CheckSeverity::Style,
+              Style,
               2212,
               "Use 'false' instead of empty [/[[ conditionals.",
             )
@@ -627,7 +626,7 @@ fn check_trailing_bracket(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         match simple.words {
           [.., last] =>
             match word_single_literal_text(last) {
@@ -637,7 +636,7 @@ fn check_trailing_bracket(
                   push_diagnostic(
                     diagnostics,
                     last.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2171,
                     "Found trailing \{text} outside test. Add missing \{opposite} or quote if intentional.",
                   )
@@ -674,20 +673,20 @@ fn check_redirection_to_command(
   visit_script_commands(script, fn(command) {
     for redirect in command.redirects {
       match redirect.target {
-        @parser.RedirectionTarget::Word(word) =>
+        Word(word) =>
           match word_single_literal_text(word) {
             Some(name) if name != "file" &&
               common_commands.any(fn(command_name) { command_name == name }) =>
               push_diagnostic(
                 diagnostics,
                 word.span,
-                CheckSeverity::Warning,
+                Warning,
                 2238,
                 "Redirecting to/from command name instead of file. Did you want pipes/xargs (or quote to ignore)?",
               )
             _ => ()
           }
-        @parser.RedirectionTarget::HereDoc(_) => ()
+        HereDoc(_) => ()
       }
     }
   })
@@ -700,7 +699,7 @@ fn check_command_with_trailing_symbol(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         match simple.words.get(0) {
           Some(word) =>
             match command_name_issue(word) {
@@ -724,9 +723,9 @@ fn check_expansion_with_redirection(
     visit_direct_words_in_command(command, fn(word, _) {
       walk_word_deep(word, fn(part) {
         match part {
-          @parser.WordPart::CommandSubstitution(inner)
-          | @parser.WordPart::BraceCommandSubstitution(_, inner)
-          | @parser.WordPart::BackQuoted(inner) =>
+          CommandSubstitution(inner)
+          | BraceCommandSubstitution(_, inner)
+          | BackQuoted(inner) =>
             check_substitution_redirects(word.span, inner, diagnostics)
           _ => ()
         }
@@ -741,11 +740,9 @@ fn visit_condition_binaries(
   visit : (String, @parser.Word, @parser.Word) -> Unit,
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
-      visit_condition_binaries(inner, visit)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Binary(op, _, lhs, rhs) => visit(op, lhs, rhs)
+    Group(inner) | Not(inner) => visit_condition_binaries(inner, visit)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       visit_condition_binaries(lhs, visit)
       visit_condition_binaries(rhs, visit)
     }
@@ -781,8 +778,8 @@ fn word_looks_like_glob_regex_confusion(word : @parser.Word) -> Bool {
 ///|
 fn word_is_plain_parameter_reference(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Parameter(_)] => true
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(_)] => true
+    [BracedParameter(expansion)] =>
       !expansion.length_prefix &&
       !expansion.indirect &&
       !parameter_has_index(expansion) &&
@@ -794,8 +791,7 @@ fn word_is_plain_parameter_reference(word : @parser.Word) -> Bool {
 
 ///|
 fn single_bracket_glob_message(shell : @semantics.ShellDialect) -> String {
-  if shell == @semantics.ShellDialect::Bash ||
-    shell == @semantics.ShellDialect::Ksh {
+  if shell == Bash || shell == Ksh {
     "[ .. ] can't match globs. Use [[ .. ]] or case statement."
   } else {
     "[ .. ] can't match globs. Use a case statement."
@@ -808,7 +804,7 @@ fn test_redirect_is_suspicious(redirect : @parser.Redirection) -> Bool {
     return false
   }
   match redirect.source {
-    Some(@parser.RedirectionSource::Fd(2)) => false
+    Some(Fd(2)) => false
     _ => true
   }
 }
@@ -816,8 +812,7 @@ fn test_redirect_is_suspicious(redirect : @parser.Redirection) -> Bool {
 ///|
 fn word_literal_or_glob_text(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::Literal(text)] | [@parser.WordPart::Glob(text)] =>
-      Some(text)
+    [Literal(text)] | [Glob(text)] => Some(text)
     _ => None
   }
 }
@@ -825,7 +820,7 @@ fn word_literal_or_glob_text(word : @parser.Word) -> String? {
 ///|
 fn word_single_literal_text(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::Literal(text)] => Some(text)
+    [Literal(text)] => Some(text)
     _ => None
   }
 }
@@ -856,8 +851,7 @@ fn word_unquoted_plain_text(word : @parser.Word) -> String? {
   let buf = StringBuilder::new()
   for part in word.parts {
     match part {
-      @parser.WordPart::Literal(text) | @parser.WordPart::Glob(text) =>
-        buf.write_string(text)
+      Literal(text) | Glob(text) => buf.write_string(text)
       _ => return None
     }
   }
@@ -892,12 +886,12 @@ fn redirection_points_to_plain_number(redirect : @parser.Redirection) -> Bool {
     return false
   }
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) =>
+    Word(word) =>
       match word_single_literal_text(word) {
         Some(text) => string_is_digits(text)
         None => false
       }
-    @parser.RedirectionTarget::HereDoc(_) => false
+    HereDoc(_) => false
   }
 }
 
@@ -917,7 +911,7 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if text == "" {
     return Some(
       (
-        CheckSeverity::Error,
+        Error,
         2286,
         "This empty string is interpreted as a command name. Double check syntax (or use 'true' as a no-op).",
       ),
@@ -926,7 +920,7 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if text.contains("\t") {
     return Some(
       (
-        CheckSeverity::Error,
+        Error,
         2289,
         "This is interpreted as a command name containing a tab. Double check syntax.",
       ),
@@ -935,7 +929,7 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if text.contains("\n") {
     return Some(
       (
-        CheckSeverity::Error,
+        Error,
         2289,
         "This is interpreted as a command name containing a linefeed. Double check syntax.",
       ),
@@ -946,7 +940,7 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if last == '/' {
     return Some(
       (
-        CheckSeverity::Error,
+        Error,
         2287,
         "This is interpreted as a command name ending with '/'. Double check syntax.",
       ),
@@ -955,7 +949,7 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if trailing_command_symbol_is_suspicious(last) {
     return Some(
       (
-        CheckSeverity::Warning,
+        Warning,
         2288,
         "This is interpreted as a command name ending with \{trailing_command_symbol_label(last)}. Double check syntax.",
       ),
@@ -1019,14 +1013,14 @@ fn check_substitution_redirects(
       push_diagnostic(
         diagnostics,
         capture_span,
-        CheckSeverity::Warning,
+        Warning,
         2327,
         "This command substitution will be empty because the command's output gets redirected away.",
       )
       push_diagnostic(
         diagnostics,
         redirect.span,
-        CheckSeverity::Error,
+        Error,
         2328,
         redirection_steals_substitution_output_message(redirect),
       )
@@ -1051,7 +1045,7 @@ fn subshell_test_inner_command_spans(
   let binary_ops = @semantics.binary_test_operators()
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Subshell(inner) =>
+      Subshell(inner) =>
         match first_command_in_script(inner) {
           Some(inner_command) if command_looks_like_test(
               inner_command, unary_ops, binary_ops,
@@ -1071,7 +1065,7 @@ fn command_looks_like_test(
   binary_ops : Array[String],
 ) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words.get(0) {
         Some(first_word) =>
           match @semantics.literal_text(first_word) {
@@ -1099,10 +1093,7 @@ fn redirect_duplicates_stderr_to_stdout(redirect : @parser.Redirection) -> Bool 
     return false
   }
   match (redirect.source, redirect.target) {
-    (
-      Some(@parser.RedirectionSource::Fd(2)),
-      @parser.RedirectionTarget::Word(word),
-    ) => word_single_literal_text(word) == Some("1")
+    (Some(Fd(2)), Word(word)) => word_single_literal_text(word) == Some("1")
     _ => false
   }
 }
@@ -1116,11 +1107,10 @@ fn redirect_removes_substitution_output(redirect : @parser.Redirection) -> Bool 
     return false
   }
   match redirect.source {
-    None | Some(@parser.RedirectionSource::Fd(1)) =>
+    None | Some(Fd(1)) =>
       match redirect.target {
-        @parser.RedirectionTarget::Word(word) =>
-          word_single_literal_text(word) != Some("1")
-        @parser.RedirectionTarget::HereDoc(_) => false
+        Word(word) => word_single_literal_text(word) != Some("1")
+        HereDoc(_) => false
       }
     _ => false
   }
@@ -1132,7 +1122,7 @@ fn redirect_retargets_stdout_to_file(redirect : @parser.Redirection) -> Bool {
     return false
   }
   match redirect.source {
-    None | Some(@parser.RedirectionSource::Fd(1)) => true
+    None | Some(Fd(1)) => true
     _ => false
   }
 }
@@ -1151,9 +1141,8 @@ fn redirection_steals_substitution_output_message(
 ///|
 fn redirect_target_is_dev_null(redirect : @parser.Redirection) -> Bool {
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) =>
-      word_single_literal_text(word) == Some("/dev/null")
-    @parser.RedirectionTarget::HereDoc(_) => false
+    Word(word) => word_single_literal_text(word) == Some("/dev/null")
+    HereDoc(_) => false
   }
 }
 
@@ -1234,8 +1223,7 @@ fn is_ascii_digit(ch : UInt16) -> Bool {
 ///|
 fn redirection_is_read_or_write(op : @parser.RedirectionOperator) -> Bool {
   match op {
-    @parser.RedirectionOperator::Read | @parser.RedirectionOperator::Write =>
-      true
+    Read | Write => true
     _ => false
   }
 }
@@ -1243,8 +1231,7 @@ fn redirection_is_read_or_write(op : @parser.RedirectionOperator) -> Bool {
 ///|
 fn redirection_is_dup_redirect(op : @parser.RedirectionOperator) -> Bool {
   match op {
-    @parser.RedirectionOperator::DupInput
-    | @parser.RedirectionOperator::DupOutput => true
+    DupInput | DupOutput => true
     _ => false
   }
 }
@@ -1252,7 +1239,7 @@ fn redirection_is_dup_redirect(op : @parser.RedirectionOperator) -> Bool {
 ///|
 fn redirection_is_dup_output(op : @parser.RedirectionOperator) -> Bool {
   match op {
-    @parser.RedirectionOperator::DupOutput => true
+    DupOutput => true
     _ => false
   }
 }
@@ -1262,9 +1249,7 @@ fn redirection_is_stdout_file_redirect(
   op : @parser.RedirectionOperator,
 ) -> Bool {
   match op {
-    @parser.RedirectionOperator::Write
-    | @parser.RedirectionOperator::Append
-    | @parser.RedirectionOperator::Clobber => true
+    Write | Append | Clobber => true
     _ => false
   }
 }

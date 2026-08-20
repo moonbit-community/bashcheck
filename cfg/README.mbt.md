@@ -25,11 +25,11 @@ test "doc cfg exposes the lowered graph and AST-to-node mapping" {
 
   assert_true(
     match @cfg.node_kind_of(cfg, root) {
-      Some(@semantics.NodeKind::Script) => true
+      Some(Script) => true
       _ => false
     },
   )
-  assert_true(@cfg.ast_ref_of(cfg, root) is Some(@semantics.NodeRef::Script(_)))
+  assert_true(@cfg.ast_ref_of(cfg, root) is Some(Script(_)))
   assert_true(@cfg.id_to_range(cfg, root) is Some(_))
   assert_true(root_nodes.length() > 0)
   assert_true(@cfg.node_of(cfg, root_nodes[0]) is Some(_))
@@ -61,8 +61,7 @@ test "doc cfg exposes incoming and outgoing abstract state" {
   let mut echo_node : @cfg.CfgNodeId? = None
   for id in root_nodes {
     match @cfg.node_of(cfg, id) {
-      Some({ kind: @cfg.CfgNodeKind::ExecuteCommand(Some("echo")), .. }) =>
-        echo_node = Some(id)
+      Some({ kind: ExecuteCommand(Some("echo")), .. }) => echo_node = Some(id)
       _ => ()
     }
   }
@@ -111,15 +110,13 @@ test "doc cfg parameters influence how pipelines are lowered" {
   let mut lastpipe_subshells = 0
   for id in @cfg.id_to_nodes(detached, @cfg.root_ast_id(detached)) {
     match @cfg.node_of(detached, id) {
-      Some({ kind: @cfg.CfgNodeKind::ExecuteSubshell(_, _, _), .. }) =>
-        detached_subshells += 1
+      Some({ kind: ExecuteSubshell(_, _, _), .. }) => detached_subshells += 1
       _ => ()
     }
   }
   for id in @cfg.id_to_nodes(lastpipe, @cfg.root_ast_id(lastpipe)) {
     match @cfg.node_of(lastpipe, id) {
-      Some({ kind: @cfg.CfgNodeKind::ExecuteSubshell(_, _, _), .. }) =>
-        lastpipe_subshells += 1
+      Some({ kind: ExecuteSubshell(_, _, _), .. }) => lastpipe_subshells += 1
       _ => ()
     }
   }

@@ -33,13 +33,13 @@ fn join(parts : Array[String], sep : String) -> String {
 ///|
 fn dump_annotation(annotation : Annotation) -> String {
   match annotation {
-    Annotation::Disable(code) => "disable(\{dump_quoted(code)})"
-    Annotation::Enable(code) => "enable(\{dump_quoted(code)})"
-    Annotation::Shell(shell) => "shell(\{dump_quoted(shell)})"
-    Annotation::Source(path) => "source(\{dump_quoted(path)})"
-    Annotation::SourcePath(path) => "source_path(\{dump_quoted(path)})"
-    Annotation::ExternalSources(flag) => "external_sources(\{flag})"
-    Annotation::ExtendedAnalysis(flag) => "extended_analysis(\{flag})"
+    Disable(code) => "disable(\{dump_quoted(code)})"
+    Enable(code) => "enable(\{dump_quoted(code)})"
+    Shell(shell) => "shell(\{dump_quoted(shell)})"
+    Source(path) => "source(\{dump_quoted(path)})"
+    SourcePath(path) => "source_path(\{dump_quoted(path)})"
+    ExternalSources(flag) => "external_sources(\{flag})"
+    ExtendedAnalysis(flag) => "extended_analysis(\{flag})"
   }
 }
 
@@ -47,82 +47,80 @@ fn dump_annotation(annotation : Annotation) -> String {
 fn dump_terminator(terminator : Terminator?) -> String {
   match terminator {
     None => ""
-    Some(Terminator::Sequential) => ";"
-    Some(Terminator::Background) => "&"
+    Some(Sequential) => ";"
+    Some(Background) => "&"
   }
 }
 
 ///|
 fn dump_and_or_operator(op : AndOrOperator) -> String {
   match op {
-    AndOrOperator::AndIf => " && "
-    AndOrOperator::OrIf => " || "
+    AndIf => " && "
+    OrIf => " || "
   }
 }
 
 ///|
 fn dump_pipe_operator(op : PipeOperator) -> String {
   match op {
-    PipeOperator::Pipe => " | "
-    PipeOperator::PipeAndStderr => " |& "
+    Pipe => " | "
+    PipeAndStderr => " |& "
   }
 }
 
 ///|
 fn dump_redirection_operator(op : RedirectionOperator) -> String {
   match op {
-    RedirectionOperator::Read => "<"
-    RedirectionOperator::Write => ">"
-    RedirectionOperator::Append => ">>"
-    RedirectionOperator::ReadWrite => "<>"
-    RedirectionOperator::Clobber => ">|"
-    RedirectionOperator::HereDoc => "<<"
-    RedirectionOperator::HereDocStrip => "<<-"
-    RedirectionOperator::HereString => "<<<"
-    RedirectionOperator::DupInput => "<&"
-    RedirectionOperator::DupOutput => ">&"
+    Read => "<"
+    Write => ">"
+    Append => ">>"
+    ReadWrite => "<>"
+    Clobber => ">|"
+    HereDoc => "<<"
+    HereDocStrip => "<<-"
+    HereString => "<<<"
+    DupInput => "<&"
+    DupOutput => ">&"
   }
 }
 
 ///|
 fn dump_word_part(part : WordPart) -> String {
   match part {
-    WordPart::Literal(text) => "lit(\{dump_quoted(text)})"
-    WordPart::SingleQuoted(text) => "sq(\{dump_quoted(text)})"
-    WordPart::DoubleQuoted(parts) => {
+    Literal(text) => "lit(\{dump_quoted(text)})"
+    SingleQuoted(text) => "sq(\{dump_quoted(text)})"
+    DoubleQuoted(parts) => {
       let dumped = join(parts.map(dump_word_part), ", ")
       "dq([\{dumped}])"
     }
-    WordPart::DollarDoubleQuoted(parts) => {
+    DollarDoubleQuoted(parts) => {
       let dumped = join(parts.map(dump_word_part), ", ")
       "ddq([\{dumped}])"
     }
-    WordPart::DollarSingleQuoted(text) => "dsq(\{dump_quoted(text)})"
-    WordPart::Parameter(name) => "param(\{dump_quoted(name)})"
-    WordPart::SpecialParameter(name) => "special(\{dump_quoted(name)})"
-    WordPart::BracedParameter(expansion) => dump_parameter_expansion(expansion)
-    WordPart::BraceCommandSubstitution(piped, script) =>
+    DollarSingleQuoted(text) => "dsq(\{dump_quoted(text)})"
+    Parameter(name) => "param(\{dump_quoted(name)})"
+    SpecialParameter(name) => "special(\{dump_quoted(name)})"
+    BracedParameter(expansion) => dump_parameter_expansion(expansion)
+    BraceCommandSubstitution(piped, script) =>
       "bracecmd(piped=\{piped}, \{dump_script(script)})"
-    WordPart::CommandSubstitution(script) => "cmdsub(\{dump_script(script)})"
-    WordPart::BackQuoted(script) => "backtick(\{dump_script(script)})"
-    WordPart::ArithmeticExpansion(expr) =>
-      "arith(\{dump_arithmetic_expr(expr)})"
-    WordPart::DollarBracket(expr) =>
-      "dollar_bracket(\{dump_arithmetic_expr(expr)})"
-    WordPart::ExtGlob(pattern) => dump_extglob_pattern(pattern)
-    WordPart::ProcessSubstitution(kind, script) =>
+    CommandSubstitution(script) => "cmdsub(\{dump_script(script)})"
+    BackQuoted(script) => "backtick(\{dump_script(script)})"
+    ArithmeticExpansion(expr) => "arith(\{dump_arithmetic_expr(expr)})"
+    DollarBracket(expr) => "dollar_bracket(\{dump_arithmetic_expr(expr)})"
+    ExtGlob(pattern) => dump_extglob_pattern(pattern)
+    ProcessSubstitution(kind, script) =>
       "procsub(\{dump_quoted(kind)}, \{dump_script(script)})"
-    WordPart::BraceExpansion(expansion) => dump_brace_expansion(expansion)
-    WordPart::Glob(raw) => "glob(\{dump_quoted(raw)})"
+    BraceExpansion(expansion) => dump_brace_expansion(expansion)
+    Glob(raw) => "glob(\{dump_quoted(raw)})"
   }
 }
 
 ///|
 fn dump_arithmetic_token(token : ArithmeticToken) -> String {
   match token {
-    ArithmeticToken::Literal(text) => "lit(\{dump_quoted(text)})"
-    ArithmeticToken::Operator(op) => "op(\{dump_quoted(op)})"
-    ArithmeticToken::Variable(name, indexes) => {
+    Literal(text) => "lit(\{dump_quoted(text)})"
+    Operator(op) => "op(\{dump_quoted(op)})"
+    Variable(name, indexes) => {
       let suffix = if indexes.length() == 0 {
         ""
       } else {
@@ -131,8 +129,8 @@ fn dump_arithmetic_token(token : ArithmeticToken) -> String {
       }
       "var(name=\{dump_quoted(name)}\{suffix})"
     }
-    ArithmeticToken::Expansion(word) => "exp(\{dump_word(word)})"
-    ArithmeticToken::Group(expr) => "group(\{dump_arithmetic_expr(expr)})"
+    Expansion(word) => "exp(\{dump_word(word)})"
+    Group(expr) => "group(\{dump_arithmetic_expr(expr)})"
   }
 }
 
@@ -157,75 +155,68 @@ fn dump_brace_expansion(expansion : BraceExpansion) -> String {
 ///|
 fn dump_parameter_replace_mode(mode : ParameterReplaceMode) -> String {
   match mode {
-    ParameterReplaceMode::First => "first"
-    ParameterReplaceMode::All => "all"
-    ParameterReplaceMode::Prefix => "prefix"
-    ParameterReplaceMode::Suffix => "suffix"
+    First => "first"
+    All => "all"
+    Prefix => "prefix"
+    Suffix => "suffix"
   }
 }
 
 ///|
 fn dump_parameter_names_mode(mode : ParameterNamesMode) -> String {
   match mode {
-    ParameterNamesMode::Star => "star"
-    ParameterNamesMode::At => "at"
+    Star => "star"
+    At => "at"
   }
 }
 
 ///|
 fn dump_parameter_case_mode(mode : ParameterCaseMode) -> String {
   match mode {
-    ParameterCaseMode::UpperFirst => "upper_first"
-    ParameterCaseMode::UpperAll => "upper_all"
-    ParameterCaseMode::LowerFirst => "lower_first"
-    ParameterCaseMode::LowerAll => "lower_all"
-    ParameterCaseMode::ToggleFirst => "toggle_first"
-    ParameterCaseMode::ToggleAll => "toggle_all"
+    UpperFirst => "upper_first"
+    UpperAll => "upper_all"
+    LowerFirst => "lower_first"
+    LowerAll => "lower_all"
+    ToggleFirst => "toggle_first"
+    ToggleAll => "toggle_all"
   }
 }
 
 ///|
 fn dump_parameter_operator(operator : ParameterOperator) -> String {
   match operator {
-    ParameterOperator::Slice(offset, length) => {
+    Slice(offset, length) => {
       let suffix = match length {
         None => ""
         Some(length) => ", len=\{dump_quoted(length)}"
       }
       "slice(offset=\{dump_quoted(offset)}\{suffix})"
     }
-    ParameterOperator::DefaultValue(value) => "default(\{dump_quoted(value)})"
-    ParameterOperator::AssignDefault(value) =>
-      "assign_default(\{dump_quoted(value)})"
-    ParameterOperator::ErrorValue(value) => "error_value(\{dump_quoted(value)})"
-    ParameterOperator::AlternateValue(value) =>
-      "alternate(\{dump_quoted(value)})"
-    ParameterOperator::Names(mode) =>
-      "names(\{dump_parameter_names_mode(mode)})"
-    ParameterOperator::RemoveShortestPrefix(value) =>
-      "trim_prefix(\{dump_quoted(value)})"
-    ParameterOperator::RemoveLongestPrefix(value) =>
-      "trim_prefix_long(\{dump_quoted(value)})"
-    ParameterOperator::RemoveShortestSuffix(value) =>
-      "trim_suffix(\{dump_quoted(value)})"
-    ParameterOperator::RemoveLongestSuffix(value) =>
-      "trim_suffix_long(\{dump_quoted(value)})"
-    ParameterOperator::Replace(mode, pattern, replacement) => {
+    DefaultValue(value) => "default(\{dump_quoted(value)})"
+    AssignDefault(value) => "assign_default(\{dump_quoted(value)})"
+    ErrorValue(value) => "error_value(\{dump_quoted(value)})"
+    AlternateValue(value) => "alternate(\{dump_quoted(value)})"
+    Names(mode) => "names(\{dump_parameter_names_mode(mode)})"
+    RemoveShortestPrefix(value) => "trim_prefix(\{dump_quoted(value)})"
+    RemoveLongestPrefix(value) => "trim_prefix_long(\{dump_quoted(value)})"
+    RemoveShortestSuffix(value) => "trim_suffix(\{dump_quoted(value)})"
+    RemoveLongestSuffix(value) => "trim_suffix_long(\{dump_quoted(value)})"
+    Replace(mode, pattern, replacement) => {
       let replacement = match replacement {
         None => ""
         Some(value) => ", replace=\{dump_quoted(value)}"
       }
       "replace(mode=\{dump_parameter_replace_mode(mode)}, pattern=\{dump_quoted(pattern)}\{replacement})"
     }
-    ParameterOperator::Transform(kind) => "transform(\{dump_quoted(kind)})"
-    ParameterOperator::CaseModify(mode, pattern) => {
+    Transform(kind) => "transform(\{dump_quoted(kind)})"
+    CaseModify(mode, pattern) => {
       let pattern = match pattern {
         None => ""
         Some(value) => ", pattern=\{dump_quoted(value)}"
       }
       "case(mode=\{dump_parameter_case_mode(mode)}\{pattern})"
     }
-    ParameterOperator::Raw(raw) => "rawop(\{dump_quoted(raw)})"
+    Raw(raw) => "rawop(\{dump_quoted(raw)})"
   }
 }
 
@@ -263,9 +254,9 @@ fn dump_word(word : Word) -> String {
 ///|
 fn dump_assignment_value(value : AssignmentValue) -> String {
   match value {
-    AssignmentValue::Empty => "empty"
-    AssignmentValue::Word(word) => dump_word(word)
-    AssignmentValue::ArrayLiteral(elements) => {
+    Empty => "empty"
+    Word(word) => dump_word(word)
+    ArrayLiteral(elements) => {
       let dumped = join(elements.map(dump_array_element), ", ")
       "array([\{dumped}])"
     }
@@ -315,17 +306,17 @@ fn dump_array_index(index : ArrayIndex) -> String {
 fn dump_redirection_source(source : RedirectionSource?) -> String {
   match source {
     None => ""
-    Some(RedirectionSource::Fd(fd)) => "\{fd}"
-    Some(RedirectionSource::Named(name)) => "{\{name}}"
-    Some(RedirectionSource::All) => "&"
+    Some(Fd(fd)) => "\{fd}"
+    Some(Named(name)) => "{\{name}}"
+    Some(All) => "&"
   }
 }
 
 ///|
 fn dump_redirection_target(target : RedirectionTarget) -> String {
   match target {
-    RedirectionTarget::Word(word) => dump_word(word)
-    RedirectionTarget::HereDoc(doc) => {
+    Word(word) => dump_word(word)
+    HereDoc(doc) => {
       let parts = match doc.parts {
         None => ""
         Some(parts) => {
@@ -359,8 +350,8 @@ fn dump_if_arm(arm : IfArm) -> String {
 ///|
 fn dump_command_kind(kind : CommandKind) -> String {
   match kind {
-    CommandKind::Simple(simple) => dump_simple(simple)
-    CommandKind::Source(source) => {
+    Simple(simple) => dump_simple(simple)
+    Source(source) => {
       let assignments = join(source.assignments.map(dump_assignment), ", ")
       let options = join(source.options.map(dump_word), ", ")
       let args = join(source.args.map(dump_word), ", ")
@@ -374,13 +365,13 @@ fn dump_command_kind(kind : CommandKind) -> String {
       }
       "source(assign=[\{assignments}], keyword=\{dump_quoted(source.keyword)}, opts=[\{options}], path=\{dump_word(source.path)}, args=[\{args}]\{resolved_path}\{included})"
     }
-    CommandKind::Time(clause) => {
+    Time(clause) => {
       let flags = join(clause.flags.map(dump_word), ", ")
       "time(flags=[\{flags}], body=\{dump_pipeline(clause.body)})"
     }
-    CommandKind::Subshell(script) => "subshell(\{dump_script(script)})"
-    CommandKind::BraceGroup(script) => "brace(\{dump_script(script)})"
-    CommandKind::If(clause) => {
+    Subshell(script) => "subshell(\{dump_script(script)})"
+    BraceGroup(script) => "brace(\{dump_script(script)})"
+    If(clause) => {
       let arms = join(clause.arms.map(dump_if_arm), ", ")
       let else_part = match clause.else_body {
         None => ""
@@ -388,38 +379,38 @@ fn dump_command_kind(kind : CommandKind) -> String {
       }
       "if([\{arms}]\{else_part})"
     }
-    CommandKind::While(loop_) =>
+    While(loop_) =>
       "while(\{dump_script(loop_.condition)} => \{dump_script(loop_.body)})"
-    CommandKind::Until(loop_) =>
+    Until(loop_) =>
       "until(\{dump_script(loop_.condition)} => \{dump_script(loop_.body)})"
-    CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       let values = join(clause.values.map(dump_word), ", ")
       "for(name=\{clause.name}, values=[\{values}], body=\{dump_script(clause.body)})"
     }
-    CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       "for_arith(init=\{dump_arithmetic_expr(clause.init)}, cond=\{dump_arithmetic_expr(clause.condition)}, step=\{dump_arithmetic_expr(clause.step)}, body=\{dump_script(clause.body)})"
-    CommandKind::Select(clause) => {
+    Select(clause) => {
       let values = join(clause.values.map(dump_word), ", ")
       "select(name=\{clause.name}, values=[\{values}], body=\{dump_script(clause.body)})"
     }
-    CommandKind::Case(clause) => {
+    Case(clause) => {
       let items = join(clause.items.map(dump_case_item), ", ")
       "case(word=\{dump_word(clause.word)}, items=[\{items}])"
     }
-    CommandKind::Condition(condition) =>
+    Condition(condition) =>
       "condition(\{dump_condition_kind(condition.kind)}, raw=\{dump_quoted(condition.raw)}, expr=\{dump_condition_expr(condition.expr)})"
-    CommandKind::Arithmetic(arith) =>
+    Arithmetic(arith) =>
       "arith_cmd(raw=\{dump_quoted(arith.raw)}, expr=\{dump_arithmetic_expr(arith.expr)})"
-    CommandKind::Function(function_) =>
+    Function(function_) =>
       "function(name=\{function_.name}, keyword=\{function_.uses_keyword}, parens=\{function_.has_parentheses}, body=\{dump_command(function_.body)})"
-    CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       let name = match clause.name {
         None => "None"
         Some(word) => dump_word(word)
       }
       "coproc(name=\{name}, body=\{dump_command(clause.body)})"
     }
-    CommandKind::BatsTest(clause) =>
+    BatsTest(clause) =>
       "bats(name=\{dump_quoted(clause.name)}, body=\{dump_script(clause.body)})"
   }
 }
@@ -427,9 +418,9 @@ fn dump_command_kind(kind : CommandKind) -> String {
 ///|
 fn dump_case_separator(separator : CaseSeparator) -> String {
   match separator {
-    CaseSeparator::Break => ";;"
-    CaseSeparator::FallThrough => ";&"
-    CaseSeparator::Continue => ";;&"
+    Break => ";;"
+    FallThrough => ";&"
+    Continue => ";;&"
   }
 }
 
@@ -442,25 +433,24 @@ fn dump_case_item(item : CaseItem) -> String {
 ///|
 fn dump_condition_kind(kind : ConditionKind) -> String {
   match kind {
-    ConditionKind::SingleBracket => "["
-    ConditionKind::DoubleBracket => "[["
+    SingleBracket => "["
+    DoubleBracket => "[["
   }
 }
 
 ///|
 fn dump_condition_expr(expr : ConditionExpr) -> String {
   match expr {
-    ConditionExpr::Empty => "empty"
-    ConditionExpr::Word(word) => dump_word(word)
-    ConditionExpr::Unary(op, _, word) =>
-      "unary(\{dump_quoted(op)}, \{dump_word(word)})"
-    ConditionExpr::Binary(op, _, left, right) =>
+    Empty => "empty"
+    Word(word) => dump_word(word)
+    Unary(op, _, word) => "unary(\{dump_quoted(op)}, \{dump_word(word)})"
+    Binary(op, _, left, right) =>
       "binary(\{dump_quoted(op)}, \{dump_word(left)}, \{dump_word(right)})"
-    ConditionExpr::Group(inner) => "group(\{dump_condition_expr(inner)})"
-    ConditionExpr::Not(inner) => "not(\{dump_condition_expr(inner)})"
-    ConditionExpr::And(op, left, right) =>
+    Group(inner) => "group(\{dump_condition_expr(inner)})"
+    Not(inner) => "not(\{dump_condition_expr(inner)})"
+    And(op, left, right) =>
       "and(\{dump_quoted(op.text)}, \{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
-    ConditionExpr::Or(op, left, right) =>
+    Or(op, left, right) =>
       "or(\{dump_quoted(op.text)}, \{dump_condition_expr(left)}, \{dump_condition_expr(right)})"
   }
 }

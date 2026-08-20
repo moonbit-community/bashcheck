@@ -16,8 +16,8 @@ fn render_gcc(results : Array[@checker.CheckResult]) -> String {
 /// Maps checker severities to GCC-style levels.
 fn gcc_level(diagnostic : @checker.PositionedDiagnostic) -> String {
   match diagnostic.severity {
-    @checker.DiagnosticSeverity::Error => "error"
-    @checker.DiagnosticSeverity::Warning => "warning"
+    Error => "error"
+    Warning => "warning"
     _ => "note"
   }
 }

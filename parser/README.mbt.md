@@ -23,7 +23,7 @@ test "doc parser parses complete scripts into AST nodes" {
 
   assert_eq(script.items.length(), 1)
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       assert_eq(simple.assignments.length(), 1)
       assert_eq(simple.assignments[0].name, "FOO")
       assert_eq(simple.words.length(), 2)
@@ -72,7 +72,7 @@ test "doc parser can inline sourced files with explicit options" {
 
   assert_eq(report.diagnostics.length(), 0)
   match command.kind {
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       assert_eq(source.keyword, ".")
       assert_eq(source.path.source, "lib.sh")
       assert_true(source.included is Some(_))
@@ -100,7 +100,7 @@ test "doc parser can parse word and arithmetic fragments directly" {
   assert_eq(expr.raw, "x + arr[i]")
   assert_true(expr.tokens.length() >= 3)
   match expr.tokens[2] {
-    @parser.ArithmeticToken::Variable(name, indexes) => {
+    Variable(name, indexes) => {
       assert_eq(name, "arr")
       assert_eq(indexes.length(), 1)
     }

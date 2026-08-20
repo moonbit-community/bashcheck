@@ -12,7 +12,7 @@ fn analytics_batch_o_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2264,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "This function unconditionally re-invokes itself.",
     },
@@ -36,7 +36,7 @@ fn check_blatant_recursion(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_def) =>
+      Function(function_def) =>
         check_blatant_recursion_function(
           function_def.name,
           function_def.body,
@@ -81,11 +81,9 @@ fn blatant_recursion_first_sequence_commands(
   command : @parser.Command,
 ) -> Array[@parser.Command]? {
   match command.kind {
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | Subshell(script) | BatsTest({ body: script, .. }) =>
       blatant_recursion_first_pipeline_commands(script)
-    @parser.CommandKind::If(clause) =>
+    If(clause) =>
       match clause.arms.get(0) {
         Some(arm) => blatant_recursion_first_pipeline_commands(arm.condition)
         None =>
@@ -94,16 +92,13 @@ fn blatant_recursion_first_sequence_commands(
             None => None
           }
       }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       blatant_recursion_first_pipeline_commands(clause.condition)
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) => blatant_recursion_first_pipeline_commands(clause.body)
+    ForArithmetic(clause) =>
       blatant_recursion_first_pipeline_commands(clause.body)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      blatant_recursion_first_pipeline_commands(clause.body)
-    @parser.CommandKind::Select(clause) =>
-      blatant_recursion_first_pipeline_commands(clause.body)
-    @parser.CommandKind::CoProc(clause) =>
-      blatant_recursion_first_sequence_commands(clause.body)
+    Select(clause) => blatant_recursion_first_pipeline_commands(clause.body)
+    CoProc(clause) => blatant_recursion_first_sequence_commands(clause.body)
     _ => None
   }
 }
@@ -141,7 +136,7 @@ fn check_blatant_recursion_command(
       push_diagnostic_with_fix(
         diagnostics,
         word.span,
-        CheckSeverity::Error,
+        Error,
         2264,
         "This function unconditionally re-invokes itself. Missing 'command'?",
         blatant_recursion_fix(word),
@@ -156,8 +151,7 @@ fn blatant_recursion_command_word(
   command : @parser.Command,
 ) -> @parser.Word? {
   match (@semantics.command_name(command), command.kind) {
-    (Some(name), @parser.CommandKind::Simple(simple)) if name == function_name =>
-      simple.words.get(0)
+    (Some(name), Simple(simple)) if name == function_name => simple.words.get(0)
     _ => None
   }
 }

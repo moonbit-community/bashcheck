@@ -12,25 +12,25 @@ fn analytics_batch_h_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2035,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Globs that expand to names with dashes can become options.",
     },
     {
       code: 2141,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Suspicious IFS values are usually meant to use escapes or literal whitespace.",
     },
     {
       code: 2123,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "PATH is the shell search path and should not be repurposed as a local variable.",
     },
     {
       code: 2147,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Literal tilde in PATH works poorly across programs.",
     },
@@ -59,7 +59,7 @@ fn check_globs_as_options(
       Some("echo") | Some("printf") => ()
       _ =>
         match command.kind {
-          @parser.CommandKind::Simple(_) => {
+          Simple(_) => {
             let arguments = @semantics.command_arguments(command)
             let mut i = 0
             while i < arguments.length() {
@@ -68,7 +68,7 @@ fn check_globs_as_options(
                 push_diagnostic(
                   diagnostics,
                   argument.span,
-                  CheckSeverity::Info,
+                  Info,
                   2035,
                   "Use ./*glob* or -- *glob* so names with dashes won't become options.",
                 )
@@ -88,8 +88,7 @@ fn check_globs_as_options(
 ///|
 fn analytics_word_is_glob_option(word : @parser.Word) -> Bool {
   match word.parts.get(0) {
-    Some(@parser.WordPart::Glob(text)) =>
-      text.has_prefix("*") || text.has_prefix("?")
+    Some(Glob(text)) => text.has_prefix("*") || text.has_prefix("?")
     _ => false
   }
 }
@@ -110,10 +109,10 @@ fn check_suspicious_ifs(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           match assignment.value {
-            @parser.AssignmentValue::Word(value) =>
+            Word(value) =>
               if assignment.name == "IFS" &&
                 !assignment.append &&
                 assignment.indexes.length() == 0 {
@@ -143,8 +142,7 @@ fn analytics_maybe_warn_suspicious_ifs(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let has_dollar_single = shell == @semantics.ShellDialect::Bash ||
-    shell == @semantics.ShellDialect::Ksh
+  let has_dollar_single = shell == Bash || shell == Ksh
   let linefeed_hint = if has_dollar_single {
     "$'\\n'"
   } else {
@@ -160,7 +158,7 @@ fn analytics_maybe_warn_suspicious_ifs(
     push_diagnostic(
       diagnostics,
       span,
-      CheckSeverity::Warning,
+      Warning,
       2141,
       "This backslash is literal. Did you mean IFS=\{linefeed_hint} ?",
     )
@@ -170,7 +168,7 @@ fn analytics_maybe_warn_suspicious_ifs(
     push_diagnostic(
       diagnostics,
       span,
-      CheckSeverity::Warning,
+      Warning,
       2141,
       "This backslash is literal. Did you mean IFS=\{tab_hint} ?",
     )
@@ -198,7 +196,7 @@ fn analytics_warn_suspicious_ifs(
   push_diagnostic(
     diagnostics,
     span,
-    CheckSeverity::Warning,
+    Warning,
     2141,
     "This IFS value contains \{desc}. For tabs/linefeeds/escapes, use $'..', literal, or printf.",
   )
@@ -211,10 +209,10 @@ fn check_tilde_in_path(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           match assignment.value {
-            @parser.AssignmentValue::Word(value) =>
+            Word(value) =>
               if assignment.name == "PATH" &&
                 !assignment.append &&
                 assignment.indexes.length() == 0 {
@@ -222,7 +220,7 @@ fn check_tilde_in_path(
                   push_diagnostic(
                     diagnostics,
                     assignment.span,
-                    CheckSeverity::Warning,
+                    Warning,
                     2147,
                     "Literal tilde in PATH works poorly across programs.",
                   )
@@ -243,7 +241,7 @@ fn check_overriding_path(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         if simple.words.length() == 0 {
           for assignment in simple.assignments {
             h_maybe_warn_overriding_path(assignment, diagnostics)
@@ -265,7 +263,7 @@ fn h_maybe_warn_overriding_path(
     return
   }
   let value = match assignment.value {
-    @parser.AssignmentValue::Word(value) => value
+    Word(value) => value
     _ => return
   }
   let text = value.source
@@ -274,7 +272,7 @@ fn h_maybe_warn_overriding_path(
     push_diagnostic(
       diagnostics,
       assignment_name_span(assignment),
-      CheckSeverity::Warning,
+      Warning,
       2123,
       "PATH is the shell search path. Use another name.",
     )
@@ -286,7 +284,7 @@ fn h_maybe_warn_overriding_path(
     push_diagnostic(
       diagnostics,
       assignment_name_span(assignment),
-      CheckSeverity::Warning,
+      Warning,
       2123,
       "PATH is the shell search path. Use another name.",
     )
@@ -309,11 +307,9 @@ fn analytics_word_part_has_quoted_tilde(
   quoted : Bool,
 ) -> Bool {
   match part {
-    @parser.WordPart::Literal(text) => quoted && text.contains("~")
-    @parser.WordPart::SingleQuoted(text)
-    | @parser.WordPart::DollarSingleQuoted(text) => text.contains("~")
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(text) => quoted && text.contains("~")
+    SingleQuoted(text) | DollarSingleQuoted(text) => text.contains("~")
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       parts.any(fn(part) { analytics_word_part_has_quoted_tilde(part, true) })
     _ => false
   }

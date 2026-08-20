@@ -13,49 +13,49 @@ fn analytics_batch_c_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2000,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Prefer ${#var} over echo \"$var\" | wc -c.",
     },
     {
       code: 2087,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Quote ssh heredoc delimiters when the body expands locally.",
     },
     {
       code: 2181,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Check command success directly instead of reading $?.",
     },
     {
       code: 2128,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Expanding an array without an index only yields the first element.",
     },
     {
       code: 2218,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Functions should be defined before they are invoked.",
     },
     {
       code: 2247,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Flip leading $ and \" if this should be a quoted substitution.",
     },
     {
       code: 2319,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Using $? after a test can accidentally read the test status instead.",
     },
     {
       code: 2320,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Using $? after echo/printf can accidentally read the print status instead.",
     },
@@ -100,7 +100,7 @@ fn check_echo_wc(
       push_diagnostic(
         diagnostics,
         pipeline.span,
-        CheckSeverity::Style,
+        Style,
         2000,
         "See if you can use ${#variable} instead.",
       )
@@ -117,17 +117,17 @@ fn check_ssh_here_doc(
     guard command_matches_basename(command, "ssh") else { return }
     for redirect in command.redirects {
       match redirect.target {
-        @parser.RedirectionTarget::HereDoc(doc) =>
+        HereDoc(doc) =>
           if !doc.quoted && here_doc_has_expansion(doc) {
             push_diagnostic(
               diagnostics,
               here_doc_delimiter_span(redirect, doc.delimiter),
-              CheckSeverity::Warning,
+              Warning,
               2087,
               "Quote '\{doc.delimiter}' to make here document expansions happen on the server side rather than on the client.",
             )
           }
-        @parser.RedirectionTarget::Word(_) => ()
+        Word(_) => ()
       }
     }
   })
@@ -144,7 +144,7 @@ fn check_exit_code_tests(
       return
     }
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         visit_exit_code_condition_expr(condition.expr, diagnostics)
       _ => ()
     }
@@ -157,28 +157,19 @@ fn visit_exit_code_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Binary(op, _, lhs, rhs) =>
+    Binary(op, _, lhs, rhs) =>
       match exit_code_test_diagnostic(op, lhs, rhs) {
         Some((span, message)) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            CheckSeverity::Style,
-            2181,
-            message,
-          )
+          push_diagnostic(diagnostics, span, Style, 2181, message)
         None => ()
       }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       visit_exit_code_condition_expr(inner, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       visit_exit_code_condition_expr(lhs, diagnostics)
       visit_exit_code_condition_expr(rhs, diagnostics)
     }
-    @parser.ConditionExpr::Empty
-    | @parser.ConditionExpr::Word(_)
-    | @parser.ConditionExpr::Unary(_, _, _) => ()
+    Empty | Word(_) | Unary(_, _, _) => ()
   }
 }
 
@@ -236,11 +227,11 @@ fn check_array_without_index(
 ) -> Unit {
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::WordPart(@parser.WordPart::Parameter(name))) =>
+      Some(WordPart(Parameter(name))) =>
         maybe_push_array_without_index_diagnostic(
           cfg, analysis, id, name, diagnostics,
         )
-      Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+      Some(ParameterExpansion(expansion)) =>
         match plain_array_parameter_name(expansion) {
           Some(name) =>
             maybe_push_array_without_index_diagnostic(
@@ -283,7 +274,7 @@ fn maybe_push_array_without_index_diagnostic(
       push_diagnostic(
         diagnostics,
         ast_effect_span(cfg, id),
-        CheckSeverity::Warning,
+        Warning,
         2128,
         "Expanding an array without an index only gives the first element.",
       )
@@ -298,7 +289,7 @@ fn collect_first_function_command_spans(
   let spans : Array[@parser.Span] = []
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Function(function_) =>
+      Function(function_) =>
         match first_executable_command(function_.body) {
           Some(first) => spans.push(first.span)
           None => ()
@@ -312,37 +303,27 @@ fn collect_first_function_command_spans(
 ///|
 fn first_executable_command(command : @parser.Command) -> @parser.Command? {
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
-      first_executable_command_in_pipeline(clause.body)
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Time(clause) => first_executable_command_in_pipeline(clause.body)
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       first_executable_command_in_script(script)
-    @parser.CommandKind::If(clause) =>
+    If(clause) =>
       match clause.arms.get(0) {
         Some(arm) => first_executable_command_in_script(arm.condition)
         None => Some(command)
       }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       first_executable_command_in_script(clause.condition)
-    @parser.CommandKind::ForIn(clause) =>
-      first_executable_command_in_script(clause.body)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      first_executable_command_in_script(clause.body)
-    @parser.CommandKind::Select(clause) =>
-      first_executable_command_in_script(clause.body)
-    @parser.CommandKind::Case(clause) =>
+    ForIn(clause) => first_executable_command_in_script(clause.body)
+    ForArithmetic(clause) => first_executable_command_in_script(clause.body)
+    Select(clause) => first_executable_command_in_script(clause.body)
+    Case(clause) =>
       match clause.items.get(0) {
         Some(item) => first_executable_command_in_script(item.body)
         None => Some(command)
       }
-    @parser.CommandKind::CoProc(clause) => first_executable_command(clause.body)
-    @parser.CommandKind::Function(function_) =>
-      first_executable_command(function_.body)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => Some(command)
+    CoProc(clause) => first_executable_command(clause.body)
+    Function(function_) => first_executable_command(function_.body)
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => Some(command)
   }
 }
 
@@ -403,7 +384,7 @@ fn check_dollar_quote_paren(
       push_diagnostic_with_fix(
         diagnostics,
         word.span,
-        CheckSeverity::Warning,
+        Warning,
         2247,
         "Flip leading $ and \" if this should be a quoted substitution.",
         @fixer.Fix::from_replacements([
@@ -424,9 +405,9 @@ fn check_dollar_quote_paren(
 ///|
 fn word_starts_with_dollar_quote_paren(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::DollarDoubleQuoted(parts)] =>
+    [DollarDoubleQuoted(parts)] =>
       match parts.get(0) {
-        Some(@parser.WordPart::Literal(text)) => {
+        Some(Literal(text)) => {
           let view = text[:]
           view.length() > 0 && (view[0] == '(' || view[0] == '{')
         }
@@ -457,26 +438,22 @@ fn word_parts_have_dynamic_expansion(parts : Array[@parser.WordPart]) -> Bool {
 ///|
 fn word_part_has_dynamic_expansion(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Literal(_)
-    | @parser.WordPart::SingleQuoted(_)
-    | @parser.WordPart::DollarSingleQuoted(_)
-    | @parser.WordPart::Glob(_) => false
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    Literal(_) | SingleQuoted(_) | DollarSingleQuoted(_) | Glob(_) => false
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       word_parts_have_dynamic_expansion(parts)
-    @parser.WordPart::ExtGlob(pattern) =>
+    ExtGlob(pattern) =>
       pattern.alternatives.any(fn(word) { word_has_dynamic_expansion(word) })
-    @parser.WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       expansion.elements.any(fn(word) { word_has_dynamic_expansion(word) })
-    @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::BracedParameter(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BackQuoted(_)
-    | @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_)
-    | @parser.WordPart::ProcessSubstitution(_, _) => true
+    Parameter(_)
+    | SpecialParameter(_)
+    | BracedParameter(_)
+    | BraceCommandSubstitution(_, _)
+    | CommandSubstitution(_)
+    | BackQuoted(_)
+    | ArithmeticExpansion(_)
+    | DollarBracket(_)
+    | ProcessSubstitution(_, _) => true
   }
 }
 
@@ -506,11 +483,11 @@ fn check_use_before_definition(
   analysis : @cfg.CfgAnalysis,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let functions : Map[String, Array[@cfg.CfgAstId]] = Map::new()
+  let functions : Map[String, Array[@cfg.CfgAstId]] = Map([])
   let mut has_function = false
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::FunctionDef(function_def)) => {
+      Some(FunctionDef(function_def)) => {
         push_function_definition(functions, function_def.name, id)
         has_function = true
       }
@@ -520,7 +497,7 @@ fn check_use_before_definition(
   guard has_function else { return }
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::SimpleCommand(simple)) =>
+      Some(SimpleCommand(simple)) =>
         match simple_command_name_word(simple) {
           Some((name, word)) =>
             match functions.get(name) {
@@ -529,7 +506,7 @@ fn check_use_before_definition(
                   push_diagnostic(
                     diagnostics,
                     word.span,
-                    CheckSeverity::Error,
+                    Error,
                     2218,
                     "This function is only defined later. Move the definition up.",
                   )
@@ -604,9 +581,7 @@ fn check_overwritten_exit_code(
 ) -> Unit {
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(
-        @semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter("?"))
-      ) =>
+      Some(WordPart(SpecialParameter("?"))) =>
         check_overwritten_exit_code_use(
           cfg,
           analysis,
@@ -614,7 +589,7 @@ fn check_overwritten_exit_code(
           exit_code_span(cfg, id),
           diagnostics,
         )
-      Some(@semantics.NodeRef::ParameterExpansion(expansion)) =>
+      Some(ParameterExpansion(expansion)) =>
         if parameter_expansion_is_exit_code(expansion) {
           check_overwritten_exit_code_use(
             cfg,
@@ -666,7 +641,7 @@ fn check_overwritten_exit_code_use(
         push_diagnostic(
           diagnostics,
           span,
-          CheckSeverity::Warning,
+          Warning,
           2319,
           "This $? refers to a condition, not a command. Assign to a variable to avoid it being overwritten.",
         )
@@ -675,7 +650,7 @@ fn check_overwritten_exit_code_use(
         push_diagnostic(
           diagnostics,
           span,
-          CheckSeverity::Warning,
+          Warning,
           2320,
           "This $? refers to echo/printf, not a previous command. Assign to variable to avoid it being overwritten.",
         )
@@ -696,7 +671,7 @@ fn precise_ast_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
 ///|
 fn exit_code_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, id) {
-    Some(@semantics.NodeRef::WordPart(@parser.WordPart::SpecialParameter("?"))) =>
+    Some(WordPart(SpecialParameter("?"))) =>
       match parent_word_of(cfg, id) {
         Some(word) =>
           match word_subspan(word, "$?") {
@@ -705,7 +680,7 @@ fn exit_code_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
           }
         None => precise_ast_span(cfg, id)
       }
-    Some(@semantics.NodeRef::ParameterExpansion(_)) =>
+    Some(ParameterExpansion(_)) =>
       match parent_word_of(cfg, id) {
         Some(word) =>
           match word_subspan(word, "${?}") {
@@ -723,8 +698,8 @@ fn parent_word_of(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Word? {
   match @cfg.ast_parent_of(cfg, id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::Word(word)) => Some(word)
-        Some(@semantics.NodeRef::WordPart(_)) => parent_word_of(cfg, parent)
+        Some(Word(word)) => Some(word)
+        Some(WordPart(_)) => parent_word_of(cfg, parent)
         _ => None
       }
     None => None
@@ -782,13 +757,13 @@ fn string_index_of(text : String, needle : String) -> Int? {
 ///|
 fn exit_code_is_condition_like(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
   match @cfg.ast_ref_of(cfg, id) {
-    Some(@semantics.NodeRef::ConditionCommand(_)) => true
-    Some(@semantics.NodeRef::Command(command)) =>
+    Some(ConditionCommand(_)) => true
+    Some(Command(command)) =>
       match command.kind {
-        @parser.CommandKind::Condition(_) => true
+        Condition(_) => true
         _ => command_matches_basename(command, "test")
       }
-    Some(@semantics.NodeRef::SimpleCommand(_)) =>
+    Some(SimpleCommand(_)) =>
       match parent_command_of(cfg, id) {
         Some(command) => command_matches_basename(command, "test")
         None => false
@@ -800,10 +775,10 @@ fn exit_code_is_condition_like(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
 ///|
 fn exit_code_is_printing_command(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
   match @cfg.ast_ref_of(cfg, id) {
-    Some(@semantics.NodeRef::Command(command)) =>
+    Some(Command(command)) =>
       command_matches_basename(command, "echo") ||
       command_matches_basename(command, "printf")
-    Some(@semantics.NodeRef::SimpleCommand(_)) =>
+    Some(SimpleCommand(_)) =>
       match parent_command_of(cfg, id) {
         Some(command) =>
           command_matches_basename(command, "echo") ||
@@ -819,7 +794,7 @@ fn parent_command_of(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Command? {
   match @cfg.ast_parent_of(cfg, id) {
     Some(parent) =>
       match @cfg.ast_ref_of(cfg, parent) {
-        Some(@semantics.NodeRef::Command(command)) => Some(command)
+        Some(Command(command)) => Some(command)
         _ => None
       }
     None => None

@@ -149,12 +149,7 @@ test "analytics batch t adapts quoted literal suggestion for posix sh" {
       #|
     ),
   )
-  let diagnostics = run_checks_with_shell(
-    script,
-    @semantics.ShellDialect::Sh,
-    false,
-    [],
-  )
+  let diagnostics = run_checks_with_shell(script, Sh, false, [])
 
   assert_true(first_code(diagnostics, 2089).message.contains("set/\"$@\""))
 }

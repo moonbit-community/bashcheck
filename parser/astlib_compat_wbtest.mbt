@@ -277,7 +277,7 @@ test "shellcheck ASTLib modifier and index props" {
     false,
     Some("foo"),
     None,
-    Some(ParameterOperator::Slice("bar", Some("baz"))),
+    Some(Slice("bar", Some("baz"))),
   )
   assert_parameter_expansion_shape(
     "prop_getBracedModifier2",
@@ -286,7 +286,7 @@ test "shellcheck ASTLib modifier and index props" {
     true,
     Some("var"),
     None,
-    Some(ParameterOperator::DefaultValue("foo")),
+    Some(DefaultValue("foo")),
   )
   assert_parameter_expansion_shape(
     "prop_getBracedModifier3",
@@ -304,7 +304,7 @@ test "shellcheck ASTLib modifier and index props" {
     false,
     Some("foo"),
     Some("@"),
-    Some(ParameterOperator::Transform("Q")),
+    Some(Transform("Q")),
   )
   assert_parameter_expansion_shape(
     "prop_getBracedModifier5",
@@ -313,7 +313,7 @@ test "shellcheck ASTLib modifier and index props" {
     false,
     Some("@"),
     None,
-    Some(ParameterOperator::Transform("Q")),
+    Some(Transform("Q")),
   )
   assert_parameter_expansion_shape(
     "prop_getIndexReferences1",
@@ -335,7 +335,7 @@ test "shellcheck ASTLib offset reference props" {
     false,
     Some("foo"),
     None,
-    Some(ParameterOperator::Slice("bar", None)),
+    Some(Slice("bar", None)),
   )
   assert_parameter_expansion_shape(
     "prop_getOffsetReferences2",
@@ -344,7 +344,7 @@ test "shellcheck ASTLib offset reference props" {
     false,
     Some("foo"),
     None,
-    Some(ParameterOperator::Slice("bar", Some("baz"))),
+    Some(Slice("bar", Some("baz"))),
   )
   assert_parameter_expansion_shape(
     "prop_getOffsetReferences3",
@@ -353,7 +353,7 @@ test "shellcheck ASTLib offset reference props" {
     false,
     Some("foo"),
     Some("foo"),
-    Some(ParameterOperator::Slice("bar", None)),
+    Some(Slice("bar", None)),
   )
   assert_parameter_expansion_shape(
     "prop_getOffsetReferences4",
@@ -362,6 +362,6 @@ test "shellcheck ASTLib offset reference props" {
     false,
     Some("foo"),
     Some("foo"),
-    Some(ParameterOperator::Slice("bar", Some("baz"))),
+    Some(Slice("bar", Some("baz"))),
   )
 }

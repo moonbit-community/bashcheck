@@ -50,7 +50,7 @@ fn nth_command_ast_id(cfg : CFG, name : String, nth : Int) -> CfgAstId {
   let mut seen = 0
   for entry in cfg.ast_entries {
     match entry.node_ref {
-      @semantics.NodeRef::Command(command) =>
+      Command(command) =>
         match @semantics.command_name(command) {
           Some(current) if current == name =>
             if seen == nth {

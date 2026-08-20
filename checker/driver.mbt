@@ -39,7 +39,7 @@ pub fn check_script(
 /// constructor details.
 fn parse_options(spec : CheckSpec) -> @parser.ParseOptions {
   @parser.ParseOptions::new(
-    spec.execution_mode == @semantics.ExecutionMode::Sourced,
+    spec.execution_mode == Sourced,
     false,
     spec.external_sources,
     spec.check_sourced,
@@ -196,13 +196,13 @@ fn append_missing_source_diagnostics(
   for command in top_level_commands(script) {
     @semantics.walk_command(command, fn(current) {
       match current.kind {
-        @parser.CommandKind::Source(source) =>
+        Source(source) =>
           match @semantics.literal_text(source.path) {
             Some(path) if !source_file_is_available(spec, path) => {
               let diagnostic = {
                 filename,
                 span: source.path.span,
-                severity: DiagnosticSeverity::Warning,
+                severity: Warning,
                 code: Some(1091),
                 message: "source file '\{path}' was not provided in parse options",
                 fix: None,
@@ -310,7 +310,7 @@ fn config_extended_analysis_override(
   let mut flag_override : Bool? = None
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::ExtendedAnalysis(flag) => flag_override = Some(flag)
+      ExtendedAnalysis(flag) => flag_override = Some(flag)
       _ => ()
     }
   }
@@ -341,7 +341,7 @@ fn script_extended_analysis_override(script : @parser.Script) -> Bool? {
   let mut flag_override : Bool? = None
   for annotation in script.annotations {
     match annotation {
-      @parser.Annotation::ExtendedAnalysis(flag) => flag_override = Some(flag)
+      ExtendedAnalysis(flag) => flag_override = Some(flag)
       _ => ()
     }
   }
@@ -368,9 +368,9 @@ fn positioned_parse_diagnostic(
 /// Maps parser severities into checker severities.
 fn parse_severity(severity : @parser.DiagnosticSeverity) -> DiagnosticSeverity {
   match severity {
-    @parser.DiagnosticSeverity::Error => DiagnosticSeverity::Error
-    @parser.DiagnosticSeverity::Warning => DiagnosticSeverity::Warning
-    @parser.DiagnosticSeverity::Info => DiagnosticSeverity::Info
+    Error => Error
+    Warning => Warning
+    Info => Info
   }
 }
 
@@ -422,10 +422,10 @@ fn localize_lint_fix(filename : String, fix : @fixer.Fix?) -> @fixer.Fix? {
 /// Maps lint severities into checker severities.
 fn lint_severity(severity : @checks.CheckSeverity) -> DiagnosticSeverity {
   match severity {
-    @checks.CheckSeverity::Error => DiagnosticSeverity::Error
-    @checks.CheckSeverity::Warning => DiagnosticSeverity::Warning
-    @checks.CheckSeverity::Info => DiagnosticSeverity::Info
-    @checks.CheckSeverity::Style => DiagnosticSeverity::Style
+    Error => Error
+    Warning => Warning
+    Info => Info
+    Style => Style
   }
 }
 
@@ -438,7 +438,7 @@ fn unknown_shell_diagnostic(
   {
     filename,
     span: script.span,
-    severity: DiagnosticSeverity::Error,
+    severity: Error,
     code: Some(2148),
     message: "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive.",
     fix: None,
@@ -465,7 +465,7 @@ fn append_shebang_entry_diagnostics(
     let diagnostic = {
       filename,
       span,
-      severity: DiagnosticSeverity::Warning,
+      severity: Warning,
       code: Some(2187),
       message: "Ash scripts will be checked as Dash. Add '# shellcheck shell=dash' to silence.",
       fix: None,
@@ -478,7 +478,7 @@ fn append_shebang_entry_diagnostics(
     let diagnostic = {
       filename,
       span,
-      severity: DiagnosticSeverity::Error,
+      severity: Error,
       code: Some(2239),
       message: "Ensure the shebang uses an absolute path to the interpreter.",
       fix: None,
@@ -492,7 +492,7 @@ fn append_shebang_entry_diagnostics(
       let diagnostic = {
         filename,
         span,
-        severity: DiagnosticSeverity::Error,
+        severity: Error,
         code: Some(2246),
         message: "This shebang specifies a directory. Ensure the interpreter is a file.",
         fix: None,
@@ -509,7 +509,7 @@ fn append_shebang_entry_diagnostics(
 fn script_has_shell_annotation(script : @parser.Script) -> Bool {
   for annotation in script.annotations {
     match annotation {
-      @parser.Annotation::Shell(_) => return true
+      Shell(_) => return true
       _ => ()
     }
   }
@@ -863,10 +863,10 @@ fn code_is_included(spec : CheckSpec, code : Int?) -> Bool {
 /// Assigns sortable numeric ranks to severities.
 fn severity_rank(severity : DiagnosticSeverity) -> Int {
   match severity {
-    DiagnosticSeverity::Error => 0
-    DiagnosticSeverity::Warning => 1
-    DiagnosticSeverity::Info => 2
-    DiagnosticSeverity::Style => 3
+    Error => 0
+    Warning => 1
+    Info => 2
+    Style => 3
   }
 }
 
@@ -975,9 +975,7 @@ fn annotations_disable_code(
 ) -> Bool {
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::Disable(value) if disable_value_matches_code(
-          value, code,
-        ) => return true
+      Disable(value) if disable_value_matches_code(value, code) => return true
       _ => ()
     }
   }

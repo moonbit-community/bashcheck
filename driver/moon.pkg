@@ -1,7 +1,7 @@
 import {
-  "moonbit-community/bashcheck/checker" @checker,
-  "moonbit-community/bashcheck/formatter" @formatter,
-  "moonbitlang/async/fs" @fs,
+  "moonbit-community/bashcheck/checker",
+  "moonbit-community/bashcheck/formatter",
+  "moonbitlang/async/fs",
 }
 
 import {
@@ -9,4 +9,4 @@ import {
   "moonbitlang/core/debug",
 } for "test"
 
-supported_targets = "+native"
+supported_targets = "wasm+native"

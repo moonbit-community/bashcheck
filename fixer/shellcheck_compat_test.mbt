@@ -313,9 +313,9 @@ test "shellcheck fixer fixed replacement props" {
 
 ///|
 test "shellcheck fixer quickcheck overlap commutes" {
-  let offset = @qc.int_range(0, 12)
+  let offset = @gen.int_range(0, 12)
   @qc.quick_check(
-    @qc.forall(@qc.quad(offset, offset, offset, offset), fn(
+    @qc.forall(@gen.quad(offset, offset, offset, offset), fn(
       sample : (Int, Int, Int, Int),
     ) {
       let (a, b, c, d) = sample

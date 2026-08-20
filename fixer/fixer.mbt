@@ -11,7 +11,7 @@ pub enum InsertionPoint {
 ///|
 /// Returns the insertion-point value that places text before the range start.
 pub fn InsertionPoint::before() -> InsertionPoint {
-  InsertionPoint::InsertBefore
+  InsertBefore
 }
 
 ///|
@@ -20,7 +20,7 @@ pub fn InsertionPoint::before() -> InsertionPoint {
 ///|
 /// Returns the insertion-point value that places text after the range end.
 pub fn InsertionPoint::after() -> InsertionPoint {
-  InsertionPoint::InsertAfter
+  InsertAfter
 }
 
 ///|
@@ -247,11 +247,11 @@ fn replacement_precedes(lhs : Replacement, rhs : Replacement) -> Bool {
         insertion_rank(rhs.insertion_point)
     }
     match lhs.insertion_point {
-      InsertionPoint::InsertBefore =>
+      InsertBefore =>
         if lhs.precedence != rhs.precedence {
           return lhs.precedence > rhs.precedence
         }
-      InsertionPoint::InsertAfter =>
+      InsertAfter =>
         if lhs.precedence != rhs.precedence {
           return lhs.precedence < rhs.precedence
         }
@@ -267,8 +267,8 @@ fn replacement_precedes(lhs : Replacement, rhs : Replacement) -> Bool {
 /// Converts insertion semantics into a sortable tiebreaker.
 fn insertion_rank(point : InsertionPoint) -> Int {
   match point {
-    InsertionPoint::InsertBefore => 0
-    InsertionPoint::InsertAfter => 1
+    InsertBefore => 0
+    InsertAfter => 1
   }
 }
 

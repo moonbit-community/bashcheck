@@ -7,7 +7,7 @@ priv struct ShellSupportRule {
 
 ///|
 fn shell_support_description(code : Int, summary : String) -> CheckDescription {
-  shell_support_description_with_severity(code, CheckSeverity::Warning, summary)
+  shell_support_description_with_severity(code, Warning, summary)
 }
 
 ///|
@@ -24,12 +24,12 @@ fn shell_support_descriptions() -> Array[CheckDescription] {
   [
     shell_support_description_with_severity(
       2001,
-      CheckSeverity::Style,
+      Style,
       "Use ${var//search/replace} instead of echo | sed for simple substitutions.",
     ),
     shell_support_description_with_severity(
       2025,
-      CheckSeverity::Info,
+      Info,
       "Wrap PS1 escape sequences in \\[..\\] to preserve line wrapping.",
     ),
     shell_support_description(
@@ -37,12 +37,12 @@ fn shell_support_descriptions() -> Array[CheckDescription] {
     ),
     shell_support_description_with_severity(
       2079,
-      CheckSeverity::Error,
+      Error,
       "(( )) doesn't support decimals. Use bc or awk.",
     ),
     shell_support_description_with_severity(
       2175,
-      CheckSeverity::Style,
+      Style,
       "Quote invalid brace expansions passed literally to eval.",
     ),
     shell_support_description(
@@ -50,17 +50,17 @@ fn shell_support_descriptions() -> Array[CheckDescription] {
     ),
     shell_support_description_with_severity(
       2325,
-      CheckSeverity::Error,
+      Error,
       "Multiple leading ! before pipelines are a bash/ksh extension.",
     ),
     shell_support_description_with_severity(
       2326,
-      CheckSeverity::Error,
+      Error,
       "! is not allowed in the middle of pipelines.",
     ),
     shell_support_description_with_severity(
       2332,
-      CheckSeverity::Error,
+      Error,
       "[ ! -a/-o ... ] is always true in single-bracket tests.",
     ),
     shell_support_description(
@@ -244,7 +244,7 @@ fn check_shell_support_pipeline(
     let mut i = 0
     while i < pipeline.operators.length() {
       match pipeline.operators[i] {
-        @parser.PipeOperator::PipeAndStderr =>
+        PipeAndStderr =>
           push_shell_support_diagnostic(
             diagnostics,
             shell,
@@ -263,14 +263,14 @@ fn check_shell_support_pipeline(
         push_diagnostic(
           diagnostics,
           span_prefix(segment.span, 1),
-          CheckSeverity::Error,
+          Error,
           2325,
           "Multiple ! in front of pipelines are a bash/ksh extension. Use only 0 or 1.",
         )
       }
     }
   }
-  if shell != @semantics.ShellDialect::Ksh {
+  if shell != Ksh {
     let mut i = 1
     while i < pipeline.segments.length() {
       let segment = pipeline.segments[i]
@@ -278,7 +278,7 @@ fn check_shell_support_pipeline(
         push_diagnostic(
           diagnostics,
           span_prefix(segment.span, 1),
-          CheckSeverity::Error,
+          Error,
           2326,
           "! is not allowed in the middle of pipelines. Use command group as in cmd | { ! cmd; } if necessary.",
         )
@@ -316,11 +316,11 @@ fn collect_assigned_shell_support_names(
   let names : Array[String] = []
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           shell_support_push_unique_string(names, assignment.name)
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           shell_support_push_unique_string(names, assignment.name)
         }
@@ -337,7 +337,7 @@ fn check_shell_support_command(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -364,7 +364,7 @@ fn check_shell_support_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::Arithmetic(arithmetic) => {
+    Arithmetic(arithmetic) => {
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -385,7 +385,7 @@ fn check_shell_support_command(
         diagnostics,
       )
     }
-    @parser.CommandKind::Select(_) =>
+    Select(_) =>
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -393,10 +393,10 @@ fn check_shell_support_command(
         3008,
         "select loops are",
       )
-    @parser.CommandKind::Condition(condition) => {
+    Condition(condition) => {
       match condition.kind {
-        @parser.ConditionKind::DoubleBracket =>
-          if shell != @semantics.ShellDialect::BusyboxSh {
+        DoubleBracket =>
+          if shell != BusyboxSh {
             push_shell_support_diagnostic(
               diagnostics,
               shell,
@@ -417,7 +417,7 @@ fn check_shell_support_command(
         command, condition, shell, diagnostics,
       )
     }
-    @parser.CommandKind::CoProc(_) =>
+    CoProc(_) =>
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -425,14 +425,13 @@ fn check_shell_support_command(
         3032,
         "coproc is",
       )
-    @parser.CommandKind::Source(source) => {
+    Source(source) => {
       check_shell_support_assignment_extensions(
         source.assignments,
         shell,
         diagnostics,
       )
-      if source.keyword == "source" &&
-        shell != @semantics.ShellDialect::BusyboxSh {
+      if source.keyword == "source" && shell != BusyboxSh {
         push_shell_support_diagnostic(
           diagnostics,
           shell,
@@ -442,7 +441,7 @@ fn check_shell_support_command(
         )
       }
     }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       if !shell_support_is_function_name(function_.name) {
         push_shell_support_diagnostic(
           diagnostics,
@@ -452,7 +451,7 @@ fn check_shell_support_command(
           "naming functions outside [a-zA-Z_][a-zA-Z0-9_]* is",
         )
       }
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       maybe_push_assignment_append_diagnostic(
         diagnostics,
         shell,
@@ -509,7 +508,7 @@ fn check_shell_support_echo_sed_here_string(
   guard shell_support_is_echo_sed_shell(shell) else { return }
   guard command.redirects.any(fn(redirect) {
     match redirect.op {
-      @parser.RedirectionOperator::HereString => true
+      HereString => true
       _ => false
     }
   }) else {
@@ -535,7 +534,7 @@ fn maybe_push_echo_sed_diagnostic(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2001,
             "See if you can use ${variable//search/replace} instead.",
           )
@@ -560,8 +559,7 @@ fn sed_script_argument(arguments : Array[@parser.Word]) -> @parser.Word? {
 
 ///|
 fn shell_support_is_echo_sed_shell(shell : @semantics.ShellDialect) -> Bool {
-  shell == @semantics.ShellDialect::Bash ||
-  shell == @semantics.ShellDialect::Ksh
+  shell == Bash || shell == Ksh
 }
 
 ///|
@@ -642,7 +640,7 @@ fn check_shell_support_simple_command(
           "'local' is",
         )
       }
-      if name == "source" && shell != @semantics.ShellDialect::BusyboxSh {
+      if name == "source" && shell != BusyboxSh {
         push_shell_support_diagnostic(
           diagnostics,
           shell,
@@ -729,7 +727,7 @@ fn check_shell_support_echo_command(
       match @semantics.literal_text(argument) {
         Some(text) if shell_support_echo_flag_word(text) =>
           match shell {
-            @semantics.ShellDialect::BusyboxSh =>
+            BusyboxSh =>
               if !shell_support_busybox_echo_flag_word(text) {
                 push_shell_support_diagnostic(
                   diagnostics,
@@ -739,7 +737,7 @@ fn check_shell_support_echo_command(
                   "echo flags besides -n and -e",
                 )
               }
-            @semantics.ShellDialect::Dash =>
+            Dash =>
               if text != "-n" {
                 push_shell_support_diagnostic(
                   diagnostics,
@@ -749,7 +747,7 @@ fn check_shell_support_echo_command(
                   "echo flags besides -n",
                 )
               }
-            @semantics.ShellDialect::Sh =>
+            Sh =>
               push_shell_support_diagnostic(
                 diagnostics,
                 shell,
@@ -884,7 +882,7 @@ fn check_shell_support_trap_command(
             "prefixing signal names with 'SIG' is",
           )
         }
-        if shell == @semantics.ShellDialect::Sh && upper != text {
+        if shell == Sh && upper != text {
           push_shell_support_diagnostic(
             diagnostics,
             shell,
@@ -970,7 +968,7 @@ fn check_shell_support_redirection(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match redirect.op {
-    @parser.RedirectionOperator::HereString =>
+    HereString =>
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -978,7 +976,7 @@ fn check_shell_support_redirection(
         3011,
         "here-strings are",
       )
-    @parser.RedirectionOperator::DupOutput =>
+    DupOutput =>
       if redirect.source is None &&
         redirection_dup_output_targets_filename(redirect) {
         push_shell_support_diagnostic(
@@ -992,7 +990,7 @@ fn check_shell_support_redirection(
     _ => ()
   }
   match redirect.source {
-    Some(@parser.RedirectionSource::Named(_)) =>
+    Some(Named(_)) =>
       push_shell_support_diagnostic(
         diagnostics,
         shell,
@@ -1000,7 +998,7 @@ fn check_shell_support_redirection(
         3022,
         "named file descriptors are",
       )
-    Some(@parser.RedirectionSource::Fd(fd)) =>
+    Some(Fd(fd)) =>
       if fd > 9 {
         push_shell_support_diagnostic(
           diagnostics,
@@ -1010,9 +1008,8 @@ fn check_shell_support_redirection(
           "FDs outside 0-9 are",
         )
       }
-    Some(@parser.RedirectionSource::All) =>
-      if redirection_is_write(redirect) &&
-        shell != @semantics.ShellDialect::BusyboxSh {
+    Some(All) =>
+      if redirection_is_write(redirect) && shell != BusyboxSh {
         push_shell_support_diagnostic(
           diagnostics,
           shell,
@@ -1024,7 +1021,7 @@ fn check_shell_support_redirection(
     None => ()
   }
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) => {
+    Word(word) => {
       if @semantics.is_glob_word(word) {
         push_shell_support_diagnostic(
           diagnostics,
@@ -1059,8 +1056,8 @@ fn assignment_uses_arrays(assignment : @parser.Assignment) -> Bool {
 ///|
 fn assignment_value_uses_arrays(value : @parser.AssignmentValue) -> Bool {
   match value {
-    @parser.AssignmentValue::ArrayLiteral(_) => true
-    @parser.AssignmentValue::Word(_) | @parser.AssignmentValue::Empty => false
+    ArrayLiteral(_) => true
+    Word(_) | Empty => false
   }
 }
 
@@ -1110,7 +1107,7 @@ fn check_shell_support_assignment_extensions(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell == @semantics.ShellDialect::Bash else { return }
+  guard shell == Bash else { return }
   for assignment in assignments {
     if assignment.name == "PS1" {
       maybe_push_ps1_assignment_diagnostic(assignment, diagnostics)
@@ -1119,7 +1116,7 @@ fn check_shell_support_assignment_extensions(
       push_diagnostic(
         diagnostics,
         assignment_multidimensional_index_span(assignment),
-        CheckSeverity::Warning,
+        Warning,
         2180,
         "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
       )
@@ -1128,7 +1125,7 @@ fn check_shell_support_assignment_extensions(
       push_diagnostic(
         diagnostics,
         array_assignment_value_span(assignment),
-        CheckSeverity::Warning,
+        Warning,
         2180,
         "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
       )
@@ -1142,12 +1139,12 @@ fn maybe_push_ps1_assignment_diagnostic(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match assignment.value {
-    @parser.AssignmentValue::Word(word) =>
+    Word(word) =>
       if shell_support_contains_unescaped_ps1_escape(word.source) {
         push_diagnostic(
           diagnostics,
           word.span,
-          CheckSeverity::Info,
+          Info,
           2025,
           "Make sure all escape sequences are enclosed in \\[..\\] to prevent line wrapping issues",
         )
@@ -1161,7 +1158,7 @@ fn assignment_value_has_multidimensional_array(
   value : @parser.AssignmentValue,
 ) -> Bool {
   match value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       elements.any(fn(element) {
         array_element_has_multidimensional_array(element)
       })
@@ -1177,7 +1174,7 @@ fn array_element_has_multidimensional_array(
     return true
   }
   match element.value {
-    @parser.AssignmentValue::ArrayLiteral(elements) =>
+    ArrayLiteral(elements) =>
       elements.any(fn(nested) {
         array_element_has_multidimensional_array(nested)
       })
@@ -1206,53 +1203,47 @@ fn check_shell_support_word(
   let arithmetic_codes : Array[Int] = []
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::ProcessSubstitution(_, _) =>
-        saw_process_substitution = true
-      @parser.WordPart::ExtGlob(_) => saw_extglob = true
-      @parser.WordPart::DollarDoubleQuoted(_) => saw_dollar_double_quoted = true
-      @parser.WordPart::DollarBracket(expr) => {
+      ProcessSubstitution(_, _) => saw_process_substitution = true
+      ExtGlob(_) => saw_extglob = true
+      DollarDoubleQuoted(_) => saw_dollar_double_quoted = true
+      DollarBracket(expr) => {
         saw_dollar_bracket = true
         collect_shell_support_arithmetic_codes(expr, arithmetic_codes)
         maybe_push_decimal_arithmetic_word_diagnostic(
           word, expr, shell, diagnostics,
         )
       }
-      @parser.WordPart::ArithmeticExpansion(expr) => {
+      ArithmeticExpansion(expr) => {
         collect_shell_support_arithmetic_codes(expr, arithmetic_codes)
         maybe_push_decimal_arithmetic_word_diagnostic(
           word, expr, shell, diagnostics,
         )
       }
-      @parser.WordPart::BraceExpansion(expansion) => {
+      BraceExpansion(expansion) => {
         saw_brace_expansion = true
         maybe_push_brace_range_variable_diagnostic(
           word, expansion, effective_command_name, shell, diagnostics,
         )
       }
-      @parser.WordPart::Glob(raw) =>
-        if raw.contains("[^") {
-          saw_glob_caret = true
-        }
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script) => {
+      Glob(raw) => if raw.contains("[^") { saw_glob_caret = true }
+      CommandSubstitution(script) | BraceCommandSubstitution(_, script) => {
         check_shell_support_substitution_script(script, shell, diagnostics)
         if script_is_only_redirection(script) {
           saw_dollar_redirection = true
         }
       }
-      @parser.WordPart::BackQuoted(script) => {
+      BackQuoted(script) => {
         check_shell_support_substitution_script(script, shell, diagnostics)
         if script_is_only_redirection(script) {
           saw_backquoted_redirection = true
         }
       }
-      @parser.WordPart::Parameter(name)
-      | @parser.WordPart::SpecialParameter(name) =>
+      Parameter(name) | SpecialParameter(name) =>
         if bash_variable_name is None &&
           shell_support_is_bash_variable(name, shell, assigned_names) {
           bash_variable_name = Some(name)
         }
-      @parser.WordPart::BracedParameter(expansion) => {
+      BracedParameter(expansion) => {
         collect_parameter_expansion_codes(expansion, shell, parameter_codes)
         maybe_push_multidimensional_parameter_diagnostic(
           word, expansion, shell, diagnostics,
@@ -1379,7 +1370,7 @@ fn maybe_push_decimal_arithmetic_command_diagnostic(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell != @semantics.ShellDialect::Ksh else { return }
+  guard shell != Ksh else { return }
   match first_decimal_arithmetic_literal(expr) {
     Some(literal) =>
       match string_offset(expr.raw, literal) {
@@ -1387,7 +1378,7 @@ fn maybe_push_decimal_arithmetic_command_diagnostic(
           push_diagnostic(
             diagnostics,
             span_offset(command.span, offset + 2, literal.length()),
-            CheckSeverity::Error,
+            Error,
             2079,
             "(( )) doesn't support decimals. Use bc or awk.",
           )
@@ -1404,13 +1395,13 @@ fn maybe_push_decimal_arithmetic_word_diagnostic(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell != @semantics.ShellDialect::Ksh else { return }
+  guard shell != Ksh else { return }
   match first_decimal_arithmetic_literal(expr) {
     Some(literal) =>
       push_diagnostic(
         diagnostics,
         span_for_nested_word_text(word, expr.raw, literal),
-        CheckSeverity::Error,
+        Error,
         2079,
         "(( )) doesn't support decimals. Use bc or awk.",
       )
@@ -1426,7 +1417,7 @@ fn maybe_push_brace_range_variable_diagnostic(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell == @semantics.ShellDialect::Bash else { return }
+  guard shell == Bash else { return }
   guard brace_expansion_uses_variable_range(expansion) else { return }
   let span = span_for_word_text(word, expansion.raw)
   match effective_command_name {
@@ -1434,7 +1425,7 @@ fn maybe_push_brace_range_variable_diagnostic(
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Style,
+        Style,
         2175,
         "Quote this invalid brace expansion since it should be passed literally to eval.",
       )
@@ -1442,7 +1433,7 @@ fn maybe_push_brace_range_variable_diagnostic(
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Warning,
+        Warning,
         2051,
         "Bash doesn't support variables in brace range expansions.",
       )
@@ -1456,12 +1447,12 @@ fn maybe_push_multidimensional_parameter_diagnostic(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell == @semantics.ShellDialect::Bash else { return }
+  guard shell == Bash else { return }
   if expansion.raw.contains("][") {
     push_diagnostic(
       diagnostics,
       span_for_word_text(word, "${" + expansion.raw + "}"),
-      CheckSeverity::Warning,
+      Warning,
       2180,
       "Bash does not support multidimensional arrays. Use 1D or associative arrays.",
     )
@@ -1475,20 +1466,20 @@ fn check_shell_support_negated_unary_ops(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell == @semantics.ShellDialect::Bash else { return }
+  guard shell == Bash else { return }
   match condition.kind {
-    @parser.ConditionKind::SingleBracket => ()
+    SingleBracket => ()
     _ => return
   }
   match condition.expr {
-    @parser.ConditionExpr::Not(inner) =>
+    Not(inner) =>
       match inner {
-        @parser.ConditionExpr::Unary(op, _, _) =>
+        Unary(op, _, _) =>
           if op == "-a" || op == "-o" {
             push_diagnostic(
               diagnostics,
               single_bracket_negation_span(command, condition.raw),
-              CheckSeverity::Error,
+              Error,
               2332,
               negated_unary_ops_message(op),
             )
@@ -1548,16 +1539,12 @@ fn collect_parameter_expansion_codes(
     push_unique_code(codes, 3054)
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::Slice(_, _)) =>
-      if shell != @semantics.ShellDialect::BusyboxSh {
-        push_unique_code(codes, 3057)
-      }
-    Some(@parser.ParameterOperator::Replace(_, _, _)) =>
-      if shell != @semantics.ShellDialect::BusyboxSh {
+    Some(Slice(_, _)) => if shell != BusyboxSh { push_unique_code(codes, 3057) }
+    Some(Replace(_, _, _)) =>
+      if shell != BusyboxSh {
         push_unique_code(codes, 3060)
       }
-    Some(@parser.ParameterOperator::CaseModify(_, _)) =>
-      push_unique_code(codes, 3059)
+    Some(CaseModify(_, _)) => push_unique_code(codes, 3059)
     _ => ()
   }
 }
@@ -1575,12 +1562,11 @@ fn collect_shell_support_arithmetic_codes(
   }
   for token in expr.tokens {
     match token {
-      @parser.ArithmeticToken::Literal(text) =>
+      Literal(text) =>
         if shell_support_is_arithmetic_base_prefix(text) {
           push_unique_code(codes, 3052)
         }
-      @parser.ArithmeticToken::Group(inner) =>
-        collect_shell_support_arithmetic_codes(inner, codes)
+      Group(inner) => collect_shell_support_arithmetic_codes(inner, codes)
       _ => ()
     }
   }
@@ -1614,7 +1600,7 @@ fn check_shell_support_condition_expr(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, _, _) =>
+    Unary(op, _, _) =>
       match shell_support_unary_test_rule(op) {
         Some(rule) =>
           maybe_push_shell_support_rule_diagnostic(
@@ -1622,7 +1608,7 @@ fn check_shell_support_condition_expr(
           )
         None => ()
       }
-    @parser.ConditionExpr::Binary(op, _, _, _) =>
+    Binary(op, _, _, _) =>
       match shell_support_binary_test_rule(op) {
         Some(rule) =>
           maybe_push_shell_support_rule_diagnostic(
@@ -1630,10 +1616,9 @@ fn check_shell_support_condition_expr(
           )
         None => ()
       }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       check_shell_support_condition_expr(inner, span, shell, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       check_shell_support_condition_expr(lhs, span, shell, diagnostics)
       check_shell_support_condition_expr(rhs, span, shell, diagnostics)
     }
@@ -1648,16 +1633,13 @@ fn shell_support_binary_test_rule(op : String) -> ShellSupportRule? {
       Some({
         code: 3012,
         feature: "lexicographical \{op} is",
-        exempt_shells: [
-          @semantics.ShellDialect::Dash,
-          @semantics.ShellDialect::BusyboxSh,
-        ],
+        exempt_shells: [Dash, BusyboxSh],
       })
     "==" =>
       Some({
         code: 3014,
         feature: "\{op} in place of = is",
-        exempt_shells: [@semantics.ShellDialect::BusyboxSh],
+        exempt_shells: [BusyboxSh],
       })
     "=~" =>
       Some({ code: 3015, feature: "\{op} regex matching is", exempt_shells: [] })
@@ -1697,28 +1679,19 @@ fn shell_support_unary_test_rule(op : String) -> ShellSupportRule? {
       Some({
         code: 3065,
         feature: "test \{op} is",
-        exempt_shells: [
-          @semantics.ShellDialect::Dash,
-          @semantics.ShellDialect::BusyboxSh,
-        ],
+        exempt_shells: [Dash, BusyboxSh],
       })
     "-G" =>
       Some({
         code: 3066,
         feature: "test \{op} is",
-        exempt_shells: [
-          @semantics.ShellDialect::Dash,
-          @semantics.ShellDialect::BusyboxSh,
-        ],
+        exempt_shells: [Dash, BusyboxSh],
       })
     "-O" =>
       Some({
         code: 3067,
         feature: "test \{op} is",
-        exempt_shells: [
-          @semantics.ShellDialect::Dash,
-          @semantics.ShellDialect::BusyboxSh,
-        ],
+        exempt_shells: [Dash, BusyboxSh],
       })
     _ => None
   }
@@ -1782,8 +1755,7 @@ fn shell_support_allowed_flags(
     "read" => Some(if shell_is_dash_family(shell) { ["r", "p"] } else { ["r"] })
     "readonly" => Some(["p"])
     "trap" => Some([])
-    "type" =>
-      Some(if shell == @semantics.ShellDialect::BusyboxSh { ["p"] } else { [] })
+    "type" => Some(if shell == BusyboxSh { ["p"] } else { [] })
     "ulimit" =>
       Some(
         if shell_is_dash_family(shell) {
@@ -1907,7 +1879,7 @@ fn script_is_only_redirection(script : @parser.Script) -> Bool {
 ///|
 fn command_is_only_redirection(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       simple.assignments.length() == 0 &&
       simple.words.length() == 0 &&
       command.redirects.length() > 0
@@ -1928,7 +1900,7 @@ fn redirection_dup_output_targets_filename(
   redirect : @parser.Redirection,
 ) -> Bool {
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) =>
+    Word(word) =>
       match @semantics.literal_text(word) {
         Some(text) => !shell_support_string_is_digits(text)
         None => !word_is_bare_fd_reference(word)
@@ -1940,9 +1912,8 @@ fn redirection_dup_output_targets_filename(
 ///|
 fn word_is_bare_fd_reference(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Parameter(_)]
-    | [@parser.WordPart::SpecialParameter(_)] => true
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(_)] | [SpecialParameter(_)] => true
+    [BracedParameter(expansion)] =>
       expansion.name is Some(_) &&
       expansion.operator is None &&
       !expansion.indirect &&
@@ -1967,10 +1938,10 @@ fn shell_support_uses_star_at_string_operation(
     return true
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::RemoveShortestPrefix(_))
-    | Some(@parser.ParameterOperator::RemoveLongestPrefix(_))
-    | Some(@parser.ParameterOperator::RemoveShortestSuffix(_))
-    | Some(@parser.ParameterOperator::RemoveLongestSuffix(_)) => true
+    Some(RemoveShortestPrefix(_))
+    | Some(RemoveLongestPrefix(_))
+    | Some(RemoveShortestSuffix(_))
+    | Some(RemoveLongestSuffix(_)) => true
     _ => false
   }
 }
@@ -2072,11 +2043,10 @@ fn shell_support_busybox_echo_flag_word(text : String) -> Bool {
 ///|
 fn word_is_plain_variable_reference(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Parameter(_)] => true
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(_)] => true
+    [BracedParameter(expansion)] =>
       braced_parameter_is_plain_reference(expansion)
-    [@parser.WordPart::DoubleQuoted(parts)] =>
-      quoted_parts_are_plain_variable_reference(parts)
+    [DoubleQuoted(parts)] => quoted_parts_are_plain_variable_reference(parts)
     _ => false
   }
 }
@@ -2086,8 +2056,8 @@ fn quoted_parts_are_plain_variable_reference(
   parts : Array[@parser.WordPart],
 ) -> Bool {
   match parts {
-    [@parser.WordPart::Parameter(_)] => true
-    [@parser.WordPart::BracedParameter(expansion)] =>
+    [Parameter(_)] => true
+    [BracedParameter(expansion)] =>
       braced_parameter_is_plain_reference(expansion)
     _ => false
   }
@@ -2118,22 +2088,19 @@ fn first_decimal_arithmetic_literal(expr : @parser.ArithmeticExpr) -> String? {
   let mut i = 0
   while i < expr.tokens.length() {
     match expr.tokens[i] {
-      @parser.ArithmeticToken::Literal(text) =>
+      Literal(text) =>
         if shell_support_is_decimal_arithmetic_literal(text) {
           return Some(text)
         } else if i + 2 < expr.tokens.length() {
           match (expr.tokens[i + 1], expr.tokens[i + 2]) {
-            (
-              @parser.ArithmeticToken::Literal(dot),
-              @parser.ArithmeticToken::Literal(fraction),
-            ) =>
+            (Literal(dot), Literal(fraction)) =>
               if dot == "." && shell_support_is_decimal_pair(text, fraction) {
                 return Some(text + "." + fraction)
               }
             _ => ()
           }
         }
-      @parser.ArithmeticToken::Group(inner) =>
+      Group(inner) =>
         match first_decimal_arithmetic_literal(inner) {
           Some(literal) => return Some(literal)
           None => ()
@@ -2322,8 +2289,7 @@ fn redirection_named_source_span(
   redirect : @parser.Redirection,
 ) -> @parser.Span {
   match redirect.source {
-    Some(@parser.RedirectionSource::Named(name)) =>
-      span_prefix(redirect.span, name[:].length() + 2)
+    Some(Named(name)) => span_prefix(redirect.span, name[:].length() + 2)
     _ => redirect_operator_span(redirect)
   }
 }
@@ -2339,7 +2305,7 @@ fn redirection_fd_source_span(
 ///|
 fn redirection_is_write(redirect : @parser.Redirection) -> Bool {
   match redirect.op {
-    @parser.RedirectionOperator::Write => true
+    Write => true
     _ => false
   }
 }
@@ -2416,13 +2382,12 @@ fn shell_support_feature_name(code : Int) -> String {
 
 ///|
 fn shell_is_dash_family(shell : @semantics.ShellDialect) -> Bool {
-  shell == @semantics.ShellDialect::Dash ||
-  shell == @semantics.ShellDialect::BusyboxSh
+  shell == Dash || shell == BusyboxSh
 }
 
 ///|
 fn shell_is_busybox(shell : @semantics.ShellDialect) -> Bool {
-  shell == @semantics.ShellDialect::BusyboxSh
+  shell == BusyboxSh
 }
 
 ///|
@@ -2499,19 +2464,19 @@ fn push_shell_support_diagnostic(
   feature : String,
 ) -> Unit {
   match shell {
-    @semantics.ShellDialect::Dash | @semantics.ShellDialect::BusyboxSh =>
+    Dash | BusyboxSh =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Error,
+        Error,
         code,
         "In dash, \{feature} not supported.",
       )
-    @semantics.ShellDialect::Sh =>
+    Sh =>
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Warning,
+        Warning,
         code,
         "In POSIX sh, \{feature} undefined.",
       )

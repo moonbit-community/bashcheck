@@ -76,7 +76,7 @@ pub fn shell_from_annotation(
 ) -> ShellDialect? {
   for annotation in annotations {
     match annotation {
-      @parser.Annotation::Shell(shell) =>
+      Shell(shell) =>
         match shell_from_executable_name(trim_ascii_space(shell)) {
           Some(dialect) => return Some(dialect)
           None => ()
@@ -122,10 +122,10 @@ pub fn has_pipefail(script : @parser.Script) -> Bool {
 /// Reports whether the current shell configuration enables `lastpipe`.
 pub fn has_lastpipe(script : @parser.Script, dialect : ShellDialect) -> Bool {
   match dialect {
-    ShellDialect::Bash =>
+    Bash =>
       shebang_enables_shopt_option(script.shebang, "lastpipe") ||
       shopt_command_enables_option(script, "lastpipe")
-    ShellDialect::Ksh => true
+    Ksh => true
     _ => false
   }
 }
@@ -137,11 +137,11 @@ pub fn has_inherit_errexit(
   dialect : ShellDialect,
 ) -> Bool {
   match dialect {
-    ShellDialect::Bash =>
+    Bash =>
       shebang_enables_shopt_option(script.shebang, "inherit_errexit") ||
       shopt_command_enables_option(script, "inherit_errexit")
-    ShellDialect::Dash | ShellDialect::BusyboxSh | ShellDialect::Sh => true
-    ShellDialect::Ksh => false
+    Dash | BusyboxSh | Sh => true
+    Ksh => false
   }
 }
 
@@ -149,7 +149,7 @@ pub fn has_inherit_errexit(
 /// Reports whether the current shell configuration enables `execfail`.
 pub fn has_execfail(script : @parser.Script, dialect : ShellDialect) -> Bool {
   match dialect {
-    ShellDialect::Bash =>
+    Bash =>
       shebang_enables_shopt_option(script.shebang, "execfail") ||
       shopt_command_enables_option(script, "execfail")
     _ => false
@@ -164,12 +164,7 @@ pub fn effective_execution_mode(
 ) -> ExecutionMode {
   match mode_override {
     Some(mode) => mode
-    None =>
-      if sourced {
-        ExecutionMode::Sourced
-      } else {
-        ExecutionMode::Executed
-      }
+    None => if sourced { Sourced } else { Executed }
   }
 }
 
@@ -221,32 +216,23 @@ fn resolve_fallback_shell(
 fn default_shell_resolution(fallback_shell : ShellDialect?) -> ShellResolution {
   match fallback_shell {
     Some(dialect) => { dialect, suppresses_unknown_warning: true }
-    None => { dialect: ShellDialect::Bash, suppresses_unknown_warning: false }
+    None => { dialect: Bash, suppresses_unknown_warning: false }
   }
 }
 
 ///|
 fn shell_hint_from_filename(filename : String) -> FilenameShellHint? {
   if filename.has_suffix(".ksh") {
-    return Some({ dialect: ShellDialect::Ksh, suppresses_unknown_warning: true })
+    return Some({ dialect: Ksh, suppresses_unknown_warning: true })
   }
   if filename.has_suffix(".bash") || filename.has_suffix(".bats") {
-    return Some({
-      dialect: ShellDialect::Bash,
-      suppresses_unknown_warning: true,
-    })
+    return Some({ dialect: Bash, suppresses_unknown_warning: true })
   }
   if filename.has_suffix(".dash") {
-    return Some({
-      dialect: ShellDialect::Dash,
-      suppresses_unknown_warning: true,
-    })
+    return Some({ dialect: Dash, suppresses_unknown_warning: true })
   }
   if filename.has_suffix(".envrc") {
-    return Some({
-      dialect: ShellDialect::Bash,
-      suppresses_unknown_warning: false,
-    })
+    return Some({ dialect: Bash, suppresses_unknown_warning: false })
   }
   None
 }
@@ -254,11 +240,11 @@ fn shell_hint_from_filename(filename : String) -> FilenameShellHint? {
 ///|
 fn shell_from_executable_name(name : String) -> ShellDialect? {
   match name {
-    "sh" => Some(ShellDialect::Sh)
-    "bash" | "bats" => Some(ShellDialect::Bash)
-    "busybox" | "busybox sh" | "busybox ash" => Some(ShellDialect::BusyboxSh)
-    "dash" | "ash" => Some(ShellDialect::Dash)
-    "ksh" | "ksh88" | "ksh93" | "oksh" => Some(ShellDialect::Ksh)
+    "sh" => Some(Sh)
+    "bash" | "bats" => Some(Bash)
+    "busybox" | "busybox sh" | "busybox ash" => Some(BusyboxSh)
+    "dash" | "ash" => Some(Dash)
+    "ksh" | "ksh88" | "ksh93" | "oksh" => Some(Ksh)
     _ => None
   }
 }
@@ -627,24 +613,22 @@ fn command_has_current_shell_command(
     return true
   }
   match command.kind {
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_)
-    | @parser.CommandKind::Function(_)
-    | @parser.CommandKind::CoProc(_)
-    | @parser.CommandKind::BatsTest(_) => false
-    @parser.CommandKind::Source(source) =>
+    Simple(_)
+    | Condition(_)
+    | Arithmetic(_)
+    | Function(_)
+    | CoProc(_)
+    | BatsTest(_) => false
+    Source(source) =>
       // Sourced files run in the current shell, so their option changes apply.
       match source.included {
         Some(script) => script_has_current_shell_command(script, predicate)
         None => false
       }
-    @parser.CommandKind::Time(clause) =>
-      pipeline_has_current_shell_command(clause.body, predicate)
-    @parser.CommandKind::Subshell(_) => false
-    @parser.CommandKind::BraceGroup(script) =>
-      script_has_current_shell_command(script, predicate)
-    @parser.CommandKind::If(clause) => {
+    Time(clause) => pipeline_has_current_shell_command(clause.body, predicate)
+    Subshell(_) => false
+    BraceGroup(script) => script_has_current_shell_command(script, predicate)
+    If(clause) => {
       for arm in clause.arms {
         if script_has_current_shell_command(arm.condition, predicate) ||
           script_has_current_shell_command(arm.body, predicate) {
@@ -656,16 +640,14 @@ fn command_has_current_shell_command(
         None => false
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) =>
+    While(clause) | Until(clause) =>
       script_has_current_shell_command(clause.condition, predicate) ||
       script_has_current_shell_command(clause.body, predicate)
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) => script_has_current_shell_command(clause.body, predicate)
+    ForArithmetic(clause) =>
       script_has_current_shell_command(clause.body, predicate)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      script_has_current_shell_command(clause.body, predicate)
-    @parser.CommandKind::Select(clause) =>
-      script_has_current_shell_command(clause.body, predicate)
-    @parser.CommandKind::Case(clause) => {
+    Select(clause) => script_has_current_shell_command(clause.body, predicate)
+    Case(clause) => {
       for item in clause.items {
         if script_has_current_shell_command(item.body, predicate) {
           return true

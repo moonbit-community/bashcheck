@@ -2,12 +2,19 @@ import {
   "moonbit-community/bashcheck/checker",
   "moonbit-community/bashcheck/driver",
   "moonbit-community/bashcheck/formatter",
-  "moonbit-community/bashcheck/parser",
+  "moonbit-community/bashcheck/semantics",
   "moonbitlang/async",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+import {
   "moonbitlang/core/debug",
-  "moonbitlang/core/json",
 } for "test"
 
+import {
+  "moonbitlang/core/test",
+} for "wbtest"
+
 supported_targets = "wasm+native"
+
+pkgtype(kind: "executable")

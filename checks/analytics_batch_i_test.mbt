@@ -42,7 +42,7 @@ test "analytics batch i attaches shellcheck-style nested pattern fix" {
     #|
   let diagnostics = check_source(source)
   let diagnostic = first_code(diagnostics, 2295)
-  assert_true(diagnostic.severity is CheckSeverity::Info)
+  assert_true(diagnostic.severity is Info)
 
   match diagnostic.fix {
     Some(fix) => {

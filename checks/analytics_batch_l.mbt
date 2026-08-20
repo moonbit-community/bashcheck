@@ -12,25 +12,25 @@ fn analytics_batch_l_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2321,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Array indices are already arithmetic contexts.",
     },
     {
       code: 2322,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "In arithmetic contexts, prefer only one layer of parentheses.",
     },
     {
       code: 2323,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Prefer not wrapping arithmetic contexts in extra parentheses.",
     },
     {
       code: 2324,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Append assignments with numeric values usually mean incrementing.",
     },
@@ -63,13 +63,13 @@ fn check_unnecessary_arithmetic_expansion_index(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           analytics_check_assignment_arithmetic_expansion_index(
             assignment, diagnostics,
           )
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           analytics_check_assignment_arithmetic_expansion_index(
             assignment, diagnostics,
@@ -102,7 +102,7 @@ fn analytics_check_assignment_arithmetic_expansion_index(
       push_diagnostic_with_fix(
         diagnostics,
         span,
-        CheckSeverity::Style,
+        Style,
         2321,
         "Array indices are already arithmetic contexts. Prefer removing the $(( and )).",
         analytics_remove_wrapper_fix(span, prefix_width, suffix_width, 9),
@@ -125,8 +125,8 @@ fn analytics_array_index_expansion_widths(
 ) -> (Int, Int)? {
   guard index.arithmetic is Some(_) else { return None }
   match index.parts {
-    [@parser.WordPart::ArithmeticExpansion(_)] => Some((3, 2))
-    [@parser.WordPart::DollarBracket(_)] => Some((2, 1))
+    [ArithmeticExpansion(_)] => Some((3, 2))
+    [DollarBracket(_)] => Some((2, 1))
     _ => None
   }
 }
@@ -141,38 +141,38 @@ fn check_unnecessary_parens(
       analytics_visit_word_for_unnecessary_parens(word, diagnostics)
     })
     match command.kind {
-      @parser.CommandKind::Simple(simple) =>
+      Simple(simple) =>
         for assignment in simple.assignments {
           analytics_check_assignment_parens(assignment, diagnostics)
         }
-      @parser.CommandKind::Source(source) =>
+      Source(source) =>
         for assignment in source.assignments {
           analytics_check_assignment_parens(assignment, diagnostics)
         }
-      @parser.CommandKind::Arithmetic(arithmetic) =>
+      Arithmetic(arithmetic) =>
         analytics_maybe_push_arithmetic_expr_parens_diagnostic(
           arithmetic.expr,
           command.span,
-          AnalyticsParensContext::Arithmetic,
+          Arithmetic,
           diagnostics,
         )
-      @parser.CommandKind::ForArithmetic(clause) => {
+      ForArithmetic(clause) => {
         analytics_maybe_push_arithmetic_expr_parens_diagnostic(
           clause.init,
           command.span,
-          AnalyticsParensContext::ForArithmetic,
+          ForArithmetic,
           diagnostics,
         )
         analytics_maybe_push_arithmetic_expr_parens_diagnostic(
           clause.condition,
           command.span,
-          AnalyticsParensContext::ForArithmetic,
+          ForArithmetic,
           diagnostics,
         )
         analytics_maybe_push_arithmetic_expr_parens_diagnostic(
           clause.step,
           command.span,
-          AnalyticsParensContext::ForArithmetic,
+          ForArithmetic,
           diagnostics,
         )
       }
@@ -201,23 +201,22 @@ fn analytics_visit_word_parts_for_unnecessary_parens(
 ) -> Unit {
   for part in parts {
     match part {
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         analytics_visit_word_parts_for_unnecessary_parens(
           word, nested, diagnostics,
         )
-      @parser.WordPart::ArithmeticExpansion(expr) =>
+      ArithmeticExpansion(expr) =>
         analytics_maybe_push_word_arithmetic_parens_diagnostic(
           word,
           expr,
-          AnalyticsParensContext::DollarArithmetic,
+          DollarArithmetic,
           diagnostics,
         )
-      @parser.WordPart::DollarBracket(expr) =>
+      DollarBracket(expr) =>
         analytics_maybe_push_word_arithmetic_parens_diagnostic(
           word,
           expr,
-          AnalyticsParensContext::DollarBracket,
+          DollarBracket,
           diagnostics,
         )
       _ => ()
@@ -252,7 +251,7 @@ fn analytics_maybe_push_index_parens_diagnostic(
         base_span,
         index.raw,
         expr,
-        AnalyticsParensContext::ArrayIndex,
+        ArrayIndex,
         diagnostics,
       )
     None => ()
@@ -297,7 +296,7 @@ fn analytics_maybe_push_arithmetic_expr_parens_diagnostic(
       push_diagnostic(
         diagnostics,
         span,
-        CheckSeverity::Style,
+        Style,
         2323,
         analytics_outer_parens_message(context),
       )
@@ -306,7 +305,7 @@ fn analytics_maybe_push_arithmetic_expr_parens_diagnostic(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Style,
+            Style,
             2322,
             analytics_double_parens_message(),
           )
@@ -333,7 +332,7 @@ fn analytics_push_parens_diagnostics_for_text(
       push_diagnostic_with_fix(
         diagnostics,
         outer_span,
-        CheckSeverity::Style,
+        Style,
         2323,
         analytics_outer_parens_message(context),
         analytics_remove_parens_fix(outer_span, 9),
@@ -346,7 +345,7 @@ fn analytics_push_parens_diagnostics_for_text(
           push_diagnostic_with_fix(
             diagnostics,
             inner_span,
-            CheckSeverity::Style,
+            Style,
             2322,
             analytics_double_parens_message(),
             analytics_remove_parens_fix(inner_span, 11),
@@ -364,11 +363,10 @@ fn analytics_parens_fragments(
   expr : @parser.ArithmeticExpr,
 ) -> (String, String?)? {
   match expr.tokens {
-    [@parser.ArithmeticToken::Group(inner)] => {
+    [Group(inner)] => {
       let outer_fragment = "(" + inner.raw + ")"
       let inner_fragment = match inner.tokens {
-        [@parser.ArithmeticToken::Group(grandchild)] =>
-          Some("(" + grandchild.raw + ")")
+        [Group(grandchild)] => Some("(" + grandchild.raw + ")")
         _ => None
       }
       Some((outer_fragment, inner_fragment))
@@ -380,15 +378,15 @@ fn analytics_parens_fragments(
 ///|
 fn analytics_outer_parens_message(context : AnalyticsParensContext) -> String {
   match context {
-    AnalyticsParensContext::DollarArithmetic =>
+    DollarArithmetic =>
       "$(( (x) )) is the same as $(( x )). Prefer not wrapping in additional parentheses."
-    AnalyticsParensContext::DollarBracket =>
+    DollarBracket =>
       "$[ (x) ] is the same as $[ x ]. Prefer not wrapping in additional parentheses."
-    AnalyticsParensContext::ArrayIndex =>
+    ArrayIndex =>
       "a[(x)] is the same as a[x]. Prefer not wrapping in additional parentheses."
-    AnalyticsParensContext::Arithmetic =>
+    Arithmetic =>
       "(( (x) )) is the same as (( x )). Prefer not wrapping in additional parentheses."
-    AnalyticsParensContext::ForArithmetic =>
+    ForArithmetic =>
       "for (((x); (y); (z))) is the same as for ((x; y; z)). Prefer not wrapping in additional parentheses."
   }
 }
@@ -455,7 +453,7 @@ fn check_plus_equals_number(
 ) -> Unit {
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Assignment(assignment)) =>
+      Some(Assignment(assignment)) =>
         analytics_maybe_push_plus_equals_number(
           analysis, id, assignment, diagnostics,
         )
@@ -475,7 +473,7 @@ fn analytics_maybe_push_plus_equals_number(
     return
   }
   match assignment.value {
-    @parser.AssignmentValue::Word(word) =>
+    Word(word) =>
       match @cfg.incoming_state_of_ast(analysis, id) {
         Some(state) =>
           if state.state_is_reachable &&
@@ -484,7 +482,7 @@ fn analytics_maybe_push_plus_equals_number(
             push_diagnostic(
               diagnostics,
               assignment_name_span(assignment),
-              CheckSeverity::Warning,
+              Warning,
               2324,
               "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence.",
             )
@@ -505,10 +503,9 @@ fn analytics_word_is_numeric_append_value(
     Some(text) if @cfg.variable_may_be_assigned_integer(state, text) => true
     _ =>
       match word.parts {
-        [@parser.WordPart::Parameter(name)]
-        | [@parser.WordPart::SpecialParameter(name)] =>
+        [Parameter(name)] | [SpecialParameter(name)] =>
           @cfg.variable_may_be_assigned_integer(state, name)
-        [@parser.WordPart::BracedParameter(expansion)] =>
+        [BracedParameter(expansion)] =>
           analytics_braced_parameter_is_numeric_name(state, expansion)
         _ => false
       }

@@ -48,8 +48,8 @@ fn xml_escape(text : String) -> String {
 /// Maps checker severities to the smaller set of Checkstyle severity strings.
 fn checkstyle_severity(diagnostic : @checker.PositionedDiagnostic) -> String {
   match diagnostic.severity {
-    @checker.DiagnosticSeverity::Error => "error"
-    @checker.DiagnosticSeverity::Warning => "warning"
+    Error => "error"
+    Warning => "warning"
     _ => "info"
   }
 }

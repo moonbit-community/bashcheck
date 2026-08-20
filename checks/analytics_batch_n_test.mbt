@@ -10,8 +10,8 @@ test "analytics batch n flags bats negations with last and non-last distinctions
 
   assert_eq(count_code(diagnostics, 2314), 1)
   assert_eq(count_code(diagnostics, 2315), 2)
-  assert_true(first_code(diagnostics, 2314).severity is CheckSeverity::Error)
-  assert_true(first_code(diagnostics, 2315).severity is CheckSeverity::Error)
+  assert_true(first_code(diagnostics, 2314).severity is Error)
+  assert_true(first_code(diagnostics, 2315).severity is Error)
 }
 
 ///|
@@ -25,8 +25,8 @@ test "analytics batch n flags bats last-command negations and shellcheck-style r
 
   assert_eq(count_code(diagnostics, 2314), 1)
   assert_eq(count_code(diagnostics, 2315), 1)
-  assert_true(first_code(diagnostics, 2314).severity is CheckSeverity::Style)
-  assert_true(first_code(diagnostics, 2315).severity is CheckSeverity::Style)
+  assert_true(first_code(diagnostics, 2314).severity is Style)
+  assert_true(first_code(diagnostics, 2315).severity is Style)
   match first_code(diagnostics, 2314).fix {
     Some(fix) => {
       assert_eq(fix.replacements.length(), 1)

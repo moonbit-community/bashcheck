@@ -133,16 +133,12 @@ fn translate_span(base : Position, span : Span) -> Span {
 ///|
 fn translate_parse_error(base : Position, err : ParseError) -> ParseError {
   match err {
-    ParseError::UnexpectedEnd(pos~, context~) =>
-      ParseError::UnexpectedEnd(pos=translate_position(base, pos), context~)
-    ParseError::UnexpectedToken(pos~, found~, expected~) =>
-      ParseError::UnexpectedToken(
-        pos=translate_position(base, pos),
-        found~,
-        expected~,
-      )
-    ParseError::Message(pos~, message~) =>
-      ParseError::Message(pos=translate_position(base, pos), message~)
+    UnexpectedEnd(pos~, context~) =>
+      UnexpectedEnd(pos=translate_position(base, pos), context~)
+    UnexpectedToken(pos~, found~, expected~) =>
+      UnexpectedToken(pos=translate_position(base, pos), found~, expected~)
+    Message(pos~, message~) =>
+      Message(pos=translate_position(base, pos), message~)
   }
 }
 
@@ -210,40 +206,26 @@ fn translate_command(base : Position, command : Command) -> Command {
 ///|
 fn translate_command_kind(base : Position, kind : CommandKind) -> CommandKind {
   match kind {
-    CommandKind::Simple(simple) =>
-      CommandKind::Simple(translate_simple_command(base, simple))
-    CommandKind::Source(source) =>
-      CommandKind::Source(translate_source_command(base, source))
-    CommandKind::Time(clause) =>
-      CommandKind::Time(translate_time_clause(base, clause))
-    CommandKind::Subshell(script) =>
-      CommandKind::Subshell(translate_script(base, script))
-    CommandKind::BraceGroup(script) =>
-      CommandKind::BraceGroup(translate_script(base, script))
-    CommandKind::If(clause) =>
-      CommandKind::If(translate_if_clause(base, clause))
-    CommandKind::While(clause) =>
-      CommandKind::While(translate_loop_clause(base, clause))
-    CommandKind::Until(clause) =>
-      CommandKind::Until(translate_loop_clause(base, clause))
-    CommandKind::ForIn(clause) =>
-      CommandKind::ForIn(translate_for_clause(base, clause))
-    CommandKind::ForArithmetic(clause) =>
-      CommandKind::ForArithmetic(translate_arithmetic_for_clause(base, clause))
-    CommandKind::Select(clause) =>
-      CommandKind::Select(translate_select_clause(base, clause))
-    CommandKind::Case(clause) =>
-      CommandKind::Case(translate_case_clause(base, clause))
-    CommandKind::Condition(condition) =>
-      CommandKind::Condition(translate_condition_command(base, condition))
-    CommandKind::Arithmetic(command) =>
-      CommandKind::Arithmetic(translate_arithmetic_command(base, command))
-    CommandKind::Function(function_) =>
-      CommandKind::Function(translate_function_def(base, function_))
-    CommandKind::CoProc(clause) =>
-      CommandKind::CoProc(translate_co_proc_clause(base, clause))
-    CommandKind::BatsTest(clause) =>
-      CommandKind::BatsTest(translate_bats_test_clause(base, clause))
+    Simple(simple) => Simple(translate_simple_command(base, simple))
+    Source(source) => Source(translate_source_command(base, source))
+    Time(clause) => Time(translate_time_clause(base, clause))
+    Subshell(script) => Subshell(translate_script(base, script))
+    BraceGroup(script) => BraceGroup(translate_script(base, script))
+    If(clause) => If(translate_if_clause(base, clause))
+    While(clause) => While(translate_loop_clause(base, clause))
+    Until(clause) => Until(translate_loop_clause(base, clause))
+    ForIn(clause) => ForIn(translate_for_clause(base, clause))
+    ForArithmetic(clause) =>
+      ForArithmetic(translate_arithmetic_for_clause(base, clause))
+    Select(clause) => Select(translate_select_clause(base, clause))
+    Case(clause) => Case(translate_case_clause(base, clause))
+    Condition(condition) =>
+      Condition(translate_condition_command(base, condition))
+    Arithmetic(command) =>
+      Arithmetic(translate_arithmetic_command(base, command))
+    Function(function_) => Function(translate_function_def(base, function_))
+    CoProc(clause) => CoProc(translate_co_proc_clause(base, clause))
+    BatsTest(clause) => BatsTest(translate_bats_test_clause(base, clause))
   }
 }
 
@@ -312,11 +294,10 @@ fn translate_assignment_value(
   value : AssignmentValue,
 ) -> AssignmentValue {
   match value {
-    AssignmentValue::Empty => AssignmentValue::Empty
-    AssignmentValue::Word(word) =>
-      AssignmentValue::Word(translate_word(base, word))
-    AssignmentValue::ArrayLiteral(elements) =>
-      AssignmentValue::ArrayLiteral(translate_array_elements(base, elements))
+    Empty => Empty
+    Word(word) => Word(translate_word(base, word))
+    ArrayLiteral(elements) =>
+      ArrayLiteral(translate_array_elements(base, elements))
   }
 }
 
@@ -449,33 +430,27 @@ fn translate_condition_expr(
   expr : ConditionExpr,
 ) -> ConditionExpr {
   match expr {
-    ConditionExpr::Empty => ConditionExpr::Empty
-    ConditionExpr::Word(word) => ConditionExpr::Word(translate_word(base, word))
-    ConditionExpr::Unary(op, span, word) =>
-      ConditionExpr::Unary(
-        op,
-        translate_span(base, span),
-        translate_word(base, word),
-      )
-    ConditionExpr::Binary(op, span, lhs, rhs) =>
-      ConditionExpr::Binary(
+    Empty => Empty
+    Word(word) => Word(translate_word(base, word))
+    Unary(op, span, word) =>
+      Unary(op, translate_span(base, span), translate_word(base, word))
+    Binary(op, span, lhs, rhs) =>
+      Binary(
         op,
         translate_span(base, span),
         translate_word(base, lhs),
         translate_word(base, rhs),
       )
-    ConditionExpr::Group(inner) =>
-      ConditionExpr::Group(translate_condition_expr(base, inner))
-    ConditionExpr::Not(inner) =>
-      ConditionExpr::Not(translate_condition_expr(base, inner))
-    ConditionExpr::And(op, lhs, rhs) =>
-      ConditionExpr::And(
+    Group(inner) => Group(translate_condition_expr(base, inner))
+    Not(inner) => Not(translate_condition_expr(base, inner))
+    And(op, lhs, rhs) =>
+      And(
         translate_condition_logical_operator(base, op),
         translate_condition_expr(base, lhs),
         translate_condition_expr(base, rhs),
       )
-    ConditionExpr::Or(op, lhs, rhs) =>
-      ConditionExpr::Or(
+    Or(op, lhs, rhs) =>
+      Or(
         translate_condition_logical_operator(base, op),
         translate_condition_expr(base, lhs),
         translate_condition_expr(base, rhs),
@@ -551,10 +526,8 @@ fn translate_redirection_target(
   target : RedirectionTarget,
 ) -> RedirectionTarget {
   match target {
-    RedirectionTarget::Word(word) =>
-      RedirectionTarget::Word(translate_word(base, word))
-    RedirectionTarget::HereDoc(doc) =>
-      RedirectionTarget::HereDoc(translate_here_doc(base, doc))
+    Word(word) => Word(translate_word(base, word))
+    HereDoc(doc) => HereDoc(translate_here_doc(base, doc))
   }
 }
 
@@ -602,34 +575,30 @@ fn translate_word_parts(
 ///|
 fn translate_word_part(base : Position, part : WordPart) -> WordPart {
   match part {
-    WordPart::Literal(_)
-    | WordPart::SingleQuoted(_)
-    | WordPart::DollarSingleQuoted(_)
-    | WordPart::Parameter(_)
-    | WordPart::SpecialParameter(_)
-    | WordPart::Glob(_) => part
-    WordPart::DoubleQuoted(parts) =>
-      WordPart::DoubleQuoted(translate_word_parts(base, parts))
-    WordPart::DollarDoubleQuoted(parts) =>
-      WordPart::DollarDoubleQuoted(translate_word_parts(base, parts))
-    WordPart::BracedParameter(expansion) =>
-      WordPart::BracedParameter(translate_parameter_expansion(base, expansion))
-    WordPart::BraceCommandSubstitution(piped, script) =>
-      WordPart::BraceCommandSubstitution(piped, translate_script(base, script))
-    WordPart::CommandSubstitution(script) =>
-      WordPart::CommandSubstitution(translate_script(base, script))
-    WordPart::BackQuoted(script) =>
-      WordPart::BackQuoted(translate_script(base, script))
-    WordPart::ArithmeticExpansion(expr) =>
-      WordPart::ArithmeticExpansion(translate_arithmetic_expr(base, expr))
-    WordPart::DollarBracket(expr) =>
-      WordPart::DollarBracket(translate_arithmetic_expr(base, expr))
-    WordPart::ExtGlob(pattern) =>
-      WordPart::ExtGlob(translate_extglob_pattern(base, pattern))
-    WordPart::ProcessSubstitution(kind, script) =>
-      WordPart::ProcessSubstitution(kind, translate_script(base, script))
-    WordPart::BraceExpansion(expansion) =>
-      WordPart::BraceExpansion(translate_brace_expansion(base, expansion))
+    Literal(_)
+    | SingleQuoted(_)
+    | DollarSingleQuoted(_)
+    | Parameter(_)
+    | SpecialParameter(_)
+    | Glob(_) => part
+    DoubleQuoted(parts) => DoubleQuoted(translate_word_parts(base, parts))
+    DollarDoubleQuoted(parts) =>
+      DollarDoubleQuoted(translate_word_parts(base, parts))
+    BracedParameter(expansion) =>
+      BracedParameter(translate_parameter_expansion(base, expansion))
+    BraceCommandSubstitution(piped, script) =>
+      BraceCommandSubstitution(piped, translate_script(base, script))
+    CommandSubstitution(script) =>
+      CommandSubstitution(translate_script(base, script))
+    BackQuoted(script) => BackQuoted(translate_script(base, script))
+    ArithmeticExpansion(expr) =>
+      ArithmeticExpansion(translate_arithmetic_expr(base, expr))
+    DollarBracket(expr) => DollarBracket(translate_arithmetic_expr(base, expr))
+    ExtGlob(pattern) => ExtGlob(translate_extglob_pattern(base, pattern))
+    ProcessSubstitution(kind, script) =>
+      ProcessSubstitution(kind, translate_script(base, script))
+    BraceExpansion(expansion) =>
+      BraceExpansion(translate_brace_expansion(base, expansion))
   }
 }
 
@@ -681,13 +650,11 @@ fn translate_arithmetic_token(
   token : ArithmeticToken,
 ) -> ArithmeticToken {
   match token {
-    ArithmeticToken::Literal(_) | ArithmeticToken::Operator(_) => token
-    ArithmeticToken::Variable(name, indexes) =>
-      ArithmeticToken::Variable(name, translate_array_indices(base, indexes))
-    ArithmeticToken::Expansion(word) =>
-      ArithmeticToken::Expansion(translate_word(base, word))
-    ArithmeticToken::Group(inner) =>
-      ArithmeticToken::Group(translate_arithmetic_expr(base, inner))
+    Literal(_) | Operator(_) => token
+    Variable(name, indexes) =>
+      Variable(name, translate_array_indices(base, indexes))
+    Expansion(word) => Expansion(translate_word(base, word))
+    Group(inner) => Group(translate_arithmetic_expr(base, inner))
   }
 }
 
@@ -718,9 +685,9 @@ fn translate_array_index(base : Position, index : ArrayIndex) -> ArrayIndex {
 ///|
 fn parse_error_position(err : ParseError) -> Position {
   match err {
-    ParseError::UnexpectedEnd(pos~, ..) => pos
-    ParseError::UnexpectedToken(pos~, ..) => pos
-    ParseError::Message(pos~, ..) => pos
+    UnexpectedEnd(pos~, ..) => pos
+    UnexpectedToken(pos~, ..) => pos
+    Message(pos~, ..) => pos
   }
 }
 
@@ -733,7 +700,7 @@ fn is_backquote_char(ch : UInt16) -> Bool {
 fn Parser::consume_backquote_start(self : Parser) -> Unit {
   if self.peek() == Some('´') {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "For command expansion, the tick should slant left (` vs ´). Use $(..) instead.",
       Some(1077),
@@ -821,7 +788,7 @@ fn Parser::emit_simple_command_context_diagnostic(self : Parser) -> Unit {
         }
       }
       self.emit_diagnostic(
-        DiagnosticSeverity::Info,
+        Info,
         pos,
         "The mentioned syntax error was in this simple command.",
         Some(1009),
@@ -840,12 +807,7 @@ fn Parser::consume_unicode_space(self : Parser) -> Bool {
       } else {
         "This is a unicode space. Delete and retype it."
       }
-      self.emit_diagnostic(
-        DiagnosticSeverity::Error,
-        self.position(),
-        message,
-        Some(1018),
-      )
+      self.emit_diagnostic(Error, self.position(), message, Some(1018))
       ignore(self.advance_one())
       true
     }
@@ -857,7 +819,7 @@ fn Parser::consume_unicode_space(self : Parser) -> Bool {
 fn Parser::maybe_emit_unicode_quote(self : Parser, ch : UInt16) -> Unit {
   if is_unicode_quote_char(ch) {
     self.emit_diagnostic(
-      DiagnosticSeverity::Warning,
+      Warning,
       self.position(),
       "This is a unicode quote. Delete and retype it (or quote to make literal).",
       Some(1110),
@@ -938,7 +900,7 @@ fn Parser::consume_newline(self : Parser) -> Bool {
   match self.peek() {
     Some('\r') => {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "Literal carriage return. Run script through tr -d '\\r' .",
         Some(1017),
@@ -1233,12 +1195,12 @@ fn Parser::found_description(self : Parser) -> String {
 
 ///|
 fn Parser::unexpected_end(self : Parser, context : String) -> ParseError {
-  ParseError::UnexpectedEnd(pos=self.position(), context~)
+  UnexpectedEnd(pos=self.position(), context~)
 }
 
 ///|
 fn Parser::unexpected(self : Parser, expected : String) -> ParseError {
-  ParseError::UnexpectedToken(
+  UnexpectedToken(
     pos=self.position(),
     found=self.found_description(),
     expected~,
@@ -1270,7 +1232,7 @@ fn Parser::maybe_emit_comment_line_continuation_diagnostic(
     let pos = self.position()
     if self.peek_line().has_suffix("\\") {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "This backslash is part of a comment and does not continue the line.",
         Some(1143),
@@ -1509,7 +1471,7 @@ fn Parser::accept_but_warn_semicolon(
   if self.peek() == Some(';') {
     let pos = self.position()
     ignore(self.advance_one())
-    self.emit_diagnostic(DiagnosticSeverity::Error, pos, message, Some(code))
+    self.emit_diagnostic(Error, pos, message, Some(code))
   } else {
     self.reset(mark)
   }
@@ -1528,7 +1490,7 @@ fn Parser::warn_if_empty_clause(
   self.reset(mark)
   if is_empty {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       pos,
       "Can't have empty \{label} clauses (use 'true' as a no-op).",
       Some(1048),
@@ -1562,10 +1524,7 @@ fn Parser::ensure_no_pending_heredocs(self : Parser) -> Unit raise ParseError {
       self.read_pending_heredocs()
       return
     }
-    raise ParseError::Message(
-      pos=self.position(),
-      message="missing here-document body",
-    )
+    raise Message(pos=self.position(), message="missing here-document body")
   }
 }
 
@@ -1733,7 +1692,7 @@ fn split_shell_words_strict(
   }
   match quote {
     Some(_) =>
-      raise ParseError::Message(
+      raise Message(
         pos=advance_position_columns(base, quote_start),
         message="missing terminating quote for directive",
       )
@@ -1902,9 +1861,8 @@ fn annotations_disable_code(
     Some(value) => {
       for annotation in annotations {
         match annotation {
-          Annotation::Disable(disabled) if disable_value_matches_code(
-              disabled, value,
-            ) => return true
+          Disable(disabled) if disable_value_matches_code(disabled, value) =>
+            return true
           _ => ()
         }
       }
@@ -1961,20 +1919,20 @@ fn parse_annotation_entries(
                 if !valid {
                   diagnostics.push({
                     span: span_at(base),
-                    severity: DiagnosticSeverity::Error,
+                    severity: Error,
                     code: Some(1125),
                     message: "invalid disable directive value '\{directive_value_source(value)}'",
                   })
                   break
                 }
                 for code in codes {
-                  annotations.push(Annotation::Disable(code))
+                  annotations.push(Disable(code))
                 }
               }
               _ => {
                 diagnostics.push({
                   span: span_at(base),
-                  severity: DiagnosticSeverity::Error,
+                  severity: Error,
                   code: Some(1125),
                   message: "invalid disable directive value '\{directive_value_source(value)}'",
                 })
@@ -1994,20 +1952,20 @@ fn parse_annotation_entries(
                 if !valid {
                   diagnostics.push({
                     span: span_at(base),
-                    severity: DiagnosticSeverity::Error,
+                    severity: Error,
                     code: Some(1125),
                     message: "invalid enable directive value '\{directive_value_source(value)}'",
                   })
                   break
                 }
                 for name in names {
-                  annotations.push(Annotation::Enable(name))
+                  annotations.push(Enable(name))
                 }
               }
               _ => {
                 diagnostics.push({
                   span: span_at(base),
-                  severity: DiagnosticSeverity::Error,
+                  severity: Error,
                   code: Some(1125),
                   message: "invalid enable directive value '\{directive_value_source(value)}'",
                 })
@@ -2019,50 +1977,46 @@ fn parse_annotation_entries(
             if !is_supported_shell_annotation(shell) {
               diagnostics.push({
                 span: span_at(base),
-                severity: DiagnosticSeverity::Error,
+                severity: Error,
                 code: Some(1103),
                 message: "unknown shell directive value '\{shell}'; use e.g. sh or bash",
               })
             } else {
-              annotations.push(Annotation::Shell(shell))
+              annotations.push(Shell(shell))
             }
           }
-          "source" =>
-            annotations.push(Annotation::Source(directive_value_source(value)))
+          "source" => annotations.push(Source(directive_value_source(value)))
           "source-path" | "source_path" =>
-            annotations.push(
-              Annotation::SourcePath(directive_value_source(value)),
-            )
+            annotations.push(SourcePath(directive_value_source(value)))
           "external-sources" | "external_sources" =>
             match parse_annotation_bool(directive_value_source(value)) {
               Some(true) =>
                 if options.allow_inline_external_sources {
-                  annotations.push(Annotation::ExternalSources(true))
+                  annotations.push(ExternalSources(true))
                 } else {
                   diagnostics.push({
                     span: span_at(base),
-                    severity: DiagnosticSeverity::Error,
+                    severity: Error,
                     code: Some(1144),
                     message: "external-sources can only be enabled in parse options, not in individual files",
                   })
                 }
-              Some(false) =>
-                annotations.push(Annotation::ExternalSources(false))
+              Some(false) => annotations.push(ExternalSources(false))
               None =>
                 diagnostics.push({
                   span: span_at(base),
-                  severity: DiagnosticSeverity::Error,
+                  severity: Error,
                   code: Some(1145),
                   message: "unknown external-sources value '\{directive_value_source(value)}'; expected true/false",
                 })
             }
           "extended-analysis" | "extended_analysis" =>
             match parse_annotation_bool(directive_value_source(value)) {
-              Some(flag) => annotations.push(Annotation::ExtendedAnalysis(flag))
+              Some(flag) => annotations.push(ExtendedAnalysis(flag))
               None =>
                 diagnostics.push({
                   span: span_at(base),
-                  severity: DiagnosticSeverity::Error,
+                  severity: Error,
                   code: Some(1146),
                   message: "unknown extended-analysis value '\{directive_value_source(value)}'; expected true/false",
                 })
@@ -2070,7 +2024,7 @@ fn parse_annotation_entries(
           _ =>
             diagnostics.push({
               span: span_at(base),
-              severity: DiagnosticSeverity::Warning,
+              severity: Warning,
               code: Some(1107),
               message: "This directive is unknown. It will be ignored.",
             })
@@ -2078,7 +2032,7 @@ fn parse_annotation_entries(
       _ => {
         diagnostics.push({
           span: span_at(base),
-          severity: DiagnosticSeverity::Error,
+          severity: Error,
           code: Some(1125),
           message: "invalid key=value pair in shellcheck directive; ignoring the rest of this line",
         })
@@ -2142,14 +2096,14 @@ fn classify_shebang_line(line : String) -> ShebangLineKind? {
   let has_leading_spaces = start > 0
   if view[start] == '!' {
     if start + 1 < view.length() && view[start + 1] == '#' {
-      return Some(ShebangLineKind::Swapped)
+      return Some(Swapped)
     }
     let mut path = start + 1
     while path < view.length() && is_space_char(view[path]) {
       path += 1
     }
     if path < view.length() && view[path] == '/' {
-      return Some(ShebangLineKind::MissingHash)
+      return Some(MissingHash)
     }
     return None
   }
@@ -2158,9 +2112,9 @@ fn classify_shebang_line(line : String) -> ShebangLineKind? {
   }
   if start + 1 < view.length() && view[start + 1] == '!' {
     if has_leading_spaces {
-      return Some(ShebangLineKind::LeadingSpaces)
+      return Some(LeadingSpaces)
     }
-    return Some(ShebangLineKind::Correct)
+    return Some(Correct)
   }
   let mut bang = start + 1
   while bang < view.length() && is_space_char(view[bang]) {
@@ -2168,12 +2122,12 @@ fn classify_shebang_line(line : String) -> ShebangLineKind? {
   }
   if bang < view.length() && view[bang] == '!' {
     if has_leading_spaces {
-      return Some(ShebangLineKind::LeadingSpaces)
+      return Some(LeadingSpaces)
     }
-    return Some(ShebangLineKind::SpacesBetweenHashBang)
+    return Some(SpacesBetweenHashBang)
   }
   if bang < view.length() && view[bang] == '/' {
-    return Some(ShebangLineKind::MissingBang)
+    return Some(MissingBang)
   }
   None
 }
@@ -2209,7 +2163,7 @@ fn shebang_hash_bang_gap_count(line : String) -> Int {
 ///|
 fn is_any_shebang_line(kind : ShebangLineKind) -> Bool {
   match kind {
-    ShebangLineKind::MissingBang => false
+    MissingBang => false
     _ => true
   }
 }
@@ -2291,7 +2245,7 @@ fn classify_shebang_shell(shell : String) -> ShebangShellStatus {
     shell.has_prefix("bats") ||
     shell.has_prefix("ksh") ||
     shell.has_prefix("oksh") {
-    return ShebangShellStatus::Supported
+    return Supported
   }
   if shell.has_prefix("awk") ||
     shell.has_prefix("csh") ||
@@ -2303,9 +2257,9 @@ fn classify_shebang_shell(shell : String) -> ShebangShellStatus {
     shell.has_prefix("ruby") ||
     shell.has_prefix("tcsh") ||
     shell.has_prefix("zsh") {
-    return ShebangShellStatus::Unsupported
+    return Unsupported
   }
-  ShebangShellStatus::Unknown
+  Unknown
 }
 
 ///|
@@ -2318,7 +2272,7 @@ fn initial_position() -> Position {
 fn has_shell_annotation(annotations : Array[Annotation]) -> Bool {
   for annotation in annotations {
     match annotation {
-      Annotation::Shell(_) => return true
+      Shell(_) => return true
       _ => ()
     }
   }
@@ -2358,16 +2312,15 @@ fn Parser::parse_leading_metadata(
   match classify_shebang_line(first_line) {
     Some(kind) =>
       match kind {
-        ShebangLineKind::Correct => {
+        Correct => {
           let (line, _) = self.read_line()
           shebang = Some(line)
         }
-        ShebangLineKind::LeadingSpaces
-        | ShebangLineKind::SpacesBetweenHashBang => {
+        LeadingSpaces | SpacesBetweenHashBang => {
           let leading_spaces = shebang_leading_space_count(first_line)
           if leading_spaces > 0 {
             self.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               shebang_pos,
               "Remove leading spaces before the shebang.",
               Some(1114),
@@ -2376,7 +2329,7 @@ fn Parser::parse_leading_metadata(
           let hash_bang_gap = shebang_hash_bang_gap_count(first_line)
           if hash_bang_gap > 0 {
             self.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               advance_position_columns(shebang_pos, leading_spaces + 1),
               "Remove spaces between # and ! in the shebang.",
               Some(1115),
@@ -2384,27 +2337,27 @@ fn Parser::parse_leading_metadata(
           }
           ignore(self.read_line())
         }
-        ShebangLineKind::Swapped => {
+        Swapped => {
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             shebang_pos,
             "Use #!, not !#, for the shebang.",
             Some(1084),
           )
           ignore(self.read_line())
         }
-        ShebangLineKind::MissingHash => {
+        MissingHash => {
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             shebang_pos,
             "Use #!, not just !, for the shebang.",
             Some(1104),
           )
           ignore(self.read_line())
         }
-        ShebangLineKind::MissingBang => {
+        MissingBang => {
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             advance_position_columns(shebang_pos, 1),
             "Use #!, not just #, for the shebang.",
             Some(1113),
@@ -2420,7 +2373,7 @@ fn Parser::parse_leading_metadata(
     match classify_shebang_line(self.peek_line()) {
       Some(kind) if is_any_shebang_line(kind) =>
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           line_pos,
           "The shebang must be on the first line. Delete blanks and move comments.",
           Some(1128),
@@ -2477,12 +2430,7 @@ fn Parser::parse_script(
       let pos = self.position()
       match trailing_command_parse_stop_message(item) {
         Some((code, message)) => {
-          self.emit_diagnostic(
-            DiagnosticSeverity::Error,
-            pos,
-            message,
-            Some(code),
-          )
+          self.emit_diagnostic(Error, pos, message, Some(code))
           self.recover_after_parse_stop()
           pending_annotations = self.discard_orphaned_annotations(
             self.skip_list_gaps(),
@@ -2492,7 +2440,7 @@ fn Parser::parse_script(
           continue
         }
         None =>
-          raise ParseError::Message(
+          raise Message(
             pos~,
             message="unexpected tokens after command; missing ;/&&/||/|?",
           )
@@ -2526,25 +2474,25 @@ fn trailing_command_kind(item : ListItem) -> CommandKind {
 ///|
 fn trailing_command_parse_stop_message(item : ListItem) -> (Int, String)? {
   match trailing_command_kind(item) {
-    CommandKind::Condition(_) =>
+    Condition(_) =>
       Some(
         (
           1070, "Parsing stopped here. Mismatched keywords or invalid parentheses?",
         ),
       )
-    CommandKind::Subshell(_) =>
+    Subshell(_) =>
       Some((1088, "Parsing stopped here. Invalid use of parentheses?"))
-    CommandKind::BraceGroup(_)
-    | CommandKind::If(_)
-    | CommandKind::While(_)
-    | CommandKind::Until(_)
-    | CommandKind::ForIn(_)
-    | CommandKind::ForArithmetic(_)
-    | CommandKind::Select(_)
-    | CommandKind::Case(_)
-    | CommandKind::Function(_)
-    | CommandKind::CoProc(_)
-    | CommandKind::BatsTest(_) =>
+    BraceGroup(_)
+    | If(_)
+    | While(_)
+    | Until(_)
+    | ForIn(_)
+    | ForArithmetic(_)
+    | Select(_)
+    | Case(_)
+    | Function(_)
+    | CoProc(_)
+    | BatsTest(_) =>
       Some(
         (1089, "Parsing stopped here. Is this keyword correctly matched up?"),
       )
@@ -2586,15 +2534,15 @@ fn Parser::discard_orphaned_annotations(
     let message = "Expected a command. Fix any mentioned problems and try again."
     self.diagnostics.push({
       span: span_at(pos),
-      severity: DiagnosticSeverity::Error,
+      severity: Error,
       code: Some(1072),
       message,
     })
-    raise ParseError::Message(pos~, message~)
+    raise Message(pos~, message~)
   }
   self.diagnostics.push({
     span: span_at(pos),
-    severity: DiagnosticSeverity::Error,
+    severity: Error,
     code: Some(1123),
     message: "ShellCheck directives are only valid in front of complete compound commands, like 'if', not e.g. individual 'elif' branches.",
   })
@@ -2646,23 +2594,19 @@ fn Parser::parse_list_item(
     self.file_annotations,
     annotations,
   )
-  try {
-    let and_or = self.parse_and_or()
-    let terminator = self.parse_terminator()
-    let item = {
-      span: make_span(start, self.position()),
-      annotations,
-      and_or,
-      terminator,
-    }
+  errdefer {
     self.current_annotations = saved_annotations
-    item
-  } catch {
-    err => {
-      self.current_annotations = saved_annotations
-      raise err
-    }
   }
+  let and_or = self.parse_and_or()
+  let terminator = self.parse_terminator()
+  let item = {
+    span: make_span(start, self.position()),
+    annotations,
+    and_or,
+    terminator,
+  }
+  self.current_annotations = saved_annotations
+  item
 }
 
 ///|
@@ -2670,7 +2614,7 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
   match self.peek_comment_after_inline_space() {
     Some((comment_pos, line)) if is_shellcheck_annotation_comment(line) =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         comment_pos,
         "Place shellcheck directives before commands, not after.",
         Some(1126),
@@ -2689,7 +2633,7 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
         self.starts_with("gt;") ||
         self.starts_with("lt;") {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           amp_pos,
           "This is an unquoted HTML entity. Replace with corresponding character.",
           Some(1109),
@@ -2698,7 +2642,7 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
         match self.peek() {
           Some(ch) if is_name_start(ch) =>
             self.emit_diagnostic(
-              DiagnosticSeverity::Warning,
+              Warning,
               amp_pos,
               "This & terminates the command. Escape it or add space after & to silence.",
               Some(1132),
@@ -2711,17 +2655,17 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
         let semi_pos = self.position()
         ignore(self.advance_one())
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           semi_pos,
           "It's not 'foo &; bar', just 'foo & bar'.",
           Some(1045),
         )
       }
-      Some(Terminator::Background)
+      Some(Background)
     }
     Some(';') => {
       ignore(self.advance_one())
-      Some(Terminator::Sequential)
+      Some(Sequential)
     }
     Some('\n') | Some('\r') => {
       ignore(self.consume_newline())
@@ -2739,7 +2683,7 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
               )
             ) {
             self.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               pos,
               "Unexpected start of line. If breaking lines, |/||/&& should be at the end of the previous one.",
               Some(1133),
@@ -2747,7 +2691,7 @@ fn Parser::parse_terminator(self : Parser) -> Terminator? {
           }
         None => ()
       }
-      Some(Terminator::Sequential)
+      Some(Sequential)
     }
     _ => None
   }
@@ -2763,13 +2707,13 @@ fn Parser::parse_and_or(self : Parser) -> AndOrList raise ParseError {
     if self.starts_with("&&") {
       self.advance_n(2)
       self.skip_command_gaps()
-      tail.push((AndOrOperator::AndIf, self.parse_pipeline()))
+      tail.push((AndIf, self.parse_pipeline()))
       continue
     }
     if self.starts_with("||") {
       self.advance_n(2)
       self.skip_command_gaps()
-      tail.push((AndOrOperator::OrIf, self.parse_pipeline()))
+      tail.push((OrIf, self.parse_pipeline()))
       continue
     }
     break
@@ -2787,14 +2731,14 @@ fn Parser::parse_pipeline(self : Parser) -> Pipeline raise ParseError {
     if self.starts_with("|&") {
       self.advance_n(2)
       self.skip_command_gaps()
-      operators.push(PipeOperator::PipeAndStderr)
+      operators.push(PipeAndStderr)
       segments.push(self.parse_pipeline_segment())
       continue
     }
     if self.peek() == Some('|') && !self.starts_with("||") {
       ignore(self.advance_one())
       self.skip_command_gaps()
-      operators.push(PipeOperator::Pipe)
+      operators.push(Pipe)
       segments.push(self.parse_pipeline_segment())
       continue
     }
@@ -2815,7 +2759,7 @@ fn Parser::parse_pipeline_segment(
     ignore(self.advance_one())
     if !is_bang_gap_char(self.peek()) {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "You are missing a required space after the !.",
         Some(1035),
@@ -2841,7 +2785,7 @@ fn Parser::parse_command(self : Parser) -> Command raise ParseError {
             Some(kind) => {
               let redirects = self.parse_trailing_redirections()
               match kind {
-                CommandKind::Condition(_) =>
+                Condition(_) =>
                   self.maybe_emit_post_condition_command_diagnostic()
                 _ => self.maybe_emit_post_compound_command_diagnostic()
               }
@@ -2851,7 +2795,7 @@ fn Parser::parse_command(self : Parser) -> Command raise ParseError {
             None =>
               match self.unexpected_reserved_word() {
                 Some(word) =>
-                  raise ParseError::Message(
+                  raise Message(
                     pos=self.position(),
                     message="unexpected reserved word '\{word}'",
                   )
@@ -2901,7 +2845,7 @@ fn Parser::maybe_emit_post_condition_command_diagnostic(self : Parser) -> Unit {
   match self.condition_separator_hint() {
     Some((token, replacement)) =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "Use \{replacement} instead of '\{token}' between test commands.",
         Some(1139),
@@ -2909,7 +2853,7 @@ fn Parser::maybe_emit_post_condition_command_diagnostic(self : Parser) -> Unit {
     None =>
       if self.next_starts_word() && !self.starts_reserved_word_token() {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           pos,
           "Unexpected parameters after condition. Missing &&/||, or bad expression?",
           Some(1140),
@@ -2935,7 +2879,7 @@ fn Parser::maybe_emit_post_compound_command_diagnostic(self : Parser) -> Unit {
     !self.starts_reserved_word_token() &&
     self.peek() != Some('{') {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       pos,
       "Unexpected tokens after compound command. Bad redirection or missing ;/&&/||/|?",
       Some(1141),
@@ -3015,11 +2959,7 @@ fn Parser::try_parse_timed_command(self : Parser) -> Command? raise ParseError {
   let body = self.parse_pipeline()
   let redirects = self.parse_trailing_redirections()
   let end = self.position()
-  Some({
-    span: make_span(start, end),
-    kind: CommandKind::Time({ flags, body }),
-    redirects,
-  })
+  Some({ span: make_span(start, end), kind: Time({ flags, body }), redirects })
 }
 
 ///|
@@ -3052,7 +2992,7 @@ fn Parser::try_parse_function_definition(
     self.skip_inline_space()
     if self.peek() != Some(')') {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "Trying to declare parameters? Don't. Use () and refer to params as $1, $2..",
         Some(1065),
@@ -3079,7 +3019,7 @@ fn Parser::try_parse_function_definition(
     match self.peek() {
       Some('{') | Some('(') =>
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           self.position(),
           "You need a space or linefeed between the function name and body.",
           Some(1095),
@@ -3092,29 +3032,24 @@ fn Parser::try_parse_function_definition(
   if self.peek() != Some('{') && self.peek() != Some('(') {
     let end_message = " Fix any mentioned problems and try again."
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       start,
       "Couldn't parse this function. Fix to allow more checks.",
       Some(1073),
     )
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       body_start,
       "Expected a { to open the function definition.",
       Some(1064),
     )
-    self.emit_diagnostic(
-      DiagnosticSeverity::Error,
-      body_start,
-      end_message,
-      Some(1072),
-    )
-    raise ParseError::Message(pos=body_start, message=end_message)
+    self.emit_diagnostic(Error, body_start, end_message, Some(1072))
+    raise Message(pos=body_start, message=end_message)
   }
   let body_kind = match self.try_parse_non_coproc_compound_command() {
     Some(kind) => kind
     None =>
-      raise ParseError::Message(
+      raise Message(
         pos=self.position(),
         message="function body must start with a compound command (for example { ...; }, ( ... ), if ..., while ..., or case ...)",
       )
@@ -3127,12 +3062,7 @@ fn Parser::try_parse_function_definition(
   let end = self.position()
   Some({
     span: make_span(start, end),
-    kind: CommandKind::Function({
-      name,
-      uses_keyword,
-      has_parentheses,
-      body: body_command,
-    }),
+    kind: Function({ name, uses_keyword, has_parentheses, body: body_command }),
     redirects,
   })
 }
@@ -3143,9 +3073,9 @@ fn Parser::try_parse_group_like_command(
 ) -> CommandKind? raise ParseError {
   match self.peek() {
     Some('{') if self.starts_brace_group() =>
-      Some(CommandKind::BraceGroup(self.parse_brace_group()))
+      Some(BraceGroup(self.parse_brace_group()))
     Some('(') if !self.starts_with("((") =>
-      Some(CommandKind::Subshell(self.parse_subshell()))
+      Some(Subshell(self.parse_subshell()))
     _ => None
   }
 }
@@ -3155,36 +3085,34 @@ fn Parser::try_parse_non_coproc_compound_command(
   self : Parser,
 ) -> CommandKind? raise ParseError {
   if self.starts_with("[[") && is_word_boundary(self.peek_n(2)) {
-    return Some(CommandKind::Condition(self.parse_condition_command(true)))
+    return Some(Condition(self.parse_condition_command(true)))
   }
   if self.peek() == Some('[') &&
     self.peek_n(1) != Some('[') &&
     is_word_boundary(self.peek_n(1)) {
-    return Some(CommandKind::Condition(self.parse_condition_command(false)))
+    return Some(Condition(self.parse_condition_command(false)))
   }
   if self.starts_with("((") {
     let start = self.position()
     let mark = self.mark()
     try {
-      return Some(CommandKind::Arithmetic(self.parse_arithmetic_command()))
+      return Some(Arithmetic(self.parse_arithmetic_command()))
     } catch {
       _ => {
         self.reset(mark)
         try {
           let subshell = self.parse_subshell()
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             start,
             "Shells disambiguate (( differently or not at all. For subshell, add spaces around ( . For ((, fix parsing errors.",
             Some(1105),
           )
-          return Some(CommandKind::Subshell(subshell))
+          return Some(Subshell(subshell))
         } catch {
           _ => {
             self.reset(mark)
-            return Some(
-              CommandKind::Arithmetic(self.parse_arithmetic_command()),
-            )
+            return Some(Arithmetic(self.parse_arithmetic_command()))
           }
         }
       }
@@ -3199,22 +3127,22 @@ fn Parser::try_parse_non_coproc_compound_command(
     None => ()
   }
   if self.starts_keyword_token("if") {
-    return Some(CommandKind::If(self.parse_if_clause()))
+    return Some(If(self.parse_if_clause()))
   }
   if self.starts_keyword_token("while") {
-    return Some(CommandKind::While(self.parse_while_clause()))
+    return Some(While(self.parse_while_clause()))
   }
   if self.starts_keyword_token("until") {
-    return Some(CommandKind::Until(self.parse_until_clause()))
+    return Some(Until(self.parse_until_clause()))
   }
   if self.starts_keyword_token("for") {
     return Some(self.parse_for_command())
   }
   if self.starts_keyword_token("select") {
-    return Some(CommandKind::Select(self.parse_select_clause()))
+    return Some(Select(self.parse_select_clause()))
   }
   if self.starts_keyword_token("case") {
-    return Some(CommandKind::Case(self.parse_case_clause()))
+    return Some(Case(self.parse_case_clause()))
   }
   None
 }
@@ -3284,13 +3212,13 @@ fn Parser::try_parse_bats_test(self : Parser) -> CommandKind? raise ParseError {
     None => {
       self.reset(mark)
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         start,
         "Couldn't parse this bats @test. Fix to allow more checks.",
         Some(1073),
       )
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         advance_position_columns(start, 6),
         " Fix any mentioned problems and try again.",
         Some(1072),
@@ -3306,20 +3234,20 @@ fn Parser::try_parse_bats_test(self : Parser) -> CommandKind? raise ParseError {
   if self.peek() != Some('{') {
     self.reset(mark)
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       start,
       "Couldn't parse this bats @test. Fix to allow more checks.",
       Some(1073),
     )
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       advance_position_columns(start, 6),
       " Fix any mentioned problems and try again.",
       Some(1072),
     )
     return None
   }
-  Some(CommandKind::BatsTest({ name, body: self.parse_brace_group() }))
+  Some(BatsTest({ name, body: self.parse_brace_group() }))
 }
 
 ///|
@@ -3363,7 +3291,7 @@ fn Parser::try_parse_compound_command(
     None => ()
   }
   if self.starts_keyword_token("coproc") {
-    return Some(CommandKind::CoProc(self.parse_coproc_clause()))
+    return Some(CoProc(self.parse_coproc_clause()))
   }
   None
 }
@@ -3382,14 +3310,14 @@ fn Parser::parse_brace_group(self : Parser) -> Script raise ParseError {
       (self.peek_n(1) == Some('\r') && self.peek_n(2) == Some('\n')) => ()
     Some('}') =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         after_open,
         "empty brace groups require at least one command",
         Some(1055),
       )
     _ =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         after_open,
         "You need a space after the '{'.",
         Some(1054),
@@ -3398,7 +3326,7 @@ fn Parser::parse_brace_group(self : Parser) -> Script raise ParseError {
   let body = self.parse_script([], Some('}'))
   if self.peek() != Some('}') {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Expected a '}'. If you have one, try a ; or \\n in front of it.",
       Some(1056),
@@ -3432,18 +3360,13 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
   if !self.is_at_keyword("then") {
     if self.is_at_any_keyword(["elif", "else", "fi"]) {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         if_pos,
         "Did you forget the 'then' for this 'if'?",
         Some(1049),
       )
     }
-    self.emit_diagnostic(
-      DiagnosticSeverity::Error,
-      self.position(),
-      "Expected 'then'.",
-      Some(1050),
-    )
+    self.emit_diagnostic(Error, self.position(), "Expected 'then'.", Some(1050))
   } else {
     ignore(self.eat_keyword("then"))
   }
@@ -3462,7 +3385,7 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
     if !self.is_at_keyword("then") {
       if self.is_at_any_keyword(["elif", "else", "fi"]) {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           elif_pos,
           "Did you forget the 'then' for this 'elif'?",
           Some(1049),
@@ -3485,7 +3408,7 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
     self.skip_inline_space()
     if self.eat_keyword("if") {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         else_pos,
         "Use 'elif' instead of 'else if' (or put 'if' on new line if nesting).",
         Some(1075),
@@ -3502,13 +3425,13 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
   }
   if !self.eat_keyword("fi") {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       if_pos,
       "Couldn't find 'fi' for this 'if'.",
       Some(1046),
     )
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Expected 'fi' matching previously mentioned 'if'.",
       Some(1047),
@@ -3543,19 +3466,14 @@ fn Parser::parse_do_group_body(
   let do_pos = self.position()
   if self.is_at_keyword("done") {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       loop_pos,
       "Did you forget the 'do' for this loop?",
       Some(1057),
     )
   }
   if !self.eat_keyword("do") {
-    self.emit_diagnostic(
-      DiagnosticSeverity::Error,
-      self.position(),
-      "Expected 'do'.",
-      Some(1058),
-    )
+    self.emit_diagnostic(Error, self.position(), "Expected 'do'.", Some(1058))
   }
   self.accept_but_warn_semicolon(
     1059, "Semicolon is not allowed directly after 'do'. You can just delete it.",
@@ -3567,7 +3485,7 @@ fn Parser::parse_do_group_body(
   self.reset(empty_mark)
   if empty_body {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       empty_pos,
       "Can't have empty do clauses (use 'true' as a no-op).",
       Some(1060),
@@ -3576,13 +3494,13 @@ fn Parser::parse_do_group_body(
   let body = self.parse_script(["done"], None)
   if !self.eat_keyword("done") {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       do_pos,
       "Couldn't find 'done' for this 'do'.",
       Some(1061),
     )
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Expected 'done' matching previously mentioned 'do'.",
       Some(1062),
@@ -3592,7 +3510,7 @@ fn Parser::parse_do_group_body(
   self.skip_inline_space()
   if self.starts_with("<(") {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Use 'done < <(cmd)' to redirect from process substitution (currently missing one '<').",
       Some(1142),
@@ -3626,7 +3544,7 @@ fn Parser::finish_loop_header(
   }
   if saw_in_clause && self.starts_keyword_token("do") {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "You need a line feed or semicolon before the 'do'.",
       Some(1063),
@@ -3642,7 +3560,7 @@ fn Parser::finish_loop_header(
     } else {
       "expected 'in' or separator after \{keyword} variable"
     }
-    raise ParseError::Message(pos=self.position(), message~)
+    raise Message(pos=self.position(), message~)
   }
   self.skip_command_gaps()
 }
@@ -3659,7 +3577,7 @@ fn Parser::parse_for_values_and_body_after_keyword(
   self.skip_command_gaps()
   if self.peek() == Some('$') {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Don't use $ on the iterator name in for loops.",
       Some(1086),
@@ -3779,17 +3697,12 @@ fn Parser::read_arithmetic_for_delimiter(
   self.skip_inline_space()
   let gap_end = self.position()
   if self.peek() != Some(ch) {
-    self.emit_diagnostic(
-      DiagnosticSeverity::Error,
-      gap_start,
-      missing_message,
-      Some(1137),
-    )
+    self.emit_diagnostic(Error, gap_start, missing_message, Some(1137))
     return false
   }
   if gap_end.offset != gap_start.offset {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       gap_start,
       "Remove spaces between \{char_display(ch)}\{char_display(ch)} in arithmetic for loop.",
       Some(1138),
@@ -3832,7 +3745,7 @@ fn Parser::read_arithmetic_for_loop_raw(
         if self.peek() == Some(')') {
           if gap_end.offset != gap_start.offset {
             self.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               gap_start,
               "Remove spaces between )) in arithmetic for loop.",
               Some(1138),
@@ -3842,7 +3755,7 @@ fn Parser::read_arithmetic_for_loop_raw(
           return content.to_string()
         }
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           gap_start,
           "Missing second ')' to terminate 'for ((;;))' loop condition",
           Some(1137),
@@ -3881,15 +3794,12 @@ fn Parser::parse_for_command(self : Parser) -> CommandKind raise ParseError {
     if !self.read_arithmetic_for_delimiter(
         '(', "Missing second '(' to start arithmetic for ((;;)) loop",
       ) {
-      raise ParseError::Message(
-        pos=self.position(),
-        message="expected arithmetic for loop",
-      )
+      raise Message(pos=self.position(), message="expected arithmetic for loop")
     }
     let raw = self.read_arithmetic_for_loop_raw()
     let parts = split_top_level_semicolons(raw)
     if parts.length() != 3 {
-      raise ParseError::Message(
+      raise Message(
         pos=self.position(),
         message="expected three arithmetic clauses in for loop",
       )
@@ -3904,7 +3814,7 @@ fn Parser::parse_for_command(self : Parser) -> CommandKind raise ParseError {
     } else {
       self.parse_do_group_body(loop_pos)
     }
-    return CommandKind::ForArithmetic({
+    return ForArithmetic({
       init: parse_arithmetic_expr(parts[0]),
       condition: parse_arithmetic_expr(parts[1]),
       step: parse_arithmetic_expr(parts[2]),
@@ -3914,7 +3824,7 @@ fn Parser::parse_for_command(self : Parser) -> CommandKind raise ParseError {
   let (name, values, body) = self.parse_for_values_and_body_after_keyword(
     "for", true, true, false, loop_pos,
   )
-  CommandKind::ForIn({ name, values, body })
+  ForIn({ name, values, body })
 }
 
 ///|
@@ -3933,7 +3843,7 @@ fn Parser::skip_condition_space(self : Parser, double_bracket : Bool) -> Unit {
       Some('\n') | Some('\r') => {
         if !double_bracket {
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             self.position(),
             "When breaking lines in [ ], you need \\ before the linefeed.",
             Some(1080),
@@ -4174,25 +4084,19 @@ fn Parser::parse_condition_regex_word(
         push_literal(parts, literal)
         let quote_start = self.position()
         ignore(self.advance_one())
-        parts.push(
-          WordPart::SingleQuoted(self.read_until_single_quote(quote_start)),
-        )
+        parts.push(SingleQuoted(self.read_until_single_quote(quote_start)))
       }
       '"' => {
         push_literal(parts, literal)
         let quote_start = self.position()
         ignore(self.advance_one())
-        parts.push(
-          WordPart::DoubleQuoted(self.read_double_quoted_parts(quote_start)),
-        )
+        parts.push(DoubleQuoted(self.read_double_quoted_parts(quote_start)))
       }
       ch if is_backquote_char(ch) => {
         push_literal(parts, literal)
         let quote_start = self.position()
         self.consume_backquote_start()
-        parts.push(
-          WordPart::BackQuoted(self.read_backquoted_script(false, quote_start)),
-        )
+        parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
         match self.parse_dollar_part() {
@@ -4272,7 +4176,7 @@ fn Parser::read_condition_tokens(
       ) {
       Some(closing) =>
         if group_depth > 0 {
-          raise ParseError::Message(
+          raise Message(
             pos=self.position(),
             message="missing ')' in condition expression",
           )
@@ -4290,122 +4194,104 @@ fn Parser::read_condition_tokens(
       raise self.unexpected_end(context)
     }
     if regex_rhs_expected {
-      tokens.push(
-        ConditionToken::Word(self.parse_condition_regex_word(double_bracket)),
-      )
+      tokens.push(Word(self.parse_condition_regex_word(double_bracket)))
       regex_rhs_expected = false
     } else if double_bracket && self.starts_with("\\(") {
       let pos = self.position()
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "In [[..]] you shouldn't escape ( or ).",
         Some(1029),
       )
       self.advance_n(2)
       group_depth += 1
-      tokens.push(ConditionToken::LParen)
+      tokens.push(LParen)
     } else if double_bracket && self.starts_with("\\)") {
       let pos = self.position()
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "In [[..]] you shouldn't escape ( or ).",
         Some(1029),
       )
       if group_depth == 0 {
-        raise ParseError::Message(
-          pos~,
-          message="unexpected ')' in condition expression",
-        )
+        raise Message(pos~, message="unexpected ')' in condition expression")
       }
       self.advance_n(2)
       group_depth -= 1
-      tokens.push(ConditionToken::RParen)
+      tokens.push(RParen)
     } else if self.starts_with("&&") {
       let start = self.position()
       self.advance_n(2)
-      tokens.push(
-        ConditionToken::And({
-          text: "&&",
-          span: make_span(start, self.position()),
-        }),
-      )
+      tokens.push(And({ text: "&&", span: make_span(start, self.position()) }))
     } else if self.starts_with("||") {
       let start = self.position()
       self.advance_n(2)
-      tokens.push(
-        ConditionToken::Or({
-          text: "||",
-          span: make_span(start, self.position()),
-        }),
-      )
+      tokens.push(Or({ text: "||", span: make_span(start, self.position()) }))
     } else if double_bracket && self.peek() == Some('(') {
       ignore(self.advance_one())
       group_depth += 1
-      tokens.push(ConditionToken::LParen)
+      tokens.push(LParen)
     } else if double_bracket && self.peek() == Some(')') {
       if group_depth == 0 {
-        raise ParseError::Message(
+        raise Message(
           pos=self.position(),
           message="unexpected ')' in condition expression",
         )
       }
       ignore(self.advance_one())
       group_depth -= 1
-      tokens.push(ConditionToken::RParen)
+      tokens.push(RParen)
     } else if !double_bracket && self.peek() == Some('(') {
       let pos = self.position()
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "In [..] you have to escape \\( \\) or preferably combine [..] expressions.",
         Some(1028),
       )
       ignore(self.advance_one())
       group_depth += 1
-      tokens.push(ConditionToken::LParen)
+      tokens.push(LParen)
     } else if !double_bracket && self.peek() == Some(')') {
       let pos = self.position()
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         pos,
         "In [..] you have to escape \\( \\) or preferably combine [..] expressions.",
         Some(1028),
       )
       if group_depth == 0 {
-        raise ParseError::Message(
-          pos~,
-          message="unexpected ')' in condition expression",
-        )
+        raise Message(pos~, message="unexpected ')' in condition expression")
       }
       ignore(self.advance_one())
       group_depth -= 1
-      tokens.push(ConditionToken::RParen)
+      tokens.push(RParen)
     } else if !double_bracket && self.starts_with("\\(") {
       self.advance_n(2)
       group_depth += 1
-      tokens.push(ConditionToken::LParen)
+      tokens.push(LParen)
     } else if !double_bracket && self.starts_with("\\)") {
       if group_depth == 0 {
-        raise ParseError::Message(
+        raise Message(
           pos=self.position(),
           message="unexpected ')' in condition expression",
         )
       }
       self.advance_n(2)
       group_depth -= 1
-      tokens.push(ConditionToken::RParen)
+      tokens.push(RParen)
     } else if !double_bracket && self.peek() == Some('[') {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "If grouping expressions inside [..], use \\( ..\\).",
         Some(1026),
       )
       ignore(self.advance_one())
       self.skip_condition_space(double_bracket)
-      raise ParseError::Message(
+      raise Message(
         pos=self.position(),
         message=condition_internal_message("1026"),
       )
@@ -4416,10 +4302,10 @@ fn Parser::read_condition_tokens(
       self.advance_n(2)
       let source = self.current_slice(start_offset)
       tokens.push(
-        ConditionToken::Word({
+        Word({
           span: make_span(start, self.position()),
           source,
-          parts: [WordPart::Literal(source)],
+          parts: [Literal(source)],
         }),
       )
     } else if double_bracket &&
@@ -4429,10 +4315,10 @@ fn Parser::read_condition_tokens(
       ignore(self.advance_one())
       let source = self.current_slice(start_offset)
       tokens.push(
-        ConditionToken::Word({
+        Word({
           span: make_span(start, self.position()),
           source,
-          parts: [WordPart::Literal(source)],
+          parts: [Literal(source)],
         }),
       )
     } else if self.peek() is Some(ch) &&
@@ -4442,7 +4328,7 @@ fn Parser::read_condition_tokens(
       let start = self.position()
       let start_offset = self.offset
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         start,
         "This is a unicode dash. Delete and retype as ASCII minus.",
         Some(1100),
@@ -4454,10 +4340,10 @@ fn Parser::read_condition_tokens(
       let source = self.current_slice(start_offset)
       let normalized = "-" + source.view(start_offset=1).to_owned()
       tokens.push(
-        ConditionToken::Word({
+        Word({
           span: make_span(start, self.position()),
           source: normalized,
-          parts: [WordPart::Literal(normalized)],
+          parts: [Literal(normalized)],
         }),
       )
     } else {
@@ -4467,12 +4353,12 @@ fn Parser::read_condition_tokens(
           text.has_suffix("]") &&
           !word_is_literal_array_index(word) &&
           !word_contains_unquoted_literal_fragment(word, "[") =>
-          raise ParseError::Message(
+          raise Message(
             pos=word.span.end,
             message=condition_internal_message("1020"),
           )
         Some(text) if !double_bracket && text.has_suffix(")") =>
-          raise ParseError::Message(
+          raise Message(
             pos=word.span.end,
             message=condition_internal_message("1021"),
           )
@@ -4481,7 +4367,7 @@ fn Parser::read_condition_tokens(
       if word_literal_text(word) == Some("=~") {
         regex_rhs_expected = true
       }
-      tokens.push(ConditionToken::Word(word))
+      tokens.push(Word(word))
     }
     self.skip_condition_space(double_bracket)
   }
@@ -4491,7 +4377,7 @@ fn Parser::read_condition_tokens(
 ///|
 fn parse_condition_word_token(cursor : ConditionCursor) -> Word? {
   match cursor.peek() {
-    Some(ConditionToken::Word(word)) => {
+    Some(Word(word)) => {
       ignore(cursor.advance())
       Some(word)
     }
@@ -4515,9 +4401,8 @@ fn condition_token_position(
   fallback : Position,
 ) -> Position {
   match token {
-    Some(ConditionToken::Word(word)) => word.span.start
-    Some(ConditionToken::And(op)) | Some(ConditionToken::Or(op)) =>
-      op.span.start
+    Some(Word(word)) => word.span.start
+    Some(And(op)) | Some(Or(op)) => op.span.start
     _ => fallback
   }
 }
@@ -4535,7 +4420,7 @@ fn condition_specific_diagnostic(
 ///|
 fn condition_token_word_text(token : ConditionToken?) -> String? {
   match token {
-    Some(ConditionToken::Word(word)) => word_plain_text(word)
+    Some(Word(word)) => word_plain_text(word)
     _ => None
   }
 }
@@ -4589,9 +4474,8 @@ fn is_condition_arithmetic_operator(text : String) -> Bool {
 ///|
 fn next_condition_is_logical_and(cursor : ConditionCursor) -> Bool {
   match cursor.peek() {
-    Some(ConditionToken::And(_)) => true
-    Some(ConditionToken::Word(word)) if word_plain_text(word) == Some("-a") =>
-      true
+    Some(And(_)) => true
+    Some(Word(word)) if word_plain_text(word) == Some("-a") => true
     _ => false
   }
 }
@@ -4599,9 +4483,8 @@ fn next_condition_is_logical_and(cursor : ConditionCursor) -> Bool {
 ///|
 fn next_condition_is_logical_or(cursor : ConditionCursor) -> Bool {
   match cursor.peek() {
-    Some(ConditionToken::Or(_)) => true
-    Some(ConditionToken::Word(word)) if word_plain_text(word) == Some("-o") =>
-      true
+    Some(Or(_)) => true
+    Some(Word(word)) if word_plain_text(word) == Some("-o") => true
     _ => false
   }
 }
@@ -4612,8 +4495,8 @@ fn consume_condition_logical(
   fallback : Position,
 ) -> ConditionLogicalOperator {
   match cursor.advance() {
-    Some(ConditionToken::And(op)) | Some(ConditionToken::Or(op)) => op
-    Some(ConditionToken::Word(word)) => {
+    Some(And(op)) | Some(Or(op)) => op
+    Some(Word(word)) => {
       let text = match word_literal_text(word) {
         Some(text) => text
         None => word.source
@@ -4630,20 +4513,17 @@ fn parse_condition_primary(
   fallback : Position,
 ) -> ConditionExpr raise ParseError {
   match cursor.peek() {
-    Some(ConditionToken::Word(word)) if cursor.kind ==
-      ConditionKind::SingleBracket &&
+    Some(Word(word)) if cursor.kind == SingleBracket &&
       is_single_bracket_group_open_word(word) => {
       ignore(cursor.advance())
       match cursor.peek() {
-        Some(ConditionToken::RParen) =>
-          raise ParseError::Message(
+        Some(RParen) =>
+          raise Message(
             pos=word.span.start,
             message="empty grouped condition expression",
           )
-        Some(ConditionToken::Word(close)) if is_single_bracket_group_close_word(
-            close,
-          ) =>
-          raise ParseError::Message(
+        Some(Word(close)) if is_single_bracket_group_close_word(close) =>
+          raise Message(
             pos=word.span.start,
             message="empty grouped condition expression",
           )
@@ -4651,23 +4531,22 @@ fn parse_condition_primary(
       }
       let inner = parse_condition_or_expr(cursor, word.span.start)
       match cursor.peek() {
-        Some(ConditionToken::RParen) => ignore(cursor.advance())
-        Some(ConditionToken::Word(close)) if is_single_bracket_group_close_word(
-            close,
-          ) => ignore(cursor.advance())
+        Some(RParen) => ignore(cursor.advance())
+        Some(Word(close)) if is_single_bracket_group_close_word(close) =>
+          ignore(cursor.advance())
         _ =>
-          raise ParseError::Message(
+          raise Message(
             pos=condition_token_position(cursor.peek(), fallback),
             message="unexpected tokens inside grouped condition expression",
           )
       }
-      return ConditionExpr::Group(inner)
+      return Group(inner)
     }
-    Some(ConditionToken::LParen) => {
+    Some(LParen) => {
       ignore(cursor.advance())
       match cursor.peek() {
-        Some(ConditionToken::RParen) =>
-          raise ParseError::Message(
+        Some(RParen) =>
+          raise Message(
             pos=fallback,
             message="empty grouped condition expression",
           )
@@ -4675,41 +4554,37 @@ fn parse_condition_primary(
       }
       let inner = parse_condition_or_expr(cursor, fallback)
       match cursor.peek() {
-        Some(ConditionToken::RParen) => ignore(cursor.advance())
+        Some(RParen) => ignore(cursor.advance())
         _ =>
-          raise ParseError::Message(
+          raise Message(
             pos=condition_token_position(cursor.peek(), fallback),
             message="unexpected tokens inside grouped condition expression",
           )
       }
-      return ConditionExpr::Group(inner)
+      return Group(inner)
     }
     _ => ()
   }
   let word = match parse_condition_word_token(cursor) {
     Some(word) => word
-    None =>
-      raise ParseError::Message(
-        pos=fallback,
-        message="expected condition expression",
-      )
+    None => raise Message(pos=fallback, message="expected condition expression")
   }
   match word_plain_text(word) {
     Some(op) =>
       if is_unary_condition_operator(op) ||
         is_condition_operator_like_unknown_unary(op) {
         match parse_condition_word_token(cursor) {
-          Some(operand) => ConditionExpr::Unary(op, word.span, operand)
+          Some(operand) => Unary(op, word.span, operand)
           None =>
-            raise ParseError::Message(
+            raise Message(
               pos=fallback,
               message=condition_internal_message("1019"),
             )
         }
       } else {
-        ConditionExpr::Word(word)
+        Word(word)
       }
-    _ => ConditionExpr::Word(word)
+    _ => Word(word)
   }
 }
 
@@ -4720,19 +4595,18 @@ fn parse_condition_comparison(
 ) -> ConditionExpr raise ParseError {
   let left = parse_condition_primary(cursor, fallback)
   match left {
-    ConditionExpr::Word(word) =>
+    Word(word) =>
       match cursor.peek() {
-        Some(ConditionToken::Word(op_word)) =>
+        Some(Word(op_word)) =>
           match word_literal_text(op_word) {
             Some(op) =>
               if is_binary_condition_operator(op) ||
                 is_condition_operator_like_unknown_binary(op) {
                 ignore(cursor.advance())
                 match parse_condition_word_token(cursor) {
-                  Some(right) =>
-                    ConditionExpr::Binary(op, op_word.span, word, right)
+                  Some(right) => Binary(op, op_word.span, word, right)
                   None =>
-                    raise ParseError::Message(
+                    raise Message(
                       pos=op_word.span.start,
                       message=condition_internal_message("1027"),
                     )
@@ -4754,9 +4628,9 @@ fn parse_condition_negation(
   fallback : Position,
 ) -> ConditionExpr raise ParseError {
   match cursor.peek() {
-    Some(ConditionToken::Word(word)) if word_plain_text(word) == Some("!") => {
+    Some(Word(word)) if word_plain_text(word) == Some("!") => {
       ignore(cursor.advance())
-      ConditionExpr::Not(parse_condition_comparison(cursor, word.span.start))
+      Not(parse_condition_comparison(cursor, word.span.start))
     }
     _ => parse_condition_comparison(cursor, fallback)
   }
@@ -4771,7 +4645,7 @@ fn parse_condition_and_expr(
   while next_condition_is_logical_and(cursor) {
     let op = consume_condition_logical(cursor, fallback)
     let right = parse_condition_negation(cursor, op.span.start)
-    expr = ConditionExpr::And(op, expr, right)
+    expr = And(op, expr, right)
   }
   expr
 }
@@ -4785,7 +4659,7 @@ fn parse_condition_or_expr(
   while next_condition_is_logical_or(cursor) {
     let op = consume_condition_logical(cursor, fallback)
     let right = parse_condition_and_expr(cursor, op.span.start)
-    expr = ConditionExpr::Or(op, expr, right)
+    expr = Or(op, expr, right)
   }
   expr
 }
@@ -4797,7 +4671,7 @@ fn parse_condition_expression_from_tokens(
   fallback : Position,
 ) -> (ConditionExpr, Int) raise ParseError {
   if tokens.length() == 0 {
-    return (ConditionExpr::Empty, 0)
+    return (Empty, 0)
   }
   let cursor = { tokens, kind, index: 0 }
   let expr = parse_condition_or_expr(cursor, fallback)
@@ -4813,7 +4687,7 @@ fn Parser::emit_condition_parse_failure(
   end_message : String,
 ) -> Unit raise ParseError {
   self.emit_diagnostic(
-    DiagnosticSeverity::Error,
+    Error,
     start,
     "Couldn't parse this test expression. Fix to allow more checks.",
     Some(1073),
@@ -4821,29 +4695,24 @@ fn Parser::emit_condition_parse_failure(
   for diagnostic in specifics {
     self.diagnostics.push(diagnostic)
   }
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    end_pos,
-    end_message,
-    Some(1072),
-  )
-  raise ParseError::Message(pos=end_pos, message=end_message)
+  self.emit_diagnostic(Error, end_pos, end_message, Some(1072))
+  raise Message(pos=end_pos, message=end_message)
 }
 
 ///|
-fn Parser::rethrow_condition_parse_error(
+fn[A] Parser::rethrow_condition_parse_error(
   self : Parser,
   start : Position,
   err : ParseError,
-) -> Unit raise ParseError {
+) -> A raise ParseError {
   match err {
-    ParseError::Message(pos~, message~) => {
+    Message(pos~, message~) => {
       if is_condition_internal_message(message, "1019") {
         self.emit_condition_parse_failure(
           start,
           [
             condition_specific_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               pos,
               1019,
               "Expected this to be an argument to the unary condition.",
@@ -4858,7 +4727,7 @@ fn Parser::rethrow_condition_parse_error(
           start,
           [
             condition_specific_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               pos,
               1020,
               "You need a space before the ].",
@@ -4873,7 +4742,7 @@ fn Parser::rethrow_condition_parse_error(
           start,
           [
             condition_specific_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               pos,
               1021,
               "You need a space before the \\)",
@@ -4896,7 +4765,7 @@ fn Parser::rethrow_condition_parse_error(
           start,
           [
             condition_specific_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               pos,
               1027,
               "Expected another argument for this operator.",
@@ -4924,12 +4793,12 @@ fn Parser::handle_condition_trailing_tokens(
   let diagnostics : Array[Diagnostic] = []
   let end_pos = condition_token_position(next_token, fallback)
   match expr {
-    ConditionExpr::Word(word) => {
+    Word(word) => {
       match word_plain_text(word) {
         Some(name) if is_common_condition_command(name) =>
           diagnostics.push(
             condition_specific_diagnostic(
-              DiagnosticSeverity::Warning,
+              Warning,
               word.span.start,
               1014,
               "Use 'if cmd; then ..' to check exit code, or 'if [[ $(cmd) == .. ]]' to check output.",
@@ -4939,10 +4808,10 @@ fn Parser::handle_condition_trailing_tokens(
       }
       match word_literal_text(word) {
         Some(text) => {
-          if kind == ConditionKind::SingleBracket && text == "[" {
+          if kind == SingleBracket && text == "[" {
             diagnostics.push(
               condition_specific_diagnostic(
-                DiagnosticSeverity::Error,
+                Error,
                 word.span.start,
                 1026,
                 "If grouping expressions inside [..], use \\( ..\\).",
@@ -4953,7 +4822,7 @@ fn Parser::handle_condition_trailing_tokens(
             Some(op) =>
               diagnostics.push(
                 condition_specific_diagnostic(
-                  DiagnosticSeverity::Error,
+                  Error,
                   word.span.start,
                   1108,
                   "You need a space before and after the \{op} .",
@@ -4971,10 +4840,10 @@ fn Parser::handle_condition_trailing_tokens(
     Some(text) if is_condition_arithmetic_operator(text) =>
       diagnostics.push(
         condition_specific_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           end_pos,
           1076,
-          if kind == ConditionKind::SingleBracket {
+          if kind == SingleBracket {
             "Trying to do math? Use e.g. [ $((i/2+7)) -ge 18 ]."
           } else {
             "Trying to do math? Use e.g. [[ $((i/2+7)) -ge 18 ]]."
@@ -4988,7 +4857,7 @@ fn Parser::handle_condition_trailing_tokens(
       start, diagnostics, end_pos, "Expected test to end here (don't wrap commands in []/[[]]). Fix any mentioned problems and try again.",
     )
   }
-  raise ParseError::Message(
+  raise Message(
     pos=end_pos,
     message="unexpected tokens after condition expression",
   )
@@ -5002,7 +4871,7 @@ fn Parser::parse_condition_command(
   let (opening, closing, kind, context) = if double_bracket {
     ("[[", "]]", ConditionKind::DoubleBracket, "double-bracket condition")
   } else {
-    ("[", "]", ConditionKind::SingleBracket, "single-bracket condition")
+    ("[", "]", SingleBracket, "single-bracket condition")
   }
   let start = self.position()
   self.advance_n(opening.length())
@@ -5010,32 +4879,26 @@ fn Parser::parse_condition_command(
   let (raw, tokens, actual_closing, closing_pos) = self.read_condition_tokens(
     double_bracket, context,
   ) catch {
-    err => {
-      self.rethrow_condition_parse_error(start, err)
-      raise err
-    }
+    err => self.rethrow_condition_parse_error(start, err)
   }
   self.advance_n(actual_closing.length())
   let (expr, next_index) = parse_condition_expression_from_tokens(
     tokens, kind, closing_pos,
   ) catch {
-    err => {
-      self.rethrow_condition_parse_error(start, err)
-      raise err
-    }
+    err => self.rethrow_condition_parse_error(start, err)
   }
   if actual_closing != closing {
     match kind {
-      ConditionKind::DoubleBracket =>
+      DoubleBracket =>
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           closing_pos,
           "Test expression was opened with double [[ but closed with single ]. Make sure they match.",
           Some(1033),
         )
-      ConditionKind::SingleBracket =>
+      SingleBracket =>
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           start,
           "Test expression was opened with single [ but closed with double ]]. Make sure they match.",
           Some(1034),
@@ -5149,20 +5012,20 @@ fn Parser::emit_case_item_context_diagnostics(
   }
   let item_pos = annotation_positions[0]
   self.emit_diagnostic(
-    DiagnosticSeverity::Info,
+    Info,
     case_pos,
     "The mentioned syntax error was in this case expression.",
     Some(1009),
   )
   self.emit_diagnostic(
-    DiagnosticSeverity::Error,
+    Error,
     item_pos,
     "Couldn't parse this case item. Fix to allow more checks.",
     Some(1073),
   )
   for annotation_pos in annotation_positions {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       annotation_pos,
       "ShellCheck directives are only valid in front of complete commands like 'case' statements, not individual case branches.",
       Some(1124),
@@ -5170,13 +5033,13 @@ fn Parser::emit_case_item_context_diagnostics(
   }
   let expected_pos = advance_position_columns(item_pos, 2)
   self.emit_diagnostic(
-    DiagnosticSeverity::Error,
+    Error,
     expected_pos,
     "Expected ) to open a new case item. Fix any mentioned problems and try again.",
     Some(1072),
   )
   self.emit_diagnostic(
-    DiagnosticSeverity::Error,
+    Error,
     expected_pos,
     "Did you forget to move the ;; after extending this case item?",
     Some(1085),
@@ -5218,27 +5081,27 @@ fn Parser::parse_case_separator(
 ) -> CaseSeparator raise ParseError {
   if self.starts_with(";;&") {
     self.advance_n(3)
-    return CaseSeparator::Continue
+    return Continue
   }
   if self.starts_with(";&") {
     self.advance_n(2)
-    return CaseSeparator::FallThrough
+    return FallThrough
   }
   if self.starts_with(";;") {
     self.advance_n(2)
-    return CaseSeparator::Break
+    return Break
   }
   if self.starts_keyword_token("esac") {
-    return CaseSeparator::Break
+    return Break
   }
   if self.current_case_line_looks_like_pattern() {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Did you forget the ;; after the previous case item?",
       Some(1074),
     )
-    return CaseSeparator::Break
+    return Break
   }
   raise self.unexpected("case item terminator")
 }
@@ -5274,7 +5137,7 @@ fn Parser::parse_case_clause(self : Parser) -> CaseClause raise ParseError {
     }
     if self.peek() != Some(')') {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "Did you forget to move the ;; after extending this case item?",
         Some(1085),
@@ -5321,66 +5184,60 @@ fn Parser::parse_simple_command(self : Parser) -> Command raise ParseError {
   let words : Array[Word] = []
   let redirects : Array[Redirection] = []
   let mut saw_word = false
-  try {
-    while true {
-      if saw_word {
-        match self.peek_comment_after_inline_space() {
-          Some((comment_pos, line)) if is_shellcheck_annotation_comment(line) =>
-            self.emit_diagnostic(
-              DiagnosticSeverity::Error,
-              comment_pos,
-              "Place shellcheck directives before commands, not after.",
-              Some(1126),
-            )
-          _ => ()
-        }
-      }
-      self.skip_inline_space()
-      if self.next_starts_redirection() {
-        redirects.push(
-          self.parse_redirection(
-            redirects,
-            Some(start),
-            Some("The mentioned syntax error was in this simple command."),
-          ),
-        )
-        continue
-      }
-      if !saw_word || simple_command_accepts_suffix_assignments(words) {
-        match self.try_parse_assignment() {
-          Some(assignment) => {
-            assignments.push(assignment)
-            continue
-          }
-          None => ()
-        }
-      }
-      if self.next_starts_word() {
-        if saw_word {
-          words.push(self.parse_word())
-        } else {
-          words.push(self.parse_command_name_word())
-        }
-        saw_word = true
-        continue
-      }
-      break
-    }
-    if assignments.length() == 0 &&
-      words.length() == 0 &&
-      redirects.length() == 0 {
-      raise self.unexpected("command")
-    }
-    self.validate_simple_command(assignments, words)
-    let kind = classify_simple_command(assignments, words)
+  errdefer {
     self.simple_command_context = saved_context
-    { span: make_span(start, self.position()), kind, redirects }
-  } catch {
-    err => {
-      self.simple_command_context = saved_context
-      raise err
-    }
   }
+  while true {
+    if saw_word {
+      match self.peek_comment_after_inline_space() {
+        Some((comment_pos, line)) if is_shellcheck_annotation_comment(line) =>
+          self.emit_diagnostic(
+            Error,
+            comment_pos,
+            "Place shellcheck directives before commands, not after.",
+            Some(1126),
+          )
+        _ => ()
+      }
+    }
+    self.skip_inline_space()
+    if self.next_starts_redirection() {
+      redirects.push(
+        self.parse_redirection(
+          redirects,
+          Some(start),
+          Some("The mentioned syntax error was in this simple command."),
+        ),
+      )
+      continue
+    }
+    if !saw_word || simple_command_accepts_suffix_assignments(words) {
+      match self.try_parse_assignment() {
+        Some(assignment) => {
+          assignments.push(assignment)
+          continue
+        }
+        None => ()
+      }
+    }
+    if self.next_starts_word() {
+      if saw_word {
+        words.push(self.parse_word())
+      } else {
+        words.push(self.parse_command_name_word())
+      }
+      saw_word = true
+      continue
+    }
+    break
+  }
+  if assignments.length() == 0 && words.length() == 0 && redirects.length() == 0 {
+    raise self.unexpected("command")
+  }
+  self.validate_simple_command(assignments, words)
+  let kind = classify_simple_command(assignments, words)
+  self.simple_command_context = saved_context
+  { span: make_span(start, self.position()), kind, redirects }
 }
 
 ///|
@@ -5406,7 +5263,7 @@ fn word_plain_text(word : Word) -> String? {
     return None
   }
   match word.parts[0] {
-    WordPart::Literal(text) => Some(text)
+    Literal(text) => Some(text)
     _ => None
   }
 }
@@ -5427,13 +5284,11 @@ fn append_literal_word_parts_text(
 ///|
 fn append_literal_word_part_text(part : WordPart, buf : StringBuilder) -> Bool {
   match part {
-    WordPart::Literal(text)
-    | WordPart::SingleQuoted(text)
-    | WordPart::DollarSingleQuoted(text) => {
+    Literal(text) | SingleQuoted(text) | DollarSingleQuoted(text) => {
       buf.write_string(text)
       true
     }
-    WordPart::DoubleQuoted(parts) | WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       append_literal_word_parts_text(parts, buf)
     _ => false
   }
@@ -5454,7 +5309,7 @@ fn word_trailing_unquoted_literal(word : Word) -> String? {
     return None
   }
   match word.parts[word.parts.length() - 1] {
-    WordPart::Literal(text) => Some(text)
+    Literal(text) => Some(text)
     _ => None
   }
 }
@@ -5466,7 +5321,7 @@ fn word_contains_unquoted_literal_fragment(
 ) -> Bool {
   for part in word.parts {
     match part {
-      WordPart::Literal(text) if text.contains(fragment) => return true
+      Literal(text) if text.contains(fragment) => return true
       _ => ()
     }
   }
@@ -5479,7 +5334,7 @@ fn word_is_literal_array_index(word : Word) -> Bool {
     return false
   }
   match word.parts[1] {
-    WordPart::Literal(text) => text == "["
+    Literal(text) => text == "["
     _ => false
   }
 }
@@ -5501,7 +5356,7 @@ fn Parser::validate_trap_handler(self : Parser, word : Word) -> Unit {
           span: translate_span(word.span.start, diagnostic.span),
         }
         match diagnostic.severity {
-          DiagnosticSeverity::Error => {
+          Error => {
             saw_error = true
             self.diagnostics.push(translated)
           }
@@ -5511,7 +5366,7 @@ fn Parser::validate_trap_handler(self : Parser, word : Word) -> Unit {
       if !saw_error && report.script is None {
         self.diagnostics.push({
           span: word.span,
-          severity: DiagnosticSeverity::Error,
+          severity: Error,
           code: None,
           message: "trap handler could not be parsed",
         })
@@ -5588,7 +5443,7 @@ fn Parser::validate_let_words(self : Parser, words : Array[Word]) -> Unit {
     match arithmetic_legacy_comparison(raw) {
       Some((legacy, alt)) =>
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           words[i].span.start,
           "In arithmetic contexts, use \{alt} instead of \{legacy}",
           Some(1106),
@@ -5602,7 +5457,7 @@ fn Parser::validate_let_words(self : Parser, words : Array[Word]) -> Unit {
 ///|
 fn assignment_value_is_empty(value : AssignmentValue) -> Bool {
   match value {
-    AssignmentValue::Empty => true
+    Empty => true
     _ => false
   }
 }
@@ -5610,7 +5465,7 @@ fn assignment_value_is_empty(value : AssignmentValue) -> Bool {
 ///|
 fn assignment_value_starts_with_equals(value : AssignmentValue) -> Bool {
   match value {
-    AssignmentValue::Word(word) => word.source.has_prefix("=")
+    Word(word) => word.source.has_prefix("=")
     _ => false
   }
 }
@@ -5675,7 +5530,7 @@ fn Parser::validate_assignments(
       assignment_value_is_empty(assignment.value) &&
       words.length() > 0 {
       self.emit_diagnostic(
-        DiagnosticSeverity::Warning,
+        Warning,
         assignment.span.end,
         "Remove space after = if trying to assign a value (for empty string, use var='' ... ).",
         Some(1007),
@@ -5683,7 +5538,7 @@ fn Parser::validate_assignments(
     }
     if assignment_value_starts_with_equals(assignment.value) {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         assignment.span.end,
         "Unexpected ==. For assignment, use =. For comparison, use [/[[. Or quote for literal string.",
         Some(1097),
@@ -5695,7 +5550,7 @@ fn Parser::validate_assignments(
   while i < words.length() {
     if self.peek() == Some('(') && word_is_dollar_assignment_lhs(words[i]) {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         words[i].span.start,
         "Don't use $ on the left side of assignments.",
         Some(1066),
@@ -5758,18 +5613,13 @@ fn Parser::validate_simple_command(
   let command_name_source = lower_ascii_alpha_prefix(command_source)
   match keyword_spacing_diagnostic(command_source) {
     Some((code, message)) =>
-      self.emit_diagnostic(
-        DiagnosticSeverity::Error,
-        words[0].span.start,
-        message,
-        Some(code),
-      )
+      self.emit_diagnostic(Error, words[0].span.start, message, Some(code))
     None => ()
   }
   match keyword_case_diagnostic(command_source) {
     Some(keyword) =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         words[0].span.start,
         "Scripts are case sensitive. Use '\{keyword}', not '\{command_source}' (or quote if literal).",
         Some(1081),
@@ -5779,7 +5629,7 @@ fn Parser::validate_simple_command(
   match word_plain_text(words[0]) {
     Some("//") =>
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         words[0].span.start,
         "Was this intended as a comment? Use # in sh.",
         Some(1127),
@@ -5793,7 +5643,7 @@ fn Parser::validate_simple_command(
       }
       if name == "eval" && self.peek() == Some('(') {
         self.emit_diagnostic(
-          DiagnosticSeverity::Warning,
+          Warning,
           self.position(),
           "Quote/escape special characters when using eval, e.g. eval \"a=(b)\".",
           Some(1098),
@@ -5804,7 +5654,7 @@ fn Parser::validate_simple_command(
         word_plain_text(words[1]) == Some("eval") &&
         self.peek() == Some('(') {
         self.emit_diagnostic(
-          DiagnosticSeverity::Warning,
+          Warning,
           self.position(),
           "Quote/escape special characters when using eval, e.g. eval \"a=(b)\".",
           Some(1098),
@@ -5814,7 +5664,7 @@ fn Parser::validate_simple_command(
     None =>
       if word_starts_comment_glob(words[0]) {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           words[0].span.start,
           "Was this intended as a comment? Use # in sh.",
           Some(1127),
@@ -5823,7 +5673,7 @@ fn Parser::validate_simple_command(
   }
   if command_name_source == "elsif" || command_name_source == "elseif" {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       words[0].span.start,
       "Use 'elif' to start another branch.",
       Some(1131),
@@ -5861,10 +5711,10 @@ fn classify_simple_command(
   words : Array[Word],
 ) -> CommandKind {
   match parse_source_command(assignments, words) {
-    Some(source) => return CommandKind::Source(source)
+    Some(source) => return Source(source)
     None => ()
   }
-  CommandKind::Simple({ assignments, words })
+  Simple({ assignments, words })
 }
 
 ///|
@@ -6020,32 +5870,27 @@ fn Parser::parse_redirection(
   self.skip_inline_space()
   let index = redirects.length()
   match op {
-    RedirectionOperator::HereDoc | RedirectionOperator::HereDocStrip => {
+    HereDoc | HereDocStrip => {
       if self.offset != gap_start && self.peek() == Some('(') {
         let spacing = self.source
           .view(start_offset=gap_start, end_offset=self.offset)
           .to_owned()
         self.emit_simple_command_context_diagnostic()
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           start,
           "Shells are space sensitive. Use '< <(cmd)', not '<<\{spacing}(cmd)'.",
           Some(1038),
         )
         let end_message = " Fix any mentioned problems and try again."
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           start,
           "Couldn't parse this here document. Fix to allow more checks.",
           Some(1073),
         )
-        self.emit_diagnostic(
-          DiagnosticSeverity::Error,
-          self.position(),
-          end_message,
-          Some(1072),
-        )
-        raise ParseError::Message(pos=self.position(), message=end_message)
+        self.emit_diagnostic(Error, self.position(), end_message, Some(1072))
+        raise Message(pos=self.position(), message=end_message)
       }
       let delimiter_pos = self.position()
       let diagnostics_len = self.diagnostics.length()
@@ -6055,7 +5900,7 @@ fn Parser::parse_redirection(
       let gap_mark = self.mark()
       self.skip_inline_space()
       if self.offset != gap_start && self.peek() == Some('\r') {
-        raise ParseError::Message(
+        raise Message(
           pos=self.position(),
           message="unexpected carriage return after here-document delimiter",
         )
@@ -6065,18 +5910,12 @@ fn Parser::parse_redirection(
       let quoted = word.source.contains("\"") ||
         word.source.contains("'") ||
         word.source.contains("\\")
-      let strip_tabs = op == RedirectionOperator::HereDocStrip
+      let strip_tabs = op == HereDocStrip
       let redirection = {
         span: make_span(start, self.position()),
         source,
         op,
-        target: RedirectionTarget::HereDoc({
-          delimiter,
-          quoted,
-          strip_tabs,
-          body: "",
-          parts: None,
-        }),
+        target: HereDoc({ delimiter, quoted, strip_tabs, body: "", parts: None }),
       }
       self.pending_heredocs.push({
         redirections: redirects,
@@ -6098,7 +5937,7 @@ fn Parser::parse_redirection(
         span: make_span(start, self.position()),
         source,
         op,
-        target: RedirectionTarget::Word(target),
+        target: Word(target),
       }
     }
   }
@@ -6110,7 +5949,7 @@ fn Parser::parse_optional_redirection_source(
 ) -> RedirectionSource? {
   if self.starts_with("&>>") || self.starts_with("&>") {
     ignore(self.advance_one())
-    return Some(RedirectionSource::All)
+    return Some(All)
   }
   if self.peek() == Some('{') {
     let mark = self.mark()
@@ -6128,7 +5967,7 @@ fn Parser::parse_optional_redirection_source(
       return None
     }
     ignore(self.advance_one())
-    return Some(RedirectionSource::Named(name))
+    return Some(Named(name))
   }
   let start = self.offset
   let mut i = self.offset
@@ -6141,7 +5980,7 @@ fn Parser::parse_optional_redirection_source(
   let digits = self.source.view(start_offset=start, end_offset=i).to_owned()
   self.offset = i
   self.column += i - start
-  Some(RedirectionSource::Fd(digits_to_int(digits)))
+  Some(Fd(digits_to_int(digits)))
 }
 
 ///|
@@ -6150,40 +5989,40 @@ fn Parser::parse_redirection_operator(
 ) -> (RedirectionOperator, Int) raise ParseError {
   let view = self.source.view(start_offset=self.offset)
   if view.has_prefix("&>>") {
-    return (RedirectionOperator::Append, 3)
+    return (Append, 3)
   }
   if view.has_prefix("&>") {
-    return (RedirectionOperator::Write, 2)
+    return (Write, 2)
   }
   if view.has_prefix("<<<") {
-    return (RedirectionOperator::HereString, 3)
+    return (HereString, 3)
   }
   if view.has_prefix("<<-") {
-    return (RedirectionOperator::HereDocStrip, 3)
+    return (HereDocStrip, 3)
   }
   if view.has_prefix("<<") {
-    return (RedirectionOperator::HereDoc, 2)
+    return (HereDoc, 2)
   }
   if view.has_prefix(">>") {
-    return (RedirectionOperator::Append, 2)
+    return (Append, 2)
   }
   if view.has_prefix("<>") {
-    return (RedirectionOperator::ReadWrite, 2)
+    return (ReadWrite, 2)
   }
   if view.has_prefix(">|") {
-    return (RedirectionOperator::Clobber, 2)
+    return (Clobber, 2)
   }
   if view.has_prefix("<&") {
-    return (RedirectionOperator::DupInput, 2)
+    return (DupInput, 2)
   }
   if view.has_prefix(">&") {
-    return (RedirectionOperator::DupOutput, 2)
+    return (DupOutput, 2)
   }
   if view.has_prefix("<") {
-    return (RedirectionOperator::Read, 1)
+    return (Read, 1)
   }
   if view.has_prefix(">") {
-    return (RedirectionOperator::Write, 1)
+    return (Write, 1)
   }
   raise self.unexpected("redirection operator")
 }
@@ -6207,13 +6046,13 @@ fn Parser::parse_assignment_value(
   allow_empty : Bool,
 ) -> AssignmentValue raise ParseError {
   if self.peek() == Some('(') {
-    return AssignmentValue::ArrayLiteral(self.read_assignment_array_literal())
+    return ArrayLiteral(self.read_assignment_array_literal())
   }
   if self.next_starts_word() {
-    return AssignmentValue::Word(self.parse_word())
+    return Word(self.parse_word())
   }
   if allow_empty {
-    return AssignmentValue::Empty
+    return Empty
   }
   raise self.unexpected("assignment value")
 }
@@ -6287,11 +6126,7 @@ fn Parser::parse_identifier_token(
 ) -> String raise ParseError {
   match self.parse_bare_identifier() {
     Some(name) => name
-    None =>
-      raise ParseError::Message(
-        pos=self.position(),
-        message="expected \{context}",
-      )
+    None => raise Message(pos=self.position(), message="expected \{context}")
   }
 }
 
@@ -6319,7 +6154,7 @@ fn Parser::skip_backquoted_text(
     if is_backquote_char(ch) {
       if ch == '´' {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           self.position(),
           "For command expansion, the tick should slant left (` vs ´). Use $(..) instead.",
           Some(1077),
@@ -6445,10 +6280,7 @@ fn Parser::read_brace_expansion(
       if depth == 0 {
         let raw = self.current_slice(start)
         if !saw_separator {
-          raise ParseError::Message(
-            pos=start_pos,
-            message="expected brace expansion",
-          )
+          raise Message(pos=start_pos, message="expected brace expansion")
         }
         return parse_brace_expansion(raw)
       }
@@ -6574,7 +6406,7 @@ fn Parser::read_assignment_array_literal(
   ignore(self.advance_one())
   if self.peek() == Some('(') {
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       opening,
       "Missing $ on a $((..)) expression? (or use ( ( for arrays).",
       Some(1116),
@@ -6585,7 +6417,7 @@ fn Parser::read_assignment_array_literal(
   while self.peek() != Some(')') {
     if self.eof() {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "expected ')' to end array literal",
         None,
@@ -6698,97 +6530,68 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
     return None
   }
   if text.has_prefix(":-") {
-    return Some(
-      ParameterOperator::DefaultValue(text.view(start_offset=2).to_owned()),
-    )
+    return Some(DefaultValue(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix(":=") {
-    return Some(
-      ParameterOperator::AssignDefault(text.view(start_offset=2).to_owned()),
-    )
+    return Some(AssignDefault(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix(":?") {
-    return Some(
-      ParameterOperator::ErrorValue(text.view(start_offset=2).to_owned()),
-    )
+    return Some(ErrorValue(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix(":+") {
-    return Some(
-      ParameterOperator::AlternateValue(text.view(start_offset=2).to_owned()),
-    )
+    return Some(AlternateValue(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix(":") {
     let rest = text.view(start_offset=1).to_owned()
     match split_unescaped_once(rest, ':') {
-      None => return Some(ParameterOperator::Slice(rest, None))
-      Some((offset, length)) =>
-        return Some(ParameterOperator::Slice(offset, Some(length)))
+      None => return Some(Slice(rest, None))
+      Some((offset, length)) => return Some(Slice(offset, Some(length)))
     }
   }
   if text.has_prefix("##") {
-    return Some(
-      ParameterOperator::RemoveLongestPrefix(
-        text.view(start_offset=2).to_owned(),
-      ),
-    )
+    return Some(RemoveLongestPrefix(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix("#") {
-    return Some(
-      ParameterOperator::RemoveShortestPrefix(
-        text.view(start_offset=1).to_owned(),
-      ),
-    )
+    return Some(RemoveShortestPrefix(text.view(start_offset=1).to_owned()))
   }
   if text.has_prefix("%%") {
-    return Some(
-      ParameterOperator::RemoveLongestSuffix(
-        text.view(start_offset=2).to_owned(),
-      ),
-    )
+    return Some(RemoveLongestSuffix(text.view(start_offset=2).to_owned()))
   }
   if text.has_prefix("%") {
-    return Some(
-      ParameterOperator::RemoveShortestSuffix(
-        text.view(start_offset=1).to_owned(),
-      ),
-    )
+    return Some(RemoveShortestSuffix(text.view(start_offset=1).to_owned()))
   }
   if text.has_prefix("/") {
     let (mode, offset) = if text.has_prefix("//") {
       (ParameterReplaceMode::All, 2)
     } else if text.has_prefix("/#") {
-      (ParameterReplaceMode::Prefix, 2)
+      (Prefix, 2)
     } else if text.has_prefix("/%") {
-      (ParameterReplaceMode::Suffix, 2)
+      (Suffix, 2)
     } else {
-      (ParameterReplaceMode::First, 1)
+      (First, 1)
     }
     let rest = text.view(start_offset=offset).to_owned()
     match split_unescaped_once(rest, '/') {
-      None => return Some(ParameterOperator::Replace(mode, rest, None))
+      None => return Some(Replace(mode, rest, None))
       Some((pattern, replacement)) =>
-        return Some(
-          ParameterOperator::Replace(mode, pattern, Some(replacement)),
-        )
+        return Some(Replace(mode, pattern, Some(replacement)))
     }
   }
   if text.has_prefix("@") {
-    return Some(
-      ParameterOperator::Transform(text.view(start_offset=1).to_owned()),
-    )
+    return Some(Transform(text.view(start_offset=1).to_owned()))
   }
   let (case_mode, offset) = if text.has_prefix("^^") {
     (Some(ParameterCaseMode::UpperAll), 2)
   } else if text.has_prefix("^") {
-    (Some(ParameterCaseMode::UpperFirst), 1)
+    (Some(UpperFirst), 1)
   } else if text.has_prefix(",,") {
-    (Some(ParameterCaseMode::LowerAll), 2)
+    (Some(LowerAll), 2)
   } else if text.has_prefix(",") {
-    (Some(ParameterCaseMode::LowerFirst), 1)
+    (Some(LowerFirst), 1)
   } else if text.has_prefix("~~") {
-    (Some(ParameterCaseMode::ToggleAll), 2)
+    (Some(ToggleAll), 2)
   } else if text.has_prefix("~") {
-    (Some(ParameterCaseMode::ToggleFirst), 1)
+    (Some(ToggleFirst), 1)
   } else {
     (None, 0)
   }
@@ -6796,19 +6599,12 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
     Some(mode) => {
       let pattern = text.view(start_offset=offset).to_owned()
       return Some(
-        ParameterOperator::CaseModify(
-          mode,
-          if pattern == "" {
-            None
-          } else {
-            Some(pattern)
-          },
-        ),
+        CaseModify(mode, if pattern == "" { None } else { Some(pattern) }),
       )
     }
     None => ()
   }
-  Some(ParameterOperator::Raw(text))
+  Some(Raw(text))
 }
 
 ///|
@@ -6835,10 +6631,9 @@ fn parse_parameter_expansion(raw : String) -> ParameterExpansion {
     None
   }
   let operator = match operator {
-    Some(ParameterOperator::Transform(kind)) if indirect && kind == "" =>
-      Some(ParameterOperator::Names(ParameterNamesMode::At))
-    Some(ParameterOperator::Raw("*")) if indirect =>
-      Some(ParameterOperator::Names(ParameterNamesMode::Star))
+    Some(Transform(kind)) if indirect && kind == "" =>
+      Some(ParameterOperator::Names(At))
+    Some(Raw("*")) if indirect => Some(Names(Star))
     _ => operator
   }
   { raw, length_prefix, indirect, name, index, operator }
@@ -6848,7 +6643,7 @@ fn parse_parameter_expansion(raw : String) -> ParameterExpansion {
 fn parse_text_parts(text : String) -> Array[WordPart] {
   let parser = Parser::new(text.view(), ParseOptions::default(), [])
   parser.parse_text_parts_until_eof() catch {
-    _ => [WordPart::Literal(text)]
+    _ => [Literal(text)]
   }
 }
 
@@ -6874,7 +6669,7 @@ pub fn parse_text_as_word(text : String) -> Word {
         parts: if text == "" {
           []
         } else {
-          [WordPart::Literal(text)]
+          [Literal(text)]
         },
       }
   }
@@ -6901,7 +6696,7 @@ fn push_arithmetic_literal(
 ) -> Unit {
   let text = literal.to_string()
   if text != "" {
-    tokens.push(ArithmeticToken::Literal(text))
+    tokens.push(Literal(text))
     literal.reset()
   }
 }
@@ -6948,7 +6743,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
-            make_fragment_word(fragment, end_, [WordPart::SingleQuoted(text)]),
+            make_fragment_word(fragment, end_, [SingleQuoted(text)]),
             start + parser.offset,
           ),
         )
@@ -6961,7 +6756,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
-            make_fragment_word(fragment, end_, [WordPart::DoubleQuoted(parts)]),
+            make_fragment_word(fragment, end_, [DoubleQuoted(parts)]),
             start + parser.offset,
           ),
         )
@@ -6974,7 +6769,7 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         let fragment = source.view(end_offset=parser.offset).to_owned()
         Some(
           (
-            make_fragment_word(fragment, end_, [WordPart::BackQuoted(script)]),
+            make_fragment_word(fragment, end_, [BackQuoted(script)]),
             start + parser.offset,
           ),
         )
@@ -7207,9 +7002,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
     if op_len > 0 {
       push_arithmetic_literal(tokens, literal)
       tokens.push(
-        ArithmeticToken::Operator(
-          raw.view(start_offset=i, end_offset=i + op_len).to_owned(),
-        ),
+        Operator(raw.view(start_offset=i, end_offset=i + op_len).to_owned()),
       )
       i += op_len
       continue
@@ -7218,7 +7011,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
       push_arithmetic_literal(tokens, literal)
       match read_balanced_paren_segment(raw, i) {
         Some((inner, end_)) => {
-          tokens.push(ArithmeticToken::Group(parse_arithmetic_expr(inner)))
+          tokens.push(Group(parse_arithmetic_expr(inner)))
           i = end_
           continue
         }
@@ -7228,11 +7021,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
     if is_digit(ch) {
       push_arithmetic_literal(tokens, literal)
       let end_ = arithmetic_literal_end(raw, i)
-      tokens.push(
-        ArithmeticToken::Literal(
-          raw.view(start_offset=i, end_offset=end_).to_owned(),
-        ),
-      )
+      tokens.push(Literal(raw.view(start_offset=i, end_offset=end_).to_owned()))
       i = end_
       continue
     }
@@ -7255,7 +7044,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
         }
       }
       tokens.push(
-        ArithmeticToken::Variable(
+        Variable(
           raw.view(start_offset=start, end_offset=name_end).to_owned(),
           indexes,
         ),
@@ -7265,7 +7054,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
     match read_arithmetic_fragment(raw, i) {
       Some((word, end_)) => {
         push_arithmetic_literal(tokens, literal)
-        tokens.push(ArithmeticToken::Expansion(word))
+        tokens.push(Expansion(word))
         i = end_
         continue
       }
@@ -7301,7 +7090,7 @@ fn ArithmeticCursor::advance(self : ArithmeticCursor) -> ArithmeticToken? {
 ///|
 fn arithmetic_operator_token_text(token : ArithmeticToken?) -> String? {
   match token {
-    Some(ArithmeticToken::Operator(op)) => Some(op)
+    Some(Operator(op)) => Some(op)
     _ => None
   }
 }
@@ -7348,10 +7137,8 @@ fn validate_arithmetic_primary_expression(cursor : ArithmeticCursor) -> Bool {
 
   }
   let base_ok = match cursor.advance() {
-    Some(ArithmeticToken::Literal(_))
-    | Some(ArithmeticToken::Variable(_, _))
-    | Some(ArithmeticToken::Expansion(_)) => true
-    Some(ArithmeticToken::Group(expr)) => validate_arithmetic_expr(expr)
+    Some(Literal(_)) | Some(Variable(_, _)) | Some(Expansion(_)) => true
+    Some(Group(expr)) => validate_arithmetic_expr(expr)
     _ => false
   }
   if !base_ok {
@@ -7595,16 +7382,16 @@ fn contains_unescaped_glob(text : String) -> Bool {
 ///|
 fn classify_unquoted_literal(text : String) -> WordPart {
   if contains_unescaped_glob(text) {
-    return WordPart::Glob(text)
+    return Glob(text)
   }
-  WordPart::Literal(text)
+  Literal(text)
 }
 
 ///|
 fn push_literal(parts : Array[WordPart], literal : StringBuilder) -> Unit {
   let text = literal.to_string()
   if text != "" {
-    parts.push(WordPart::Literal(text))
+    parts.push(Literal(text))
     literal.reset()
   }
 }
@@ -7622,7 +7409,7 @@ fn push_word_literal(parts : Array[WordPart], literal : StringBuilder) -> Unit {
 fn single_char_literal(ch : UInt16) -> WordPart {
   let buf = StringBuilder::new()
   buf.write_char(ch.unsafe_to_char())
-  WordPart::Literal(buf.to_string())
+  Literal(buf.to_string())
 }
 
 ///|
@@ -7721,7 +7508,7 @@ fn Parser::append_unquoted_escape(
     Some(next) => {
       if next == ' ' && self.has_only_line_whitespace_until_break() {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           backslash_pos,
           "Delete trailing spaces after \\ to break line (or use quotes for literal space).",
           Some(1101),
@@ -7729,14 +7516,14 @@ fn Parser::append_unquoted_escape(
       } else if !is_safe_unquoted_escape_target(next) {
         if is_shellcheck_named_escape_target(next) {
           self.emit_diagnostic(
-            DiagnosticSeverity::Warning,
+            Warning,
             backslash_pos,
             "\\\{next.unsafe_to_char()} is just literal '\{next.unsafe_to_char()}' here. For \{shellcheck_named_escape_name(next)}, use \{shellcheck_named_escape_alternative(next)} instead.",
             Some(1012),
           )
         } else {
           self.emit_diagnostic(
-            DiagnosticSeverity::Info,
+            Info,
             backslash_pos,
             "This \\\{next.unsafe_to_char()} will be a regular '\{next.unsafe_to_char()}' in this context.",
             Some(1001),
@@ -7815,7 +7602,7 @@ fn parse_nested_script_text(
   parser.skip_command_gaps()
   parser.ensure_no_pending_heredocs()
   if !parser.eof() {
-    raise ParseError::Message(
+    raise Message(
       pos=parser.position(),
       message="unexpected trailing input in nested script",
     )
@@ -7851,7 +7638,7 @@ fn Parser::read_backquoted_script(
     if is_backquote_char(ch) {
       if ch == '´' {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           self.position(),
           "For command expansion, the tick should slant left (` vs ´). Use $(..) instead.",
           Some(1077),
@@ -7898,20 +7685,10 @@ fn Parser::read_backquoted_script(
   }
   self.emit_simple_command_context_diagnostic()
   let parse_message = "Couldn't parse this backtick expansion. Fix to allow more checks."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    open_pos,
-    parse_message,
-    Some(1073),
-  )
+  self.emit_diagnostic(Error, open_pos, parse_message, Some(1073))
   let end_message = "Expected end of backtick expansion. Fix any mentioned problems and try again."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    self.position(),
-    end_message,
-    Some(1072),
-  )
-  raise ParseError::Message(pos=self.position(), message=end_message)
+  self.emit_diagnostic(Error, self.position(), end_message, Some(1072))
+  raise Message(pos=self.position(), message=end_message)
 }
 
 ///|
@@ -7926,7 +7703,7 @@ fn Parser::parse_process_substitution(
     raise self.unexpected(")")
   }
   ignore(self.advance_one())
-  WordPart::ProcessSubstitution(kind, script)
+  ProcessSubstitution(kind, script)
 }
 
 ///|
@@ -8059,36 +7836,31 @@ fn Parser::read_brace_command_substitution(
     err => {
       let message = "Couldn't parse this ksh ${ ..; } command expansion. Fix to allow more checks."
       self.emit_simple_command_context_diagnostic()
+      self.emit_diagnostic(Error, start, message, Some(1073))
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
-        start,
-        message,
-        Some(1073),
-      )
-      self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         parse_error_position(err),
         "Expected } to end the ksh ${ ..; } command expansion. Fix any mentioned problems and try again.",
         Some(1072),
       )
-      raise ParseError::Message(pos=start, message~)
+      raise Message(pos=start, message~)
     }
   }
   self.ensure_no_pending_heredocs()
   if self.peek() != Some('}') {
     let message = "Couldn't parse this ksh ${ ..; } command expansion. Fix to allow more checks."
     self.emit_simple_command_context_diagnostic()
-    self.emit_diagnostic(DiagnosticSeverity::Error, start, message, Some(1073))
+    self.emit_diagnostic(Error, start, message, Some(1073))
     self.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       self.position(),
       "Expected } to end the ksh ${ ..; } command expansion. Fix any mentioned problems and try again.",
       Some(1072),
     )
-    raise ParseError::Message(pos=start, message~)
+    raise Message(pos=start, message~)
   }
   ignore(self.advance_one())
-  WordPart::BraceCommandSubstitution(piped, script)
+  BraceCommandSubstitution(piped, script)
 }
 
 ///|
@@ -8103,9 +7875,7 @@ fn Parser::parse_here_doc_parts(
         push_literal(parts, literal)
         let quote_start = self.position()
         self.consume_backquote_start()
-        parts.push(
-          WordPart::BackQuoted(self.read_backquoted_script(false, quote_start)),
-        )
+        parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
         match self.parse_dollar_part_internal(false) {
@@ -8144,12 +7914,12 @@ fn Parser::parse_text_parts_until_eof(
     }
     if self.starts_extglob() {
       push_word_literal(parts, literal)
-      parts.push(WordPart::ExtGlob(self.read_extglob()))
+      parts.push(ExtGlob(self.read_extglob()))
       continue
     }
     if self.starts_brace_expansion() {
       push_word_literal(parts, literal)
-      parts.push(WordPart::BraceExpansion(self.read_brace_expansion()))
+      parts.push(BraceExpansion(self.read_brace_expansion()))
       continue
     }
     match ch {
@@ -8158,33 +7928,29 @@ fn Parser::parse_text_parts_until_eof(
         let quote_start = self.position()
         ignore(self.advance_one())
         let text = self.read_until_single_quote(quote_start)
-        parts.push(WordPart::SingleQuoted(text))
+        parts.push(SingleQuoted(text))
         self.maybe_warn_after_single_quoted(quote_start, text)
       }
       '"' => {
         push_word_literal(parts, literal)
         let quote_start = self.position()
         ignore(self.advance_one())
-        parts.push(
-          WordPart::DoubleQuoted(self.read_double_quoted_parts(quote_start)),
-        )
+        parts.push(DoubleQuoted(self.read_double_quoted_parts(quote_start)))
       }
       ch if is_backquote_char(ch) => {
         push_word_literal(parts, literal)
         let quote_start = self.position()
         self.consume_backquote_start()
-        parts.push(
-          WordPart::BackQuoted(self.read_backquoted_script(false, quote_start)),
-        )
+        parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
         match self.parse_dollar_part() {
           Some(part) => {
             push_word_literal(parts, literal)
             match part {
-              WordPart::BracedParameter(_) if self.peek() == Some('}') =>
+              BracedParameter(_) if self.peek() == Some('}') =>
                 self.emit_diagnostic(
-                  DiagnosticSeverity::Warning,
+                  Warning,
                   self.position(),
                   "This } is literal. Check expression (missing ;/\\n?) or quote it.",
                   Some(1083),
@@ -8204,7 +7970,7 @@ fn Parser::parse_text_parts_until_eof(
           literal.write_string("{}")
         } else {
           self.emit_diagnostic(
-            DiagnosticSeverity::Warning,
+            Warning,
             self.position(),
             "This \{ch.unsafe_to_char()} is literal. Check expression (missing ;/\\n?) or quote it.",
             Some(1083),
@@ -8238,11 +8004,11 @@ fn Parser::maybe_emit_possible_termination_warning(
 ) -> Unit {
   if terminators.length() != 0 && parts.length() == 1 {
     match parts[0] {
-      WordPart::Literal(text) =>
+      Literal(text) =>
         for terminator in terminators {
           if text == terminator {
             self.emit_diagnostic(
-              DiagnosticSeverity::Warning,
+              Warning,
               start,
               "Use semicolon or linefeed before '\{text}' (or quote to make it literal).",
               Some(1010),
@@ -8272,17 +8038,17 @@ fn Parser::parse_word_with_terminators(
     }
     if self.starts_extglob() {
       push_word_literal(parts, literal)
-      parts.push(WordPart::ExtGlob(self.read_extglob()))
+      parts.push(ExtGlob(self.read_extglob()))
       continue
     }
     if self.starts_brace_expansion() {
       push_word_literal(parts, literal)
-      parts.push(WordPart::BraceExpansion(self.read_brace_expansion()))
+      parts.push(BraceExpansion(self.read_brace_expansion()))
       continue
     }
     if ch == '(' {
       self.emit_diagnostic(
-        DiagnosticSeverity::Error,
+        Error,
         self.position(),
         "'(' is invalid here. Did you forget to escape it?",
         Some(1036),
@@ -8301,33 +8067,29 @@ fn Parser::parse_word_with_terminators(
         let quote_start = self.position()
         ignore(self.advance_one())
         let text = self.read_until_single_quote(quote_start)
-        parts.push(WordPart::SingleQuoted(text))
+        parts.push(SingleQuoted(text))
         self.maybe_warn_after_single_quoted(quote_start, text)
       }
       '"' => {
         push_word_literal(parts, literal)
         let quote_start = self.position()
         ignore(self.advance_one())
-        parts.push(
-          WordPart::DoubleQuoted(self.read_double_quoted_parts(quote_start)),
-        )
+        parts.push(DoubleQuoted(self.read_double_quoted_parts(quote_start)))
       }
       ch if is_backquote_char(ch) => {
         push_word_literal(parts, literal)
         let quote_start = self.position()
         self.consume_backquote_start()
-        parts.push(
-          WordPart::BackQuoted(self.read_backquoted_script(false, quote_start)),
-        )
+        parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
         match self.parse_dollar_part() {
           Some(part) => {
             push_word_literal(parts, literal)
             match part {
-              WordPart::BracedParameter(_) if self.peek() == Some('}') =>
+              BracedParameter(_) if self.peek() == Some('}') =>
                 self.emit_diagnostic(
-                  DiagnosticSeverity::Warning,
+                  Warning,
                   self.position(),
                   "This } is literal. Check expression (missing ;/\\n?) or quote it.",
                   Some(1083),
@@ -8347,7 +8109,7 @@ fn Parser::parse_word_with_terminators(
           literal.write_string("{}")
         } else {
           self.emit_diagnostic(
-            DiagnosticSeverity::Warning,
+            Warning,
             self.position(),
             "This \{ch.unsafe_to_char()} is literal. Check expression (missing ;/\\n?) or quote it.",
             Some(1083),
@@ -8388,7 +8150,7 @@ fn Parser::read_until_single_quote(
     }
     if ch == '\\' && self.peek_n(1) == Some('\'') {
       self.emit_diagnostic(
-        DiagnosticSeverity::Info,
+        Info,
         self.position(),
         "Want to escape a single quote? echo 'This is how it'\\''s done'.",
         Some(1003),
@@ -8396,7 +8158,7 @@ fn Parser::read_until_single_quote(
     }
     if is_unicode_single_quote_char(ch) {
       self.emit_diagnostic(
-        DiagnosticSeverity::Warning,
+        Warning,
         self.position(),
         "This is a unicode quote. Delete and retype it (or ignore/doublequote for literal).",
         Some(1112),
@@ -8407,20 +8169,10 @@ fn Parser::read_until_single_quote(
   }
   self.emit_simple_command_context_diagnostic()
   let parse_message = "Couldn't parse this single quoted string. Fix to allow more checks."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    open_pos,
-    parse_message,
-    Some(1073),
-  )
+  self.emit_diagnostic(Error, open_pos, parse_message, Some(1073))
   let end_message = "Expected end of single quoted string. Fix any mentioned problems and try again."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    self.position(),
-    end_message,
-    Some(1072),
-  )
-  raise ParseError::Message(pos=self.position(), message=end_message)
+  self.emit_diagnostic(Error, self.position(), end_message, Some(1072))
+  raise Message(pos=self.position(), message=end_message)
 }
 
 ///|
@@ -8454,13 +8206,13 @@ fn Parser::emit_suspect_quote_close_diagnostics(
   context : String,
 ) -> Unit {
   self.emit_diagnostic(
-    DiagnosticSeverity::Warning,
+    Warning,
     start,
     "Did you forget to close this \{context}?",
     Some(1078),
   )
   self.emit_diagnostic(
-    DiagnosticSeverity::Info,
+    Info,
     retreat_position_columns(self.position(), 1),
     "This is actually an end quote, but due to next char it looks suspect.",
     Some(1079),
@@ -8486,7 +8238,7 @@ fn Parser::maybe_warn_after_single_quoted(
     (_, Some(next)) =>
       if is_ascii_alpha(view[view.length() - 1]) && is_ascii_alpha(next) {
         self.emit_diagnostic(
-          DiagnosticSeverity::Warning,
+          Warning,
           retreat_position_columns(self.position(), 1),
           "This apostrophe terminated the single quoted string!",
           Some(1011),
@@ -8502,7 +8254,7 @@ fn double_quoted_parts_start_with_linefeed(parts : Array[WordPart]) -> Bool {
     return false
   }
   match parts[0] {
-    WordPart::Literal(text) => string_starts_with_linefeed(text)
+    Literal(text) => string_starts_with_linefeed(text)
     _ => false
   }
 }
@@ -8511,7 +8263,7 @@ fn double_quoted_parts_start_with_linefeed(parts : Array[WordPart]) -> Bool {
 fn double_quoted_parts_contain_linefeed(parts : Array[WordPart]) -> Bool {
   for part in parts {
     match part {
-      WordPart::Literal(text) if string_contains_linefeed(text) => return true
+      Literal(text) if string_contains_linefeed(text) => return true
       _ => ()
     }
   }
@@ -8560,9 +8312,7 @@ fn Parser::read_double_quoted_parts(
         push_literal(parts, literal)
         let quote_start = self.position()
         self.consume_backquote_start()
-        parts.push(
-          WordPart::BackQuoted(self.read_backquoted_script(true, quote_start)),
-        )
+        parts.push(BackQuoted(self.read_backquoted_script(true, quote_start)))
       }
       '$' =>
         match self.parse_dollar_part_internal(false) {
@@ -8573,7 +8323,7 @@ fn Parser::read_double_quoted_parts(
           None => {
             if self.should_warn_double_quoted_literal_dollar() {
               self.emit_diagnostic(
-                DiagnosticSeverity::Warning,
+                Warning,
                 self.position(),
                 "Prefer escape over ending quote to make $ literal. Instead of \"It costs $\"5, use \"It costs \\$5\".",
                 Some(1135),
@@ -8587,7 +8337,7 @@ fn Parser::read_double_quoted_parts(
       _ => {
         if is_unicode_double_quote_char(ch) {
           self.emit_diagnostic(
-            DiagnosticSeverity::Warning,
+            Warning,
             self.position(),
             "This is a unicode quote. Delete and retype it (or ignore/singlequote for literal).",
             Some(1111),
@@ -8600,20 +8350,10 @@ fn Parser::read_double_quoted_parts(
   }
   self.emit_simple_command_context_diagnostic()
   let parse_message = "Couldn't parse this double quoted string. Fix to allow more checks."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    open_pos,
-    parse_message,
-    Some(1073),
-  )
+  self.emit_diagnostic(Error, open_pos, parse_message, Some(1073))
   let end_message = "Expected end of double quoted string. Fix any mentioned problems and try again."
-  self.emit_diagnostic(
-    DiagnosticSeverity::Error,
-    self.position(),
-    end_message,
-    Some(1072),
-  )
-  raise ParseError::Message(pos=self.position(), message=end_message)
+  self.emit_diagnostic(Error, self.position(), end_message, Some(1072))
+  raise Message(pos=self.position(), message=end_message)
 }
 
 ///|
@@ -8633,12 +8373,12 @@ fn Parser::parse_dollar_part_internal(
       self.advance_n(2)
       let expr = parse_arithmetic_expr(content)
       if !validate_arithmetic_expr(expr) {
-        raise ParseError::Message(
+        raise Message(
           pos=start_pos,
           message="ambiguous dollar arithmetic expression",
         )
       }
-      WordPart::ArithmeticExpansion(expr)
+      ArithmeticExpansion(expr)
     }
     try {
       return Some(try_arithmetic())
@@ -8656,12 +8396,12 @@ fn Parser::parse_dollar_part_internal(
           }
           ignore(self.advance_one())
           self.emit_diagnostic(
-            DiagnosticSeverity::Error,
+            Error,
             start_pos,
             "Shells disambiguate $(( differently or not at all. For $(command substitution), add space after $( . For $((arithmetics)), fix parsing errors.",
             Some(1102),
           )
-          return Some(WordPart::CommandSubstitution(script))
+          return Some(CommandSubstitution(script))
         } catch {
           _ => {
             self.reset(mark)
@@ -8679,16 +8419,16 @@ fn Parser::parse_dollar_part_internal(
       raise self.unexpected(")")
     }
     ignore(self.advance_one())
-    return Some(WordPart::CommandSubstitution(script))
+    return Some(CommandSubstitution(script))
   }
   if allow_quoted_forms && self.starts_with("$'") {
     self.advance_n(2)
-    return Some(WordPart::DollarSingleQuoted(self.read_dollar_single_quoted()))
+    return Some(DollarSingleQuoted(self.read_dollar_single_quoted()))
   }
   if allow_quoted_forms && self.starts_with("$\"") {
     self.advance_n(2)
     return Some(
-      WordPart::DollarDoubleQuoted(
+      DollarDoubleQuoted(
         self.read_double_quoted_parts(advance_position_columns(start_pos, 1)),
       ),
     )
@@ -8696,7 +8436,7 @@ fn Parser::parse_dollar_part_internal(
   if self.starts_with("$[") {
     self.advance_n(2)
     return Some(
-      WordPart::DollarBracket(
+      DollarBracket(
         parse_arithmetic_expr(
           self.read_dollar_bracket_content("dollar-bracket expansion"),
         ),
@@ -8713,9 +8453,7 @@ fn Parser::parse_dollar_part_internal(
       return Some(self.read_brace_command_substitution(start_pos))
     }
     return Some(
-      WordPart::BracedParameter(
-        parse_parameter_expansion(self.read_braced_parameter()),
-      ),
+      BracedParameter(parse_parameter_expansion(self.read_braced_parameter())),
     )
   }
   match self.peek_n(1) {
@@ -8728,13 +8466,13 @@ fn Parser::parse_dollar_part_internal(
       }
       if self.peek() == Some('[') {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           start_pos,
           "Use braces when expanding arrays, e.g. ${array[idx]} (or ${var}[.. to quiet).",
           Some(1087),
         )
       }
-      Some(WordPart::Parameter(self.current_slice(start)))
+      Some(Parameter(self.current_slice(start)))
     }
     Some(ch) if is_digit(ch) || is_special_parameter_char(ch) => {
       self.advance_n(1)
@@ -8742,13 +8480,13 @@ fn Parser::parse_dollar_part_internal(
       ignore(self.advance_one())
       if is_digit(ch) && self.peek() is Some(next) && is_digit(next) {
         self.emit_diagnostic(
-          DiagnosticSeverity::Error,
+          Error,
           start_pos,
           "Braces are required for positionals over 9, e.g. ${10}.",
           Some(1037),
         )
       }
-      Some(WordPart::SpecialParameter(self.current_slice(start)))
+      Some(SpecialParameter(self.current_slice(start)))
     }
     _ => None
   }
@@ -9130,7 +8868,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
           if body.to_string().contains(entry.delimiter) {
             let diagnostic = {
               span: span_at(entry.delimiter_pos),
-              severity: DiagnosticSeverity::Error,
+              severity: Error,
               code: Some(1041),
               message: "Found '\{entry.delimiter}' further down, but not on a separate line.",
             }
@@ -9141,7 +8879,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
               Some(line) => {
                 let diagnostic = {
                   span: span_at(entry.delimiter_pos),
-                  severity: DiagnosticSeverity::Error,
+                  severity: Error,
                   code: Some(1042),
                   message: "Close matches include '\{line}' (!= '\{entry.delimiter}').",
                 }
@@ -9156,7 +8894,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
             ) {
             let diagnostic = {
               span: span_at(entry.delimiter_pos),
-              severity: DiagnosticSeverity::Error,
+              severity: Error,
               code: Some(1043),
               message: "Found \{entry.delimiter} further down, but with wrong casing.",
             }
@@ -9166,7 +8904,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
           } else {
             let diagnostic = {
               span: span_at(entry.delimiter_pos),
-              severity: DiagnosticSeverity::Error,
+              severity: Error,
               code: Some(1044),
               message: "Couldn't find end token `\{entry.delimiter}' in the here document.",
             }
@@ -9180,7 +8918,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
             (Some(pos), Some(message)) =>
               self.diagnostics.push({
                 span: span_at(pos),
-                severity: DiagnosticSeverity::Info,
+                severity: Info,
                 code: Some(1009),
                 message,
               })
@@ -9190,7 +8928,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
         if !annotations_disable_code(entry.annotations, Some(1073)) {
           self.diagnostics.push({
             span: span_at(entry.redirection_pos),
-            severity: DiagnosticSeverity::Error,
+            severity: Error,
             code: Some(1073),
             message: "Couldn't parse this here document. Fix to allow more checks.",
           })
@@ -9203,7 +8941,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
         if !annotations_disable_code(entry.annotations, Some(1072)) {
           self.diagnostics.push({
             span: span_at(self.position()),
-            severity: DiagnosticSeverity::Error,
+            severity: Error,
             code: Some(1072),
             message: eof_message,
           })
@@ -9234,7 +8972,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
                 delimiter_column + entry.delimiter.length(),
               ),
             ),
-            severity: DiagnosticSeverity::Error,
+            severity: Error,
             code: Some(1118),
             message: "Delete whitespace after the here-doc end token.",
           }
@@ -9250,7 +8988,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
           Some((column_offset, code, message)) => {
             let diagnostic = {
               span: span_at(advance_position_columns(line_pos, column_offset)),
-              severity: DiagnosticSeverity::Error,
+              severity: Error,
               code: Some(code),
               message,
             }
@@ -9294,7 +9032,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
           if !annotations_disable_code(entry.annotations, Some(1009)) {
             self.diagnostics.push({
               span: span_at(entry.redirection_pos),
-              severity: DiagnosticSeverity::Info,
+              severity: Info,
               code: Some(1009),
               message: "The mentioned syntax error was in this here document.",
             })
@@ -9320,7 +9058,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
     }
     entry.redirections[entry.index] = {
       ..redirection,
-      target: RedirectionTarget::HereDoc({
+      target: HereDoc({
         delimiter: entry.delimiter,
         quoted: entry.quoted,
         strip_tabs: entry.strip_tabs,
@@ -9334,33 +9072,28 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
 ///|
 fn parse_error_diagnostic(err : ParseError) -> Diagnostic {
   match err {
-    ParseError::UnexpectedEnd(pos~, context~) =>
+    UnexpectedEnd(pos~, context~) =>
       {
         span: span_at(pos),
-        severity: DiagnosticSeverity::Error,
+        severity: Error,
         code: None,
         message: "unexpected end while parsing \{context}",
       }
-    ParseError::UnexpectedToken(pos~, found~, expected~) =>
+    UnexpectedToken(pos~, found~, expected~) =>
       {
         span: span_at(pos),
-        severity: DiagnosticSeverity::Error,
+        severity: Error,
         code: None,
         message: "expected \{expected}, found \{found}",
       }
-    ParseError::Message(pos~, message~) =>
-      {
-        span: span_at(pos),
-        severity: DiagnosticSeverity::Error,
-        code: None,
-        message,
-      }
+    Message(pos~, message~) =>
+      { span: span_at(pos), severity: Error, code: None, message }
   }
 }
 
 ///|
 fn diagnostic_as_error(diagnostic : Diagnostic) -> ParseError {
-  ParseError::Message(pos=diagnostic.span.start, message=diagnostic.message)
+  Message(pos=diagnostic.span.start, message=diagnostic.message)
 }
 
 ///|
@@ -9418,7 +9151,7 @@ fn effective_source_paths(
   }
   for annotation in annotations {
     match annotation {
-      Annotation::SourcePath(path) => paths.push(path)
+      SourcePath(path) => paths.push(path)
       _ => ()
     }
   }
@@ -9433,7 +9166,7 @@ fn effective_external_sources(
   let mut enabled = options.external_sources
   for annotation in annotations {
     match annotation {
-      Annotation::ExternalSources(flag) => enabled = flag
+      ExternalSources(flag) => enabled = flag
       _ => ()
     }
   }
@@ -9483,7 +9216,7 @@ fn source_override_path(annotations : Array[Annotation]) -> String? {
   let mut path_override : String? = None
   for annotation in annotations {
     match annotation {
-      Annotation::Source(path) => path_override = Some(path)
+      Source(path) => path_override = Some(path)
       _ => ()
     }
   }
@@ -9493,14 +9226,14 @@ fn source_override_path(annotations : Array[Annotation]) -> String? {
 ///|
 fn is_dynamic_source_prefix_part(part : WordPart) -> Bool {
   match part {
-    WordPart::Parameter(_)
-    | WordPart::SpecialParameter(_)
-    | WordPart::BracedParameter(_)
-    | WordPart::BraceCommandSubstitution(_, _)
-    | WordPart::CommandSubstitution(_)
-    | WordPart::BackQuoted(_)
-    | WordPart::ArithmeticExpansion(_)
-    | WordPart::DollarBracket(_) => true
+    Parameter(_)
+    | SpecialParameter(_)
+    | BracedParameter(_)
+    | BraceCommandSubstitution(_, _)
+    | CommandSubstitution(_)
+    | BackQuoted(_)
+    | ArithmeticExpansion(_)
+    | DollarBracket(_) => true
     _ => false
   }
 }
@@ -9535,7 +9268,7 @@ fn append_dynamic_source_prefix_part(
   buf : StringBuilder,
 ) -> Bool {
   match part {
-    WordPart::DoubleQuoted(parts) | WordPart::DollarDoubleQuoted(parts) => {
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) => {
       if parts.length() == 0 ||
         !append_dynamic_source_prefix_part(parts[0], buf) {
         return false
@@ -9587,20 +9320,20 @@ fn resolve_command_sources(
   diagnostics : Array[Diagnostic],
 ) -> Command {
   let resolved_kind = match command.kind {
-    CommandKind::Simple(simple) => CommandKind::Simple(simple)
-    CommandKind::Source(source) =>
+    Simple(simple) => CommandKind::Simple(simple)
+    Source(source) =>
       if !options.follow_sources {
-        CommandKind::Source(source)
+        Source(source)
       } else {
         match resolve_source_command_path(source, active_annotations) {
           None => {
             diagnostics.push({
               span: source_command_resolution_span(source),
-              severity: DiagnosticSeverity::Warning,
+              severity: Warning,
               code: Some(1090),
               message: "source path is dynamic; include resolution was skipped",
             })
-            CommandKind::Source(source)
+            Source(source)
           }
           Some(path) =>
             match resolve_source_input(path, options, active_annotations) {
@@ -9610,38 +9343,32 @@ fn resolve_command_sources(
                   severity: if effective_external_sources(
                       options, active_annotations,
                     ) {
-                    DiagnosticSeverity::Info
+                    Info
                   } else {
-                    DiagnosticSeverity::Warning
+                    Warning
                   },
                   code: Some(1091),
                   message: "source file '\{path}' was not provided in parse options",
                 })
-                CommandKind::Source(source)
+                Source(source)
               }
               Some((resolved_path, contents)) =>
                 if stack.contains(resolved_path) {
                   diagnostics.push({
                     span: source_command_resolution_span(source),
-                    severity: DiagnosticSeverity::Info,
+                    severity: Info,
                     code: Some(1093),
                     message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
                   })
-                  CommandKind::Source({
-                    ..source,
-                    resolved_path: Some(resolved_path),
-                  })
+                  Source({ ..source, resolved_path: Some(resolved_path) })
                 } else if stack.length() >= 100 {
                   diagnostics.push({
                     span: source_command_resolution_span(source),
-                    severity: DiagnosticSeverity::Error,
+                    severity: Error,
                     code: Some(1092),
                     message: "Stopping at 100 'source' frames :O",
                   })
-                  CommandKind::Source({
-                    ..source,
-                    resolved_path: Some(resolved_path),
-                  })
+                  Source({ ..source, resolved_path: Some(resolved_path) })
                 } else {
                   let nested_options = {
                     ..options,
@@ -9665,21 +9392,18 @@ fn resolve_command_sources(
                   if nested_parse_blocks_include(report.diagnostics) {
                     diagnostics.push({
                       span: source_command_resolution_span(source),
-                      severity: DiagnosticSeverity::Warning,
+                      severity: Warning,
                       code: Some(1094),
                       message: "source file '\{resolved_path}' could not be parsed; include was skipped",
                     })
-                    CommandKind::Source({
-                      ..source,
-                      resolved_path: Some(resolved_path),
-                    })
+                    Source({ ..source, resolved_path: Some(resolved_path) })
                   } else {
                     match report.script {
                       Some(script) => {
                         for diagnostic in report.diagnostics {
                           diagnostics.push(diagnostic)
                         }
-                        CommandKind::Source({
+                        Source({
                           ..source,
                           resolved_path: Some(resolved_path),
                           included: Some(script),
@@ -9688,14 +9412,11 @@ fn resolve_command_sources(
                       None => {
                         diagnostics.push({
                           span: source_command_resolution_span(source),
-                          severity: DiagnosticSeverity::Warning,
+                          severity: Warning,
                           code: Some(1094),
                           message: "source file '\{resolved_path}' could not be parsed; include was skipped",
                         })
-                        CommandKind::Source({
-                          ..source,
-                          resolved_path: Some(resolved_path),
-                        })
+                        Source({ ..source, resolved_path: Some(resolved_path) })
                       }
                     }
                   }
@@ -9703,8 +9424,8 @@ fn resolve_command_sources(
             }
         }
       }
-    CommandKind::Time(clause) =>
-      CommandKind::Time({
+    Time(clause) =>
+      Time({
         ..clause,
         body: resolve_pipeline_sources(
           clause.body,
@@ -9715,19 +9436,19 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::Subshell(script) =>
-      CommandKind::Subshell(
+    Subshell(script) =>
+      Subshell(
         resolve_script_sources(
           script, file_annotations, options, stack, diagnostics,
         ),
       )
-    CommandKind::BraceGroup(script) =>
-      CommandKind::BraceGroup(
+    BraceGroup(script) =>
+      BraceGroup(
         resolve_script_sources(
           script, file_annotations, options, stack, diagnostics,
         ),
       )
-    CommandKind::If(clause) => {
+    If(clause) => {
       let arms : Array[IfArm] = []
       for arm in clause.arms {
         arms.push({
@@ -9756,10 +9477,10 @@ fn resolve_command_sources(
             ),
           )
       }
-      CommandKind::If({ arms, else_body })
+      If({ arms, else_body })
     }
-    CommandKind::While(loop_) =>
-      CommandKind::While({
+    While(loop_) =>
+      While({
         condition: resolve_script_sources(
           loop_.condition,
           file_annotations,
@@ -9775,8 +9496,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::Until(loop_) =>
-      CommandKind::Until({
+    Until(loop_) =>
+      Until({
         condition: resolve_script_sources(
           loop_.condition,
           file_annotations,
@@ -9792,8 +9513,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::ForIn(clause) =>
-      CommandKind::ForIn({
+    ForIn(clause) =>
+      ForIn({
         ..clause,
         body: resolve_script_sources(
           clause.body,
@@ -9803,8 +9524,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::ForArithmetic(clause) =>
-      CommandKind::ForArithmetic({
+    ForArithmetic(clause) =>
+      ForArithmetic({
         ..clause,
         body: resolve_script_sources(
           clause.body,
@@ -9814,8 +9535,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::Select(clause) =>
-      CommandKind::Select({
+    Select(clause) =>
+      Select({
         ..clause,
         body: resolve_script_sources(
           clause.body,
@@ -9825,7 +9546,7 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::Case(clause) => {
+    Case(clause) => {
       let items : Array[CaseItem] = []
       for item in clause.items {
         items.push({
@@ -9839,12 +9560,12 @@ fn resolve_command_sources(
           ),
         })
       }
-      CommandKind::Case({ ..clause, items, })
+      Case({ ..clause, items, })
     }
-    CommandKind::Condition(condition) => CommandKind::Condition(condition)
-    CommandKind::Arithmetic(arithmetic) => CommandKind::Arithmetic(arithmetic)
-    CommandKind::Function(function_) =>
-      CommandKind::Function({
+    Condition(condition) => Condition(condition)
+    Arithmetic(arithmetic) => Arithmetic(arithmetic)
+    Function(function_) =>
+      Function({
         ..function_,
         body: resolve_command_sources(
           function_.body,
@@ -9855,8 +9576,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::CoProc(clause) =>
-      CommandKind::CoProc({
+    CoProc(clause) =>
+      CoProc({
         ..clause,
         body: resolve_command_sources(
           clause.body,
@@ -9867,8 +9588,8 @@ fn resolve_command_sources(
           diagnostics,
         ),
       })
-    CommandKind::BatsTest(clause) =>
-      CommandKind::BatsTest({
+    BatsTest(clause) =>
+      BatsTest({
         ..clause,
         body: resolve_script_sources(
           clause.body,
@@ -10041,27 +9762,27 @@ fn collect_associative_names_from_word_part(
   names : Array[String],
 ) -> Unit {
   match part {
-    WordPart::DoubleQuoted(parts) | WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       for nested in parts {
         collect_associative_names_from_word_part(nested, names)
       }
-    WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       match expansion.index {
         Some(index) => collect_associative_names_from_array_index(index, names)
         None => ()
       }
-    WordPart::BraceCommandSubstitution(_, script)
-    | WordPart::CommandSubstitution(script)
-    | WordPart::BackQuoted(script)
-    | WordPart::ProcessSubstitution(_, script) =>
+    BraceCommandSubstitution(_, script)
+    | CommandSubstitution(script)
+    | BackQuoted(script)
+    | ProcessSubstitution(_, script) =>
       collect_associative_names_from_script(script, names)
-    WordPart::ArithmeticExpansion(expr) | WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       collect_associative_names_from_arithmetic_expr(expr, names)
-    WordPart::ExtGlob(pattern) =>
+    ExtGlob(pattern) =>
       for alternative in pattern.alternatives {
         collect_associative_names_from_word(alternative, names)
       }
-    WordPart::BraceExpansion(expansion) =>
+    BraceExpansion(expansion) =>
       for element in expansion.elements {
         collect_associative_names_from_word(element, names)
       }
@@ -10076,13 +9797,12 @@ fn collect_associative_names_from_arithmetic_expr(
 ) -> Unit {
   for token in expr.tokens {
     match token {
-      ArithmeticToken::Variable(_, indexes) =>
+      Variable(_, indexes) =>
         for index in indexes {
           collect_associative_names_from_array_index(index, names)
         }
-      ArithmeticToken::Expansion(word) =>
-        collect_associative_names_from_word(word, names)
-      ArithmeticToken::Group(inner) =>
+      Expansion(word) => collect_associative_names_from_word(word, names)
+      Group(inner) =>
         collect_associative_names_from_arithmetic_expr(inner, names)
       _ => ()
     }
@@ -10095,21 +9815,19 @@ fn collect_associative_names_from_condition_expr(
   names : Array[String],
 ) -> Unit {
   match expr {
-    ConditionExpr::Word(word) =>
-      collect_associative_names_from_word(word, names)
-    ConditionExpr::Unary(_, _, word) =>
-      collect_associative_names_from_word(word, names)
-    ConditionExpr::Binary(_, _, left, right) => {
+    Word(word) => collect_associative_names_from_word(word, names)
+    Unary(_, _, word) => collect_associative_names_from_word(word, names)
+    Binary(_, _, left, right) => {
       collect_associative_names_from_word(left, names)
       collect_associative_names_from_word(right, names)
     }
-    ConditionExpr::Group(inner) | ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       collect_associative_names_from_condition_expr(inner, names)
-    ConditionExpr::And(_, left, right) | ConditionExpr::Or(_, left, right) => {
+    And(_, left, right) | Or(_, left, right) => {
       collect_associative_names_from_condition_expr(left, names)
       collect_associative_names_from_condition_expr(right, names)
     }
-    ConditionExpr::Empty => ()
+    Empty => ()
   }
 }
 
@@ -10119,9 +9837,8 @@ fn collect_associative_names_from_redirection(
   names : Array[String],
 ) -> Unit {
   match redirection.target {
-    RedirectionTarget::Word(word) =>
-      collect_associative_names_from_word(word, names)
-    RedirectionTarget::HereDoc(here_doc) =>
+    Word(word) => collect_associative_names_from_word(word, names)
+    HereDoc(here_doc) =>
       match here_doc.parts {
         Some(parts) =>
           for part in parts {
@@ -10138,16 +9855,15 @@ fn collect_associative_names_from_assignment_value(
   names : Array[String],
 ) -> Unit {
   match value {
-    AssignmentValue::Word(word) =>
-      collect_associative_names_from_word(word, names)
-    AssignmentValue::ArrayLiteral(elements) =>
+    Word(word) => collect_associative_names_from_word(word, names)
+    ArrayLiteral(elements) =>
       for element in elements {
         for index in element.indexes {
           collect_associative_names_from_array_index(index, names)
         }
         collect_associative_names_from_assignment_value(element.value, names)
       }
-    AssignmentValue::Empty => ()
+    Empty => ()
   }
 }
 
@@ -10216,9 +9932,8 @@ fn collect_associative_names_from_command(
   names : Array[String],
 ) -> Unit {
   match command.kind {
-    CommandKind::Simple(simple) =>
-      collect_associative_names_from_simple(simple, names)
-    CommandKind::Source(source) => {
+    Simple(simple) => collect_associative_names_from_simple(simple, names)
+    Source(source) => {
       for assignment in source.assignments {
         collect_associative_names_from_assignment_value(assignment.value, names)
       }
@@ -10234,15 +9949,15 @@ fn collect_associative_names_from_command(
         None => ()
       }
     }
-    CommandKind::Time(clause) => {
+    Time(clause) => {
       for flag in clause.flags {
         collect_associative_names_from_word(flag, names)
       }
       collect_associative_names_from_pipeline(clause.body, names)
     }
-    CommandKind::Subshell(script) | CommandKind::BraceGroup(script) =>
+    Subshell(script) | BraceGroup(script) =>
       collect_associative_names_from_script(script, names)
-    CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         collect_associative_names_from_script(arm.condition, names)
         collect_associative_names_from_script(arm.body, names)
@@ -10252,29 +9967,29 @@ fn collect_associative_names_from_command(
         None => ()
       }
     }
-    CommandKind::While(loop_) | CommandKind::Until(loop_) => {
+    While(loop_) | Until(loop_) => {
       collect_associative_names_from_script(loop_.condition, names)
       collect_associative_names_from_script(loop_.body, names)
     }
-    CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       for value in clause.values {
         collect_associative_names_from_word(value, names)
       }
       collect_associative_names_from_script(clause.body, names)
     }
-    CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       collect_associative_names_from_arithmetic_expr(clause.init, names)
       collect_associative_names_from_arithmetic_expr(clause.condition, names)
       collect_associative_names_from_arithmetic_expr(clause.step, names)
       collect_associative_names_from_script(clause.body, names)
     }
-    CommandKind::Select(clause) => {
+    Select(clause) => {
       for value in clause.values {
         collect_associative_names_from_word(value, names)
       }
       collect_associative_names_from_script(clause.body, names)
     }
-    CommandKind::Case(clause) => {
+    Case(clause) => {
       collect_associative_names_from_word(clause.word, names)
       for item in clause.items {
         for pattern in item.patterns {
@@ -10283,20 +9998,20 @@ fn collect_associative_names_from_command(
         collect_associative_names_from_script(item.body, names)
       }
     }
-    CommandKind::Condition(condition) =>
+    Condition(condition) =>
       collect_associative_names_from_condition_expr(condition.expr, names)
-    CommandKind::Arithmetic(arithmetic) =>
+    Arithmetic(arithmetic) =>
       collect_associative_names_from_arithmetic_expr(arithmetic.expr, names)
-    CommandKind::Function(function_) =>
+    Function(function_) =>
       collect_associative_names_from_command(function_.body, names)
-    CommandKind::CoProc(clause) => {
+    CoProc(clause) => {
       match clause.name {
         Some(name) => collect_associative_names_from_word(name, names)
         None => ()
       }
       collect_associative_names_from_command(clause.body, names)
     }
-    CommandKind::BatsTest(clause) =>
+    BatsTest(clause) =>
       collect_associative_names_from_script(clause.body, names)
   }
   for redirection in command.redirects {
@@ -10369,34 +10084,31 @@ fn normalize_condition_expr(
   associative_names : Array[String],
 ) -> ConditionExpr {
   match expr {
-    ConditionExpr::Word(word) =>
-      ConditionExpr::Word(normalize_word(word, associative_names))
-    ConditionExpr::Unary(op, op_span, word) =>
-      ConditionExpr::Unary(op, op_span, normalize_word(word, associative_names))
-    ConditionExpr::Binary(op, op_span, left, right) =>
-      ConditionExpr::Binary(
+    Word(word) => Word(normalize_word(word, associative_names))
+    Unary(op, op_span, word) =>
+      Unary(op, op_span, normalize_word(word, associative_names))
+    Binary(op, op_span, left, right) =>
+      Binary(
         op,
         op_span,
         normalize_word(left, associative_names),
         normalize_word(right, associative_names),
       )
-    ConditionExpr::Group(inner) =>
-      ConditionExpr::Group(normalize_condition_expr(inner, associative_names))
-    ConditionExpr::Not(inner) =>
-      ConditionExpr::Not(normalize_condition_expr(inner, associative_names))
-    ConditionExpr::And(op, left, right) =>
-      ConditionExpr::And(
+    Group(inner) => Group(normalize_condition_expr(inner, associative_names))
+    Not(inner) => Not(normalize_condition_expr(inner, associative_names))
+    And(op, left, right) =>
+      And(
         op,
         normalize_condition_expr(left, associative_names),
         normalize_condition_expr(right, associative_names),
       )
-    ConditionExpr::Or(op, left, right) =>
-      ConditionExpr::Or(
+    Or(op, left, right) =>
+      Or(
         op,
         normalize_condition_expr(left, associative_names),
         normalize_condition_expr(right, associative_names),
       )
-    ConditionExpr::Empty => ConditionExpr::Empty
+    Empty => Empty
   }
 }
 
@@ -10409,17 +10121,14 @@ fn normalize_arithmetic_expr(
   for token in expr.tokens {
     tokens.push(
       match token {
-        ArithmeticToken::Variable(name, indexes) =>
-          ArithmeticToken::Variable(
+        Variable(name, indexes) =>
+          Variable(
             name,
             normalize_array_indexes_for_name(indexes, name, associative_names),
           )
-        ArithmeticToken::Expansion(word) =>
-          ArithmeticToken::Expansion(normalize_word(word, associative_names))
-        ArithmeticToken::Group(inner) =>
-          ArithmeticToken::Group(
-            normalize_arithmetic_expr(inner, associative_names),
-          )
+        Expansion(word) => Expansion(normalize_word(word, associative_names))
+        Group(inner) =>
+          Group(normalize_arithmetic_expr(inner, associative_names))
         _ => token
       },
     )
@@ -10450,63 +10159,57 @@ fn normalize_word_part(
   associative_names : Array[String],
 ) -> WordPart {
   match part {
-    WordPart::DoubleQuoted(parts) => {
+    DoubleQuoted(parts) => {
       let normalized : Array[WordPart] = []
       for nested in parts {
         normalized.push(normalize_word_part(nested, associative_names))
       }
-      WordPart::DoubleQuoted(normalized)
+      DoubleQuoted(normalized)
     }
-    WordPart::DollarDoubleQuoted(parts) => {
+    DollarDoubleQuoted(parts) => {
       let normalized : Array[WordPart] = []
       for nested in parts {
         normalized.push(normalize_word_part(nested, associative_names))
       }
-      WordPart::DollarDoubleQuoted(normalized)
+      DollarDoubleQuoted(normalized)
     }
-    WordPart::BracedParameter(expansion) =>
-      WordPart::BracedParameter(
+    BracedParameter(expansion) =>
+      BracedParameter(
         normalize_parameter_expansion(expansion, associative_names),
       )
-    WordPart::BraceCommandSubstitution(command, script) =>
-      WordPart::BraceCommandSubstitution(
+    BraceCommandSubstitution(command, script) =>
+      BraceCommandSubstitution(
         command,
         normalize_array_indices_in_script(script, associative_names),
       )
-    WordPart::CommandSubstitution(script) =>
-      WordPart::CommandSubstitution(
+    CommandSubstitution(script) =>
+      CommandSubstitution(
         normalize_array_indices_in_script(script, associative_names),
       )
-    WordPart::BackQuoted(script) =>
-      WordPart::BackQuoted(
-        normalize_array_indices_in_script(script, associative_names),
-      )
-    WordPart::ArithmeticExpansion(expr) =>
-      WordPart::ArithmeticExpansion(
-        normalize_arithmetic_expr(expr, associative_names),
-      )
-    WordPart::DollarBracket(expr) =>
-      WordPart::DollarBracket(
-        normalize_arithmetic_expr(expr, associative_names),
-      )
-    WordPart::ExtGlob(pattern) => {
+    BackQuoted(script) =>
+      BackQuoted(normalize_array_indices_in_script(script, associative_names))
+    ArithmeticExpansion(expr) =>
+      ArithmeticExpansion(normalize_arithmetic_expr(expr, associative_names))
+    DollarBracket(expr) =>
+      DollarBracket(normalize_arithmetic_expr(expr, associative_names))
+    ExtGlob(pattern) => {
       let alternatives : Array[Word] = []
       for alternative in pattern.alternatives {
         alternatives.push(normalize_word(alternative, associative_names))
       }
-      WordPart::ExtGlob({ ..pattern, alternatives, })
+      ExtGlob({ ..pattern, alternatives, })
     }
-    WordPart::ProcessSubstitution(kind, script) =>
-      WordPart::ProcessSubstitution(
+    ProcessSubstitution(kind, script) =>
+      ProcessSubstitution(
         kind,
         normalize_array_indices_in_script(script, associative_names),
       )
-    WordPart::BraceExpansion(expansion) => {
+    BraceExpansion(expansion) => {
       let elements : Array[Word] = []
       for element in expansion.elements {
         elements.push(normalize_word(element, associative_names))
       }
-      WordPart::BraceExpansion({ ..expansion, elements, })
+      BraceExpansion({ ..expansion, elements, })
     }
     _ => part
   }
@@ -10528,18 +10231,17 @@ fn normalize_assignment_value(
   associative_names : Array[String],
 ) -> AssignmentValue {
   match value {
-    AssignmentValue::Word(word) =>
-      AssignmentValue::Word(normalize_word(word, associative_names))
-    AssignmentValue::ArrayLiteral(elements) => {
+    Word(word) => Word(normalize_word(word, associative_names))
+    ArrayLiteral(elements) => {
       let normalized : Array[ArrayElement] = []
       for element in elements {
         normalized.push(
           normalize_array_element(element, parent_name, associative_names),
         )
       }
-      AssignmentValue::ArrayLiteral(normalized)
+      ArrayLiteral(normalized)
     }
-    AssignmentValue::Empty => AssignmentValue::Empty
+    Empty => Empty
   }
 }
 
@@ -10590,9 +10292,9 @@ fn normalize_redirection(
   associative_names : Array[String],
 ) -> Redirection {
   let target = match redirection.target {
-    RedirectionTarget::Word(word) =>
+    Word(word) =>
       RedirectionTarget::Word(normalize_word(word, associative_names))
-    RedirectionTarget::HereDoc(here_doc) => {
+    HereDoc(here_doc) => {
       let parts = match here_doc.parts {
         Some(parts) => {
           let normalized : Array[WordPart] = []
@@ -10603,7 +10305,7 @@ fn normalize_redirection(
         }
         None => None
       }
-      RedirectionTarget::HereDoc({ ..here_doc, parts, })
+      HereDoc({ ..here_doc, parts, })
     }
   }
   { ..redirection, target, }
@@ -10619,7 +10321,7 @@ fn normalize_command(
     redirects.push(normalize_redirection(redirection, associative_names))
   }
   let kind = match command.kind {
-    CommandKind::Simple(simple) => {
+    Simple(simple) => {
       let assignments : Array[Assignment] = []
       for assignment in simple.assignments {
         assignments.push(normalize_assignment(assignment, associative_names))
@@ -10630,7 +10332,7 @@ fn normalize_command(
       }
       CommandKind::Simple({ assignments, words })
     }
-    CommandKind::Source(source) => {
+    Source(source) => {
       let assignments : Array[Assignment] = []
       for assignment in source.assignments {
         assignments.push(normalize_assignment(assignment, associative_names))
@@ -10648,7 +10350,7 @@ fn normalize_command(
           Some(normalize_array_indices_in_script(script, associative_names))
         None => None
       }
-      CommandKind::Source({
+      Source({
         ..source,
         assignments,
         options,
@@ -10657,25 +10359,18 @@ fn normalize_command(
         included,
       })
     }
-    CommandKind::Time(clause) => {
+    Time(clause) => {
       let flags : Array[Word] = []
       for flag in clause.flags {
         flags.push(normalize_word(flag, associative_names))
       }
-      CommandKind::Time({
-        flags,
-        body: normalize_pipeline(clause.body, associative_names),
-      })
+      Time({ flags, body: normalize_pipeline(clause.body, associative_names) })
     }
-    CommandKind::Subshell(script) =>
-      CommandKind::Subshell(
-        normalize_array_indices_in_script(script, associative_names),
-      )
-    CommandKind::BraceGroup(script) =>
-      CommandKind::BraceGroup(
-        normalize_array_indices_in_script(script, associative_names),
-      )
-    CommandKind::If(clause) => {
+    Subshell(script) =>
+      Subshell(normalize_array_indices_in_script(script, associative_names))
+    BraceGroup(script) =>
+      BraceGroup(normalize_array_indices_in_script(script, associative_names))
+    If(clause) => {
       let arms : Array[IfArm] = []
       for arm in clause.arms {
         arms.push({
@@ -10691,37 +10386,37 @@ fn normalize_command(
           Some(normalize_array_indices_in_script(script, associative_names))
         None => None
       }
-      CommandKind::If({ arms, else_body })
+      If({ arms, else_body })
     }
-    CommandKind::While(loop_) =>
-      CommandKind::While({
+    While(loop_) =>
+      While({
         condition: normalize_array_indices_in_script(
           loop_.condition,
           associative_names,
         ),
         body: normalize_array_indices_in_script(loop_.body, associative_names),
       })
-    CommandKind::Until(loop_) =>
-      CommandKind::Until({
+    Until(loop_) =>
+      Until({
         condition: normalize_array_indices_in_script(
           loop_.condition,
           associative_names,
         ),
         body: normalize_array_indices_in_script(loop_.body, associative_names),
       })
-    CommandKind::ForIn(clause) => {
+    ForIn(clause) => {
       let values : Array[Word] = []
       for value in clause.values {
         values.push(normalize_word(value, associative_names))
       }
-      CommandKind::ForIn({
+      ForIn({
         ..clause,
         values,
         body: normalize_array_indices_in_script(clause.body, associative_names),
       })
     }
-    CommandKind::ForArithmetic(clause) =>
-      CommandKind::ForArithmetic({
+    ForArithmetic(clause) =>
+      ForArithmetic({
         init: normalize_arithmetic_expr(clause.init, associative_names),
         condition: normalize_arithmetic_expr(
           clause.condition,
@@ -10730,18 +10425,18 @@ fn normalize_command(
         step: normalize_arithmetic_expr(clause.step, associative_names),
         body: normalize_array_indices_in_script(clause.body, associative_names),
       })
-    CommandKind::Select(clause) => {
+    Select(clause) => {
       let values : Array[Word] = []
       for value in clause.values {
         values.push(normalize_word(value, associative_names))
       }
-      CommandKind::Select({
+      Select({
         ..clause,
         values,
         body: normalize_array_indices_in_script(clause.body, associative_names),
       })
     }
-    CommandKind::Case(clause) => {
+    Case(clause) => {
       let items : Array[CaseItem] = []
       for item in clause.items {
         let patterns : Array[Word] = []
@@ -10754,36 +10449,33 @@ fn normalize_command(
           body: normalize_array_indices_in_script(item.body, associative_names),
         })
       }
-      CommandKind::Case({
-        word: normalize_word(clause.word, associative_names),
-        items,
-      })
+      Case({ word: normalize_word(clause.word, associative_names), items })
     }
-    CommandKind::Condition(condition) =>
-      CommandKind::Condition({
+    Condition(condition) =>
+      Condition({
         ..condition,
         expr: normalize_condition_expr(condition.expr, associative_names),
       })
-    CommandKind::Arithmetic(arithmetic) =>
-      CommandKind::Arithmetic({
+    Arithmetic(arithmetic) =>
+      Arithmetic({
         ..arithmetic,
         expr: normalize_arithmetic_expr(arithmetic.expr, associative_names),
       })
-    CommandKind::Function(function_) =>
-      CommandKind::Function({
+    Function(function_) =>
+      Function({
         ..function_,
         body: normalize_command(function_.body, associative_names),
       })
-    CommandKind::CoProc(clause) =>
-      CommandKind::CoProc({
+    CoProc(clause) =>
+      CoProc({
         name: match clause.name {
           Some(name) => Some(normalize_word(name, associative_names))
           None => None
         },
         body: normalize_command(clause.body, associative_names),
       })
-    CommandKind::BatsTest(clause) =>
-      CommandKind::BatsTest({
+    BatsTest(clause) =>
+      BatsTest({
         ..clause,
         body: normalize_array_indices_in_script(clause.body, associative_names),
       })
@@ -10849,7 +10541,7 @@ fn validate_shebang(
 ) -> Unit {
   if has_bom && !annotations_disable_code(annotations, Some(1082)) {
     parser.emit_diagnostic(
-      DiagnosticSeverity::Error,
+      Error,
       initial_position(),
       "This file has a UTF-8 BOM. Remove it with: LC_CTYPE=C sed '1s/^...//' < yourscript .",
       Some(1082),
@@ -10862,20 +10554,20 @@ fn validate_shebang(
     Some(line) => {
       let shell = executable_from_shebang(line)
       match classify_shebang_shell(shell) {
-        ShebangShellStatus::Supported => ()
-        ShebangShellStatus::Unsupported =>
+        Supported => ()
+        Unsupported =>
           if !annotations_disable_code(annotations, Some(1071)) {
             parser.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               shebang_position(has_bom),
               "unsupported shebang shell '\{shell}'; parser only supports sh/bash/dash/ash/bats/ksh/oksh/'busybox sh'/'busybox ash' scripts",
               Some(1071),
             )
           }
-        ShebangShellStatus::Unknown =>
+        Unknown =>
           if !annotations_disable_code(annotations, Some(1008)) {
             parser.emit_diagnostic(
-              DiagnosticSeverity::Error,
+              Error,
               shebang_position(has_bom),
               "unrecognized shebang shell '\{shell}'; add '# shellcheck shell=bash' to specify the shell",
               Some(1008),
@@ -10904,7 +10596,7 @@ fn parse_script_with_options_internal(
     if !parser.eof() {
       parser.diagnostics.push({
         span: span_at(parser.position()),
-        severity: DiagnosticSeverity::Error,
+        severity: Error,
         code: None,
         message: "unexpected trailing input",
       })
@@ -10931,7 +10623,7 @@ fn parse_script_with_options_internal(
   } catch {
     err => {
       match err {
-        ParseError::Message(pos~, message~) => {
+        Message(pos~, message~) => {
           for diagnostic in parser.diagnostics {
             if diagnostic.span.start == pos && diagnostic.message == message {
               return { script: None, diagnostics: parser.diagnostics }
@@ -11035,7 +10727,7 @@ pub fn parse_script(source : String) -> Result[Script, ParseError] {
   let report = parse_script_report(source)
   for diagnostic in report.diagnostics {
     match diagnostic.severity {
-      DiagnosticSeverity::Error => return Err(diagnostic_as_error(diagnostic))
+      Error => return Err(diagnostic_as_error(diagnostic))
       _ => ()
     }
   }
@@ -11046,7 +10738,7 @@ pub fn parse_script(source : String) -> Result[Script, ParseError] {
         Some(diagnostic) => Err(diagnostic_as_error(diagnostic))
         None =>
           Err(
-            ParseError::Message(
+            Message(
               pos={ offset: 0, line: 1, column: 1 },
               message="parse failed",
             ),

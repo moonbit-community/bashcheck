@@ -50,20 +50,20 @@ pub fn FormatOptions::with_enable_color(
 ///|
 /// Returns the default output format used by the CLI.
 pub fn OutputFormat::default() -> OutputFormat {
-  OutputFormat::Tty
+  Tty
 }
 
 ///|
 /// Parses a lowercase format name such as `tty`, `json`, or `diff`.
 pub fn parse_output_format(text : String) -> OutputFormat? {
   match text {
-    "tty" => Some(OutputFormat::Tty)
-    "json" => Some(OutputFormat::Json)
-    "json1" => Some(OutputFormat::Json1)
-    "gcc" => Some(OutputFormat::Gcc)
-    "checkstyle" => Some(OutputFormat::CheckStyle)
-    "quiet" => Some(OutputFormat::Quiet)
-    "diff" => Some(OutputFormat::Diff)
+    "tty" => Some(Tty)
+    "json" => Some(Json)
+    "json1" => Some(Json1)
+    "gcc" => Some(Gcc)
+    "checkstyle" => Some(CheckStyle)
+    "quiet" => Some(Quiet)
+    "diff" => Some(Diff)
     _ => None
   }
 }
@@ -79,13 +79,13 @@ pub fn render_results(
   options? : FormatOptions = FormatOptions::default(),
 ) -> String {
   match format {
-    OutputFormat::Tty => render_tty(results, options)
-    OutputFormat::Json => render_json(results)
-    OutputFormat::Json1 => render_json1(results)
-    OutputFormat::Gcc => render_gcc(results)
-    OutputFormat::CheckStyle => render_checkstyle(results)
-    OutputFormat::Quiet => render_quiet(results)
-    OutputFormat::Diff => render_diff(results, options)
+    Tty => render_tty(results, options)
+    Json => render_json(results)
+    Json1 => render_json1(results)
+    Gcc => render_gcc(results)
+    CheckStyle => render_checkstyle(results)
+    Quiet => render_quiet(results)
+    Diff => render_diff(results, options)
   }
 }
 
@@ -93,10 +93,10 @@ pub fn render_results(
 /// Converts a diagnostic severity into the textual level used by renderers.
 pub fn severity_text(diagnostic : @checker.PositionedDiagnostic) -> String {
   match diagnostic.severity {
-    @checker.DiagnosticSeverity::Error => "error"
-    @checker.DiagnosticSeverity::Warning => "warning"
-    @checker.DiagnosticSeverity::Info => "info"
-    @checker.DiagnosticSeverity::Style => "style"
+    Error => "error"
+    Warning => "warning"
+    Info => "info"
+    Style => "style"
   }
 }
 
@@ -232,8 +232,8 @@ fn json_escape(text : String) -> String {
 /// ShellCheck consumers.
 fn render_replacement_json(replacement : @fixer.Replacement) -> String {
   let insertion_point = match replacement.insertion_point {
-    @fixer.InsertionPoint::InsertBefore => "beforeStart"
-    @fixer.InsertionPoint::InsertAfter => "afterEnd"
+    InsertBefore => "beforeStart"
+    InsertAfter => "afterEnd"
   }
   "{\"column\":\{replacement.start.column},\"endColumn\":\{replacement.end.column},\"endLine\":\{replacement.end.line},\"insertionPoint\":\{json_escape(insertion_point)},\"line\":\{replacement.start.line},\"precedence\":\{replacement.precedence},\"replacement\":\{json_escape(replacement.text)}}"
 }

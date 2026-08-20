@@ -32,11 +32,7 @@ fn batch_g_count_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Int {
 fn batch_g_diagnostics(source : String) -> Array[CheckDiagnostic] {
   let script = parse_batch_g_ok(source)
   let diagnostics : Array[CheckDiagnostic] = []
-  run_analytics_batch_g_checks(
-    script,
-    @semantics.ShellDialect::Bash,
-    diagnostics,
-  )
+  run_analytics_batch_g_checks(script, Bash, diagnostics)
   diagnostics
 }
 

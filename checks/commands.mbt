@@ -3,49 +3,49 @@ fn commands_descriptions() -> Array[CheckDescription] {
   let descriptions = [
     {
       code: 2005,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "commands",
       summary: "Use the command directly instead of echoing its substitution.",
     },
     {
       code: 2023,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "commands",
       summary: "Use command time if you need the external utility's flags.",
     },
     {
       code: 2024,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "commands",
       summary: "sudo doesn't affect redirects; use tee/cat patterns instead.",
     },
     {
       code: 2185,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "commands",
       summary: "Some finds don't have a default path. Specify '.' explicitly.",
     },
     {
       code: 2162,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "commands",
       summary: "read without -r will mangle backslashes.",
     },
     {
       code: 2186,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "commands",
       summary: "tempfile is deprecated. Use mktemp instead.",
     },
     {
       code: 2196,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "commands",
       summary: "egrep is non-standard and deprecated. Use grep -E instead.",
     },
     {
       code: 2197,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "commands",
       summary: "fgrep is non-standard and deprecated. Use grep -F instead.",
     },
@@ -75,7 +75,7 @@ fn commands_optional_registrations() -> Array[OptionalCheckRegistration] {
       },
       description: {
         code: 2230,
-        severity: CheckSeverity::Info,
+        severity: Info,
         category: "commands",
         summary: "'which' is non-standard. Use builtin 'command -v' instead.",
       },
@@ -143,15 +143,10 @@ fn check_time_parameters(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell_is_one_of(shell, [
-    @semantics.ShellDialect::Bash,
-    @semantics.ShellDialect::Sh,
-  ]) else {
-    return
-  }
+  guard shell_is_one_of(shell, [Bash, Sh]) else { return }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Time(clause) =>
+      Time(clause) =>
         match clause.flags.get(0) {
           Some(flag) =>
             match @semantics.literal_text(flag) {
@@ -159,7 +154,7 @@ fn check_time_parameters(
                 push_diagnostic(
                   diagnostics,
                   command_keyword_span(command, "time"),
-                  CheckSeverity::Info,
+                  Info,
                   2023,
                   "The shell may override 'time' as seen in man time(1). Use 'command time ..' for that one.",
                 )
@@ -186,7 +181,7 @@ fn check_useless_echo_command_substitution(
         push_diagnostic(
           diagnostics,
           argument.span,
-          CheckSeverity::Style,
+          Style,
           2005,
           "Useless echo? Instead of 'echo $(cmd)', just use 'cmd'.",
         )
@@ -211,7 +206,7 @@ fn check_find_without_path(
     push_diagnostic(
       diagnostics,
       effective_command_span(command),
-      CheckSeverity::Info,
+      Info,
       2185,
       "Some finds don't have a default path. Specify '.' explicitly.",
     )
@@ -270,7 +265,7 @@ fn check_deprecated_tempfile(
       push_diagnostic(
         diagnostics,
         effective_command_span(command),
-        CheckSeverity::Warning,
+        Warning,
         2186,
         "tempfile is deprecated. Use mktemp instead.",
       )
@@ -296,7 +291,7 @@ fn check_read_without_r(
           push_diagnostic_with_fix(
             diagnostics,
             effective_command_span(command),
-            CheckSeverity::Info,
+            Info,
             2162,
             "read without -r will mangle backslashes.",
             fix,
@@ -305,7 +300,7 @@ fn check_read_without_r(
           push_diagnostic(
             diagnostics,
             effective_command_span(command),
-            CheckSeverity::Info,
+            Info,
             2162,
             "read without -r will mangle backslashes.",
           )
@@ -336,7 +331,7 @@ fn maybe_push_sudo_redirect_diagnostic(
 ) -> Unit {
   guard sudo_redirect_applies_to_stdout_or_all(redirect.source) else { return }
   let target = match redirect.target {
-    @parser.RedirectionTarget::Word(word) => Some(word)
+    Word(word) => Some(word)
     _ => None
   }
   guard target is Some(_) else { return }
@@ -348,27 +343,27 @@ fn maybe_push_sudo_redirect_diagnostic(
     return
   }
   match redirect.op {
-    @parser.RedirectionOperator::Read =>
+    Read =>
       push_diagnostic(
         diagnostics,
         redirect_operator_span(redirect),
-        CheckSeverity::Info,
+        Info,
         2024,
         "sudo doesn't affect redirects. Use sudo cat file | ..",
       )
-    @parser.RedirectionOperator::Write | @parser.RedirectionOperator::Clobber =>
+    Write | Clobber =>
       push_diagnostic(
         diagnostics,
         redirect_operator_span(redirect),
-        CheckSeverity::Warning,
+        Warning,
         2024,
         "sudo doesn't affect redirects. Use ..| sudo tee file",
       )
-    @parser.RedirectionOperator::Append =>
+    Append =>
       push_diagnostic(
         diagnostics,
         redirect_operator_span(redirect),
-        CheckSeverity::Warning,
+        Warning,
         2024,
         "sudo doesn't affect redirects. Use .. | sudo tee -a file",
       )
@@ -381,8 +376,8 @@ fn sudo_redirect_applies_to_stdout_or_all(
   source : @parser.RedirectionSource?,
 ) -> Bool {
   match source {
-    None | Some(@parser.RedirectionSource::All) => true
-    Some(@parser.RedirectionSource::Fd(1)) => true
+    None | Some(All) => true
+    Some(Fd(1)) => true
     _ => false
   }
 }
@@ -398,7 +393,7 @@ fn check_deprecated_grep_variants(
         push_diagnostic(
           diagnostics,
           effective_command_span(command),
-          CheckSeverity::Info,
+          Info,
           2196,
           "egrep is non-standard and deprecated. Use grep -E instead.",
         )
@@ -406,7 +401,7 @@ fn check_deprecated_grep_variants(
         push_diagnostic(
           diagnostics,
           effective_command_span(command),
-          CheckSeverity::Info,
+          Info,
           2197,
           "fgrep is non-standard and deprecated. Use grep -F instead.",
         )
@@ -425,7 +420,7 @@ fn check_deprecate_which(
       push_diagnostic(
         diagnostics,
         effective_command_span(command),
-        CheckSeverity::Info,
+        Info,
         2230,
         "'which' is non-standard. Use builtin 'command -v' instead.",
       )
@@ -436,7 +431,7 @@ fn check_deprecate_which(
 ///|
 fn read_without_r_fix(command : @parser.Command) -> @fixer.Fix? {
   match command.kind {
-    @parser.CommandKind::Simple(_) => {
+    Simple(_) => {
       let effective_words = @semantics.effective_command_words(command)
       if effective_words.length() == 0 {
         return None

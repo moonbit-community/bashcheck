@@ -34,16 +34,10 @@ test "shell dialect selection respects override annotation shebang and filename"
       #|
     ),
   )
+  @test.assert_eq(@semantics.determine_shell(annotated), Ksh)
   @test.assert_eq(
-    @semantics.determine_shell(annotated),
-    @semantics.ShellDialect::Ksh,
-  )
-  @test.assert_eq(
-    @semantics.determine_shell(
-      annotated,
-      shell_override=@semantics.ShellDialect::Dash,
-    ),
-    @semantics.ShellDialect::Dash,
+    @semantics.determine_shell(annotated, shell_override=Dash),
+    Dash,
   )
 
   let plain = parse_shell_ok(
@@ -54,12 +48,9 @@ test "shell dialect selection respects override annotation shebang and filename"
   )
   @test.assert_eq(
     @semantics.determine_shell(plain, filename="hooks/pre-commit.envrc"),
-    @semantics.ShellDialect::Bash,
+    Bash,
   )
-  @test.assert_eq(
-    @semantics.determine_shell(plain),
-    @semantics.ShellDialect::Bash,
-  )
+  @test.assert_eq(@semantics.determine_shell(plain), Bash)
 }
 
 ///|
@@ -82,12 +73,7 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
     !@semantics.suppresses_unknown_shell_warning(plain, None, None, None),
   )
   assert_true(
-    @semantics.suppresses_unknown_shell_warning(
-      plain,
-      Some(@semantics.ShellDialect::Ksh),
-      None,
-      None,
-    ),
+    @semantics.suppresses_unknown_shell_warning(plain, Some(Ksh), None, None),
   )
   assert_true(
     @semantics.suppresses_unknown_shell_warning(annotated, None, None, None),
@@ -110,24 +96,14 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
   )
   @test.assert_eq(
     @semantics.determine_shell_with_fallback(plain, None, Some(".envrc"), None),
-    @semantics.ShellDialect::Bash,
+    Bash,
   )
   @test.assert_eq(
-    @semantics.determine_shell_with_fallback(
-      plain,
-      None,
-      None,
-      Some(@semantics.ShellDialect::Ksh),
-    ),
-    @semantics.ShellDialect::Ksh,
+    @semantics.determine_shell_with_fallback(plain, None, None, Some(Ksh)),
+    Ksh,
   )
   assert_true(
-    @semantics.suppresses_unknown_shell_warning(
-      plain,
-      None,
-      None,
-      Some(@semantics.ShellDialect::Ksh),
-    ),
+    @semantics.suppresses_unknown_shell_warning(plain, None, None, Some(Ksh)),
   )
 }
 
@@ -135,31 +111,31 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
 test "shell dialect helpers parse shebangs annotations and filenames" {
   @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env -S X=FOO bash -eu"),
-    Some(@semantics.ShellDialect::Bash),
+    Some(Bash),
   )
   @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env -S 'bash -eu'"),
-    Some(@semantics.ShellDialect::Bash),
+    Some(Bash),
   )
   @test.assert_eq(
     @semantics.shell_from_shebang(
       "#!/usr/bin/env --split-string='X=FOO bash -eu'",
     ),
-    Some(@semantics.ShellDialect::Bash),
+    Some(Bash),
   )
   @test.assert_eq(
     @semantics.shell_from_shebang("#!/usr/bin/env --split-string= dash -x"),
-    Some(@semantics.ShellDialect::Dash),
+    Some(Dash),
   )
   @test.assert_eq(
     @semantics.shell_from_shebang(
       "#!/usr/bin/env --split-string= X=FOO bash -eu",
     ),
-    Some(@semantics.ShellDialect::Bash),
+    Some(Bash),
   )
   @test.assert_eq(
     @semantics.shell_from_shebang("#!/bin/busybox ash"),
-    Some(@semantics.ShellDialect::BusyboxSh),
+    Some(BusyboxSh),
   )
   @test.assert_eq(@semantics.shell_from_shebang("#!/bin/unknownsh"), None)
 
@@ -172,25 +148,13 @@ test "shell dialect helpers parse shebangs annotations and filenames" {
   )
   @test.assert_eq(
     @semantics.shell_from_annotation(annotated.annotations),
-    Some(@semantics.ShellDialect::BusyboxSh),
+    Some(BusyboxSh),
   )
 
-  @test.assert_eq(
-    @semantics.shell_from_filename("script.ksh"),
-    Some(@semantics.ShellDialect::Ksh),
-  )
-  @test.assert_eq(
-    @semantics.shell_from_filename("test.bash"),
-    Some(@semantics.ShellDialect::Bash),
-  )
-  @test.assert_eq(
-    @semantics.shell_from_filename("test.bats"),
-    Some(@semantics.ShellDialect::Bash),
-  )
-  @test.assert_eq(
-    @semantics.shell_from_filename("test.dash"),
-    Some(@semantics.ShellDialect::Dash),
-  )
+  @test.assert_eq(@semantics.shell_from_filename("script.ksh"), Some(Ksh))
+  @test.assert_eq(@semantics.shell_from_filename("test.bash"), Some(Bash))
+  @test.assert_eq(@semantics.shell_from_filename("test.bats"), Some(Bash))
+  @test.assert_eq(@semantics.shell_from_filename("test.dash"), Some(Dash))
   @test.assert_eq(@semantics.shell_from_filename("test.sh"), None)
 }
 
@@ -206,11 +170,9 @@ test "shell option queries detect set and shopt toggles" {
   )
   assert_true(@semantics.has_set_e(enabled))
   assert_true(@semantics.has_pipefail(enabled))
-  assert_true(@semantics.has_lastpipe(enabled, @semantics.ShellDialect::Bash))
-  assert_true(
-    @semantics.has_inherit_errexit(enabled, @semantics.ShellDialect::Bash),
-  )
-  assert_true(@semantics.has_execfail(enabled, @semantics.ShellDialect::Bash))
+  assert_true(@semantics.has_lastpipe(enabled, Bash))
+  assert_true(@semantics.has_inherit_errexit(enabled, Bash))
+  assert_true(@semantics.has_execfail(enabled, Bash))
 
   let disabled = parse_shell_ok(
     (
@@ -222,11 +184,9 @@ test "shell option queries detect set and shopt toggles" {
   )
   assert_true(!@semantics.has_set_e(disabled))
   assert_true(!@semantics.has_pipefail(disabled))
-  assert_true(!@semantics.has_lastpipe(disabled, @semantics.ShellDialect::Bash))
-  assert_true(
-    !@semantics.has_inherit_errexit(disabled, @semantics.ShellDialect::Bash),
-  )
-  assert_true(!@semantics.has_execfail(disabled, @semantics.ShellDialect::Bash))
+  assert_true(!@semantics.has_lastpipe(disabled, Bash))
+  assert_true(!@semantics.has_inherit_errexit(disabled, Bash))
+  assert_true(!@semantics.has_execfail(disabled, Bash))
 
   let reordered = parse_shell_ok(
     (
@@ -316,11 +276,9 @@ test "shell option queries detect shebang long options for set and shopt" {
     ),
   )
   assert_true(@semantics.has_pipefail(script))
-  assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::Bash),
-  )
-  assert_true(@semantics.has_execfail(script, @semantics.ShellDialect::Bash))
+  assert_true(@semantics.has_lastpipe(script, Bash))
+  assert_true(@semantics.has_inherit_errexit(script, Bash))
+  assert_true(@semantics.has_execfail(script, Bash))
 }
 
 ///|
@@ -335,11 +293,9 @@ test "shell option queries treat quoted builtin flags as real options" {
   )
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
-  assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::Bash),
-  )
-  assert_true(@semantics.has_execfail(script, @semantics.ShellDialect::Bash))
+  assert_true(@semantics.has_lastpipe(script, Bash))
+  assert_true(@semantics.has_inherit_errexit(script, Bash))
+  assert_true(@semantics.has_execfail(script, Bash))
 }
 
 ///|
@@ -354,11 +310,9 @@ test "shell option queries stop parsing after positional operands" {
   )
   assert_true(!@semantics.has_set_e(script))
   assert_true(!@semantics.has_pipefail(script))
-  assert_true(!@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
-  assert_true(
-    !@semantics.has_inherit_errexit(script, @semantics.ShellDialect::Bash),
-  )
-  assert_true(!@semantics.has_execfail(script, @semantics.ShellDialect::Bash))
+  assert_true(!@semantics.has_lastpipe(script, Bash))
+  assert_true(!@semantics.has_inherit_errexit(script, Bash))
+  assert_true(!@semantics.has_execfail(script, Bash))
 }
 
 ///|
@@ -373,11 +327,9 @@ test "shell option queries ignore deferred and isolated scopes" {
   )
   assert_true(!@semantics.has_set_e(scoped))
   assert_true(!@semantics.has_pipefail(scoped))
-  assert_true(!@semantics.has_lastpipe(scoped, @semantics.ShellDialect::Bash))
-  assert_true(
-    !@semantics.has_inherit_errexit(scoped, @semantics.ShellDialect::Bash),
-  )
-  assert_true(!@semantics.has_execfail(scoped, @semantics.ShellDialect::Bash))
+  assert_true(!@semantics.has_lastpipe(scoped, Bash))
+  assert_true(!@semantics.has_inherit_errexit(scoped, Bash))
+  assert_true(!@semantics.has_execfail(scoped, Bash))
 }
 
 ///|
@@ -390,15 +342,9 @@ test "shell option queries keep current-shell compound commands" {
   )
   assert_true(@semantics.has_set_e(current_shell))
   assert_true(@semantics.has_pipefail(current_shell))
-  assert_true(
-    @semantics.has_lastpipe(current_shell, @semantics.ShellDialect::Bash),
-  )
-  assert_true(
-    @semantics.has_inherit_errexit(current_shell, @semantics.ShellDialect::Bash),
-  )
-  assert_true(
-    @semantics.has_execfail(current_shell, @semantics.ShellDialect::Bash),
-  )
+  assert_true(@semantics.has_lastpipe(current_shell, Bash))
+  assert_true(@semantics.has_inherit_errexit(current_shell, Bash))
+  assert_true(@semantics.has_execfail(current_shell, Bash))
 }
 
 ///|
@@ -431,11 +377,9 @@ test "shell option queries include sourced files in current-shell state" {
   )
   assert_true(@semantics.has_set_e(script))
   assert_true(@semantics.has_pipefail(script))
-  assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::Bash),
-  )
-  assert_true(@semantics.has_execfail(script, @semantics.ShellDialect::Bash))
+  assert_true(@semantics.has_lastpipe(script, Bash))
+  assert_true(@semantics.has_inherit_errexit(script, Bash))
+  assert_true(@semantics.has_execfail(script, Bash))
 }
 
 ///|
@@ -446,7 +390,7 @@ test "shopt double dash stops option parsing before operands" {
       #|
     ),
   )
-  assert_true(!@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
+  assert_true(!@semantics.has_lastpipe(script, Bash))
 }
 
 ///|
@@ -457,38 +401,21 @@ test "shell option defaults follow shell dialect semantics" {
       #|
     ),
   )
-  assert_true(!@semantics.has_lastpipe(script, @semantics.ShellDialect::Bash))
-  assert_true(@semantics.has_lastpipe(script, @semantics.ShellDialect::Ksh))
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::Sh),
-  )
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::Dash),
-  )
-  assert_true(
-    @semantics.has_inherit_errexit(script, @semantics.ShellDialect::BusyboxSh),
-  )
-  assert_true(
-    !@semantics.has_inherit_errexit(script, @semantics.ShellDialect::Ksh),
-  )
-  assert_true(!@semantics.has_execfail(script, @semantics.ShellDialect::Dash))
+  assert_true(!@semantics.has_lastpipe(script, Bash))
+  assert_true(@semantics.has_lastpipe(script, Ksh))
+  assert_true(@semantics.has_inherit_errexit(script, Sh))
+  assert_true(@semantics.has_inherit_errexit(script, Dash))
+  assert_true(@semantics.has_inherit_errexit(script, BusyboxSh))
+  assert_true(!@semantics.has_inherit_errexit(script, Ksh))
+  assert_true(!@semantics.has_execfail(script, Dash))
 }
 
 ///|
 test "execution mode defaults to executed and sourced when requested" {
+  @test.assert_eq(@semantics.effective_execution_mode(), Executed)
+  @test.assert_eq(@semantics.effective_execution_mode(sourced=true), Sourced)
   @test.assert_eq(
-    @semantics.effective_execution_mode(),
-    @semantics.ExecutionMode::Executed,
-  )
-  @test.assert_eq(
-    @semantics.effective_execution_mode(sourced=true),
-    @semantics.ExecutionMode::Sourced,
-  )
-  @test.assert_eq(
-    @semantics.effective_execution_mode(
-      mode_override=@semantics.ExecutionMode::Executed,
-      sourced=true,
-    ),
-    @semantics.ExecutionMode::Executed,
+    @semantics.effective_execution_mode(mode_override=Executed, sourced=true),
+    Executed,
   )
 }

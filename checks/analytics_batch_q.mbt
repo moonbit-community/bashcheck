@@ -12,85 +12,85 @@ fn analytics_batch_q_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2069,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Place 2>&1 after stdout redirections when you mean to merge both streams.",
     },
     {
       code: 2129,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Prefer grouping repeated >> redirects into one block redirect.",
     },
     {
       code: 2143,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "Prefer grep -q over comparing grep output in test expressions.",
     },
     {
       code: 2188,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This redirection doesn't have a command.",
     },
     {
       code: 2189,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "A pipe separates this redirection from the command it should apply to.",
     },
     {
       code: 2216,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Piping to a command that doesn't read stdin is usually a mistake.",
     },
     {
       code: 2217,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Redirecting to a command that doesn't read stdin is usually a mistake.",
     },
     {
       code: 2251,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Bare ! under set -e skips errexit outside condition contexts.",
     },
     {
       code: 2257,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Arithmetic side effects in redirection targets may be discarded.",
     },
     {
       code: 2259,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "This redirection overrides piped input.",
     },
     {
       code: 2260,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "This redirection overrides the output pipe.",
     },
     {
       code: 2261,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Multiple redirections compete for the same file descriptor.",
     },
     {
       code: 2265,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Single & after test commands backgrounds instead of doing logical AND.",
     },
     {
       code: 2266,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Single | between test commands pipes instead of doing logical OR.",
     },
@@ -112,7 +112,7 @@ fn run_analytics_batch_q_checks(
   check_bad_test_and_or_q(script, diagnostics)
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Pipeline(pipeline)) => {
+      Some(Pipeline(pipeline)) => {
         if !indexed_node_is_in_expansion(indexed, id) {
           check_redirected_nowhere(pipeline, diagnostics)
         }
@@ -133,11 +133,7 @@ fn check_redirected_nowhere(
     if command_is_redirect_only(segment.command) &&
       segment.command.redirects.length() > 0 {
       let code = if pipeline.segments.length() == 1 { 2188 } else { 2189 }
-      let severity = if code == 2188 {
-        CheckSeverity::Warning
-      } else {
-        CheckSeverity::Error
-      }
+      let severity = if code == 2188 { CheckSeverity::Warning } else { Error }
       let message = if code == 2188 {
         "This redirection doesn't have a command. Move to its command (or use 'true' as no-op)."
       } else {
@@ -184,7 +180,7 @@ fn check_pipe_to_nowhere(
       push_diagnostic(
         diagnostics,
         command.span,
-        CheckSeverity::Warning,
+        Warning,
         2216,
         command_does_not_read_stdin_message(command_name),
       )
@@ -198,7 +194,7 @@ fn check_pipe_to_nowhere(
       push_diagnostic(
         diagnostics,
         command.span,
-        CheckSeverity::Warning,
+        Warning,
         2217,
         command_does_not_read_stdin_redirect_message(command_name),
       )
@@ -212,7 +208,7 @@ fn check_pipe_to_nowhere(
           push_diagnostic(
             diagnostics,
             redirect_operator_span(redirect),
-            CheckSeverity::Error,
+            Error,
             2259,
             "This redirection overrides piped input. To use both, merge or pass filenames.",
           )
@@ -221,14 +217,14 @@ fn check_pipe_to_nowhere(
     }
 
     match output_pipe {
-      Some(@parser.PipeOperator::Pipe) =>
+      Some(Pipe) =>
         if !command_has_additional_producers(command) {
           match first_redirect_with_fd(command.redirects, 1) {
             Some(redirect) =>
               push_diagnostic(
                 diagnostics,
                 redirect_operator_span(redirect),
-                CheckSeverity::Error,
+                Error,
                 2260,
                 "This redirection overrides the output pipe. Use 'tee' to output to both.",
               )
@@ -258,7 +254,7 @@ fn emit_competing_redirections(
         push_diagnostic(
           diagnostics,
           redirect_operator_span(redirect),
-          CheckSeverity::Error,
+          Error,
           2261,
           competing_redirections_message(fds),
         )
@@ -288,7 +284,7 @@ fn redirect_has_competition(
 ///|
 fn command_is_redirect_only(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       simple.words.length() == 0 && simple.assignments.length() == 0
     _ => false
   }
@@ -301,7 +297,7 @@ fn check_stderr_redirect_order_q(
 ) -> Unit {
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
-      Some(@semantics.NodeRef::Command(command)) =>
+      Some(Command(command)) =>
         q_check_stderr_redirect_order_command(indexed, id, command, diagnostics)
       _ => ()
     }
@@ -326,7 +322,7 @@ fn q_check_stderr_redirect_order_command(
       push_diagnostic(
         diagnostics,
         current.span,
-        CheckSeverity::Warning,
+        Warning,
         2069,
         "To redirect stdout+stderr, 2>&1 must be last (or use '{ cmd > file; } 2>&1' to clarify).",
       )
@@ -339,11 +335,8 @@ fn q_check_stderr_redirect_order_command(
 ///|
 fn q_redirect_is_stderr_to_stdout(redirect : @parser.Redirection) -> Bool {
   match (redirect.source, redirect.op, redirect.target) {
-    (
-      Some(@parser.RedirectionSource::Fd(2)),
-      @parser.RedirectionOperator::DupOutput,
-      @parser.RedirectionTarget::Word(word),
-    ) => @semantics.literal_text(word) == Some("1")
+    (Some(Fd(2)), DupOutput, Word(word)) =>
+      @semantics.literal_text(word) == Some("1")
     _ => false
   }
 }
@@ -351,14 +344,10 @@ fn q_redirect_is_stderr_to_stdout(redirect : @parser.Redirection) -> Bool {
 ///|
 fn q_redirect_is_stdout_file_redirect(redirect : @parser.Redirection) -> Bool {
   let stdout_source = match redirect.source {
-    None | Some(@parser.RedirectionSource::Fd(1)) => true
+    None | Some(Fd(1)) => true
     _ => false
   }
-  stdout_source &&
-  (
-    redirect.op is @parser.RedirectionOperator::Write ||
-    redirect.op is @parser.RedirectionOperator::Append
-  )
+  stdout_source && (redirect.op is Write || redirect.op is Append)
 }
 
 ///|
@@ -376,7 +365,7 @@ fn q_command_output_is_captured(
       None => break
     }
     match @semantics.node_ref_of(indexed, node_id) {
-      Some(@semantics.NodeRef::Command(_)) =>
+      Some(Command(_)) =>
         if q_command_is_pipeline_producer(indexed, node_id) {
           return true
         }
@@ -395,7 +384,7 @@ fn q_command_is_pipeline_producer(
   let segment_id = match @semantics.parent_of(indexed, id) {
     Some(parent) =>
       match @semantics.node_ref_of(indexed, parent) {
-        Some(@semantics.NodeRef::PipelineSegment(_)) => parent
+        Some(PipelineSegment(_)) => parent
         _ => return false
       }
     None => return false
@@ -403,7 +392,7 @@ fn q_command_is_pipeline_producer(
   let pipeline_id = match @semantics.parent_of(indexed, segment_id) {
     Some(parent) =>
       match @semantics.node_ref_of(indexed, parent) {
-        Some(@semantics.NodeRef::Pipeline(pipeline)) =>
+        Some(Pipeline(pipeline)) =>
           if pipeline.segments.length() > 1 {
             parent
           } else {
@@ -428,7 +417,7 @@ fn q_pipeline_segment_ids(
   let ids : Array[@semantics.NodeId] = []
   for child in @semantics.children_of(indexed, pipeline_id) {
     match @semantics.node_ref_of(indexed, child) {
-      Some(@semantics.NodeRef::PipelineSegment(_)) => ids.push(child)
+      Some(PipelineSegment(_)) => ids.push(child)
       _ => ()
     }
   }
@@ -475,7 +464,7 @@ fn q_advance_multiple_appends(
               push_diagnostic(
                 diagnostics,
                 first_span,
-                CheckSeverity::Style,
+                Style,
                 2129,
                 "Consider using { cmd1; cmd2; } >> file instead of individual redirects.",
               )
@@ -510,10 +499,7 @@ fn q_multiple_append_target(
 fn q_first_append_redirect_target(command : @parser.Command) -> String? {
   for redirect in command.redirects {
     match (redirect.op, redirect.target) {
-      (
-        @parser.RedirectionOperator::Append,
-        @parser.RedirectionTarget::Word(word),
-      ) => return Some(word.source)
+      (Append, Word(word)) => return Some(word.source)
       _ => ()
     }
   }
@@ -548,11 +534,9 @@ fn q_check_multiple_appends_nested_in_command(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BraceGroup(script) | BatsTest({ body: script, .. }) =>
       check_multiple_appends_q(script, diagnostics)
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         check_multiple_appends_q(arm.condition, diagnostics)
         check_multiple_appends_q(arm.body, diagnostics)
@@ -562,30 +546,24 @@ fn q_check_multiple_appends_nested_in_command(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       check_multiple_appends_q(clause.condition, diagnostics)
       check_multiple_appends_q(clause.body, diagnostics)
     }
-    @parser.CommandKind::ForIn(clause) =>
-      check_multiple_appends_q(clause.body, diagnostics)
-    @parser.CommandKind::ForArithmetic(clause) =>
-      check_multiple_appends_q(clause.body, diagnostics)
-    @parser.CommandKind::Select(clause) =>
-      check_multiple_appends_q(clause.body, diagnostics)
-    @parser.CommandKind::Case(clause) =>
+    ForIn(clause) => check_multiple_appends_q(clause.body, diagnostics)
+    ForArithmetic(clause) => check_multiple_appends_q(clause.body, diagnostics)
+    Select(clause) => check_multiple_appends_q(clause.body, diagnostics)
+    Case(clause) =>
       for item in clause.items {
         check_multiple_appends_q(item.body, diagnostics)
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       q_check_multiple_appends_nested_in_command(function_.body, diagnostics)
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       q_check_multiple_appends_nested_in_command(clause.body, diagnostics)
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       q_check_multiple_appends_nested_in_pipeline(clause.body, diagnostics)
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
@@ -596,7 +574,7 @@ fn check_should_use_grep_q_q(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         q_check_condition_for_grep_q(condition.expr, diagnostics)
       _ => ()
     }
@@ -609,19 +587,19 @@ fn q_check_condition_for_grep_q(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Word(word) =>
+    Word(word) =>
       match q_final_grep_name_from_condition_word(word) {
         Some(name) =>
           push_diagnostic(
             diagnostics,
             q_nullary_condition_word_span(word),
-            CheckSeverity::Style,
+            Style,
             2143,
             "Use \{name} -q instead of comparing output with [ -n .. ].",
           )
         None => ()
       }
-    @parser.ConditionExpr::Unary(op, op_span, word) =>
+    Unary(op, op_span, word) =>
       if op == "-n" || op == "-z" {
         match q_final_grep_name_from_condition_word(word) {
           Some(name) => {
@@ -629,7 +607,7 @@ fn q_check_condition_for_grep_q(
             push_diagnostic(
               diagnostics,
               op_span,
-              CheckSeverity::Style,
+              Style,
               2143,
               "Use \{prefix}\{name} -q instead of comparing output with [ \{op} .. ].",
             )
@@ -637,16 +615,12 @@ fn q_check_condition_for_grep_q(
           None => ()
         }
       }
-    @parser.ConditionExpr::Group(inner) =>
-      q_check_condition_for_grep_q(inner, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    Group(inner) => q_check_condition_for_grep_q(inner, diagnostics)
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       q_check_condition_for_grep_q(lhs, diagnostics)
       q_check_condition_for_grep_q(rhs, diagnostics)
     }
-    @parser.ConditionExpr::Empty
-    | @parser.ConditionExpr::Binary(_, _, _, _)
-    | @parser.ConditionExpr::Not(_) => ()
+    Empty | Binary(_, _, _, _) | Not(_) => ()
   }
 }
 
@@ -661,24 +635,11 @@ fn q_final_grep_name_from_condition_word(word : @parser.Word) -> String? {
 ///|
 fn q_condition_word_substitution_script(word : @parser.Word) -> @parser.Script? {
   match word.parts {
-    [@parser.WordPart::CommandSubstitution(script)]
-    | [@parser.WordPart::BackQuoted(script)] => Some(script)
-    [
-      @parser.WordPart::DoubleQuoted(
-        [@parser.WordPart::CommandSubstitution(script)]
-      ),
-    ]
-    | [@parser.WordPart::DoubleQuoted([@parser.WordPart::BackQuoted(script)])]
-    | [
-      @parser.WordPart::DollarDoubleQuoted(
-        [@parser.WordPart::CommandSubstitution(script)]
-      ),
-    ]
-    | [
-      @parser.WordPart::DollarDoubleQuoted(
-        [@parser.WordPart::BackQuoted(script)]
-      ),
-    ] => Some(script)
+    [CommandSubstitution(script)] | [BackQuoted(script)] => Some(script)
+    [DoubleQuoted([CommandSubstitution(script)])]
+    | [DoubleQuoted([BackQuoted(script)])]
+    | [DollarDoubleQuoted([CommandSubstitution(script)])]
+    | [DollarDoubleQuoted([BackQuoted(script)])] => Some(script)
     _ => None
   }
 }
@@ -798,7 +759,7 @@ fn command_has_additional_consumers(command : @parser.Command) -> Bool {
     }
     for redirect in current.redirects {
       match redirect.target {
-        @parser.RedirectionTarget::HereDoc(doc) =>
+        HereDoc(doc) =>
           match doc.parts {
             Some(parts) =>
               if here_doc_parts_have_additional_consumers(parts) {
@@ -831,7 +792,7 @@ fn command_has_additional_producers(command : @parser.Command) -> Bool {
     }
     for redirect in current.redirects {
       match redirect.target {
-        @parser.RedirectionTarget::HereDoc(doc) =>
+        HereDoc(doc) =>
           match doc.parts {
             Some(parts) =>
               if here_doc_parts_have_additional_producers(parts) {
@@ -852,13 +813,10 @@ fn word_has_additional_consumers(word : @parser.Word) -> Bool {
   let mut found = false
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) =>
-        if script.items.length() > 0 {
-          found = true
-        }
-      @parser.WordPart::ProcessSubstitution(direction, script) =>
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => if script.items.length() > 0 { found = true }
+      ProcessSubstitution(direction, script) =>
         if direction == "<" && script.items.length() > 0 {
           found = true
         }
@@ -873,7 +831,7 @@ fn word_has_additional_producers(word : @parser.Word) -> Bool {
   let mut found = false
   walk_word_deep(word, fn(part) {
     match part {
-      @parser.WordPart::ProcessSubstitution(direction, script) =>
+      ProcessSubstitution(direction, script) =>
         if direction == ">" && script.items.length() > 0 {
           found = true
         }
@@ -912,13 +870,10 @@ fn word_part_has_additional_consumers(part : @parser.WordPart) -> Bool {
   let mut found = false
   walk_word_part_deep(part, fn(nested) {
     match nested {
-      @parser.WordPart::CommandSubstitution(script)
-      | @parser.WordPart::BraceCommandSubstitution(_, script)
-      | @parser.WordPart::BackQuoted(script) =>
-        if script.items.length() > 0 {
-          found = true
-        }
-      @parser.WordPart::ProcessSubstitution(direction, script) =>
+      CommandSubstitution(script)
+      | BraceCommandSubstitution(_, script)
+      | BackQuoted(script) => if script.items.length() > 0 { found = true }
+      ProcessSubstitution(direction, script) =>
         if direction == "<" && script.items.length() > 0 {
           found = true
         }
@@ -933,7 +888,7 @@ fn word_part_has_additional_producers(part : @parser.WordPart) -> Bool {
   let mut found = false
   walk_word_part_deep(part, fn(nested) {
     match nested {
-      @parser.WordPart::ProcessSubstitution(direction, script) =>
+      ProcessSubstitution(direction, script) =>
         if direction == ">" && script.items.length() > 0 {
           found = true
         }
@@ -959,42 +914,20 @@ fn first_redirect_with_fd(
 ///|
 fn redirect_default_fds(redirect : @parser.Redirection) -> Array[Int] {
   match redirect.source {
-    Some(@parser.RedirectionSource::All) =>
+    Some(All) =>
       match redirect.op {
-        @parser.RedirectionOperator::Write
-        | @parser.RedirectionOperator::Append
-        | @parser.RedirectionOperator::Clobber => [1, 2]
+        Write | Append | Clobber => [1, 2]
         _ => []
       }
-    Some(@parser.RedirectionSource::Fd(fd)) =>
-      if redirect_uses_default_fd(redirect) {
-        [fd]
-      } else {
-        []
-      }
-    Some(@parser.RedirectionSource::Named(_)) => []
+    Some(Fd(fd)) => if redirect_uses_default_fd(redirect) { [fd] } else { [] }
+    Some(Named(_)) => []
     None =>
       match redirect.op {
-        @parser.RedirectionOperator::Read
-        | @parser.RedirectionOperator::HereDoc
-        | @parser.RedirectionOperator::HereDocStrip
-        | @parser.RedirectionOperator::HereString => [0]
-        @parser.RedirectionOperator::ReadWrite => [0, 1]
-        @parser.RedirectionOperator::Write
-        | @parser.RedirectionOperator::Append
-        | @parser.RedirectionOperator::Clobber => [1]
-        @parser.RedirectionOperator::DupInput =>
-          if redirect_target_is_dash(redirect) {
-            [0]
-          } else {
-            []
-          }
-        @parser.RedirectionOperator::DupOutput =>
-          if redirect_target_is_dash(redirect) {
-            [1]
-          } else {
-            []
-          }
+        Read | HereDoc | HereDocStrip | HereString => [0]
+        ReadWrite => [0, 1]
+        Write | Append | Clobber => [1]
+        DupInput => if redirect_target_is_dash(redirect) { [0] } else { [] }
+        DupOutput => if redirect_target_is_dash(redirect) { [1] } else { [] }
       }
   }
 }
@@ -1002,26 +935,23 @@ fn redirect_default_fds(redirect : @parser.Redirection) -> Array[Int] {
 ///|
 fn redirect_uses_default_fd(redirect : @parser.Redirection) -> Bool {
   match redirect.op {
-    @parser.RedirectionOperator::Read
-    | @parser.RedirectionOperator::Write
-    | @parser.RedirectionOperator::Append
-    | @parser.RedirectionOperator::ReadWrite
-    | @parser.RedirectionOperator::Clobber
-    | @parser.RedirectionOperator::HereDoc
-    | @parser.RedirectionOperator::HereDocStrip
-    | @parser.RedirectionOperator::HereString => true
-    @parser.RedirectionOperator::DupInput
-    | @parser.RedirectionOperator::DupOutput =>
-      redirect_target_is_dash(redirect)
+    Read
+    | Write
+    | Append
+    | ReadWrite
+    | Clobber
+    | HereDoc
+    | HereDocStrip
+    | HereString => true
+    DupInput | DupOutput => redirect_target_is_dash(redirect)
   }
 }
 
 ///|
 fn redirect_target_is_dash(redirect : @parser.Redirection) -> Bool {
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) =>
-      @semantics.literal_text(word) == Some("-")
-    @parser.RedirectionTarget::HereDoc(_) => false
+    Word(word) => @semantics.literal_text(word) == Some("-")
+    HereDoc(_) => false
   }
 }
 
@@ -1064,21 +994,11 @@ fn indexed_node_is_in_expansion(
 ) -> Bool {
   for ancestor in @semantics.find_ancestors(indexed, id) {
     match @semantics.node_ref_of(indexed, ancestor) {
-      Some(@semantics.NodeRef::Annotation(_)) => ()
-      Some(
-        @semantics.NodeRef::WordPart(@parser.WordPart::CommandSubstitution(_))
-      )
-      | Some(
-        @semantics.NodeRef::WordPart(
-          @parser.WordPart::BraceCommandSubstitution(_, _)
-        )
-      )
-      | Some(@semantics.NodeRef::WordPart(@parser.WordPart::BackQuoted(_)))
-      | Some(
-        @semantics.NodeRef::WordPart(
-          @parser.WordPart::ProcessSubstitution(_, _)
-        )
-      ) => return true
+      Some(Annotation(_)) => ()
+      Some(WordPart(CommandSubstitution(_)))
+      | Some(WordPart(BraceCommandSubstitution(_, _)))
+      | Some(WordPart(BackQuoted(_)))
+      | Some(WordPart(ProcessSubstitution(_, _))) => return true
       _ => ()
     }
   }
@@ -1156,7 +1076,7 @@ fn q_maybe_push_useless_bang_item(
     push_diagnostic_with_fix(
       diagnostics,
       bang_span,
-      CheckSeverity::Info,
+      Info,
       2251,
       message,
       q_useless_bang_fix(
@@ -1167,7 +1087,7 @@ fn q_maybe_push_useless_bang_item(
       ),
     )
   } else {
-    push_diagnostic(diagnostics, bang_span, CheckSeverity::Info, 2251, message)
+    push_diagnostic(diagnostics, bang_span, Info, 2251, message)
   }
 }
 
@@ -1244,9 +1164,7 @@ fn q_visit_function_body_for_useless_bang(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match body.kind {
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | Subshell(script) | BatsTest({ body: script, .. }) =>
       q_visit_script_for_useless_bang(
         script,
         compound_depth + 1,
@@ -1272,7 +1190,7 @@ fn q_visit_command_for_useless_bang(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::BraceGroup(script) =>
+    BraceGroup(script) =>
       q_visit_script_for_useless_bang(
         script,
         compound_depth + 1,
@@ -1280,8 +1198,7 @@ fn q_visit_command_for_useless_bang(
         false,
         diagnostics,
       )
-    @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    Subshell(script) | BatsTest({ body: script, .. }) =>
       q_visit_script_for_useless_bang(
         script,
         compound_depth + 1,
@@ -1289,7 +1206,7 @@ fn q_visit_command_for_useless_bang(
         true,
         diagnostics,
       )
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         q_visit_script_for_useless_bang(
           arm.condition,
@@ -1318,7 +1235,7 @@ fn q_visit_command_for_useless_bang(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       q_visit_script_for_useless_bang(
         clause.condition,
         compound_depth + 1,
@@ -1334,7 +1251,7 @@ fn q_visit_command_for_useless_bang(
         diagnostics,
       )
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       q_visit_script_for_useless_bang(
         clause.body,
         compound_depth + 1,
@@ -1342,7 +1259,7 @@ fn q_visit_command_for_useless_bang(
         false,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       q_visit_script_for_useless_bang(
         clause.body,
         compound_depth + 1,
@@ -1350,7 +1267,7 @@ fn q_visit_command_for_useless_bang(
         false,
         diagnostics,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       q_visit_script_for_useless_bang(
         clause.body,
         compound_depth + 1,
@@ -1358,20 +1275,20 @@ fn q_visit_command_for_useless_bang(
         false,
         diagnostics,
       )
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       q_visit_function_body_for_useless_bang(
         function_.body,
         compound_depth,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Time(_)
-    | @parser.CommandKind::Case(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_)
-    | @parser.CommandKind::CoProc(_) => ()
+    Simple(_)
+    | Source(_)
+    | Time(_)
+    | Case(_)
+    | Condition(_)
+    | Arithmetic(_)
+    | CoProc(_) => ()
   }
 }
 
@@ -1381,13 +1298,10 @@ fn check_modified_arithmetic_in_redirection_q(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  guard shell != @semantics.ShellDialect::Dash &&
-    shell != @semantics.ShellDialect::BusyboxSh else {
-    return
-  }
+  guard shell != Dash && shell != BusyboxSh else { return }
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Simple(simple) if simple.words.length() > 0 =>
+      Simple(simple) if simple.words.length() > 0 =>
         for redirect in command.redirects {
           q_check_redirection_for_modified_arithmetic(redirect, diagnostics)
         }
@@ -1402,11 +1316,11 @@ fn q_check_redirection_for_modified_arithmetic(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match redirect.target {
-    @parser.RedirectionTarget::Word(word) =>
+    Word(word) =>
       for part in word.parts {
         q_check_redirection_word_part(part, word, diagnostics)
       }
-    @parser.RedirectionTarget::HereDoc(doc) =>
+    HereDoc(doc) =>
       match doc.parts {
         Some(parts) =>
           for part in parts {
@@ -1424,8 +1338,7 @@ fn q_check_redirection_word_part(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match part {
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       q_maybe_push_modified_arithmetic_diagnostic(
         expr,
         word.span,
@@ -1443,8 +1356,7 @@ fn q_check_redirection_here_doc_part(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match part {
-    @parser.WordPart::ArithmeticExpansion(expr)
-    | @parser.WordPart::DollarBracket(expr) =>
+    ArithmeticExpansion(expr) | DollarBracket(expr) =>
       q_maybe_push_modified_arithmetic_diagnostic(expr, span, None, diagnostics)
     _ => ()
   }
@@ -1462,7 +1374,7 @@ fn q_maybe_push_modified_arithmetic_diagnostic(
       push_diagnostic(
         diagnostics,
         effect_span,
-        CheckSeverity::Warning,
+        Warning,
         2257,
         "Arithmetic modifications in command redirections may be discarded. Do them separately.",
       )
@@ -1643,13 +1555,13 @@ fn q_visit_script_for_bad_test_and_or(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   for item in script.items {
-    if item.terminator is Some(@parser.Terminator::Background) &&
+    if item.terminator is Some(Background) &&
       q_and_or_last_command_is_test(item.and_or) {
       let operator_span = q_background_terminator_span(item)
       push_diagnostic_with_fix(
         diagnostics,
         operator_span,
-        CheckSeverity::Error,
+        Error,
         2265,
         "Use && for logical AND. Single & will background and return true.",
         @fixer.Fix::from_replacements([
@@ -1723,7 +1635,7 @@ fn q_visit_pipeline_for_bad_test_and_or(
 ) -> Unit {
   let mut i = 0
   while i < pipeline.operators.length() {
-    if pipeline.operators[i] is @parser.PipeOperator::Pipe &&
+    if pipeline.operators[i] is Pipe &&
       (
         q_command_is_test_command(pipeline.segments[i].command) ||
         q_command_is_test_command(pipeline.segments[i + 1].command)
@@ -1732,7 +1644,7 @@ fn q_visit_pipeline_for_bad_test_and_or(
       push_diagnostic_with_fix(
         diagnostics,
         operator_span,
-        CheckSeverity::Warning,
+        Warning,
         2266,
         "Use || for logical OR. Single | will pipe.",
         @fixer.Fix::from_replacements([
@@ -1767,9 +1679,7 @@ fn q_visit_function_body_for_bad_test_and_or(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match body.kind {
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | Subshell(script) | BatsTest({ body: script, .. }) =>
       q_visit_script_for_bad_test_and_or(
         script,
         compound_depth + 1,
@@ -1794,23 +1704,21 @@ fn q_visit_command_for_bad_test_and_or(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Time(clause) =>
+    Time(clause) =>
       q_visit_pipeline_for_bad_test_and_or(
         clause.body,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::BraceGroup(script)
-    | @parser.CommandKind::Subshell(script)
-    | @parser.CommandKind::BatsTest({ body: script, .. }) =>
+    BraceGroup(script) | Subshell(script) | BatsTest({ body: script, .. }) =>
       q_visit_script_for_bad_test_and_or(
         script,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::If(clause) => {
+    If(clause) => {
       for arm in clause.arms {
         q_visit_script_for_bad_test_and_or(
           arm.condition,
@@ -1836,7 +1744,7 @@ fn q_visit_command_for_bad_test_and_or(
         None => ()
       }
     }
-    @parser.CommandKind::While(clause) | @parser.CommandKind::Until(clause) => {
+    While(clause) | Until(clause) => {
       q_visit_script_for_bad_test_and_or(
         clause.condition,
         compound_depth + 1,
@@ -1850,28 +1758,28 @@ fn q_visit_command_for_bad_test_and_or(
         diagnostics,
       )
     }
-    @parser.CommandKind::ForIn(clause) =>
+    ForIn(clause) =>
       q_visit_script_for_bad_test_and_or(
         clause.body,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::ForArithmetic(clause) =>
+    ForArithmetic(clause) =>
       q_visit_script_for_bad_test_and_or(
         clause.body,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::Select(clause) =>
+    Select(clause) =>
       q_visit_script_for_bad_test_and_or(
         clause.body,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::Case(clause) =>
+    Case(clause) =>
       for item in clause.items {
         q_visit_script_for_bad_test_and_or(
           item.body,
@@ -1880,32 +1788,29 @@ fn q_visit_command_for_bad_test_and_or(
           diagnostics,
         )
       }
-    @parser.CommandKind::Function(function_) =>
+    Function(function_) =>
       q_visit_function_body_for_bad_test_and_or(
         function_.body,
         compound_depth,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::CoProc(clause) =>
+    CoProc(clause) =>
       q_visit_command_for_bad_test_and_or(
         clause.body,
         compound_depth + 1,
         function_depth,
         diagnostics,
       )
-    @parser.CommandKind::Simple(_)
-    | @parser.CommandKind::Source(_)
-    | @parser.CommandKind::Condition(_)
-    | @parser.CommandKind::Arithmetic(_) => ()
+    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 
 ///|
 fn q_command_is_test_command(command : @parser.Command) -> Bool {
   match command.kind {
-    @parser.CommandKind::Condition(_) => true
-    @parser.CommandKind::Simple(simple) =>
+    Condition(_) => true
+    Simple(simple) =>
       simple.assignments.length() == 0 &&
       simple.words.length() > 0 &&
       command_matches_exact_name(command, "test")

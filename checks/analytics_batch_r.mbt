@@ -12,7 +12,7 @@ fn analytics_batch_r_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2331,
-      severity: CheckSeverity::Style,
+      severity: Style,
       category: "analytics",
       summary: "For file existence, prefer standard -e over legacy -a.",
     },
@@ -36,7 +36,7 @@ fn check_unary_test_a(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         r_visit_condition_unary_test_a(condition.expr, 0, diagnostics)
       _ => ()
     }
@@ -50,27 +50,24 @@ fn r_visit_condition_unary_test_a(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
-    @parser.ConditionExpr::Unary(op, op_span, _) =>
+    Unary(op, op_span, _) =>
       if op == "-a" {
         push_diagnostic_with_fix(
           diagnostics,
           op_span,
-          CheckSeverity::Style,
+          Style,
           2331,
           "For file existence, prefer standard -e over legacy -a.",
           r_replace_span_fix(op_span, "-e", 6 + nesting_depth),
         )
       }
-    @parser.ConditionExpr::Group(inner) | @parser.ConditionExpr::Not(inner) =>
+    Group(inner) | Not(inner) =>
       r_visit_condition_unary_test_a(inner, nesting_depth + 1, diagnostics)
-    @parser.ConditionExpr::And(_, lhs, rhs)
-    | @parser.ConditionExpr::Or(_, lhs, rhs) => {
+    And(_, lhs, rhs) | Or(_, lhs, rhs) => {
       r_visit_condition_unary_test_a(lhs, nesting_depth + 1, diagnostics)
       r_visit_condition_unary_test_a(rhs, nesting_depth + 1, diagnostics)
     }
-    @parser.ConditionExpr::Empty
-    | @parser.ConditionExpr::Word(_)
-    | @parser.ConditionExpr::Binary(_, _, _, _) => ()
+    Empty | Word(_) | Binary(_, _, _, _) => ()
   }
 }
 

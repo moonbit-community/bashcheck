@@ -12,103 +12,103 @@ fn analytics_batch_a_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2016,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Expressions don't expand in single quotes.",
     },
     {
       code: 2026,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "A word fragment after single quotes is outside the quotes.",
     },
     {
       code: 2027,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Adjacent quotes actually unquote the expansion between them.",
     },
     {
       code: 2034,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Assigned variables should be used or exported intentionally.",
     },
     {
       code: 2050,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This test expression is constant and may be missing $.",
     },
     {
       code: 2086,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Unquoted parameter expansions may split words or trigger globs.",
     },
     {
       code: 2088,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "Tilde does not expand inside quotes.",
     },
     {
       code: 2140,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A quoted-literal-quoted word likely needs escaping or merging.",
     },
     {
       code: 2296,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Parameter expansions can't start with invalid syntax.",
     },
     {
       code: 2297,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Double quotes must be outside parameter expansions.",
     },
     {
       code: 2298,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Nested ${${x}}-style expansions are invalid.",
     },
     {
       code: 2299,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Parameter expansions can't start by nesting another expansion.",
     },
     {
       code: 2300,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Parameter expansion can't be applied to command substitutions.",
     },
     {
       code: 2301,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Parameter expansions can't start with unexpected syntax.",
     },
     {
       code: 2153,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Possible uppercase variable misspelling with a close assigned match.",
     },
     {
       code: 2193,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "This comparison's operands can never be equal.",
     },
     {
       code: 2258,
-      severity: CheckSeverity::Warning,
+      severity: Warning,
       category: "analytics",
       summary: "A trailing comma in for-values is part of the word, not a separator.",
     },
@@ -140,10 +140,10 @@ fn check_single_quoted_variables(
   visit_script_commands(script, fn(command) {
     let context = analytics_single_quoted_context_name(command)
     match command.kind {
-      @parser.CommandKind::Simple(simple) => {
+      Simple(simple) => {
         for assignment in simple.assignments {
           match assignment.value {
-            @parser.AssignmentValue::Word(word) =>
+            Word(word) =>
               maybe_push_single_quoted_variable_diagnostic(
                 word,
                 Some(assignment.name),
@@ -164,10 +164,10 @@ fn check_single_quoted_variables(
           i += 1
         }
       }
-      @parser.CommandKind::Source(source) => {
+      Source(source) => {
         for assignment in source.assignments {
           match assignment.value {
-            @parser.AssignmentValue::Word(word) =>
+            Word(word) =>
               maybe_push_single_quoted_variable_diagnostic(
                 word,
                 Some(assignment.name),
@@ -214,7 +214,7 @@ fn maybe_push_single_quoted_variable_diagnostic(
 ) -> Unit {
   guard word.parts.length() == 1 else { return }
   let text = match word.parts[0] {
-    @parser.WordPart::SingleQuoted(text) => text
+    SingleQuoted(text) => text
     _ => return
   }
   guard analytics_single_quoted_has_expression(text) else { return }
@@ -228,7 +228,7 @@ fn maybe_push_single_quoted_variable_diagnostic(
   push_diagnostic(
     diagnostics,
     word.span,
-    CheckSeverity::Info,
+    Info,
     2016,
     "Expressions don't expand in single quotes, use double quotes for that.",
   )
@@ -405,7 +405,7 @@ fn check_unused_assignments(
     push_diagnostic(
       diagnostics,
       span,
-      CheckSeverity::Warning,
+      Warning,
       2034,
       "\{name} appears unused. Verify use (or export if used externally).",
     )
@@ -418,7 +418,7 @@ fn analytics_collect_unused_assignment_candidates(
   candidates : Array[(String, @parser.Span)],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       if simple.words.length() == 0 {
         for assignment in simple.assignments {
           analytics_maybe_push_unused_assignment_candidate(
@@ -447,7 +447,7 @@ fn analytics_collect_declared_unused_candidates(
     return
   }
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       for assignment in simple.assignments {
         analytics_maybe_push_unused_assignment_candidate(
           candidates,
@@ -499,29 +499,29 @@ fn analytics_collect_command_reference_names(
   })
   for redirect in command.redirects {
     match redirect.target {
-      @parser.RedirectionTarget::HereDoc({ parts: Some(parts), .. }) =>
+      HereDoc({ parts: Some(parts), .. }) =>
         collect_word_part_reference_names(parts, references)
       _ => ()
     }
   }
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       for assignment in simple.assignments {
         for index in assignment.indexes {
           collect_word_part_reference_names(index.parts, references)
         }
         collect_assignment_value_reference_names(assignment.value, references)
       }
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       for assignment in source.assignments {
         for index in assignment.indexes {
           collect_word_part_reference_names(index.parts, references)
         }
         collect_assignment_value_reference_names(assignment.value, references)
       }
-    @parser.CommandKind::Arithmetic(arithmetic) =>
+    Arithmetic(arithmetic) =>
       analytics_collect_arithmetic_reference_names(arithmetic.expr, references)
-    @parser.CommandKind::ForArithmetic(clause) => {
+    ForArithmetic(clause) => {
       analytics_collect_arithmetic_reference_names(clause.init, references)
       analytics_collect_arithmetic_reference_names(clause.condition, references)
       analytics_collect_arithmetic_reference_names(clause.step, references)
@@ -538,7 +538,7 @@ fn analytics_collect_arithmetic_reference_names(
   let mut i = 0
   while i < expr.tokens.length() {
     match expr.tokens[i] {
-      @parser.ArithmeticToken::Variable(name, indexes) => {
+      Variable(name, indexes) => {
         if analytics_arithmetic_token_needs_read(expr.tokens, i) {
           push_unique_reference_name(references, name)
         }
@@ -546,9 +546,8 @@ fn analytics_collect_arithmetic_reference_names(
           collect_word_part_reference_names(index.parts, references)
         }
       }
-      @parser.ArithmeticToken::Expansion(word) =>
-        collect_word_reference_names(word, references)
-      @parser.ArithmeticToken::Group(inner) =>
+      Expansion(word) => collect_word_reference_names(word, references)
+      Group(inner) =>
         analytics_collect_arithmetic_reference_names(inner, references)
       _ => ()
     }
@@ -562,7 +561,7 @@ fn analytics_arithmetic_token_needs_read(
   index : Int,
 ) -> Bool {
   match tokens[index] {
-    @parser.ArithmeticToken::Variable(_, _) =>
+    Variable(_, _) =>
       match analytics_arithmetic_next_operator(tokens, index) {
         Some("=") => false
         _ => true
@@ -579,7 +578,7 @@ fn analytics_arithmetic_next_operator(
   let mut i = index + 1
   while i < tokens.length() {
     match tokens[i] {
-      @parser.ArithmeticToken::Operator(op) => return Some(op)
+      Operator(op) => return Some(op)
       _ => ()
     }
     i += 1
@@ -596,7 +595,7 @@ fn check_bad_parameter_substitutions(
     visit_direct_words_in_command(command, fn(word, _) {
       walk_word_deep(word, fn(part) {
         match part {
-          @parser.WordPart::BracedParameter(expansion) =>
+          BracedParameter(expansion) =>
             maybe_push_bad_parameter_substitution_diagnostic(
               word, expansion, diagnostics,
             )
@@ -641,7 +640,7 @@ fn check_unquoted_parameter_expansions(
         push_diagnostic_with_fix(
           diagnostics,
           target.span,
-          CheckSeverity::Info,
+          Info,
           2086,
           "Double quote to prevent globbing and word splitting.",
           analytics_quote_span_fix(target.span),
@@ -656,11 +655,11 @@ fn analytics_skips_2086_for_2223(
   command : @parser.Command,
   place : WordPlace,
 ) -> Bool {
-  if place != WordPlace::CommandArgument {
+  if place != CommandArgument {
     return false
   }
   match command.kind {
-    @parser.CommandKind::Simple(simple) =>
+    Simple(simple) =>
       match simple.words.get(0) {
         Some(first) => @semantics.literal_text(first) == Some(":")
         None => false
@@ -685,7 +684,7 @@ fn analytics_collect_quote_safe_word_spans(
   let spans : Array[@parser.Span] = []
   for id in @cfg.ast_ids(cfg) {
     match @cfg.ast_ref_of(cfg, id) {
-      Some(@semantics.NodeRef::Word(word)) =>
+      Some(Word(word)) =>
         for target in analytics_quote_safe_targets(word) {
           if quote_safe_word_context_allows(cfg, id, word) &&
             variable_state_is_quote_safe(analysis, id, target.name) {
@@ -700,7 +699,7 @@ fn analytics_collect_quote_safe_word_spans(
 
 ///|
 fn analytics_word_place_checks_2086(place : WordPlace) -> Bool {
-  if place == WordPlace::CaseWord {
+  if place == CaseWord {
     return false
   }
   word_place_checks_unquoted_expansions(place)
@@ -712,7 +711,7 @@ fn analytics_declaration_argument_skips_2086(
   word : @parser.Word,
   place : WordPlace,
 ) -> Bool {
-  guard place == WordPlace::CommandArgument else { return false }
+  guard place == CommandArgument else { return false }
   let command_name = match @semantics.effective_command_name(command) {
     Some(name) => name
     None => return false
@@ -800,13 +799,8 @@ fn analytics_quote_safe_targets(
 ///|
 fn analytics_quote_safe_part_name(part : @parser.WordPart) -> String? {
   match part {
-    @parser.WordPart::Parameter(name) =>
-      if is_identifier_name(name) {
-        Some(name)
-      } else {
-        None
-      }
-    @parser.WordPart::BracedParameter(
+    Parameter(name) => if is_identifier_name(name) { Some(name) } else { None }
+    BracedParameter(
       {
         length_prefix: false,
         indirect: false,
@@ -823,10 +817,9 @@ fn analytics_quote_safe_part_name(part : @parser.WordPart) -> String? {
 ///|
 fn analytics_part_needs_2086(part : @parser.WordPart) -> Bool {
   match part {
-    @parser.WordPart::Parameter(_) => true
-    @parser.WordPart::SpecialParameter(name) =>
-      analytics_special_parameter_needs_2086(name)
-    @parser.WordPart::BracedParameter(expansion) =>
+    Parameter(_) => true
+    SpecialParameter(name) => analytics_special_parameter_needs_2086(name)
+    BracedParameter(expansion) =>
       analytics_braced_parameter_needs_2086(expansion)
     _ => false
   }
@@ -851,7 +844,7 @@ fn analytics_braced_parameter_needs_2086(
     return false
   }
   match expansion.operator {
-    Some(@parser.ParameterOperator::AlternateValue(_)) => false
+    Some(AlternateValue(_)) => false
     _ => true
   }
 }
@@ -898,7 +891,7 @@ fn maybe_push_bad_parameter_substitution_diagnostic(
           "${\{expansion.raw}}",
           fragment,
         ),
-        CheckSeverity::Error,
+        Error,
         code,
         message,
       )
@@ -912,7 +905,7 @@ fn analytics_bad_parameter_substitution(
   raw : String,
 ) -> (Int, String, String)? {
   match part {
-    @parser.WordPart::Literal(text) | @parser.WordPart::Glob(text) =>
+    Literal(text) | Glob(text) =>
       if analytics_parameter_literal_has_valid_start(text) {
         None
       } else {
@@ -924,7 +917,7 @@ fn analytics_bad_parameter_substitution(
           ),
         )
       }
-    @parser.WordPart::DoubleQuoted(parts) =>
+    DoubleQuoted(parts) =>
       match analytics_double_quoted_variable_name(parts) {
         Some(name) =>
           Some(
@@ -943,9 +936,7 @@ fn analytics_bad_parameter_substitution(
             ),
           )
       }
-    @parser.WordPart::SingleQuoted(_)
-    | @parser.WordPart::DollarSingleQuoted(_)
-    | @parser.WordPart::DollarDoubleQuoted(_) =>
+    SingleQuoted(_) | DollarSingleQuoted(_) | DollarDoubleQuoted(_) =>
       Some(
         (
           2301,
@@ -953,7 +944,7 @@ fn analytics_bad_parameter_substitution(
           "Parameter expansion starts with unexpected quotes. Double check syntax.",
         ),
       )
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       if analytics_is_unmodified_parameter_expansion(expansion) {
         Some(
           (
@@ -971,9 +962,7 @@ fn analytics_bad_parameter_substitution(
           ),
         )
       }
-    @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::BackQuoted(_) =>
+    CommandSubstitution(_) | BraceCommandSubstitution(_, _) | BackQuoted(_) =>
       Some(
         (
           2300,
@@ -1009,8 +998,7 @@ fn analytics_double_quoted_variable_name(
   parts : Array[@parser.WordPart],
 ) -> String? {
   match parts {
-    [@parser.WordPart::Literal(name)] if analytics_parameter_like_name(name) =>
-      Some(name)
+    [Literal(name)] if analytics_parameter_like_name(name) => Some(name)
     _ => None
   }
 }
@@ -1059,15 +1047,15 @@ fn analytics_parameter_parts_are_indirection(
 ///|
 fn analytics_parameter_indirection_part(part : @parser.WordPart) -> Bool? {
   match part {
-    @parser.WordPart::Parameter(_)
-    | @parser.WordPart::SpecialParameter(_)
-    | @parser.WordPart::BracedParameter(_)
-    | @parser.WordPart::CommandSubstitution(_)
-    | @parser.WordPart::BraceCommandSubstitution(_, _)
-    | @parser.WordPart::BackQuoted(_)
-    | @parser.WordPart::ArithmeticExpansion(_)
-    | @parser.WordPart::DollarBracket(_) => Some(true)
-    @parser.WordPart::Literal(text) | @parser.WordPart::Glob(text) =>
+    Parameter(_)
+    | SpecialParameter(_)
+    | BracedParameter(_)
+    | CommandSubstitution(_)
+    | BraceCommandSubstitution(_, _)
+    | BackQuoted(_)
+    | ArithmeticExpansion(_)
+    | DollarBracket(_) => Some(true)
+    Literal(text) | Glob(text) =>
       if analytics_literal_has_only_variable_chars(text) {
         None
       } else {
@@ -1102,30 +1090,29 @@ fn analytics_bad_parameter_part_fragment(
   raw : String,
 ) -> String {
   match part {
-    @parser.WordPart::Literal(text) | @parser.WordPart::Glob(text) => text
-    @parser.WordPart::SingleQuoted(text) => "'" + text + "'"
-    @parser.WordPart::DollarSingleQuoted(text) => "$'" + text + "'"
-    @parser.WordPart::DoubleQuoted(parts) =>
+    Literal(text) | Glob(text) => text
+    SingleQuoted(text) => "'" + text + "'"
+    DollarSingleQuoted(text) => "$'" + text + "'"
+    DoubleQuoted(parts) =>
       "\"" +
       analytics_word_parts_raw_text(parts, analytics_skip_prefix(raw, 1)) +
       "\""
-    @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DollarDoubleQuoted(parts) =>
       "$\"" +
       analytics_word_parts_raw_text(parts, analytics_skip_prefix(raw, 2)) +
       "\""
-    @parser.WordPart::Parameter(name)
-    | @parser.WordPart::SpecialParameter(name) => "$" + name
-    @parser.WordPart::BracedParameter(expansion) => "${\{expansion.raw}}"
-    @parser.WordPart::CommandSubstitution(_) =>
+    Parameter(name) | SpecialParameter(name) => "$" + name
+    BracedParameter(expansion) => "${\{expansion.raw}}"
+    CommandSubstitution(_) =>
       raw.view(end_offset=analytics_command_substitution_width(raw)).to_owned()
-    @parser.WordPart::BackQuoted(_) =>
+    BackQuoted(_) =>
       raw.view(end_offset=analytics_backquoted_width(raw)).to_owned()
-    @parser.WordPart::BraceCommandSubstitution(_, _) =>
+    BraceCommandSubstitution(_, _) =>
       raw
       .view(end_offset=analytics_prefixed_balanced_width(raw, "${", '{', '}'))
       .to_owned()
-    @parser.WordPart::ArithmeticExpansion(expr) => "$((" + expr.raw + "))"
-    @parser.WordPart::DollarBracket(expr) => "$[" + expr.raw + "]"
+    ArithmeticExpansion(expr) => "$((" + expr.raw + "))"
+    DollarBracket(expr) => "$[" + expr.raw + "]"
     _ => raw
   }
 }
@@ -1169,7 +1156,7 @@ fn analytics_word_parts_raw_text(
   fallback : String,
 ) -> String {
   match parts {
-    [@parser.WordPart::Literal(text)] => text
+    [Literal(text)] => text
     _ => fallback
   }
 }
@@ -1316,7 +1303,7 @@ fn check_uppercase_variable_misspellings(
         push_diagnostic(
           diagnostics,
           span,
-          CheckSeverity::Info,
+          Info,
           2153,
           "Possible misspelling: \{name} may not be assigned. Did you mean \{match_name}?",
         )
@@ -1331,21 +1318,19 @@ fn analytics_collect_written_names(
   names : Array[String],
 ) -> Unit {
   match command.kind {
-    @parser.CommandKind::Simple(simple) => {
+    Simple(simple) => {
       for assignment in simple.assignments {
         analytics_push_unique_name(names, assignment.name)
       }
       analytics_collect_declared_names(command, names)
       analytics_collect_read_command_names(command, names)
     }
-    @parser.CommandKind::Source(source) =>
+    Source(source) =>
       for assignment in source.assignments {
         analytics_push_unique_name(names, assignment.name)
       }
-    @parser.CommandKind::ForIn(clause) =>
-      analytics_push_unique_name(names, clause.name)
-    @parser.CommandKind::Select(clause) =>
-      analytics_push_unique_name(names, clause.name)
+    ForIn(clause) => analytics_push_unique_name(names, clause.name)
+    Select(clause) => analytics_push_unique_name(names, clause.name)
     _ => ()
   }
 }
@@ -1426,13 +1411,13 @@ fn analytics_collect_uppercase_word_parts(
 ) -> Unit {
   for part in parts {
     match part {
-      @parser.WordPart::Parameter(name) =>
+      Parameter(name) =>
         analytics_maybe_push_uppercase_reference(
           references,
           name,
           analytics_span_for_word_text(word, "$" + name),
         )
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         if !parameter_expansion_allows_unset(expansion) {
           match expansion.name {
             Some(name) =>
@@ -1444,14 +1429,13 @@ fn analytics_collect_uppercase_word_parts(
             None => ()
           }
         }
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         analytics_collect_uppercase_word_parts(word, nested, references)
-      @parser.WordPart::ExtGlob(pattern) =>
+      ExtGlob(pattern) =>
         for alternative in pattern.alternatives {
           analytics_collect_uppercase_word_references(alternative, references)
         }
-      @parser.WordPart::BraceExpansion(expansion) =>
+      BraceExpansion(expansion) =>
         for element in expansion.elements {
           analytics_collect_uppercase_word_references(element, references)
         }
@@ -1564,7 +1548,7 @@ fn check_constant_conditions(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::Condition(condition) =>
+      Condition(condition) =>
         visit_condition_binaries(condition.expr, fn(op, lhs, rhs) {
           if !analytics_condition_binary_operator_is_known(op) {
             return
@@ -1577,7 +1561,7 @@ fn check_constant_conditions(
             push_diagnostic(
               diagnostics,
               analytics_condition_operator_span(lhs, rhs),
-              CheckSeverity::Warning,
+              Warning,
               2050,
               "This expression is constant. Did you forget the $ on a variable?",
             )
@@ -1595,7 +1579,7 @@ fn check_constant_conditions(
             push_diagnostic(
               diagnostics,
               analytics_condition_operator_span(lhs, rhs),
-              CheckSeverity::Warning,
+              Warning,
               2193,
               "The arguments to this comparison can never be equal. Make sure your syntax is correct.",
             )
@@ -1622,8 +1606,7 @@ fn analytics_condition_binary_is_dynamic(
   op : String,
 ) -> Bool {
   (match kind {
-    @parser.ConditionKind::DoubleBracket =>
-      @semantics.arithmetic_binary_test_operators().contains(op)
+    DoubleBracket => @semantics.arithmetic_binary_test_operators().contains(op)
     _ => false
   }) ||
   ["-nt", "-ot", "-ef"].contains(op)
@@ -1641,10 +1624,10 @@ fn analytics_skips_2193_for_busybox_globs(
   lhs : @parser.Word,
   rhs : @parser.Word,
 ) -> Bool {
-  shell == @semantics.ShellDialect::BusyboxSh &&
+  shell == BusyboxSh &&
   (match kind {
-    @parser.ConditionKind::DoubleBracket => true
-    @parser.ConditionKind::SingleBracket => false
+    DoubleBracket => true
+    SingleBracket => false
   }) &&
   (@semantics.is_glob_word(lhs) || @semantics.is_glob_word(rhs))
 }
@@ -1663,11 +1646,8 @@ fn analytics_condition_parts_have_dynamic_content(
 ) -> Bool {
   for part in parts {
     match part {
-      @parser.WordPart::Literal(_)
-      | @parser.WordPart::SingleQuoted(_)
-      | @parser.WordPart::DollarSingleQuoted(_) => ()
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      Literal(_) | SingleQuoted(_) | DollarSingleQuoted(_) => ()
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         if analytics_condition_parts_have_dynamic_content(nested) {
           return true
         }
@@ -1707,7 +1687,7 @@ fn check_tilde_in_quotes(
           push_diagnostic(
             diagnostics,
             analytics_span_for_word_text(word, text),
-            CheckSeverity::Warning,
+            Warning,
             2088,
             "Tilde does not expand in quotes. Use $HOME.",
           )
@@ -1720,16 +1700,15 @@ fn check_tilde_in_quotes(
 ///|
 fn analytics_quoted_tilde_text(word : @parser.Word) -> String? {
   match word.parts {
-    [@parser.WordPart::SingleQuoted(text)] =>
+    [SingleQuoted(text)] =>
       if text.has_prefix("~/") {
         Some(text)
       } else {
         None
       }
-    [@parser.WordPart::DoubleQuoted(parts)] =>
+    [DoubleQuoted(parts)] =>
       match parts.get(0) {
-        Some(@parser.WordPart::Literal(text)) if text.has_prefix("~/") =>
-          Some(text)
+        Some(Literal(text)) if text.has_prefix("~/") => Some(text)
         _ => None
       }
     _ => None
@@ -1743,18 +1722,18 @@ fn check_inexplicably_unquoted_parts(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     visit_direct_words_in_command(command, fn(word, place) {
-      if place == WordPlace::ConditionDoubleBracket {
+      if place == ConditionDoubleBracket {
         return
       }
       let mut i = 0
       while i + 1 < word.parts.length() {
         match (word.parts[i], word.parts[i + 1]) {
-          (@parser.WordPart::SingleQuoted(_), @parser.WordPart::Literal(text)) =>
+          (SingleQuoted(_), Literal(text)) =>
             if analytics_string_is_alnum(text) {
               push_diagnostic(
                 diagnostics,
                 analytics_span_for_word_text(word, text),
-                CheckSeverity::Info,
+                Info,
                 2026,
                 "This word is outside of quotes. Did you intend to 'nest '\"'single quotes'\"' instead'? ",
               )
@@ -1767,11 +1746,7 @@ fn check_inexplicably_unquoted_parts(
       i = 0
       while i + 2 < word.parts.length() {
         match (word.parts[i], word.parts[i + 1], word.parts[i + 2]) {
-          (
-            @parser.WordPart::DoubleQuoted(lhs),
-            middle,
-            @parser.WordPart::DoubleQuoted(rhs),
-          ) =>
+          (DoubleQuoted(lhs), middle, DoubleQuoted(rhs)) =>
             analytics_warn_inexplicably_unquoted_middle(
               word, lhs, middle, rhs, diagnostics,
             )
@@ -1792,29 +1767,28 @@ fn analytics_warn_inexplicably_unquoted_middle(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match middle {
-    @parser.WordPart::Parameter(name)
-    | @parser.WordPart::SpecialParameter(name) =>
+    Parameter(name) | SpecialParameter(name) =>
       push_diagnostic(
         diagnostics,
         analytics_span_for_word_text(word, "$\{name}"),
-        CheckSeverity::Warning,
+        Warning,
         2027,
         "The surrounding quotes actually unquote this. Remove or escape them.",
       )
-    @parser.WordPart::BracedParameter(expansion) =>
+    BracedParameter(expansion) =>
       push_diagnostic(
         diagnostics,
         analytics_span_for_word_text(word, "${\{expansion.raw}}"),
-        CheckSeverity::Warning,
+        Warning,
         2027,
         "The surrounding quotes actually unquote this. Remove or escape them.",
       )
-    @parser.WordPart::Literal(text) =>
+    Literal(text) =>
       if analytics_should_warn_inexplicably_unquoted(text, lhs, rhs) {
         push_diagnostic(
           diagnostics,
           analytics_span_for_word_text(word, text),
-          CheckSeverity::Warning,
+          Warning,
           2140,
           "Word is of the form \"A\"B\"C\" (B indicated). Did you mean \"ABC\" or \"A\\\"B\\\"C\"?",
         )
@@ -1841,11 +1815,11 @@ fn analytics_should_warn_inexplicably_unquoted(
 ///|
 fn analytics_quotes_single_thing(parts : Array[@parser.WordPart]) -> Bool {
   match parts {
-    [@parser.WordPart::Parameter(_)]
-    | [@parser.WordPart::BracedParameter(_)]
-    | [@parser.WordPart::CommandSubstitution(_)]
-    | [@parser.WordPart::BraceCommandSubstitution(_, _)]
-    | [@parser.WordPart::BackQuoted(_)] => true
+    [Parameter(_)]
+    | [BracedParameter(_)]
+    | [CommandSubstitution(_)]
+    | [BraceCommandSubstitution(_, _)]
+    | [BackQuoted(_)] => true
     _ => false
   }
 }
@@ -1857,13 +1831,13 @@ fn check_for_in_trailing_commas(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     match command.kind {
-      @parser.CommandKind::ForIn(clause) if clause.values.length() > 1 =>
+      ForIn(clause) if clause.values.length() > 1 =>
         for value in clause.values {
           if value.source.has_suffix(",") {
             push_diagnostic_with_fix(
               diagnostics,
               value.span,
-              CheckSeverity::Warning,
+              Warning,
               2258,
               "The trailing comma is part of the value, not a separator. Delete or quote it.",
               analytics_trailing_comma_fix(value),
@@ -1897,8 +1871,8 @@ fn analytics_trailing_comma_fix(word : @parser.Word) -> @fixer.Fix {
 ///|
 fn analytics_word_has_unquoted_tilde(word : @parser.Word) -> Bool {
   match word.parts {
-    [@parser.WordPart::Literal(text)] => text.has_prefix("~")
-    [@parser.WordPart::Glob(text)] => text.has_prefix("~")
+    [Literal(text)] => text.has_prefix("~")
+    [Glob(text)] => text.has_prefix("~")
     _ => false
   }
 }

@@ -12,13 +12,13 @@ fn analytics_batch_i_descriptions() -> Array[CheckDescription] {
   [
     {
       code: 2145,
-      severity: CheckSeverity::Error,
+      severity: Error,
       category: "analytics",
       summary: "Arguments should not mix string fragments with array expansions.",
     },
     {
       code: 2295,
-      severity: CheckSeverity::Info,
+      severity: Info,
       category: "analytics",
       summary: "Quote expansions inside ${..} pattern operators separately.",
     },
@@ -51,7 +51,7 @@ fn check_concatenated_dollar_at(
           push_diagnostic(
             diagnostics,
             span,
-            CheckSeverity::Error,
+            Error,
             2145,
             "Argument mixes string and array. Use * or separate argument.",
           )
@@ -90,16 +90,14 @@ fn analytics_word_content(
 ///|
 fn analytics_word_part_content(part : @parser.WordPart) -> AnalyticsWordContent {
   match part {
-    @parser.WordPart::SpecialParameter("@") =>
-      { has_array: true, has_other: false }
-    @parser.WordPart::BracedParameter(expansion) =>
+    SpecialParameter("@") => { has_array: true, has_other: false }
+    BracedParameter(expansion) =>
       if braced_parameter_is_unquoted_array_expansion(expansion) {
         { has_array: true, has_other: false }
       } else {
         { has_array: false, has_other: true }
       }
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) =>
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       analytics_word_content(parts)
     _ => { has_array: false, has_other: true }
   }
@@ -122,16 +120,14 @@ fn analytics_word_part_array_span(
   part : @parser.WordPart,
 ) -> @parser.Span? {
   match part {
-    @parser.WordPart::SpecialParameter("@") =>
-      analytics_word_fragment_span(word, "$@")
-    @parser.WordPart::BracedParameter(expansion) =>
+    SpecialParameter("@") => analytics_word_fragment_span(word, "$@")
+    BracedParameter(expansion) =>
       if braced_parameter_is_unquoted_array_expansion(expansion) {
         analytics_word_fragment_span(word, "${\{expansion.raw}}")
       } else {
         None
       }
-    @parser.WordPart::DoubleQuoted(parts)
-    | @parser.WordPart::DollarDoubleQuoted(parts) => {
+    DoubleQuoted(parts) | DollarDoubleQuoted(parts) => {
       let mut found : @parser.Span? = None
       for nested in parts {
         if found is Some(_) {
@@ -181,10 +177,9 @@ fn analytics_visit_parameter_patterns(
 ) -> Unit {
   for part in parts {
     match part {
-      @parser.WordPart::DoubleQuoted(nested)
-      | @parser.WordPart::DollarDoubleQuoted(nested) =>
+      DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
         analytics_visit_parameter_patterns(nested, true, word, diagnostics)
-      @parser.WordPart::BracedParameter(expansion) =>
+      BracedParameter(expansion) =>
         analytics_check_parameter_pattern(word, expansion, quoted, diagnostics)
       _ => ()
     }
@@ -224,10 +219,9 @@ fn analytics_parameter_pattern_part_fragment(
   raw : String,
 ) -> String? {
   match part {
-    @parser.WordPart::Parameter(name)
-    | @parser.WordPart::SpecialParameter(name) => Some("$\{name}")
-    @parser.WordPart::BracedParameter(expansion) => Some("${\{expansion.raw}}")
-    @parser.WordPart::CommandSubstitution(_) =>
+    Parameter(name) | SpecialParameter(name) => Some("$\{name}")
+    BracedParameter(expansion) => Some("${\{expansion.raw}}")
+    CommandSubstitution(_) =>
       match analytics_string_offset(raw, "$(") {
         Some(offset) => {
           let fragment = raw.view(start_offset=offset).to_owned()
@@ -239,7 +233,7 @@ fn analytics_parameter_pattern_part_fragment(
         }
         None => None
       }
-    @parser.WordPart::BackQuoted(_) =>
+    BackQuoted(_) =>
       match analytics_string_offset(raw, "`") {
         Some(offset) => {
           let fragment = raw.view(start_offset=offset).to_owned()
@@ -260,10 +254,10 @@ fn analytics_parameter_pattern_text(
   expansion : @parser.ParameterExpansion,
 ) -> String? {
   match expansion.operator {
-    Some(@parser.ParameterOperator::RemoveShortestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestPrefix(text))
-    | Some(@parser.ParameterOperator::RemoveShortestSuffix(text))
-    | Some(@parser.ParameterOperator::RemoveLongestSuffix(text)) => Some(text)
+    Some(RemoveShortestPrefix(text))
+    | Some(RemoveLongestPrefix(text))
+    | Some(RemoveShortestSuffix(text))
+    | Some(RemoveLongestSuffix(text)) => Some(text)
     _ => None
   }
 }
@@ -280,7 +274,7 @@ fn analytics_warn_parameter_pattern_part(
   push_diagnostic_with_fix(
     diagnostics,
     span,
-    CheckSeverity::Info,
+    Info,
     2295,
     "Expansions inside ${..} need to be quoted separately, otherwise they match as patterns.",
     analytics_quote_nested_span_fix(span, if quoted { 10 } else { 9 }),

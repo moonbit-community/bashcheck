@@ -5,7 +5,7 @@ fn batch_k_count_warning_code(
 ) -> Int {
   let mut count = 0
   for diagnostic in diagnostics {
-    if diagnostic.code == code && diagnostic.severity is CheckSeverity::Warning {
+    if diagnostic.code == code && diagnostic.severity is Warning {
       count += 1
     }
   }
@@ -18,7 +18,7 @@ fn batch_k_first_warning_code(
   code : Int,
 ) -> CheckDiagnostic {
   for diagnostic in diagnostics {
-    if diagnostic.code == code && diagnostic.severity is CheckSeverity::Warning {
+    if diagnostic.code == code && diagnostic.severity is Warning {
       return diagnostic
     }
   }

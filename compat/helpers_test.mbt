@@ -156,10 +156,10 @@ fn baseline_severity_rank(severity : String) -> Int {
 ///|
 fn baseline_severity_name(severity : @checker.DiagnosticSeverity) -> String {
   match severity {
-    @checker.DiagnosticSeverity::Error => "error"
-    @checker.DiagnosticSeverity::Warning => "warning"
-    @checker.DiagnosticSeverity::Info => "info"
-    @checker.DiagnosticSeverity::Style => "style"
+    Error => "error"
+    Warning => "warning"
+    Info => "info"
+    Style => "style"
   }
 }
 
@@ -168,17 +168,15 @@ fn parser_baseline_severity_name(
   severity : @parser.DiagnosticSeverity,
 ) -> String {
   match severity {
-    @parser.DiagnosticSeverity::Error => "error"
-    @parser.DiagnosticSeverity::Warning => "warning"
-    @parser.DiagnosticSeverity::Info => "info"
+    Error => "error"
+    Warning => "warning"
+    Info => "info"
   }
 }
 
 ///|
 fn bash_shell_spec() -> @checker.CheckSpec {
-  @checker.CheckSpec::default().with_shell_override(
-    Some(@semantics.ShellDialect::Bash),
-  )
+  @checker.CheckSpec::default().with_shell_override(Some(Bash))
 }
 
 ///|

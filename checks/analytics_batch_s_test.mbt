@@ -24,7 +24,7 @@ test "analytics batch s attaches a shellcheck-style fix" {
   let diagnostics = check_source(source)
 
   assert_eq(count_code(diagnostics, 2336), 1)
-  assert_true(first_code(diagnostics, 2336).severity is CheckSeverity::Warning)
+  assert_true(first_code(diagnostics, 2336).severity is Warning)
   match first_code(diagnostics, 2336).fix {
     Some(fix) => {
       assert_eq(fix.replacements.length(), 1)
