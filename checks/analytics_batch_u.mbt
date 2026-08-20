@@ -189,9 +189,8 @@ fn find_xargs_needs_null_safety_u(
 fn literal_command_words_u(command : @parser.Command) -> Array[String] {
   let words : Array[String] = []
   for word in @semantics.command_words(command) {
-    match @semantics.literal_text(word) {
-      Some(text) => words.push(text)
-      None => ()
+    if @semantics.literal_text(word) is Some(text) {
+      words.push(text)
     }
   }
   words
@@ -236,9 +235,10 @@ fn trim_leading_dashes_u(text : String) -> String {
 ///|
 fn ps_has_pid_filter_u(command : @parser.Command) -> Bool {
   for argument in @semantics.command_arguments(command) {
-    let text = match @semantics.literal_text(argument) {
-      Some(text) => text
-      None => continue
+    let text = if @semantics.literal_text(argument) is Some(text) {
+      text
+    } else {
+      continue
     }
     if ["-p", "-q", "--pid", "--quick-pid"].contains(text) ||
       text.has_prefix("--pid=") ||
@@ -263,9 +263,10 @@ fn grep_wc_prefers_count_flag_u(
 ///|
 fn grep_has_counting_exception_u(command : @parser.Command) -> Bool {
   for argument in @semantics.command_arguments(command) {
-    let text = match @semantics.literal_text(argument) {
-      Some(text) => text
-      None => continue
+    let text = if @semantics.literal_text(argument) is Some(text) {
+      text
+    } else {
+      continue
     }
     if short_option_cluster_contains(text, 'l') ||
       short_option_cluster_contains(text, 'L') ||
@@ -290,9 +291,10 @@ fn grep_has_counting_exception_u(command : @parser.Command) -> Bool {
 fn wc_has_explicit_line_count_only_u(command : @parser.Command) -> Bool {
   let mut saw_flag = false
   for argument in @semantics.command_arguments(command) {
-    let text = match @semantics.literal_text(argument) {
-      Some(text) => text
-      None => continue
+    let text = if @semantics.literal_text(argument) is Some(text) {
+      text
+    } else {
+      continue
     }
     if text == "-" || !text.has_prefix("-") {
       continue
@@ -428,16 +430,14 @@ fn maybe_push_find_exec_preexpansion_u(
   word : @parser.Word,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match find_exec_preexpansion_span_u(word) {
-    Some(span) =>
-      push_diagnostic(
-        diagnostics,
-        span,
-        Info,
-        2014,
-        "This will expand once before find runs, not per file found.",
-      )
-    None => ()
+  if find_exec_preexpansion_span_u(word) is Some(span) {
+    push_diagnostic(
+      diagnostics,
+      span,
+      Info,
+      2014,
+      "This will expand once before find runs, not per file found.",
+    )
   }
 }
 
@@ -506,13 +506,15 @@ fn command_substitution_range_u(text : String) -> (Int, Int)? {
 
 ///|
 fn glob_indicator_span_u(word : @parser.Word, text : String) -> @parser.Span {
-  let marker = match first_glob_indicator_u(text) {
-    Some(marker) => marker
-    None => return word.span
+  let marker = if first_glob_indicator_u(text) is Some(marker) {
+    marker
+  } else {
+    return word.span
   }
-  match analytics_string_offset(word.source, marker) {
-    Some(offset) => analytics_span_offset(word.span, offset, marker.length())
-    None => word.span
+  if analytics_string_offset(word.source, marker) is Some(offset) {
+    analytics_span_offset(word.span, offset, marker.length())
+  } else {
+    word.span
   }
 }
 

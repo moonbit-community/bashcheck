@@ -27,30 +27,29 @@ test "analytics batch n flags bats last-command negations and shellcheck-style r
   assert_eq(count_code(diagnostics, 2315), 1)
   assert_true(first_code(diagnostics, 2314).severity is Style)
   assert_true(first_code(diagnostics, 2315).severity is Style)
-  match first_code(diagnostics, 2314).fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 2)
-      assert_eq(replacement.start.column, 25)
-      assert_eq(replacement.end.line, 2)
-      assert_eq(replacement.end.column, 25)
-      assert_eq(replacement.text, "run ")
-      assert_eq(replacement.precedence, 7)
-      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|#!/bin/bash
-            #|@test "last ordinary" { run ! true; }
-            #|@test "last condition" { ! [[ -e test ]]; }
-            #|
-          ),
+  if first_code(diagnostics, 2314).fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 2)
+    assert_eq(replacement.start.column, 25)
+    assert_eq(replacement.end.line, 2)
+    assert_eq(replacement.end.column, 25)
+    assert_eq(replacement.text, "run ")
+    assert_eq(replacement.precedence, 7)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|#!/bin/bash
+          #|@test "last ordinary" { run ! true; }
+          #|@test "last condition" { ! [[ -e test ]]; }
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2314 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2314 fix")
   }
   assert_true(first_code(diagnostics, 2315).fix is None)
 }

@@ -137,9 +137,11 @@ fn p_check_equals_command_word(
   }
   let leading_parts = p_parts_before_first_equals(word.parts)
   let stripped_leading = p_strip_single_plus(leading_parts)
-  let stripped_prefix_width = match p_stripped_prefix_width(word.source) {
-    Some(width) => width
-    None => return
+  let stripped_prefix_width = if p_stripped_prefix_width(word.source)
+    is Some(width) {
+    width
+  } else {
+    return
   }
   let has_assignment_plus = p_source_has_plus_before_equals(word.source)
 
@@ -202,30 +204,27 @@ fn p_check_equals_command_word(
   }
 
   if stripped_leading.length() == 0 {
-    match p_positional_assignment_width(first_eq_text) {
-      Some(width) =>
-        if first_eq_text.has_prefix("0=") {
-          p_push_literal_zero_assignment(word, shell, diagnostics)
-        } else {
-          push_diagnostic(
-            diagnostics,
-            span_prefix(word.span, width),
-            Error,
-            2270,
-            "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
-          )
-        }
-      None =>
-        if p_is_leading_number_var(first_eq_text) {
-          push_diagnostic(
-            diagnostics,
-            word.span,
-            Error,
-            2282,
-            "Variable names can't start with numbers, so this is interpreted as a command.",
-          )
-          return
-        }
+    if p_positional_assignment_width(first_eq_text) is Some(width) {
+      if first_eq_text.has_prefix("0=") {
+        p_push_literal_zero_assignment(word, shell, diagnostics)
+      } else {
+        push_diagnostic(
+          diagnostics,
+          span_prefix(word.span, width),
+          Error,
+          2270,
+          "To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).",
+        )
+      }
+    } else if p_is_leading_number_var(first_eq_text) {
+      push_diagnostic(
+        diagnostics,
+        word.span,
+        Error,
+        2282,
+        "Variable names can't start with numbers, so this is interpreted as a command.",
+      )
+      return
     }
     if p_positional_assignment_width(first_eq_text) is Some(_) ||
       p_is_leading_number_var(first_eq_text) {
@@ -321,10 +320,7 @@ fn p_push_braced_assignment_diagnostic(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let name = match expansion.name {
-    Some(name) => name
-    None => ""
-  }
+  let name = if expansion.name is Some(name) { name } else { "" }
   if name == "" || expansion.length_prefix {
     push_diagnostic(
       diagnostics,
@@ -420,24 +416,23 @@ fn p_push_zero_assignment_with_optional_fix(
 ) -> Unit {
   match shell {
     Bash =>
-      match bash_fix {
-        Some(fix) =>
-          push_diagnostic_with_fix(
-            diagnostics,
-            span,
-            Error,
-            2277,
-            "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
-            fix,
-          )
-        None =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Error,
-            2277,
-            "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
-          )
+      if bash_fix is Some(fix) {
+        push_diagnostic_with_fix(
+          diagnostics,
+          span,
+          Error,
+          2277,
+          "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
+          fix,
+        )
+      } else {
+        push_diagnostic(
+          diagnostics,
+          span,
+          Error,
+          2277,
+          "Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).",
+        )
       }
     Ksh =>
       push_diagnostic(
@@ -533,12 +528,12 @@ fn p_strip_single_plus(
 
 ///|
 fn p_word_is_conflict_marker(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) =>
-      text.length() >= 4 &&
-      text.length() <= 12 &&
-      p_string_all(text, fn(ch) { ch == '=' })
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.length() >= 4 &&
+    text.length() <= 12 &&
+    p_string_all(text, fn(ch) { ch == '=' })
+  } else {
+    false
   }
 }
 
@@ -568,9 +563,10 @@ fn p_is_leading_number_var(text : String) -> Bool {
 fn p_may_be_variable_name(parts : Array[@parser.WordPart]) -> Bool {
   let buf = StringBuilder::new()
   for part in parts {
-    match p_variable_name_placeholder(part) {
-      Some(text) => buf.write_string(text)
-      None => return false
+    if p_variable_name_placeholder(part) is Some(text) {
+      buf.write_string(text)
+    } else {
+      return false
     }
   }
   let candidate = buf.to_string()
@@ -647,9 +643,10 @@ fn p_is_ascii_digit(ch : Char) -> Bool {
 
 ///|
 fn p_stripped_prefix_width(source : String) -> Int? {
-  let width = match p_first_equals_offset(source) {
-    Some(width) => width
-    None => return None
+  let width = if p_first_equals_offset(source) is Some(width) {
+    width
+  } else {
+    return None
   }
   if width > 0 && p_char_at(source, width - 1) == '+' {
     Some(width - 1)

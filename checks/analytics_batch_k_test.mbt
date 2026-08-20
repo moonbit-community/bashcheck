@@ -40,44 +40,41 @@ test "analytics batch k flags while-read pitfalls and shellcheck-style fixes" {
 
   assert_eq(count_code(diagnostics, 2095), 8)
   assert_eq(batch_k_count_warning_code(diagnostics, 2095), 4)
-  match batch_k_first_warning_code(diagnostics, 2095).fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 2)
-      assert_eq(replacement.start.column, 26)
-      assert_eq(replacement.end.line, 2)
-      assert_eq(replacement.end.column, 26)
-      assert_eq(replacement.text, " -n")
-      assert_eq(replacement.precedence, 9)
-      assert_true(
-        replacement.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(
-          fix,
-          (
-            #|#!/bin/bash
-            #|while read -r foo; do ssh "$foo" uptime; done
-            #|while read -r foo; do ffmpeg -i foo.mkv bar.mkv -an; done
-            #|while read -r foo; do mplayer foo.ogv > file; done
-            #|while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv; done
-            #|,
-          ),
+  if batch_k_first_warning_code(diagnostics, 2095).fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 2)
+    assert_eq(replacement.start.column, 26)
+    assert_eq(replacement.end.line, 2)
+    assert_eq(replacement.end.column, 26)
+    assert_eq(replacement.text, " -n")
+    assert_eq(replacement.precedence, 9)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(
+        fix,
+        (
+          #|#!/bin/bash
+          #|while read -r foo; do ssh "$foo" uptime; done
+          #|while read -r foo; do ffmpeg -i foo.mkv bar.mkv -an; done
+          #|while read -r foo; do mplayer foo.ogv > file; done
+          #|while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv; done
+          #|,
         ),
-        Some(
-          (
-            #|#!/bin/bash
-            #|while read -r foo; do ssh -n "$foo" uptime; done
-            #|while read -r foo; do ffmpeg -i foo.mkv bar.mkv -an; done
-            #|while read -r foo; do mplayer foo.ogv > file; done
-            #|while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv; done
-            #|,
-          ),
+      ),
+      Some(
+        (
+          #|#!/bin/bash
+          #|while read -r foo; do ssh -n "$foo" uptime; done
+          #|while read -r foo; do ffmpeg -i foo.mkv bar.mkv -an; done
+          #|while read -r foo; do mplayer foo.ogv > file; done
+          #|while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv; done
+          #|,
         ),
-      )
-    }
-    None => checks_fail("expected SC2095 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2095 fix")
   }
 }
 
@@ -111,28 +108,28 @@ test "analytics batch k flags nested command substitutions inside while-read loo
   )
 
   assert_eq(count_code(diagnostics, 2095), 2)
-  match batch_k_first_warning_code(diagnostics, 2095).fix {
-    Some(fix) =>
-      @test.assert_eq(
-        @fixer.apply_fix(
-          fix,
-          (
-            #|#!/bin/bash
-            #|# shellcheck disable=SC2034
-            #|while read -r foo; do x=$(ssh host cmd); done
-            #|,
-          ),
+  if batch_k_first_warning_code(diagnostics, 2095).fix is Some(fix) {
+    @test.assert_eq(
+      @fixer.apply_fix(
+        fix,
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2034
+          #|while read -r foo; do x=$(ssh host cmd); done
+          #|,
         ),
-        Some(
-          (
-            #|#!/bin/bash
-            #|# shellcheck disable=SC2034
-            #|while read -r foo; do x=$(ssh -n host cmd); done
-            #|,
-          ),
+      ),
+      Some(
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2034
+          #|while read -r foo; do x=$(ssh -n host cmd); done
+          #|,
         ),
-      )
-    None => checks_fail("expected nested SC2095 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected nested SC2095 fix")
   }
 }
 
@@ -150,25 +147,25 @@ test "analytics batch k keeps background spans aligned with shellcheck" {
   let warning = batch_k_first_warning_code(diagnostics, 2095)
   assert_eq(warning.span.start.column, 23)
   assert_eq(warning.span.end.column, 40)
-  match warning.fix {
-    Some(fix) =>
-      @test.assert_eq(
-        @fixer.apply_fix(
-          fix,
-          (
-            #|#!/bin/bash
-            #|while read -r foo; do ssh "$foo" uptime & done
-            #|,
-          ),
+  if warning.fix is Some(fix) {
+    @test.assert_eq(
+      @fixer.apply_fix(
+        fix,
+        (
+          #|#!/bin/bash
+          #|while read -r foo; do ssh "$foo" uptime & done
+          #|,
         ),
-        Some(
-          (
-            #|#!/bin/bash
-            #|while read -r foo; do ssh -n "$foo" uptime & done
-            #|,
-          ),
+      ),
+      Some(
+        (
+          #|#!/bin/bash
+          #|while read -r foo; do ssh -n "$foo" uptime & done
+          #|,
         ),
-      )
-    None => checks_fail("expected background SC2095 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected background SC2095 fix")
   }
 }

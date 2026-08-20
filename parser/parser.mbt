@@ -251,9 +251,10 @@ fn translate_source_command(
     options: translate_words(base, source.options),
     path: translate_word(base, source.path),
     args: translate_words(base, source.args),
-    included: match source.included {
-      Some(script) => Some(translate_script(base, script))
-      None => None
+    included: if source.included is Some(script) {
+      Some(translate_script(base, script))
+    } else {
+      None
     },
   }
 }
@@ -333,9 +334,10 @@ fn translate_if_clause(base : Position, clause : IfClause) -> IfClause {
   }
   {
     arms,
-    else_body: match clause.else_body {
-      Some(script) => Some(translate_script(base, script))
-      None => None
+    else_body: if clause.else_body is Some(script) {
+      Some(translate_script(base, script))
+    } else {
+      None
     },
   }
 }
@@ -472,9 +474,10 @@ fn translate_co_proc_clause(
   clause : CoProcClause,
 ) -> CoProcClause {
   {
-    name: match clause.name {
-      Some(name) => Some(translate_word(base, name))
-      None => None
+    name: if clause.name is Some(name) {
+      Some(translate_word(base, name))
+    } else {
+      None
     },
     body: translate_command(base, clause.body),
   }
@@ -535,9 +538,10 @@ fn translate_redirection_target(
 fn translate_here_doc(base : Position, doc : HereDoc) -> HereDoc {
   {
     ..doc,
-    parts: match doc.parts {
-      Some(parts) => Some(translate_word_parts(base, parts))
-      None => None
+    parts: if doc.parts is Some(parts) {
+      Some(translate_word_parts(base, parts))
+    } else {
+      None
     },
   }
 }
@@ -609,9 +613,10 @@ fn translate_parameter_expansion(
 ) -> ParameterExpansion {
   {
     ..expansion,
-    index: match expansion.index {
-      Some(index) => Some(translate_array_index(base, index))
-      None => None
+    index: if expansion.index is Some(index) {
+      Some(translate_array_index(base, index))
+    } else {
+      None
     },
   }
 }
@@ -675,9 +680,10 @@ fn translate_array_index(base : Position, index : ArrayIndex) -> ArrayIndex {
   {
     ..index,
     parts: translate_word_parts(base, index.parts),
-    arithmetic: match index.arithmetic {
-      Some(expr) => Some(translate_arithmetic_expr(base, expr))
-      None => None
+    arithmetic: if index.arithmetic is Some(expr) {
+      Some(translate_arithmetic_expr(base, expr))
+    } else {
+      None
     },
   }
 }
@@ -777,24 +783,21 @@ fn Parser::emit_diagnostic(
 
 ///|
 fn Parser::emit_simple_command_context_diagnostic(self : Parser) -> Unit {
-  match self.simple_command_context {
-    Some(pos) => {
-      for diagnostic in self.diagnostics {
-        if diagnostic.code == Some(1009) &&
-          diagnostic.span.start == pos &&
-          diagnostic.message ==
-          "The mentioned syntax error was in this simple command." {
-          return
-        }
+  if self.simple_command_context is Some(pos) {
+    for diagnostic in self.diagnostics {
+      if diagnostic.code == Some(1009) &&
+        diagnostic.span.start == pos &&
+        diagnostic.message ==
+        "The mentioned syntax error was in this simple command." {
+        return
       }
-      self.emit_diagnostic(
-        Info,
-        pos,
-        "The mentioned syntax error was in this simple command.",
-        Some(1009),
-      )
     }
-    None => ()
+    self.emit_diagnostic(
+      Info,
+      pos,
+      "The mentioned syntax error was in this simple command.",
+      Some(1009),
+    )
   }
 }
 
@@ -873,18 +876,17 @@ fn Parser::starts_with(self : Parser, prefix : String) -> Bool {
 
 ///|
 fn Parser::advance_one(self : Parser) -> UInt16? {
-  match self.peek() {
-    None => None
-    Some(ch) => {
-      self.offset += 1
-      if ch == '\n' {
-        self.line += 1
-        self.column = 1
-      } else {
-        self.column += 1
-      }
-      Some(ch)
+  if self.peek() is Some(ch) {
+    self.offset += 1
+    if ch == '\n' {
+      self.line += 1
+      self.column = 1
+    } else {
+      self.column += 1
     }
+    Some(ch)
+  } else {
+    None
   }
 }
 
@@ -1102,37 +1104,37 @@ fn first_line_containing(text : String, needle : String) -> String? {
 
 ///|
 fn is_keyword_boundary(ch : UInt16?) -> Bool {
-  match ch {
-    None => true
-    Some(c) =>
-      is_space_char(c) ||
-      c == '\n' ||
-      c == '\r' ||
-      c == ';' ||
-      c == '&' ||
-      c == '|' ||
-      c == '<' ||
-      c == '>' ||
-      c == '(' ||
-      c == ')'
+  if ch is Some(c) {
+    is_space_char(c) ||
+    c == '\n' ||
+    c == '\r' ||
+    c == ';' ||
+    c == '&' ||
+    c == '|' ||
+    c == '<' ||
+    c == '>' ||
+    c == '(' ||
+    c == ')'
+  } else {
+    true
   }
 }
 
 ///|
 fn is_word_boundary(ch : UInt16?) -> Bool {
-  match ch {
-    None => true
-    Some(c) =>
-      is_space_char(c) ||
-      c == '\n' ||
-      c == '\r' ||
-      c == ';' ||
-      c == '&' ||
-      c == '|' ||
-      c == '<' ||
-      c == '>' ||
-      c == '(' ||
-      c == ')'
+  if ch is Some(c) {
+    is_space_char(c) ||
+    c == '\n' ||
+    c == '\r' ||
+    c == ';' ||
+    c == '&' ||
+    c == '|' ||
+    c == '<' ||
+    c == '>' ||
+    c == '(' ||
+    c == ')'
+  } else {
+    true
   }
 }
 
@@ -1146,9 +1148,10 @@ fn is_suspect_char_after_quotes(ch : UInt16) -> Bool {
 
 ///|
 fn is_condition_regex_boundary(ch : UInt16?) -> Bool {
-  match ch {
-    None => true
-    Some(c) => c == ' ' || c == '\t' || c == '\n' || c == '\r'
+  if ch is Some(c) {
+    c == ' ' || c == '\t' || c == '\n' || c == '\r'
+  } else {
+    true
   }
 }
 
@@ -1187,9 +1190,10 @@ fn char_display(ch : UInt16) -> String {
 
 ///|
 fn Parser::found_description(self : Parser) -> String {
-  match self.peek() {
-    None => "end of input"
-    Some(ch) => "'\{char_display(ch)}'"
+  if self.peek() is Some(ch) {
+    "'\{char_display(ch)}'"
+  } else {
+    "end of input"
   }
 }
 
@@ -1617,32 +1621,28 @@ fn split_shell_words(text : String) -> Array[String] {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        current.write_char(ch.unsafe_to_char())
-        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
-          i += 1
-          current.write_char(view[i].unsafe_to_char())
-        } else if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == current_quote {
+        quote = None
       }
-      None =>
-        if ch == ' ' || ch == '\t' {
-          let item = current.to_string()
-          if item != "" {
-            values.push(item)
-            current.reset()
-          }
-        } else {
-          current.write_char(ch.unsafe_to_char())
-          if ch == '\\' && i + 1 < view.length() {
-            i += 1
-            current.write_char(view[i].unsafe_to_char())
-          } else if ch == '\'' || ch == '"' {
-            quote = Some(ch)
-          }
-        }
+    } else if ch == ' ' || ch == '\t' {
+      let item = current.to_string()
+      if item != "" {
+        values.push(item)
+        current.reset()
+      }
+    } else {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+      }
     }
     i += 1
   }
@@ -1666,37 +1666,31 @@ fn split_shell_words_strict(
   let mut quote_start = 0
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        current.write_char(ch.unsafe_to_char())
-        if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      current.write_char(ch.unsafe_to_char())
+      if ch == current_quote {
+        quote = None
       }
-      None =>
-        if ch == ' ' || ch == '\t' {
-          let item = current.to_string()
-          if item != "" {
-            values.push(item)
-            current.reset()
-          }
-        } else {
-          current.write_char(ch.unsafe_to_char())
-          if ch == '\'' || ch == '"' {
-            quote = Some(ch)
-            quote_start = i
-          }
-        }
+    } else if ch == ' ' || ch == '\t' {
+      let item = current.to_string()
+      if item != "" {
+        values.push(item)
+        current.reset()
+      }
+    } else {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+        quote_start = i
+      }
     }
     i += 1
   }
-  match quote {
-    Some(_) =>
-      raise Message(
-        pos=advance_position_columns(base, quote_start),
-        message="missing terminating quote for directive",
-      )
-    None => ()
+  if quote is Some(_) {
+    raise Message(
+      pos=advance_position_columns(base, quote_start),
+      message="missing terminating quote for directive",
+    )
   }
   let tail = current.to_string()
   if tail != "" {
@@ -1845,9 +1839,10 @@ fn disable_value_matches_code(value : String, code : Int) -> Bool {
         _ => false
       }
     None =>
-      match parse_disable_code_number(value) {
-        Some(parsed) => parsed == code
-        None => false
+      if parse_disable_code_number(value) is Some(parsed) {
+        parsed == code
+      } else {
+        false
       }
   }
 }
@@ -1857,18 +1852,17 @@ fn annotations_disable_code(
   annotations : Array[Annotation],
   code : Int?,
 ) -> Bool {
-  match code {
-    Some(value) => {
-      for annotation in annotations {
-        match annotation {
-          Disable(disabled) if disable_value_matches_code(disabled, value) =>
-            return true
-          _ => ()
-        }
+  if code is Some(value) {
+    for annotation in annotations {
+      match annotation {
+        Disable(disabled) if disable_value_matches_code(disabled, value) =>
+          return true
+        _ => ()
       }
-      false
     }
-    None => false
+    false
+  } else {
+    false
   }
 }
 
@@ -2011,15 +2005,16 @@ fn parse_annotation_entries(
                 })
             }
           "extended-analysis" | "extended_analysis" =>
-            match parse_annotation_bool(directive_value_source(value)) {
-              Some(flag) => annotations.push(ExtendedAnalysis(flag))
-              None =>
-                diagnostics.push({
-                  span: span_at(base),
-                  severity: Error,
-                  code: Some(1146),
-                  message: "unknown extended-analysis value '\{directive_value_source(value)}'; expected true/false",
-                })
+            if parse_annotation_bool(directive_value_source(value))
+              is Some(flag) {
+              annotations.push(ExtendedAnalysis(flag))
+            } else {
+              diagnostics.push({
+                span: span_at(base),
+                severity: Error,
+                code: Some(1146),
+                message: "unknown extended-analysis value '\{directive_value_source(value)}'; expected true/false",
+              })
             }
           _ =>
             diagnostics.push({
@@ -2309,63 +2304,61 @@ fn Parser::parse_leading_metadata(
   }
   let shebang_pos = self.position()
   let first_line = self.peek_line()
-  match classify_shebang_line(first_line) {
-    Some(kind) =>
-      match kind {
-        Correct => {
-          let (line, _) = self.read_line()
-          shebang = Some(line)
-        }
-        LeadingSpaces | SpacesBetweenHashBang => {
-          let leading_spaces = shebang_leading_space_count(first_line)
-          if leading_spaces > 0 {
-            self.emit_diagnostic(
-              Error,
-              shebang_pos,
-              "Remove leading spaces before the shebang.",
-              Some(1114),
-            )
-          }
-          let hash_bang_gap = shebang_hash_bang_gap_count(first_line)
-          if hash_bang_gap > 0 {
-            self.emit_diagnostic(
-              Error,
-              advance_position_columns(shebang_pos, leading_spaces + 1),
-              "Remove spaces between # and ! in the shebang.",
-              Some(1115),
-            )
-          }
-          ignore(self.read_line())
-        }
-        Swapped => {
-          self.emit_diagnostic(
-            Error,
-            shebang_pos,
-            "Use #!, not !#, for the shebang.",
-            Some(1084),
-          )
-          ignore(self.read_line())
-        }
-        MissingHash => {
-          self.emit_diagnostic(
-            Error,
-            shebang_pos,
-            "Use #!, not just !, for the shebang.",
-            Some(1104),
-          )
-          ignore(self.read_line())
-        }
-        MissingBang => {
-          self.emit_diagnostic(
-            Error,
-            advance_position_columns(shebang_pos, 1),
-            "Use #!, not just #, for the shebang.",
-            Some(1113),
-          )
-          ignore(self.read_line())
-        }
+  if classify_shebang_line(first_line) is Some(kind) {
+    match kind {
+      Correct => {
+        let (line, _) = self.read_line()
+        shebang = Some(line)
       }
-    None => ()
+      LeadingSpaces | SpacesBetweenHashBang => {
+        let leading_spaces = shebang_leading_space_count(first_line)
+        if leading_spaces > 0 {
+          self.emit_diagnostic(
+            Error,
+            shebang_pos,
+            "Remove leading spaces before the shebang.",
+            Some(1114),
+          )
+        }
+        let hash_bang_gap = shebang_hash_bang_gap_count(first_line)
+        if hash_bang_gap > 0 {
+          self.emit_diagnostic(
+            Error,
+            advance_position_columns(shebang_pos, leading_spaces + 1),
+            "Remove spaces between # and ! in the shebang.",
+            Some(1115),
+          )
+        }
+        ignore(self.read_line())
+      }
+      Swapped => {
+        self.emit_diagnostic(
+          Error,
+          shebang_pos,
+          "Use #!, not !#, for the shebang.",
+          Some(1084),
+        )
+        ignore(self.read_line())
+      }
+      MissingHash => {
+        self.emit_diagnostic(
+          Error,
+          shebang_pos,
+          "Use #!, not just !, for the shebang.",
+          Some(1104),
+        )
+        ignore(self.read_line())
+      }
+      MissingBang => {
+        self.emit_diagnostic(
+          Error,
+          advance_position_columns(shebang_pos, 1),
+          "Use #!, not just #, for the shebang.",
+          Some(1113),
+        )
+        ignore(self.read_line())
+      }
+    }
   }
   while true {
     let mark = self.mark()
@@ -2594,7 +2587,7 @@ fn Parser::parse_list_item(
     self.file_annotations,
     annotations,
   )
-  errdefer {
+  defer {
     self.current_annotations = saved_annotations
   }
   let and_or = self.parse_and_or()
@@ -2605,7 +2598,6 @@ fn Parser::parse_list_item(
     and_or,
     terminator,
   }
-  self.current_annotations = saved_annotations
   item
 }
 
@@ -2775,34 +2767,25 @@ fn Parser::parse_pipeline_segment(
 fn Parser::parse_command(self : Parser) -> Command raise ParseError {
   self.skip_command_gaps()
   let start = self.position()
-  match self.try_parse_function_definition() {
-    Some(command) => command
-    None =>
-      match self.try_parse_timed_command() {
-        Some(command) => command
-        None =>
-          match self.try_parse_compound_command() {
-            Some(kind) => {
-              let redirects = self.parse_trailing_redirections()
-              match kind {
-                Condition(_) =>
-                  self.maybe_emit_post_condition_command_diagnostic()
-                _ => self.maybe_emit_post_compound_command_diagnostic()
-              }
-              let end = self.position()
-              { span: make_span(start, end), kind, redirects }
-            }
-            None =>
-              match self.unexpected_reserved_word() {
-                Some(word) =>
-                  raise Message(
-                    pos=self.position(),
-                    message="unexpected reserved word '\{word}'",
-                  )
-                None => self.parse_simple_command()
-              }
-          }
-      }
+  if self.try_parse_function_definition() is Some(command) {
+    command
+  } else if self.try_parse_timed_command() is Some(command) {
+    command
+  } else if self.try_parse_compound_command() is Some(kind) {
+    let redirects = self.parse_trailing_redirections()
+    match kind {
+      Condition(_) => self.maybe_emit_post_condition_command_diagnostic()
+      _ => self.maybe_emit_post_compound_command_diagnostic()
+    }
+    let end = self.position()
+    { span: make_span(start, end), kind, redirects }
+  } else if self.unexpected_reserved_word() is Some(word) {
+    raise Message(
+      pos=self.position(),
+      message="unexpected reserved word '\{word}'",
+    )
+  } else {
+    self.parse_simple_command()
   }
 }
 
@@ -2973,12 +2956,11 @@ fn Parser::try_parse_function_definition(
     uses_keyword = true
     self.skip_command_gaps()
   }
-  let name = match self.parse_function_name_token(uses_keyword) {
-    Some(name) => name
-    None => {
-      self.reset(mark)
-      return None
-    }
+  let name = if self.parse_function_name_token(uses_keyword) is Some(name) {
+    name
+  } else {
+    self.reset(mark)
+    return None
   }
   if !uses_keyword && (is_reserved_word(name) || name == "time") {
     self.reset(mark)
@@ -3046,13 +3028,13 @@ fn Parser::try_parse_function_definition(
     self.emit_diagnostic(Error, body_start, end_message, Some(1072))
     raise Message(pos=body_start, message=end_message)
   }
-  let body_kind = match self.try_parse_non_coproc_compound_command() {
-    Some(kind) => kind
-    None =>
-      raise Message(
-        pos=self.position(),
-        message="function body must start with a compound command (for example { ...; }, ( ... ), if ..., while ..., or case ...)",
-      )
+  let body_kind = if self.try_parse_non_coproc_compound_command() is Some(kind) {
+    kind
+  } else {
+    raise Message(
+      pos=self.position(),
+      message="function body must start with a compound command (for example { ...; }, ( ... ), if ..., while ..., or case ...)",
+    )
   }
   let body_command = {
     let body_end = self.position()
@@ -3118,13 +3100,11 @@ fn Parser::try_parse_non_coproc_compound_command(
       }
     }
   }
-  match self.try_parse_group_like_command() {
-    Some(kind) => return Some(kind)
-    None => ()
+  if self.try_parse_group_like_command() is Some(kind) {
+    return Some(kind)
   }
-  match self.try_parse_bats_test() {
-    Some(kind) => return Some(kind)
-    None => ()
+  if self.try_parse_bats_test() is Some(kind) {
+    return Some(kind)
   }
   if self.starts_keyword_token("if") {
     return Some(If(self.parse_if_clause()))
@@ -3154,42 +3134,38 @@ fn Parser::find_bats_test_name_end(self : Parser, start : Int) -> Int? {
   let mut quote : UInt16? = None
   while i < self.source.length() {
     let ch = self.source[i]
-    match quote {
-      Some(current_quote) => {
-        if ch == '\\' && current_quote == '"' && i + 1 < self.source.length() {
-          i += 2
-          continue
-        }
-        if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      if ch == '\\' && current_quote == '"' && i + 1 < self.source.length() {
+        i += 2
+        continue
       }
-      None => {
-        if ch == '\n' || ch == '\r' {
-          break
-        }
-        if ch == '\\' && i + 1 < self.source.length() {
-          i += 2
-          continue
-        }
-        if ch == '\'' || ch == '"' {
-          quote = Some(ch)
-        } else if ch == '{' && (i == start || is_space_char(self.source[i - 1])) {
-          brace_offset = Some(i)
-        }
+      if ch == current_quote {
+        quote = None
+      }
+    } else {
+      if ch == '\n' || ch == '\r' {
+        break
+      }
+      if ch == '\\' && i + 1 < self.source.length() {
+        i += 2
+        continue
+      }
+      if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+      } else if ch == '{' && (i == start || is_space_char(self.source[i - 1])) {
+        brace_offset = Some(i)
       }
     }
     i += 1
   }
-  match brace_offset {
-    None => None
-    Some(offset) => {
-      let mut end_ = offset
-      while end_ > start && is_space_char(self.source[end_ - 1]) {
-        end_ -= 1
-      }
-      Some(end_)
+  if brace_offset is Some(offset) {
+    let mut end_ = offset
+    while end_ > start && is_space_char(self.source[end_ - 1]) {
+      end_ -= 1
     }
+    Some(end_)
+  } else {
+    None
   }
 }
 
@@ -3207,24 +3183,23 @@ fn Parser::try_parse_bats_test(self : Parser) -> CommandKind? raise ParseError {
   self.advance_n(5)
   self.skip_inline_space()
   let name_start = self.offset
-  let name_end = match self.find_bats_test_name_end(name_start) {
-    Some(end_) => end_
-    None => {
-      self.reset(mark)
-      self.emit_diagnostic(
-        Error,
-        start,
-        "Couldn't parse this bats @test. Fix to allow more checks.",
-        Some(1073),
-      )
-      self.emit_diagnostic(
-        Error,
-        advance_position_columns(start, 6),
-        " Fix any mentioned problems and try again.",
-        Some(1072),
-      )
-      return None
-    }
+  let name_end = if self.find_bats_test_name_end(name_start) is Some(end_) {
+    end_
+  } else {
+    self.reset(mark)
+    self.emit_diagnostic(
+      Error,
+      start,
+      "Couldn't parse this bats @test. Fix to allow more checks.",
+      Some(1073),
+    )
+    self.emit_diagnostic(
+      Error,
+      advance_position_columns(start, 6),
+      " Fix any mentioned problems and try again.",
+      Some(1072),
+    )
+    return None
   }
   self.advance_n(name_end - self.offset)
   let name = self.source
@@ -3286,9 +3261,8 @@ fn Parser::next_starts_coproc_name_target(self : Parser) -> Bool {
 fn Parser::try_parse_compound_command(
   self : Parser,
 ) -> CommandKind? raise ParseError {
-  match self.try_parse_non_coproc_compound_command() {
-    Some(kind) => return Some(kind)
-    None => ()
+  if self.try_parse_non_coproc_compound_command() is Some(kind) {
+    return Some(kind)
   }
   if self.starts_keyword_token("coproc") {
     return Some(CoProc(self.parse_coproc_clause()))
@@ -3770,12 +3744,11 @@ fn Parser::read_arithmetic_for_loop_raw(
     if ch == '\\' {
       ignore(self.advance_one())
       content.write_char('\\')
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("arithmetic for loop")
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("arithmetic for loop")
       }
       continue
     }
@@ -4099,15 +4072,12 @@ fn Parser::parse_condition_regex_word(
         parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
-        match self.parse_dollar_part() {
-          Some(part) => {
-            push_literal(parts, literal)
-            parts.push(part)
-          }
-          None => {
-            ignore(self.advance_one())
-            literal.write_char('$')
-          }
+        if self.parse_dollar_part() is Some(part) {
+          push_literal(parts, literal)
+          parts.push(part)
+        } else {
+          ignore(self.advance_one())
+          literal.write_char('$')
         }
       '\\' => {
         ignore(self.advance_one())
@@ -4170,25 +4140,23 @@ fn Parser::read_condition_tokens(
   let mut group_depth = 0
   self.skip_condition_space(double_bracket)
   while true {
-    match
-      self.condition_closing_delimiter(
+    if self.condition_closing_delimiter(
         double_bracket, regex_rhs_expected, group_depth,
-      ) {
-      Some(closing) =>
-        if group_depth > 0 {
-          raise Message(
-            pos=self.position(),
-            message="missing ')' in condition expression",
-          )
-        } else {
-          return (
-            trim_ascii_space(self.current_slice(start_offset)),
-            tokens,
-            closing,
-            self.position(),
-          )
-        }
-      None => ()
+      )
+      is Some(closing) {
+      if group_depth > 0 {
+        raise Message(
+          pos=self.position(),
+          message="missing ')' in condition expression",
+        )
+      } else {
+        return (
+          trim_ascii_space(self.current_slice(start_offset)),
+          tokens,
+          closing,
+          self.position(),
+        )
+      }
     }
     if self.eof() {
       raise self.unexpected_end(context)
@@ -4497,9 +4465,10 @@ fn consume_condition_logical(
   match cursor.advance() {
     Some(And(op)) | Some(Or(op)) => op
     Some(Word(word)) => {
-      let text = match word_literal_text(word) {
-        Some(text) => text
-        None => word.source
+      let text = if word_literal_text(word) is Some(text) {
+        text
+      } else {
+        word.source
       }
       { text, span: word.span }
     }
@@ -4565,21 +4534,22 @@ fn parse_condition_primary(
     }
     _ => ()
   }
-  let word = match parse_condition_word_token(cursor) {
-    Some(word) => word
-    None => raise Message(pos=fallback, message="expected condition expression")
+  let word = if parse_condition_word_token(cursor) is Some(word) {
+    word
+  } else {
+    raise Message(pos=fallback, message="expected condition expression")
   }
   match word_plain_text(word) {
     Some(op) =>
       if is_unary_condition_operator(op) ||
         is_condition_operator_like_unknown_unary(op) {
-        match parse_condition_word_token(cursor) {
-          Some(operand) => Unary(op, word.span, operand)
-          None =>
-            raise Message(
-              pos=fallback,
-              message=condition_internal_message("1019"),
-            )
+        if parse_condition_word_token(cursor) is Some(operand) {
+          Unary(op, word.span, operand)
+        } else {
+          raise Message(
+            pos=fallback,
+            message=condition_internal_message("1019"),
+          )
         }
       } else {
         Word(word)
@@ -4603,13 +4573,13 @@ fn parse_condition_comparison(
               if is_binary_condition_operator(op) ||
                 is_condition_operator_like_unknown_binary(op) {
                 ignore(cursor.advance())
-                match parse_condition_word_token(cursor) {
-                  Some(right) => Binary(op, op_word.span, word, right)
-                  None =>
-                    raise Message(
-                      pos=op_word.span.start,
-                      message=condition_internal_message("1027"),
-                    )
+                if parse_condition_word_token(cursor) is Some(right) {
+                  Binary(op, op_word.span, word, right)
+                } else {
+                  raise Message(
+                    pos=op_word.span.start,
+                    message=condition_internal_message("1027"),
+                  )
                 }
               } else {
                 left
@@ -4806,32 +4776,27 @@ fn Parser::handle_condition_trailing_tokens(
           )
         _ => ()
       }
-      match word_literal_text(word) {
-        Some(text) => {
-          if kind == SingleBracket && text == "[" {
-            diagnostics.push(
-              condition_specific_diagnostic(
-                Error,
-                word.span.start,
-                1026,
-                "If grouping expressions inside [..], use \\( ..\\).",
-              ),
-            )
-          }
-          match trailing_condition_operator(text) {
-            Some(op) =>
-              diagnostics.push(
-                condition_specific_diagnostic(
-                  Error,
-                  word.span.start,
-                  1108,
-                  "You need a space before and after the \{op} .",
-                ),
-              )
-            None => ()
-          }
+      if word_literal_text(word) is Some(text) {
+        if kind == SingleBracket && text == "[" {
+          diagnostics.push(
+            condition_specific_diagnostic(
+              Error,
+              word.span.start,
+              1026,
+              "If grouping expressions inside [..], use \\( ..\\).",
+            ),
+          )
         }
-        None => ()
+        if trailing_condition_operator(text) is Some(op) {
+          diagnostics.push(
+            condition_specific_diagnostic(
+              Error,
+              word.span.start,
+              1108,
+              "You need a space before and after the \{op} .",
+            ),
+          )
+        }
       }
     }
     _ => ()
@@ -5184,7 +5149,7 @@ fn Parser::parse_simple_command(self : Parser) -> Command raise ParseError {
   let words : Array[Word] = []
   let redirects : Array[Redirection] = []
   let mut saw_word = false
-  errdefer {
+  defer {
     self.simple_command_context = saved_context
   }
   while true {
@@ -5212,12 +5177,9 @@ fn Parser::parse_simple_command(self : Parser) -> Command raise ParseError {
       continue
     }
     if !saw_word || simple_command_accepts_suffix_assignments(words) {
-      match self.try_parse_assignment() {
-        Some(assignment) => {
-          assignments.push(assignment)
-          continue
-        }
-        None => ()
+      if self.try_parse_assignment() is Some(assignment) {
+        assignments.push(assignment)
+        continue
       }
     }
     if self.next_starts_word() {
@@ -5236,7 +5198,6 @@ fn Parser::parse_simple_command(self : Parser) -> Command raise ParseError {
   }
   self.validate_simple_command(assignments, words)
   let kind = classify_simple_command(assignments, words)
-  self.simple_command_context = saved_context
   { span: make_span(start, self.position()), kind, redirects }
 }
 
@@ -5410,24 +5371,21 @@ fn arithmetic_legacy_comparison(text : String) -> (String, String)? {
       } else {
         None
       }
-      match alt {
-        Some(op) => {
-          let end_ = i + 3
-          let before_ok = i == 0 || !is_name_part(view[i - 1])
-          let after_ok = end_ < view.length() &&
-            (
-              view[end_] == ' ' ||
-              view[end_] == '\t' ||
-              view[end_] == '\n' ||
-              view[end_] == '\r'
-            )
-          if before_ok && after_ok {
-            return Some(
-              (text.view(start_offset=i, end_offset=end_).to_owned(), op),
-            )
-          }
+      if alt is Some(op) {
+        let end_ = i + 3
+        let before_ok = i == 0 || !is_name_part(view[i - 1])
+        let after_ok = end_ < view.length() &&
+          (
+            view[end_] == ' ' ||
+            view[end_] == '\t' ||
+            view[end_] == '\n' ||
+            view[end_] == '\r'
+          )
+        if before_ok && after_ok {
+          return Some(
+            (text.view(start_offset=i, end_offset=end_).to_owned(), op),
+          )
         }
-        None => ()
       }
     }
     i += 1
@@ -5616,15 +5574,13 @@ fn Parser::validate_simple_command(
       self.emit_diagnostic(Error, words[0].span.start, message, Some(code))
     None => ()
   }
-  match keyword_case_diagnostic(command_source) {
-    Some(keyword) =>
-      self.emit_diagnostic(
-        Error,
-        words[0].span.start,
-        "Scripts are case sensitive. Use '\{keyword}', not '\{command_source}' (or quote if literal).",
-        Some(1081),
-      )
-    None => ()
+  if keyword_case_diagnostic(command_source) is Some(keyword) {
+    self.emit_diagnostic(
+      Error,
+      words[0].span.start,
+      "Scripts are case sensitive. Use '\{keyword}', not '\{command_source}' (or quote if literal).",
+      Some(1081),
+    )
   }
   match word_plain_text(words[0]) {
     Some("//") =>
@@ -5710,9 +5666,8 @@ fn classify_simple_command(
   assignments : Array[Assignment],
   words : Array[Word],
 ) -> CommandKind {
-  match parse_source_command(assignments, words) {
-    Some(source) => return Source(source)
-    None => ()
+  if parse_source_command(assignments, words) is Some(source) {
+    return Source(source)
   }
   Simple({ assignments, words })
 }
@@ -5789,9 +5744,10 @@ fn Parser::next_starts_word(self : Parser) -> Bool {
   if self.starts_brace_expansion() {
     return true
   }
-  match self.peek() {
-    None => false
-    Some(ch) => !is_word_boundary(Some(ch))
+  if self.peek() is Some(ch) {
+    !is_word_boundary(Some(ch))
+  } else {
+    false
   }
 }
 
@@ -5954,12 +5910,11 @@ fn Parser::parse_optional_redirection_source(
   if self.peek() == Some('{') {
     let mark = self.mark()
     ignore(self.advance_one())
-    let name = match self.parse_bare_identifier() {
-      Some(name) => name
-      None => {
-        self.reset(mark)
-        return None
-      }
+    let name = if self.parse_bare_identifier() is Some(name) {
+      name
+    } else {
+      self.reset(mark)
+      return None
     }
     if self.peek() != Some('}') ||
       redirect_operator_len_at(self.source, self.offset + 1) == 0 {
@@ -6061,19 +6016,19 @@ fn Parser::parse_assignment_value(
 fn Parser::try_parse_assignment(self : Parser) -> Assignment? raise ParseError {
   let mark = self.mark()
   let start = self.position()
-  let name = match self.parse_bare_identifier() {
-    Some(name) => name
-    None => return None
+  let name = if self.parse_bare_identifier() is Some(name) {
+    name
+  } else {
+    return None
   }
   let indexes : Array[ArrayIndex] = []
   while self.peek() == Some('[') {
     try {
-      match self.read_assignment_index() {
-        Some(index) => indexes.push(index)
-        None => {
-          self.reset(mark)
-          return None
-        }
+      if self.read_assignment_index() is Some(index) {
+        indexes.push(index)
+      } else {
+        self.reset(mark)
+        return None
       }
     } catch {
       _ => {
@@ -6082,12 +6037,11 @@ fn Parser::try_parse_assignment(self : Parser) -> Assignment? raise ParseError {
       }
     }
   }
-  let append = match self.parse_assignment_operator() {
-    Some(append) => append
-    None => {
-      self.reset(mark)
-      return None
-    }
+  let append = if self.parse_assignment_operator() is Some(append) {
+    append
+  } else {
+    self.reset(mark)
+    return None
   }
   let value = self.parse_assignment_value(true)
   Some({ span: make_span(start, self.position()), name, indexes, append, value })
@@ -6124,9 +6078,10 @@ fn Parser::parse_identifier_token(
   self : Parser,
   context : String,
 ) -> String raise ParseError {
-  match self.parse_bare_identifier() {
-    Some(name) => name
-    None => raise Message(pos=self.position(), message="expected \{context}")
+  if self.parse_bare_identifier() is Some(name) {
+    name
+  } else {
+    raise Message(pos=self.position(), message="expected \{context}")
   }
 }
 
@@ -6165,9 +6120,10 @@ fn Parser::skip_backquoted_text(
     }
     if ch == '\\' {
       ignore(self.advance_one())
-      match self.peek() {
-        Some(_) => ignore(self.advance_one())
-        None => raise self.unexpected_end(context)
+      if self.peek() is Some(_) {
+        ignore(self.advance_one())
+      } else {
+        raise self.unexpected_end(context)
       }
       continue
     }
@@ -6361,9 +6317,10 @@ fn Parser::read_array_element(self : Parser) -> ArrayElement raise ParseError {
   let indexes : Array[ArrayIndex] = []
   while self.peek() == Some('[') {
     try {
-      match self.read_assignment_index() {
-        Some(index) => indexes.push(index)
-        None => break
+      if self.read_assignment_index() is Some(index) {
+        indexes.push(index)
+      } else {
+        break
       }
     } catch {
       _ => {
@@ -6378,17 +6335,14 @@ fn Parser::read_array_element(self : Parser) -> ArrayElement raise ParseError {
   }
   let append = if indexes.length() == 0 {
     false
+  } else if self.parse_assignment_operator() is Some(append) {
+    append
   } else {
-    match self.parse_assignment_operator() {
-      Some(append) => append
-      None => {
-        self.reset(mark)
-        return {
-          indexes: [],
-          append: false,
-          value: self.parse_assignment_value(false),
-        }
-      }
+    self.reset(mark)
+    return {
+      indexes: [],
+      append: false,
+      value: self.parse_assignment_value(false),
     }
   }
   let value = self.parse_assignment_value(indexes.length() > 0)
@@ -6465,15 +6419,15 @@ fn find_unescaped_char(text : String, separator : UInt16) -> Int? {
 
 ///|
 fn split_unescaped_once(text : String, separator : UInt16) -> (String, String)? {
-  match find_unescaped_char(text, separator) {
-    None => None
-    Some(index) =>
-      Some(
-        (
-          text.view(end_offset=index).to_owned(),
-          text.view(start_offset=index + 1).to_owned(),
-        ),
-      )
+  if find_unescaped_char(text, separator) is Some(index) {
+    Some(
+      (
+        text.view(end_offset=index).to_owned(),
+        text.view(start_offset=index + 1).to_owned(),
+      ),
+    )
+  } else {
+    None
   }
 }
 
@@ -6488,9 +6442,10 @@ fn read_parameter_index(raw : String, start : Int) -> (String, Int)? {
     [],
   )
   try {
-    match parser.read_assignment_index() {
-      Some(index) => Some((index.raw, start + parser.offset))
-      None => None
+    if parser.read_assignment_index() is Some(index) {
+      Some((index.raw, start + parser.offset))
+    } else {
+      None
     }
   } catch {
     _ => None
@@ -6595,14 +6550,11 @@ fn parse_parameter_operator(text : String) -> ParameterOperator? {
   } else {
     (None, 0)
   }
-  match case_mode {
-    Some(mode) => {
-      let pattern = text.view(start_offset=offset).to_owned()
-      return Some(
-        CaseModify(mode, if pattern == "" { None } else { Some(pattern) }),
-      )
-    }
-    None => ()
+  if case_mode is Some(mode) {
+    let pattern = text.view(start_offset=offset).to_owned()
+    return Some(
+      CaseModify(mode, if pattern == "" { None } else { Some(pattern) }),
+    )
   }
   Some(Raw(text))
 }
@@ -6775,34 +6727,29 @@ fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
         )
       }
       Some('$') =>
-        match parser.parse_dollar_part() {
-          Some(part) => {
-            let end_ = parser.position()
-            let fragment = source.view(end_offset=parser.offset).to_owned()
-            Some(
-              (
-                make_fragment_word(fragment, end_, [part]),
-                start + parser.offset,
-              ),
-            )
-          }
-          None => None
+        if parser.parse_dollar_part() is Some(part) {
+          let end_ = parser.position()
+          let fragment = source.view(end_offset=parser.offset).to_owned()
+          Some(
+            (make_fragment_word(fragment, end_, [part]), start + parser.offset),
+          )
+        } else {
+          None
         }
       Some('\\') => {
         ignore(parser.advance_one())
-        match parser.peek() {
-          Some(next) => {
-            ignore(parser.advance_one())
-            let end_ = parser.position()
-            let fragment = source.view(end_offset=parser.offset).to_owned()
-            Some(
-              (
-                make_fragment_word(fragment, end_, [single_char_literal(next)]),
-                start + parser.offset,
-              ),
-            )
-          }
-          None => None
+        if parser.peek() is Some(next) {
+          ignore(parser.advance_one())
+          let end_ = parser.position()
+          let fragment = source.view(end_offset=parser.offset).to_owned()
+          Some(
+            (
+              make_fragment_word(fragment, end_, [single_char_literal(next)]),
+              start + parser.offset,
+            ),
+          )
+        } else {
+          None
         }
       }
       _ => None
@@ -6827,45 +6774,42 @@ fn split_top_level_shell_text(
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        if ch == '\\' &&
-          (current_quote == '"' || is_backquote_char(current_quote)) &&
-          i + 1 < view.length() {
-          i += 2
-          continue
-        }
-        if (is_backquote_char(current_quote) && is_backquote_char(ch)) ||
-          ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      if ch == '\\' &&
+        (current_quote == '"' || is_backquote_char(current_quote)) &&
+        i + 1 < view.length() {
+        i += 2
+        continue
       }
-      None => {
-        if ch == '\\' {
-          i += 2
-          continue
-        }
-        if ch == '\'' || ch == '"' || is_backquote_char(ch) {
-          quote = Some(ch)
-        } else if ch == '{' {
-          brace_depth += 1
-        } else if ch == '}' && brace_depth > 0 {
-          brace_depth -= 1
-        } else if ch == '(' {
-          paren_depth += 1
-        } else if ch == ')' && paren_depth > 0 {
-          paren_depth -= 1
-        } else if ch == '[' {
-          bracket_depth += 1
-        } else if ch == ']' && bracket_depth > 0 {
-          bracket_depth -= 1
-        } else if ch == separator &&
-          brace_depth == 0 &&
-          paren_depth == 0 &&
-          bracket_depth == 0 {
-          parts.push(text.view(start_offset=start, end_offset=i).to_owned())
-          start = i + 1
-        }
+      if (is_backquote_char(current_quote) && is_backquote_char(ch)) ||
+        ch == current_quote {
+        quote = None
+      }
+    } else {
+      if ch == '\\' {
+        i += 2
+        continue
+      }
+      if ch == '\'' || ch == '"' || is_backquote_char(ch) {
+        quote = Some(ch)
+      } else if ch == '{' {
+        brace_depth += 1
+      } else if ch == '}' && brace_depth > 0 {
+        brace_depth -= 1
+      } else if ch == '(' {
+        paren_depth += 1
+      } else if ch == ')' && paren_depth > 0 {
+        paren_depth -= 1
+      } else if ch == '[' {
+        bracket_depth += 1
+      } else if ch == ']' && bracket_depth > 0 {
+        bracket_depth -= 1
+      } else if ch == separator &&
+        brace_depth == 0 &&
+        paren_depth == 0 &&
+        bracket_depth == 0 {
+        parts.push(text.view(start_offset=start, end_offset=i).to_owned())
+        start = i + 1
       }
     }
     i += 1
@@ -7114,17 +7058,16 @@ fn arithmetic_cursor_consume_any_operator(
   cursor : ArithmeticCursor,
   ops : Array[String],
 ) -> String? {
-  match arithmetic_operator_token_text(cursor.peek()) {
-    Some(text) => {
-      for op in ops {
-        if text == op {
-          ignore(cursor.advance())
-          return Some(text)
-        }
+  if arithmetic_operator_token_text(cursor.peek()) is Some(text) {
+    for op in ops {
+      if text == op {
+        ignore(cursor.advance())
+        return Some(text)
       }
-      None
     }
-    None => None
+    None
+  } else {
+    None
   }
 }
 
@@ -7329,12 +7272,13 @@ fn validate_arithmetic_assignment_expression(cursor : ArithmeticCursor) -> Bool 
   if !validate_arithmetic_conditional_expression(cursor) {
     return false
   }
-  match
-    arithmetic_cursor_consume_any_operator(cursor, [
+  if arithmetic_cursor_consume_any_operator(cursor, [
       "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",
-    ]) {
-    Some(_) => validate_arithmetic_assignment_expression(cursor)
-    None => true
+    ])
+    is Some(_) {
+    validate_arithmetic_assignment_expression(cursor)
+  } else {
+    true
   }
 }
 
@@ -7671,12 +7615,11 @@ fn Parser::read_backquoted_script(
     if ch == '\\' {
       ignore(self.advance_one())
       body.write_char('\\')
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          body.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("backquoted command substitution")
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        body.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("backquoted command substitution")
       }
       continue
     }
@@ -7725,13 +7668,12 @@ fn Parser::read_dollar_single_quoted(self : Parser) -> String raise ParseError {
     }
     if ch == '\\' {
       ignore(self.advance_one())
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char('\\')
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("dollar-single-quoted string")
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char('\\')
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("dollar-single-quoted string")
       }
       continue
     }
@@ -7755,13 +7697,12 @@ fn Parser::read_until_closing_char(
     }
     if ch == '\\' {
       ignore(self.advance_one())
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char('\\')
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end(context)
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char('\\')
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end(context)
       }
       continue
     }
@@ -7806,13 +7747,12 @@ fn Parser::read_dollar_bracket_content(
     }
     if ch == '\\' {
       ignore(self.advance_one())
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char('\\')
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end(context)
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char('\\')
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end(context)
       }
       continue
     }
@@ -7878,15 +7818,12 @@ fn Parser::parse_here_doc_parts(
         parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
-        match self.parse_dollar_part_internal(false) {
-          Some(part) => {
-            push_literal(parts, literal)
-            parts.push(part)
-          }
-          None => {
-            ignore(self.advance_one())
-            literal.write_char('$')
-          }
+        if self.parse_dollar_part_internal(false) is Some(part) {
+          push_literal(parts, literal)
+          parts.push(part)
+        } else {
+          ignore(self.advance_one())
+          literal.write_char('$')
         }
       '\\' => self.append_here_doc_escape(literal, "escaped character")
       _ => {
@@ -7944,25 +7881,22 @@ fn Parser::parse_text_parts_until_eof(
         parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
-        match self.parse_dollar_part() {
-          Some(part) => {
-            push_word_literal(parts, literal)
-            match part {
-              BracedParameter(_) if self.peek() == Some('}') =>
-                self.emit_diagnostic(
-                  Warning,
-                  self.position(),
-                  "This } is literal. Check expression (missing ;/\\n?) or quote it.",
-                  Some(1083),
-                )
-              _ => ()
-            }
-            parts.push(part)
+        if self.parse_dollar_part() is Some(part) {
+          push_word_literal(parts, literal)
+          match part {
+            BracedParameter(_) if self.peek() == Some('}') =>
+              self.emit_diagnostic(
+                Warning,
+                self.position(),
+                "This } is literal. Check expression (missing ;/\\n?) or quote it.",
+                Some(1083),
+              )
+            _ => ()
           }
-          None => {
-            ignore(self.advance_one())
-            literal.write_char('$')
-          }
+          parts.push(part)
+        } else {
+          ignore(self.advance_one())
+          literal.write_char('$')
         }
       '{' | '}' =>
         if ch == '{' && self.peek_n(1) == Some('}') {
@@ -8083,25 +8017,22 @@ fn Parser::parse_word_with_terminators(
         parts.push(BackQuoted(self.read_backquoted_script(false, quote_start)))
       }
       '$' =>
-        match self.parse_dollar_part() {
-          Some(part) => {
-            push_word_literal(parts, literal)
-            match part {
-              BracedParameter(_) if self.peek() == Some('}') =>
-                self.emit_diagnostic(
-                  Warning,
-                  self.position(),
-                  "This } is literal. Check expression (missing ;/\\n?) or quote it.",
-                  Some(1083),
-                )
-              _ => ()
-            }
-            parts.push(part)
+        if self.parse_dollar_part() is Some(part) {
+          push_word_literal(parts, literal)
+          match part {
+            BracedParameter(_) if self.peek() == Some('}') =>
+              self.emit_diagnostic(
+                Warning,
+                self.position(),
+                "This } is literal. Check expression (missing ;/\\n?) or quote it.",
+                Some(1083),
+              )
+            _ => ()
           }
-          None => {
-            ignore(self.advance_one())
-            literal.write_char('$')
-          }
+          parts.push(part)
+        } else {
+          ignore(self.advance_one())
+          literal.write_char('$')
         }
       '{' | '}' =>
         if ch == '{' && self.peek_n(1) == Some('}') {
@@ -8193,9 +8124,10 @@ fn string_contains_linefeed(text : String) -> Bool {
 
 ///|
 fn Parser::has_suspect_char_after_quotes(self : Parser) -> Bool {
-  match self.peek() {
-    Some(ch) => is_suspect_char_after_quotes(ch)
-    None => false
+  if self.peek() is Some(ch) {
+    is_suspect_char_after_quotes(ch)
+  } else {
+    false
   }
 }
 
@@ -8315,23 +8247,20 @@ fn Parser::read_double_quoted_parts(
         parts.push(BackQuoted(self.read_backquoted_script(true, quote_start)))
       }
       '$' =>
-        match self.parse_dollar_part_internal(false) {
-          Some(part) => {
-            push_literal(parts, literal)
-            parts.push(part)
+        if self.parse_dollar_part_internal(false) is Some(part) {
+          push_literal(parts, literal)
+          parts.push(part)
+        } else {
+          if self.should_warn_double_quoted_literal_dollar() {
+            self.emit_diagnostic(
+              Warning,
+              self.position(),
+              "Prefer escape over ending quote to make $ literal. Instead of \"It costs $\"5, use \"It costs \\$5\".",
+              Some(1135),
+            )
           }
-          None => {
-            if self.should_warn_double_quoted_literal_dollar() {
-              self.emit_diagnostic(
-                Warning,
-                self.position(),
-                "Prefer escape over ending quote to make $ literal. Instead of \"It costs $\"5, use \"It costs \\$5\".",
-                Some(1135),
-              )
-            }
-            ignore(self.advance_one())
-            literal.write_char('$')
-          }
+          ignore(self.advance_one())
+          literal.write_char('$')
         }
       '\\' => self.append_double_quoted_escape(literal, "escaped character")
       _ => {
@@ -8550,13 +8479,12 @@ fn Parser::read_braced_parameter(self : Parser) -> String raise ParseError {
     }
     if ch == '\\' {
       ignore(self.advance_one())
-      match self.peek() {
-        Some(next) => {
-          content.write_char('\\')
-          ignore(self.advance_one())
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("parameter expansion")
+      if self.peek() is Some(next) {
+        content.write_char('\\')
+        ignore(self.advance_one())
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("parameter expansion")
       }
       continue
     }
@@ -8598,12 +8526,11 @@ fn Parser::read_arithmetic_expansion(self : Parser) -> String raise ParseError {
     if ch == '\\' {
       ignore(self.advance_one())
       content.write_char('\\')
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("arithmetic expansion")
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("arithmetic expansion")
       }
       continue
     }
@@ -8626,12 +8553,11 @@ fn Parser::read_until_matching_quote(
     if ch == '\\' {
       ignore(self.advance_one())
       content.write_char('\\')
-      match self.peek() {
-        Some(next) => {
-          ignore(self.advance_one())
-          content.write_char(next.unsafe_to_char())
-        }
-        None => raise self.unexpected_end("quoted string")
+      if self.peek() is Some(next) {
+        ignore(self.advance_one())
+        content.write_char(next.unsafe_to_char())
+      } else {
+        raise self.unexpected_end("quoted string")
       }
       continue
     }
@@ -8649,46 +8575,43 @@ fn quote_removed_source(raw : String) -> String {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current) => {
-        if ch == current {
-          quote = None
-          i += 1
-          continue
-        }
-        if current == '"' && ch == '\\' && i + 1 < view.length() {
-          let next = view[i + 1]
-          if next == '$' ||
-            next == '"' ||
-            next == '\\' ||
-            next == '\n' ||
-            next == '\r' {
-            buf.write_char(next.unsafe_to_char())
-            i += 2
-            continue
-          }
-        }
-        buf.write_char(ch.unsafe_to_char())
+    if quote is Some(current) {
+      if ch == current {
+        quote = None
         i += 1
+        continue
       }
-      None => {
-        if ch == '\'' || ch == '"' {
-          quote = Some(ch)
-          i += 1
+      if current == '"' && ch == '\\' && i + 1 < view.length() {
+        let next = view[i + 1]
+        if next == '$' ||
+          next == '"' ||
+          next == '\\' ||
+          next == '\n' ||
+          next == '\r' {
+          buf.write_char(next.unsafe_to_char())
+          i += 2
           continue
         }
-        if ch == '\\' {
-          if i + 1 < view.length() {
-            buf.write_char(view[i + 1].unsafe_to_char())
-            i += 2
-          } else {
-            i += 1
-          }
-          continue
-        }
-        buf.write_char(ch.unsafe_to_char())
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
+    } else {
+      if ch == '\'' || ch == '"' {
+        quote = Some(ch)
         i += 1
+        continue
       }
+      if ch == '\\' {
+        if i + 1 < view.length() {
+          buf.write_char(view[i + 1].unsafe_to_char())
+          i += 2
+        } else {
+          i += 1
+        }
+        continue
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
     }
   }
   buf.to_string()
@@ -8875,19 +8798,17 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
             if !annotations_disable_code(entry.annotations, diagnostic.code) {
               body_diagnostics.push(diagnostic)
             }
-            match first_line_containing(body.to_string(), entry.delimiter) {
-              Some(line) => {
-                let diagnostic = {
-                  span: span_at(entry.delimiter_pos),
-                  severity: Error,
-                  code: Some(1042),
-                  message: "Close matches include '\{line}' (!= '\{entry.delimiter}').",
-                }
-                if !annotations_disable_code(entry.annotations, diagnostic.code) {
-                  body_diagnostics.push(diagnostic)
-                }
+            if first_line_containing(body.to_string(), entry.delimiter)
+              is Some(line) {
+              let diagnostic = {
+                span: span_at(entry.delimiter_pos),
+                severity: Error,
+                code: Some(1042),
+                message: "Close matches include '\{line}' (!= '\{entry.delimiter}').",
               }
-              None => ()
+              if !annotations_disable_code(entry.annotations, diagnostic.code) {
+                body_diagnostics.push(diagnostic)
+              }
             }
           } else if lower_ascii_string(body.to_string()).contains(
               lower_ascii_string(entry.delimiter),
@@ -9194,18 +9115,16 @@ fn resolve_source_input(
   }
   let candidates : Array[String] = [path]
   if !path.has_prefix("/") {
-    match options.current_path {
-      Some(current) => candidates.push(join_path(dirname(current), path))
-      None => ()
+    if options.current_path is Some(current) {
+      candidates.push(join_path(dirname(current), path))
     }
     for base in effective_source_paths(options, annotations) {
       candidates.push(join_path(base, path))
     }
   }
   for candidate in candidates {
-    match lookup_source_text(options, candidate) {
-      Some(contents) => return Some((candidate, contents))
-      None => ()
+    if lookup_source_text(options, candidate) is Some(contents) {
+      return Some((candidate, contents))
     }
   }
   None
@@ -9291,13 +9210,12 @@ fn resolve_source_command_path(
   source : SourceCommand,
   annotations : Array[Annotation],
 ) -> String? {
-  let path = match source_override_path(annotations) {
-    Some(path) => Some(path)
-    None =>
-      match word_literal_text(source.path) {
-        Some(path) => Some(path)
-        None => source_word_with_dynamic_prefix(source.path)
-      }
+  let path = if source_override_path(annotations) is Some(path) {
+    Some(path)
+  } else if word_literal_text(source.path) is Some(path) {
+    Some(path)
+  } else {
+    source_word_with_dynamic_prefix(source.path)
   }
   match path {
     Some(path) if path.has_prefix("~/") => None
@@ -9324,105 +9242,97 @@ fn resolve_command_sources(
     Source(source) =>
       if !options.follow_sources {
         Source(source)
-      } else {
-        match resolve_source_command_path(source, active_annotations) {
+      } else if resolve_source_command_path(source, active_annotations)
+        is Some(path) {
+        match resolve_source_input(path, options, active_annotations) {
           None => {
             diagnostics.push({
               span: source_command_resolution_span(source),
-              severity: Warning,
-              code: Some(1090),
-              message: "source path is dynamic; include resolution was skipped",
+              severity: if effective_external_sources(
+                  options, active_annotations,
+                ) {
+                Info
+              } else {
+                Warning
+              },
+              code: Some(1091),
+              message: "source file '\{path}' was not provided in parse options",
             })
             Source(source)
           }
-          Some(path) =>
-            match resolve_source_input(path, options, active_annotations) {
-              None => {
+          Some((resolved_path, contents)) =>
+            if stack.contains(resolved_path) {
+              diagnostics.push({
+                span: source_command_resolution_span(source),
+                severity: Info,
+                code: Some(1093),
+                message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
+              })
+              Source({ ..source, resolved_path: Some(resolved_path) })
+            } else if stack.length() >= 100 {
+              diagnostics.push({
+                span: source_command_resolution_span(source),
+                severity: Error,
+                code: Some(1092),
+                message: "Stopping at 100 'source' frames :O",
+              })
+              Source({ ..source, resolved_path: Some(resolved_path) })
+            } else {
+              let nested_options = {
+                ..options,
+                sourced: true,
+                current_path: Some(resolved_path),
+                source_paths: effective_source_paths(
+                  options, active_annotations,
+                ),
+                external_sources: effective_external_sources(
+                  options, active_annotations,
+                ),
+              }
+              let next_stack : Array[String] = []
+              for item in stack {
+                next_stack.push(item)
+              }
+              next_stack.push(resolved_path)
+              let report = parse_script_with_options_internal(
+                contents, nested_options, next_stack,
+              )
+              if nested_parse_blocks_include(report.diagnostics) {
                 diagnostics.push({
                   span: source_command_resolution_span(source),
-                  severity: if effective_external_sources(
-                      options, active_annotations,
-                    ) {
-                    Info
-                  } else {
-                    Warning
-                  },
-                  code: Some(1091),
-                  message: "source file '\{path}' was not provided in parse options",
+                  severity: Warning,
+                  code: Some(1094),
+                  message: "source file '\{resolved_path}' could not be parsed; include was skipped",
                 })
-                Source(source)
-              }
-              Some((resolved_path, contents)) =>
-                if stack.contains(resolved_path) {
-                  diagnostics.push({
-                    span: source_command_resolution_span(source),
-                    severity: Info,
-                    code: Some(1093),
-                    message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
-                  })
-                  Source({ ..source, resolved_path: Some(resolved_path) })
-                } else if stack.length() >= 100 {
-                  diagnostics.push({
-                    span: source_command_resolution_span(source),
-                    severity: Error,
-                    code: Some(1092),
-                    message: "Stopping at 100 'source' frames :O",
-                  })
-                  Source({ ..source, resolved_path: Some(resolved_path) })
-                } else {
-                  let nested_options = {
-                    ..options,
-                    sourced: true,
-                    current_path: Some(resolved_path),
-                    source_paths: effective_source_paths(
-                      options, active_annotations,
-                    ),
-                    external_sources: effective_external_sources(
-                      options, active_annotations,
-                    ),
-                  }
-                  let next_stack : Array[String] = []
-                  for item in stack {
-                    next_stack.push(item)
-                  }
-                  next_stack.push(resolved_path)
-                  let report = parse_script_with_options_internal(
-                    contents, nested_options, next_stack,
-                  )
-                  if nested_parse_blocks_include(report.diagnostics) {
-                    diagnostics.push({
-                      span: source_command_resolution_span(source),
-                      severity: Warning,
-                      code: Some(1094),
-                      message: "source file '\{resolved_path}' could not be parsed; include was skipped",
-                    })
-                    Source({ ..source, resolved_path: Some(resolved_path) })
-                  } else {
-                    match report.script {
-                      Some(script) => {
-                        for diagnostic in report.diagnostics {
-                          diagnostics.push(diagnostic)
-                        }
-                        Source({
-                          ..source,
-                          resolved_path: Some(resolved_path),
-                          included: Some(script),
-                        })
-                      }
-                      None => {
-                        diagnostics.push({
-                          span: source_command_resolution_span(source),
-                          severity: Warning,
-                          code: Some(1094),
-                          message: "source file '\{resolved_path}' could not be parsed; include was skipped",
-                        })
-                        Source({ ..source, resolved_path: Some(resolved_path) })
-                      }
-                    }
-                  }
+                Source({ ..source, resolved_path: Some(resolved_path) })
+              } else if report.script is Some(script) {
+                for diagnostic in report.diagnostics {
+                  diagnostics.push(diagnostic)
                 }
+                Source({
+                  ..source,
+                  resolved_path: Some(resolved_path),
+                  included: Some(script),
+                })
+              } else {
+                diagnostics.push({
+                  span: source_command_resolution_span(source),
+                  severity: Warning,
+                  code: Some(1094),
+                  message: "source file '\{resolved_path}' could not be parsed; include was skipped",
+                })
+                Source({ ..source, resolved_path: Some(resolved_path) })
+              }
             }
         }
+      } else {
+        diagnostics.push({
+          span: source_command_resolution_span(source),
+          severity: Warning,
+          code: Some(1090),
+          message: "source path is dynamic; include resolution was skipped",
+        })
+        Source(source)
       }
     Time(clause) =>
       Time({
@@ -9468,14 +9378,14 @@ fn resolve_command_sources(
           ),
         })
       }
-      let else_body = match clause.else_body {
-        None => None
-        Some(script) =>
-          Some(
-            resolve_script_sources(
-              script, file_annotations, options, stack, diagnostics,
-            ),
-          )
+      let else_body = if clause.else_body is Some(script) {
+        Some(
+          resolve_script_sources(
+            script, file_annotations, options, stack, diagnostics,
+          ),
+        )
+      } else {
+        None
       }
       If({ arms, else_body })
     }
@@ -9767,9 +9677,8 @@ fn collect_associative_names_from_word_part(
         collect_associative_names_from_word_part(nested, names)
       }
     BracedParameter(expansion) =>
-      match expansion.index {
-        Some(index) => collect_associative_names_from_array_index(index, names)
-        None => ()
+      if expansion.index is Some(index) {
+        collect_associative_names_from_array_index(index, names)
       }
     BraceCommandSubstitution(_, script)
     | CommandSubstitution(script)
@@ -9839,12 +9748,10 @@ fn collect_associative_names_from_redirection(
   match redirection.target {
     Word(word) => collect_associative_names_from_word(word, names)
     HereDoc(here_doc) =>
-      match here_doc.parts {
-        Some(parts) =>
-          for part in parts {
-            collect_associative_names_from_word_part(part, names)
-          }
-        None => ()
+      if here_doc.parts is Some(parts) {
+        for part in parts {
+          collect_associative_names_from_word_part(part, names)
+        }
       }
   }
 }
@@ -9875,17 +9782,16 @@ fn collect_associative_names_from_simple(
   if simple.words.length() == 0 {
     return
   }
-  let command_name = match word_plain_text(simple.words[0]) {
-    Some(name) => name
-    None => {
-      for assignment in simple.assignments {
-        collect_associative_names_from_assignment_value(assignment.value, names)
-      }
-      for word in simple.words {
-        collect_associative_names_from_word(word, names)
-      }
-      return
+  let command_name = if word_plain_text(simple.words[0]) is Some(name) {
+    name
+  } else {
+    for assignment in simple.assignments {
+      collect_associative_names_from_assignment_value(assignment.value, names)
     }
+    for word in simple.words {
+      collect_associative_names_from_word(word, names)
+    }
+    return
   }
   let mut has_assoc_flag = false
   if command_name == "declare" ||
@@ -9909,9 +9815,8 @@ fn collect_associative_names_from_simple(
           Some(text) if text == "--" => ()
           Some(text) if text.has_prefix("-") => ()
           _ =>
-            match word_identifier_text(simple.words[i]) {
-              Some(name) => push_unique_name(names, name)
-              None => ()
+            if word_identifier_text(simple.words[i]) is Some(name) {
+              push_unique_name(names, name)
             }
         }
         i += 1
@@ -9944,9 +9849,8 @@ fn collect_associative_names_from_command(
       for arg in source.args {
         collect_associative_names_from_word(arg, names)
       }
-      match source.included {
-        Some(script) => collect_associative_names_from_script(script, names)
-        None => ()
+      if source.included is Some(script) {
+        collect_associative_names_from_script(script, names)
       }
     }
     Time(clause) => {
@@ -9962,9 +9866,8 @@ fn collect_associative_names_from_command(
         collect_associative_names_from_script(arm.condition, names)
         collect_associative_names_from_script(arm.body, names)
       }
-      match clause.else_body {
-        Some(script) => collect_associative_names_from_script(script, names)
-        None => ()
+      if clause.else_body is Some(script) {
+        collect_associative_names_from_script(script, names)
       }
     }
     While(loop_) | Until(loop_) => {
@@ -10005,9 +9908,8 @@ fn collect_associative_names_from_command(
     Function(function_) =>
       collect_associative_names_from_command(function_.body, names)
     CoProc(clause) => {
-      match clause.name {
-        Some(name) => collect_associative_names_from_word(name, names)
-        None => ()
+      if clause.name is Some(name) {
+        collect_associative_names_from_word(name, names)
       }
       collect_associative_names_from_command(clause.body, names)
     }
@@ -10141,14 +10043,14 @@ fn normalize_parameter_expansion(
   expansion : ParameterExpansion,
   associative_names : Array[String],
 ) -> ParameterExpansion {
-  let index = match expansion.index {
-    Some(index) =>
-      match expansion.name {
-        Some(name) =>
-          Some(normalize_array_index_for_name(index, name, associative_names))
-        None => Some(index)
-      }
-    None => None
+  let index = if expansion.index is Some(index) {
+    if expansion.name is Some(name) {
+      Some(normalize_array_index_for_name(index, name, associative_names))
+    } else {
+      Some(index)
+    }
+  } else {
+    None
   }
   { ..expansion, index, }
 }
@@ -10295,15 +10197,14 @@ fn normalize_redirection(
     Word(word) =>
       RedirectionTarget::Word(normalize_word(word, associative_names))
     HereDoc(here_doc) => {
-      let parts = match here_doc.parts {
-        Some(parts) => {
-          let normalized : Array[WordPart] = []
-          for part in parts {
-            normalized.push(normalize_word_part(part, associative_names))
-          }
-          Some(normalized)
+      let parts = if here_doc.parts is Some(parts) {
+        let normalized : Array[WordPart] = []
+        for part in parts {
+          normalized.push(normalize_word_part(part, associative_names))
         }
-        None => None
+        Some(normalized)
+      } else {
+        None
       }
       HereDoc({ ..here_doc, parts, })
     }
@@ -10345,10 +10246,10 @@ fn normalize_command(
       for arg in source.args {
         args.push(normalize_word(arg, associative_names))
       }
-      let included = match source.included {
-        Some(script) =>
-          Some(normalize_array_indices_in_script(script, associative_names))
-        None => None
+      let included = if source.included is Some(script) {
+        Some(normalize_array_indices_in_script(script, associative_names))
+      } else {
+        None
       }
       Source({
         ..source,
@@ -10381,10 +10282,10 @@ fn normalize_command(
           body: normalize_array_indices_in_script(arm.body, associative_names),
         })
       }
-      let else_body = match clause.else_body {
-        Some(script) =>
-          Some(normalize_array_indices_in_script(script, associative_names))
-        None => None
+      let else_body = if clause.else_body is Some(script) {
+        Some(normalize_array_indices_in_script(script, associative_names))
+      } else {
+        None
       }
       If({ arms, else_body })
     }
@@ -10468,9 +10369,10 @@ fn normalize_command(
       })
     CoProc(clause) =>
       CoProc({
-        name: match clause.name {
-          Some(name) => Some(normalize_word(name, associative_names))
-          None => None
+        name: if clause.name is Some(name) {
+          Some(normalize_word(name, associative_names))
+        } else {
+          None
         },
         body: normalize_command(clause.body, associative_names),
       })
@@ -10550,32 +10452,29 @@ fn validate_shebang(
   if has_shell_annotation(annotations) {
     return
   }
-  match shebang {
-    Some(line) => {
-      let shell = executable_from_shebang(line)
-      match classify_shebang_shell(shell) {
-        Supported => ()
-        Unsupported =>
-          if !annotations_disable_code(annotations, Some(1071)) {
-            parser.emit_diagnostic(
-              Error,
-              shebang_position(has_bom),
-              "unsupported shebang shell '\{shell}'; parser only supports sh/bash/dash/ash/bats/ksh/oksh/'busybox sh'/'busybox ash' scripts",
-              Some(1071),
-            )
-          }
-        Unknown =>
-          if !annotations_disable_code(annotations, Some(1008)) {
-            parser.emit_diagnostic(
-              Error,
-              shebang_position(has_bom),
-              "unrecognized shebang shell '\{shell}'; add '# shellcheck shell=bash' to specify the shell",
-              Some(1008),
-            )
-          }
-      }
+  if shebang is Some(line) {
+    let shell = executable_from_shebang(line)
+    match classify_shebang_shell(shell) {
+      Supported => ()
+      Unsupported =>
+        if !annotations_disable_code(annotations, Some(1071)) {
+          parser.emit_diagnostic(
+            Error,
+            shebang_position(has_bom),
+            "unsupported shebang shell '\{shell}'; parser only supports sh/bash/dash/ash/bats/ksh/oksh/'busybox sh'/'busybox ash' scripts",
+            Some(1071),
+          )
+        }
+      Unknown =>
+        if !annotations_disable_code(annotations, Some(1008)) {
+          parser.emit_diagnostic(
+            Error,
+            shebang_position(has_bom),
+            "unrecognized shebang shell '\{shell}'; add '# shellcheck shell=bash' to specify the shell",
+            Some(1008),
+          )
+        }
     }
-    None => ()
   }
 }
 
@@ -10670,9 +10569,8 @@ pub fn parse_script_with_options(
   options : ParseOptions,
 ) -> ParseReport {
   let stack : Array[String] = []
-  match options.current_path {
-    Some(path) => stack.push(path)
-    None => ()
+  if options.current_path is Some(path) {
+    stack.push(path)
   }
   parse_script_with_options_internal(source, options, stack)
 }
@@ -10731,19 +10629,12 @@ pub fn parse_script(source : String) -> Result[Script, ParseError] {
       _ => ()
     }
   }
-  match report.script {
-    Some(script) => Ok(script)
-    None =>
-      match report.diagnostics.get(0) {
-        Some(diagnostic) => Err(diagnostic_as_error(diagnostic))
-        None =>
-          Err(
-            Message(
-              pos={ offset: 0, line: 1, column: 1 },
-              message="parse failed",
-            ),
-          )
-      }
+  if report.script is Some(script) {
+    Ok(script)
+  } else if report.diagnostics.get(0) is Some(diagnostic) {
+    Err(diagnostic_as_error(diagnostic))
+  } else {
+    Err(Message(pos={ offset: 0, line: 1, column: 1 }, message="parse failed"))
   }
 }
 

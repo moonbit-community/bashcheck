@@ -288,9 +288,10 @@ fn if_clause_has_reportable_command(clause : @parser.IfClause) -> Bool {
       return true
     }
   }
-  match clause.else_body {
-    Some(body) => script_has_reportable_command(body)
-    None => false
+  if clause.else_body is Some(body) {
+    script_has_reportable_command(body)
+  } else {
+    false
   }
 }
 
@@ -312,18 +313,16 @@ fn has_unreachable_command_ancestor(
 ) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    match current {
-      Some(parent) =>
-        match @cfg.ast_ref_of(cfg, parent) {
-          Some(Command(_)) =>
-            if !@cfg.command_is_reachable(analysis, parent) {
-              return true
-            } else {
-              current = @cfg.ast_parent_of(cfg, parent)
-            }
-          _ => current = @cfg.ast_parent_of(cfg, parent)
-        }
-      None => ()
+    if current is Some(parent) {
+      match @cfg.ast_ref_of(cfg, parent) {
+        Some(Command(_)) =>
+          if !@cfg.command_is_reachable(analysis, parent) {
+            return true
+          } else {
+            current = @cfg.ast_parent_of(cfg, parent)
+          }
+        _ => current = @cfg.ast_parent_of(cfg, parent)
+      }
     }
   }
   false
@@ -337,10 +336,7 @@ fn has_unreachable_function_ancestor(
 ) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     match @cfg.ast_ref_of(cfg, parent) {
       Some(FunctionDef(_)) =>
         if !function_def_is_reachable(cfg, analysis, parent) {
@@ -359,9 +355,10 @@ fn function_def_is_reachable(
   analysis : @cfg.CfgAnalysis,
   id : @cfg.CfgAstId,
 ) -> Bool {
-  match function_def_body_command_id(cfg, id) {
-    Some(body_id) => @cfg.command_is_reachable(analysis, body_id)
-    None => false
+  if function_def_body_command_id(cfg, id) is Some(body_id) {
+    @cfg.command_is_reachable(analysis, body_id)
+  } else {
+    false
   }
 }
 
@@ -391,10 +388,7 @@ fn command_is_top_level_script_command(
 ) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     match @cfg.ast_ref_of(cfg, parent) {
       Some(FunctionDef(_)) | Some(BatsTestClause(_)) | Some(SourceCommand(_)) =>
         return false
@@ -429,10 +423,7 @@ fn function_def_body_command_id(
 fn has_source_command_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     match @cfg.ast_ref_of(cfg, parent) {
       Some(SourceCommand(_)) => return true
       Some(Command(command)) =>
@@ -511,12 +502,10 @@ fn check_parameter_expansion_read(
 ) -> Unit {
   guard !has_parameter_expansion_ancestor(cfg, id) else { return }
   guard !parameter_expansion_allows_unset(expansion) else { return }
-  match expansion.name {
-    Some(name) =>
-      check_unassigned_read(
-        cfg, analysis, id, name, uppercase_only, dead_subshell_reads, diagnostics,
-      )
-    None => ()
+  if expansion.name is Some(name) {
+    check_unassigned_read(
+      cfg, analysis, id, name, uppercase_only, dead_subshell_reads, diagnostics,
+    )
   }
 }
 
@@ -553,10 +542,7 @@ fn check_unassigned_read(
 fn has_parameter_expansion_ancestor(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     match @cfg.ast_ref_of(cfg, parent) {
       Some(ParameterExpansion(_)) => return true
       _ => current = @cfg.ast_parent_of(cfg, parent)
@@ -579,23 +565,22 @@ fn guarded_by_alternate_parameter_expansion(
 ) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    match current {
-      Some(parent) =>
-        match @cfg.ast_ref_of(cfg, parent) {
-          Some(ParameterExpansion(expansion)) =>
-            if expansion.name == Some(name) {
-              match expansion.operator {
-                Some(AlternateValue(_)) => return true
-                _ => ()
-              }
+    if current is Some(parent) {
+      match @cfg.ast_ref_of(cfg, parent) {
+        Some(ParameterExpansion(expansion)) =>
+          if expansion.name == Some(name) {
+            match expansion.operator {
+              Some(AlternateValue(_)) => return true
+              _ => ()
             }
-          _ => ()
-        }
-      None => ()
+          }
+        _ => ()
+      }
     }
-    current = match current {
-      Some(parent) => @cfg.ast_parent_of(cfg, parent)
-      None => None
+    current = if current is Some(parent) {
+      @cfg.ast_parent_of(cfg, parent)
+    } else {
+      None
     }
   }
   false
@@ -609,10 +594,7 @@ fn guarded_by_condition_success(
 ) -> Bool {
   let mut current = @cfg.ast_parent_of(cfg, id)
   while current is Some(_) {
-    let parent = match current {
-      Some(parent) => parent
-      None => break
-    }
+    let parent = if current is Some(parent) { parent } else { break }
     if if_arm_body_is_guarded(cfg, parent, id, name) ||
       while_body_is_guarded(cfg, parent, id, name) {
       return true
@@ -646,9 +628,10 @@ fn while_body_is_guarded(
   name : String,
 ) -> Bool {
   let target_span = ast_effect_span(cfg, target)
-  let parent = match @cfg.ast_parent_of(cfg, candidate) {
-    Some(parent) => parent
-    None => return false
+  let parent = if @cfg.ast_parent_of(cfg, candidate) is Some(parent) {
+    parent
+  } else {
+    return false
   }
   match (@cfg.ast_ref_of(cfg, candidate), @cfg.ast_ref_of(cfg, parent)) {
     (Some(LoopClause(clause)), Some(Command(command))) =>
@@ -667,9 +650,10 @@ fn script_success_proves_defined(
   script : @parser.Script,
   name : String,
 ) -> Bool {
-  match last_script_list_item(script) {
-    Some(item) => and_or_list_success_proves_defined(item.and_or, name)
-    None => false
+  if last_script_list_item(script) is Some(item) {
+    and_or_list_success_proves_defined(item.and_or, name)
+  } else {
+    false
   }
 }
 
@@ -806,13 +790,12 @@ fn condition_expr_success_proves_defined(
 
 ///|
 fn condition_test_target_name(word : @parser.Word) -> String? {
-  let text = match @semantics.literal_text(word) {
-    Some(text) => text
-    None =>
-      match @semantics.leading_unquoted_text(word) {
-        Some(text) => text
-        None => return None
-      }
+  let text = if @semantics.literal_text(word) is Some(text) {
+    text
+  } else if @semantics.leading_unquoted_text(word) is Some(text) {
+    text
+  } else {
+    return None
   }
   let view = text[:]
   let mut end = 0
@@ -847,9 +830,10 @@ fn is_identifier_name(name : String) -> Bool {
 
 ///|
 fn ast_effect_span(cfg : @cfg.CFG, id : @cfg.CfgAstId) -> @parser.Span {
-  match @cfg.ast_enclosing_span_of(cfg, id) {
-    Some(span) => span
-    None => panic()
+  if @cfg.ast_enclosing_span_of(cfg, id) is Some(span) {
+    span
+  } else {
+    panic()
   }
 }
 
@@ -858,9 +842,10 @@ fn control_flow_precise_ast_span(
   cfg : @cfg.CFG,
   id : @cfg.CfgAstId,
 ) -> @parser.Span {
-  match @cfg.ast_span_of(cfg, id) {
-    Some(span) => span
-    None => ast_effect_span(cfg, id)
+  if @cfg.ast_span_of(cfg, id) is Some(span) {
+    span
+  } else {
+    ast_effect_span(cfg, id)
   }
 }
 
@@ -871,13 +856,14 @@ fn control_flow_unassigned_read_span(
 ) -> @parser.Span {
   match @cfg.ast_ref_of(cfg, id) {
     Some(ParameterExpansion(expansion)) =>
-      match parent_word_of(cfg, id) {
-        Some(word) =>
-          match word_subspan(word, "${\{expansion.raw}}") {
-            Some(span) => span
-            None => control_flow_precise_ast_span(cfg, id)
-          }
-        None => control_flow_precise_ast_span(cfg, id)
+      if parent_word_of(cfg, id) is Some(word) {
+        if word_subspan(word, "${\{expansion.raw}}") is Some(span) {
+          span
+        } else {
+          control_flow_precise_ast_span(cfg, id)
+        }
+      } else {
+        control_flow_precise_ast_span(cfg, id)
       }
     _ => control_flow_precise_ast_span(cfg, id)
   }
@@ -891,9 +877,10 @@ fn span_contains(outer : @parser.Span, inner : @parser.Span) -> Bool {
 
 ///|
 fn variable_is_unassigned(state : @cfg.ProgramState, name : String) -> Bool {
-  match state.variables_in_scope.get(name) {
-    Some(_) => @cfg.variable_may_be_unset(state, name)
-    None => true
+  if state.variables_in_scope.get(name) is Some(_) {
+    @cfg.variable_may_be_unset(state, name)
+  } else {
+    true
   }
 }
 

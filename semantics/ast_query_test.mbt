@@ -18,18 +18,20 @@ fn parse_query_with_options(
   options : @parser.ParseOptions,
 ) -> @parser.Script {
   let report = @parser.parse_script_with_options(source, options)
-  match report.script {
-    Some(script) => script
-    None => query_fail("expected script")
+  if report.script is Some(script) {
+    script
+  } else {
+    query_fail("expected script")
   }
 }
 
 ///|
 fn parse_query_report_ok(source : String) -> @parser.Script {
   let report = @parser.parse_script_report(source)
-  match report.script {
-    Some(script) => script
-    None => query_fail("expected script")
+  if report.script is Some(script) {
+    script
+  } else {
+    query_fail("expected script")
   }
 }
 
@@ -370,9 +372,10 @@ test "walkers stay within the current script and can inspect includes separately
   let root_redirects = @semantics.all_redirections(root_command)
   @test.assert_eq(root_redirects.length(), 0)
 
-  let included = match source.included {
-    Some(script) => script
-    None => query_fail("expected included script")
+  let included = if source.included is Some(script) {
+    script
+  } else {
+    query_fail("expected included script")
   }
   let mut included_script_count = 0
   @semantics.walk_script(included, fn(_) { included_script_count += 1 })
@@ -381,9 +384,8 @@ test "walkers stay within the current script and can inspect includes separately
   let echo_command = first_command(included)
   let names : Array[String] = []
   @semantics.walk_command(echo_command, fn(command) {
-    match @semantics.command_name(command) {
-      Some(name) => names.push(name)
-      None => ()
+    if @semantics.command_name(command) is Some(name) {
+      names.push(name)
     }
   })
   @test.assert_eq(names, ["echo", "printf"])
@@ -411,9 +413,10 @@ test "walkers stay within the current script and can inspect includes separately
 fn first_if_body_item(script : @parser.Script) -> @parser.ListItem {
   match first_command(script).kind {
     If(clause) =>
-      match clause.arms.get(0) {
-        Some(arm) => first_item(arm.body)
-        None => query_fail("expected if arm")
+      if clause.arms.get(0) is Some(arm) {
+        first_item(arm.body)
+      } else {
+        query_fail("expected if arm")
       }
     _ => query_fail("expected if command")
   }

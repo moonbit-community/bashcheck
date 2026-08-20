@@ -53,12 +53,10 @@ fn check_blatant_recursion_function(
   body : @parser.Command,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match blatant_recursion_first_sequence_commands(body) {
-    Some(commands) =>
-      for command in commands {
-        check_blatant_recursion_command(function_name, command, diagnostics)
-      }
-    None => ()
+  if blatant_recursion_first_sequence_commands(body) is Some(commands) {
+    for command in commands {
+      check_blatant_recursion_command(function_name, command, diagnostics)
+    }
   }
 }
 
@@ -67,12 +65,12 @@ fn function_has_blatant_recursion(
   function_name : String,
   body : @parser.Command,
 ) -> Bool {
-  match blatant_recursion_first_sequence_commands(body) {
-    Some(commands) =>
-      commands.any(fn(command) {
-        blatant_recursion_command_word(function_name, command) is Some(_)
-      })
-    None => false
+  if blatant_recursion_first_sequence_commands(body) is Some(commands) {
+    commands.any(fn(command) {
+      blatant_recursion_command_word(function_name, command) is Some(_)
+    })
+  } else {
+    false
   }
 }
 
@@ -84,13 +82,12 @@ fn blatant_recursion_first_sequence_commands(
     BraceGroup(script) | Subshell(script) | BatsTest({ body: script, .. }) =>
       blatant_recursion_first_pipeline_commands(script)
     If(clause) =>
-      match clause.arms.get(0) {
-        Some(arm) => blatant_recursion_first_pipeline_commands(arm.condition)
-        None =>
-          match clause.else_body {
-            Some(body) => blatant_recursion_first_pipeline_commands(body)
-            None => None
-          }
+      if clause.arms.get(0) is Some(arm) {
+        blatant_recursion_first_pipeline_commands(arm.condition)
+      } else if clause.else_body is Some(body) {
+        blatant_recursion_first_pipeline_commands(body)
+      } else {
+        None
       }
     While(clause) | Until(clause) =>
       blatant_recursion_first_pipeline_commands(clause.condition)
@@ -107,9 +104,10 @@ fn blatant_recursion_first_sequence_commands(
 fn blatant_recursion_first_pipeline_commands(
   script : @parser.Script,
 ) -> Array[@parser.Command]? {
-  match script.items.get(0) {
-    Some(item) => blatant_recursion_pipeline_commands(item.and_or.head)
-    None => None
+  if script.items.get(0) is Some(item) {
+    blatant_recursion_pipeline_commands(item.and_or.head)
+  } else {
+    None
   }
 }
 
@@ -131,17 +129,15 @@ fn check_blatant_recursion_command(
   command : @parser.Command,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match blatant_recursion_command_word(function_name, command) {
-    Some(word) =>
-      push_diagnostic_with_fix(
-        diagnostics,
-        word.span,
-        Error,
-        2264,
-        "This function unconditionally re-invokes itself. Missing 'command'?",
-        blatant_recursion_fix(word),
-      )
-    None => ()
+  if blatant_recursion_command_word(function_name, command) is Some(word) {
+    push_diagnostic_with_fix(
+      diagnostics,
+      word.span,
+      Error,
+      2264,
+      "This function unconditionally re-invokes itself. Missing 'command'?",
+      blatant_recursion_fix(word),
+    )
   }
 }
 

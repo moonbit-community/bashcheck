@@ -38,9 +38,10 @@ fn check_cp_legacy_r(
 ) -> Unit {
   guard command_matches_exact_name(command, "cp") else { return }
   for argument in @semantics.command_arguments(command) {
-    let text = match @semantics.literal_text(argument) {
-      Some(text) => text
-      None => continue
+    let text = if @semantics.literal_text(argument) is Some(text) {
+      text
+    } else {
+      continue
     }
     if text == "--" {
       break

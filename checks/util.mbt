@@ -46,9 +46,8 @@ fn walk_parameter_expansion_parts(
   expansion : @parser.ParameterExpansion,
   visit : (@parser.WordPart) -> Unit,
 ) -> Unit {
-  match expansion.index {
-    Some(index) => walk_word_parts_deep(index.parts, visit)
-    None => ()
+  if expansion.index is Some(index) {
+    walk_word_parts_deep(index.parts, visit)
   }
   walk_parameter_operator_parts(expansion.operator, visit)
 }
@@ -64,21 +63,17 @@ fn walk_parameter_operator_parts(
         @parser.parse_arithmetic_expr(offset),
         visit,
       )
-      match length {
-        Some(length) =>
-          walk_arithmetic_expr_word_parts(
-            @parser.parse_arithmetic_expr(length),
-            visit,
-          )
-        None => ()
+      if length is Some(length) {
+        walk_arithmetic_expr_word_parts(
+          @parser.parse_arithmetic_expr(length),
+          visit,
+        )
       }
     }
     Some(Replace(_, pattern, replacement)) => {
       walk_word_deep(@parser.parse_text_as_word(pattern), visit)
-      match replacement {
-        Some(replacement) =>
-          walk_word_deep(@parser.parse_text_as_word(replacement), visit)
-        None => ()
+      if replacement is Some(replacement) {
+        walk_word_deep(@parser.parse_text_as_word(replacement), visit)
       }
     }
     Some(CaseModify(_, Some(pattern))) =>
@@ -158,9 +153,10 @@ fn word_is_plain_single_quoted(word : @parser.Word) -> Bool {
 
 ///|
 fn word_would_have_been_glob(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.contains("*") || text.contains("?") || text.contains("[")
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.contains("*") || text.contains("?") || text.contains("[")
+  } else {
+    false
   }
 }
 
@@ -247,9 +243,10 @@ fn first_command_in_script(script : @parser.Script) -> @parser.Command? {
 
 ///|
 fn first_command_name_in_script(script : @parser.Script) -> String? {
-  match first_command_in_script(script) {
-    Some(command) => @semantics.command_name(command)
-    None => None
+  if first_command_in_script(script) is Some(command) {
+    @semantics.command_name(command)
+  } else {
+    None
   }
 }
 
@@ -271,9 +268,10 @@ fn parameter_index_is(
   expansion : @parser.ParameterExpansion,
   raw : String,
 ) -> Bool {
-  match expansion.index {
-    Some(index) => index.raw == raw
-    None => false
+  if expansion.index is Some(index) {
+    index.raw == raw
+  } else {
+    false
   }
 }
 
@@ -415,9 +413,10 @@ fn span_suffix(span : @parser.Span, width : Int) -> @parser.Span {
 
 ///|
 fn effective_command_span(command : @parser.Command) -> @parser.Span {
-  match @semantics.effective_command_words(command).get(0) {
-    Some(word) => word.span
-    None => command.span
+  if @semantics.effective_command_words(command).get(0) is Some(word) {
+    word.span
+  } else {
+    command.span
   }
 }
 

@@ -82,18 +82,16 @@ fn analytics_visit_while_read_pipeline(
   background_bonus : Int,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match pipeline.segments.get(0) {
-    Some(segment) =>
-      analytics_visit_while_read_command(
-        segment.command,
-        active_loop_span,
-        structure_depth,
-        substitution_depth,
-        substitution_bonus,
-        background_bonus,
-        diagnostics,
-      )
-    None => ()
+  if pipeline.segments.get(0) is Some(segment) {
+    analytics_visit_while_read_command(
+      segment.command,
+      active_loop_span,
+      structure_depth,
+      substitution_depth,
+      substitution_bonus,
+      background_bonus,
+      diagnostics,
+    )
   }
 }
 
@@ -196,18 +194,16 @@ fn analytics_visit_while_read_command(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_visit_while_read_script(
-            body,
-            active_loop_span,
-            structure_depth + 1,
-            substitution_depth,
-            substitution_bonus,
-            background_bonus,
-            diagnostics,
-          )
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_visit_while_read_script(
+          body,
+          active_loop_span,
+          structure_depth + 1,
+          substitution_depth,
+          substitution_bonus,
+          background_bonus,
+          diagnostics,
+        )
       }
     }
     ForIn(clause) =>
@@ -385,9 +381,10 @@ fn analytics_while_read_muncher_diagnostic(
   substitution_bonus : Int,
   background_bonus : Int,
 ) -> (String, String, @fixer.Fix)? {
-  let command_name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return None
+  let command_name = if @semantics.effective_command_name(command) is Some(name) {
+    name
+  } else {
+    return None
   }
   if analytics_command_has_stdin_redirect(command) {
     return None
@@ -469,18 +466,20 @@ fn analytics_effective_command_arguments_contain(
 fn analytics_effective_command_name_position(
   command : @parser.Command,
 ) -> @parser.Position {
-  match @semantics.effective_command_words(command).get(0) {
-    Some(word) => word.span.end
-    None => command.span.end
+  if @semantics.effective_command_words(command).get(0) is Some(word) {
+    word.span.end
+  } else {
+    command.span.end
   }
 }
 
 ///|
 fn analytics_while_read_warning_span(command : @parser.Command) -> @parser.Span {
   let words = @semantics.effective_command_words(command)
-  let start = match words.get(0) {
-    Some(word) => word.span.start
-    None => command.span.start
+  let start = if words.get(0) is Some(word) {
+    word.span.start
+  } else {
+    command.span.start
   }
   let mut end_ = start
   for word in words {

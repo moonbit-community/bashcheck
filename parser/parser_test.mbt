@@ -96,9 +96,10 @@ fn report_has_message(report : @parser.ParseReport, needle : String) -> Bool {
 
 ///|
 fn report_script(report : @parser.ParseReport) -> @parser.Script {
-  match report.script {
-    Some(script) => script
-    None => abort("expected parsed script report")
+  if report.script is Some(script) {
+    script
+  } else {
+    abort("expected parsed script report")
   }
 }
 
@@ -122,9 +123,10 @@ fn assignment_word(value : @parser.AssignmentValue) -> @parser.Word {
 
 ///|
 fn arithmetic_index_expr(index : @parser.ArrayIndex) -> @parser.ArithmeticExpr {
-  match index.arithmetic {
-    Some(expr) => expr
-    None => abort("expected arithmetic index expression")
+  if index.arithmetic is Some(expr) {
+    expr
+  } else {
+    abort("expected arithmetic index expression")
   }
 }
 
@@ -444,9 +446,10 @@ test "simple here doc stores parsed parts" {
         ),
       )
       assert_eq(doc.quoted, false)
-      match doc.parts {
-        Some(parts) => assert_true(parts.length() >= 2)
-        None => fail("expected parsed heredoc parts")
+      if doc.parts is Some(parts) {
+        assert_true(parts.length() >= 2)
+      } else {
+        fail("expected parsed heredoc parts")
       }
     }
     _ => fail("expected here doc, got \{script.dump()}")
@@ -466,30 +469,29 @@ test "unquoted here doc keeps quote characters literal" {
   let command = first_command(script)
   match command.redirects[0].target {
     HereDoc(doc) =>
-      match doc.parts {
-        Some(parts) => {
-          assert_eq(parts.length(), 3)
-          match parts[0] {
-            Literal(text) => assert_eq(text, "\"")
-            _ => fail("expected literal opening quote, got \{script.dump()}")
-          }
-          match parts[1] {
-            Parameter(name) => assert_eq(name, "USER")
-            _ => fail("expected parameter expansion, got \{script.dump()}")
-          }
-          match parts[2] {
-            Literal(text) =>
-              assert_eq(
-                text,
-                (
-                  #|"
-                  #|
-                ),
-              )
-            _ => fail("expected literal closing quote, got \{script.dump()}")
-          }
+      if doc.parts is Some(parts) {
+        assert_eq(parts.length(), 3)
+        match parts[0] {
+          Literal(text) => assert_eq(text, "\"")
+          _ => fail("expected literal opening quote, got \{script.dump()}")
         }
-        None => fail("expected parsed heredoc parts")
+        match parts[1] {
+          Parameter(name) => assert_eq(name, "USER")
+          _ => fail("expected parameter expansion, got \{script.dump()}")
+        }
+        match parts[2] {
+          Literal(text) =>
+            assert_eq(
+              text,
+              (
+                #|"
+                #|
+              ),
+            )
+          _ => fail("expected literal closing quote, got \{script.dump()}")
+        }
+      } else {
+        fail("expected parsed heredoc parts")
       }
     _ => fail("expected here doc, got \{script.dump()}")
   }
@@ -539,9 +541,10 @@ test "top level metadata and source command" {
       #|
     ),
   )
-  match script.shebang {
-    Some(line) => assert_eq(line, "#!/usr/bin/env bash")
-    None => fail("expected shebang")
+  if script.shebang is Some(line) {
+    assert_eq(line, "#!/usr/bin/env bash")
+  } else {
+    fail("expected shebang")
   }
   assert_eq(script.annotations.length(), 2)
   let command = first_command(script)
@@ -593,17 +596,17 @@ test "source command captures options and resolves includes from parse options" 
       assert_eq(source.path.source, "helpers.sh")
       assert_eq(source.args.length(), 1)
       assert_eq(source.args[0].source, "foo")
-      match source.resolved_path {
-        Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-        None => fail("expected resolved source path")
+      if source.resolved_path is Some(path) {
+        assert_eq(path, "scripts/lib/helpers.sh")
+      } else {
+        fail("expected resolved source path")
       }
-      match source.included {
-        Some(included) => {
-          let (_, simple) = first_simple(included)
-          assert_eq(simple.words[0].source, "echo")
-          assert_eq(simple.words[1].source, "hi")
-        }
-        None => fail("expected included script")
+      if source.included is Some(included) {
+        let (_, simple) = first_simple(included)
+        assert_eq(simple.words[0].source, "echo")
+        assert_eq(simple.words[1].source, "hi")
+      } else {
+        fail("expected included script")
       }
     }
     _ => fail("expected source command")
@@ -640,9 +643,10 @@ test "source resolution accepts quoted constants and source annotations" {
   let quoted_script = report_script(quoted_report)
   match first_command(quoted_script).kind {
     Source(source) => {
-      match source.resolved_path {
-        Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-        None => fail("expected resolved quoted source path")
+      if source.resolved_path is Some(path) {
+        assert_eq(path, "scripts/lib/helpers.sh")
+      } else {
+        fail("expected resolved quoted source path")
       }
       assert_true(source.included is Some(_))
     }
@@ -662,9 +666,10 @@ test "source resolution accepts quoted constants and source annotations" {
   assert_eq(override_script.items[1].annotations.length(), 1)
   match override_script.items[1].and_or.head.segments[0].command.kind {
     Source(source) => {
-      match source.resolved_path {
-        Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-        None => fail("expected source override to resolve include")
+      if source.resolved_path is Some(path) {
+        assert_eq(path, "scripts/lib/helpers.sh")
+      } else {
+        fail("expected source override to resolve include")
       }
       assert_true(source.included is Some(_))
     }
@@ -698,10 +703,10 @@ test "supported env split-string shebang is accepted" {
       #|
     ),
   )
-  match script.shebang {
-    Some(line) =>
-      assert_eq(line, "#!/usr/bin/env --split-string=FOO=bar bash -eu")
-    None => fail("expected shebang")
+  if script.shebang is Some(line) {
+    assert_eq(line, "#!/usr/bin/env --split-string=FOO=bar bash -eu")
+  } else {
+    fail("expected shebang")
   }
 }
 
@@ -1151,9 +1156,10 @@ test "command-leading braces become brace groups while literal braces still work
       #|
     ),
   )
-  let script = match report.script {
-    Some(script) => script
-    None => fail(@debug.to_string(report))
+  let script = if report.script is Some(script) {
+    script
+  } else {
+    fail(@debug.to_string(report))
   }
   match first_command(script).kind {
     BraceGroup(body) => {
@@ -1952,9 +1958,10 @@ test "select, case, and coproc commands" {
   let coproc_script = parse_ok("coproc worker { echo hi; }")
   match first_command(coproc_script).kind {
     CoProc(clause) => {
-      match clause.name {
-        Some(word) => assert_eq(word.source, "worker")
-        None => fail("expected coproc name")
+      if clause.name is Some(word) {
+        assert_eq(word.source, "worker")
+      } else {
+        fail("expected coproc name")
       }
       match clause.body.kind {
         BraceGroup(_) => ()
@@ -2530,13 +2537,15 @@ test "braced parameter expansion is structured" {
   let (_, simple) = first_simple(script)
   let length = braced_parameter(simple.words[1].parts[0])
   assert_true(length.length_prefix)
-  match length.name {
-    Some(name) => assert_eq(name, "arr")
-    None => fail("expected length parameter name")
+  if length.name is Some(name) {
+    assert_eq(name, "arr")
+  } else {
+    fail("expected length parameter name")
   }
-  match length.index {
-    Some(index) => assert_eq(index_raw(index), "@")
-    None => fail("expected array index")
+  if length.index is Some(index) {
+    assert_eq(index_raw(index), "@")
+  } else {
+    fail("expected array index")
   }
 
   let defaulted = braced_parameter(simple.words[2].parts[0])
@@ -2553,9 +2562,10 @@ test "braced parameter expansion is structured" {
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "bar")
-      match replacement {
-        Some(value) => assert_eq(value, "baz")
-        None => fail("expected replacement value")
+      if replacement is Some(value) {
+        assert_eq(value, "baz")
+      } else {
+        fail("expected replacement value")
       }
     }
     _ => fail("expected replace operator")
@@ -2572,15 +2582,17 @@ test "braced parameter expansion is structured" {
 
   let indirect = braced_parameter(simple.words[5].parts[0])
   assert_true(indirect.indirect)
-  match indirect.name {
-    Some(name) => assert_eq(name, "name")
-    None => fail("expected indirect name")
+  if indirect.name is Some(name) {
+    assert_eq(name, "name")
+  } else {
+    fail("expected indirect name")
   }
 
   let indexed = braced_parameter(simple.words[6].parts[0])
-  match indexed.index {
-    Some(index) => assert_eq(index_raw(index), "$i")
-    None => fail("expected dynamic array index")
+  if indexed.index is Some(index) {
+    assert_eq(index_raw(index), "$i")
+  } else {
+    fail("expected dynamic array index")
   }
 }
 
@@ -2602,9 +2614,8 @@ test "braced parameter expansion supports transforms and case operators" {
         UpperAll => ()
         _ => fail("expected upper-all mode")
       }
-      match pattern {
-        None => ()
-        Some(_) => fail("expected no case pattern")
+      if pattern is Some(_) {
+        fail("expected no case pattern")
       }
     }
     _ => fail("expected uppercase case operator")
@@ -2617,9 +2628,10 @@ test "braced parameter expansion supports transforms and case operators" {
         LowerAll => ()
         _ => fail("expected lower-all mode")
       }
-      match pattern {
-        Some(value) => assert_eq(value, "[A-Z]")
-        None => fail("expected case pattern")
+      if pattern is Some(value) {
+        assert_eq(value, "[A-Z]")
+      } else {
+        fail("expected case pattern")
       }
     }
     _ => fail("expected lowercase case operator")
@@ -2632,9 +2644,8 @@ test "braced parameter expansion supports transforms and case operators" {
         ToggleFirst => ()
         _ => fail("expected toggle-first mode")
       }
-      match pattern {
-        None => ()
-        Some(_) => fail("expected no toggle pattern")
+      if pattern is Some(_) {
+        fail("expected no toggle pattern")
       }
     }
     _ => fail("expected toggle case operator")
@@ -2814,21 +2825,21 @@ test "backquoted and heredoc escapes preserve backslashes" {
           #|
         ),
       )
-      match doc.parts {
-        Some(parts) =>
-          match parts[0] {
-            Literal(text) =>
-              assert_eq(
-                text,
-                (
-                  #|\a
-                  #|$USER
-                  #|
-                ),
-              )
-            _ => fail("expected literal here-doc part")
-          }
-        None => fail("expected parsed heredoc parts")
+      if doc.parts is Some(parts) {
+        match parts[0] {
+          Literal(text) =>
+            assert_eq(
+              text,
+              (
+                #|\a
+                #|$USER
+                #|
+              ),
+            )
+          _ => fail("expected literal here-doc part")
+        }
+      } else {
+        fail("expected parsed heredoc parts")
       }
     }
     _ => fail("expected here doc")
@@ -3367,9 +3378,10 @@ test "source parse failure becomes a skip diagnostic" {
   assert_true(report_has_code(report, 1094))
   match first_command(script).kind {
     Source(source) => {
-      match source.resolved_path {
-        Some(path) => assert_eq(path, "scripts/lib/bad.sh")
-        None => fail("expected resolved bad source path")
+      if source.resolved_path is Some(path) {
+        assert_eq(path, "scripts/lib/bad.sh")
+      } else {
+        fail("expected resolved bad source path")
       }
       assert_true(source.included is None)
     }
@@ -3721,10 +3733,10 @@ test "array indices follow associative declarations like shellcheck" {
   )
 
   let (_, regular_echo) = simple_at(regular, 1)
-  match braced_parameter(regular_echo.words[1].parts[0]).index {
-    Some(index) =>
-      assert_eq(arithmetic_raw(arithmetic_index_expr(index)), "$j + 2")
-    None => fail("expected regular array parameter expansion index")
+  if braced_parameter(regular_echo.words[1].parts[0]).index is Some(index) {
+    assert_eq(arithmetic_raw(arithmetic_index_expr(index)), "$j + 2")
+  } else {
+    fail("expected regular array parameter expansion index")
   }
 
   match command_at(regular, 2).kind {
@@ -3757,12 +3769,11 @@ test "array indices follow associative declarations like shellcheck" {
   )
 
   let (_, associative_echo) = simple_at(associative, 2)
-  match braced_parameter(associative_echo.words[1].parts[0]).index {
-    Some(index) => {
-      assert_true(index.arithmetic is None)
-      assert_eq(index_raw(index), "$item + 2")
-    }
-    None => fail("expected associative array parameter expansion index")
+  if braced_parameter(associative_echo.words[1].parts[0]).index is Some(index) {
+    assert_true(index.arithmetic is None)
+    assert_eq(index_raw(index), "$item + 2")
+  } else {
+    fail("expected associative array parameter expansion index")
   }
 
   match command_at(associative, 3).kind {
@@ -3921,9 +3932,10 @@ test "backquoted substitutions inherit parse options for nested source resolutio
     BackQuoted(inner) =>
       match first_command(inner).kind {
         Source(source) => {
-          match source.resolved_path {
-            Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-            None => fail("expected nested source path to resolve")
+          if source.resolved_path is Some(path) {
+            assert_eq(path, "scripts/lib/helpers.sh")
+          } else {
+            fail("expected nested source path to resolve")
           }
           assert_true(source.included is Some(_))
         }
@@ -3966,9 +3978,10 @@ test "other nested script substitutions inherit parse options for source resolut
     CommandSubstitution(inner) =>
       match first_command(inner).kind {
         Source(source) => {
-          match source.resolved_path {
-            Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-            None => fail("expected command substitution source to resolve")
+          if source.resolved_path is Some(path) {
+            assert_eq(path, "scripts/lib/helpers.sh")
+          } else {
+            fail("expected command substitution source to resolve")
           }
           assert_true(source.included is Some(_))
         }
@@ -3982,9 +3995,10 @@ test "other nested script substitutions inherit parse options for source resolut
       assert_eq(kind, "<")
       match first_command(inner).kind {
         Source(source) => {
-          match source.resolved_path {
-            Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-            None => fail("expected process substitution source to resolve")
+          if source.resolved_path is Some(path) {
+            assert_eq(path, "scripts/lib/helpers.sh")
+          } else {
+            fail("expected process substitution source to resolve")
           }
           assert_true(source.included is Some(_))
         }
@@ -3998,10 +4012,10 @@ test "other nested script substitutions inherit parse options for source resolut
     BraceCommandSubstitution(false, inner) =>
       match first_command(inner).kind {
         Source(source) => {
-          match source.resolved_path {
-            Some(path) => assert_eq(path, "scripts/lib/helpers.sh")
-            None =>
-              fail("expected brace command substitution source to resolve")
+          if source.resolved_path is Some(path) {
+            assert_eq(path, "scripts/lib/helpers.sh")
+          } else {
+            fail("expected brace command substitution source to resolve")
           }
           assert_true(source.included is Some(_))
         }

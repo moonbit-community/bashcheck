@@ -33,18 +33,17 @@ fn assert_bats_test_status(
   let parser = Parser::new(source.view(), ParseOptions::default(), [])
   let actual = try {
     parser.skip_command_gaps()
-    match parser.try_parse_bats_test() {
-      Some(_) => {
-        parser.skip_command_gaps()
-        if !parser.eof() {
-          status_not_ok()
-        } else if parser.diagnostics.length() == 0 {
-          status_ok()
-        } else {
-          status_warning()
-        }
+    if parser.try_parse_bats_test() is Some(_) {
+      parser.skip_command_gaps()
+      if !parser.eof() {
+        status_not_ok()
+      } else if parser.diagnostics.length() == 0 {
+        status_ok()
+      } else {
+        status_warning()
       }
-      None => status_not_ok()
+    } else {
+      status_not_ok()
     }
   } catch {
     _ => status_not_ok()

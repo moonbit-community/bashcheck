@@ -163,9 +163,10 @@ pub fn realign_columns_for_tabs(fix : Fix, source : String) -> Fix {
 /// Returns `None` if replacements overlap, point outside the source, or target
 /// multiple files.
 pub fn apply_fix(fix : Fix, source : String) -> String? {
-  let merged = match merge_fixes([fix]) {
-    Some(merged) => merged
-    None => return None
+  let merged = if merge_fixes([fix]) is Some(merged) {
+    merged
+  } else {
+    return None
   }
   if merged.replacements.length() == 0 {
     return Some(source)

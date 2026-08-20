@@ -176,47 +176,44 @@ test "analytics batch a flags pure unquoted parameter words with shellcheck-styl
   let diagnostics = check_source(source)
 
   assert_eq(count_code(diagnostics, 2086), 5)
-  match first_code(diagnostics, 2086).fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 2)
-      let open_quote = fix.replacements[0]
-      assert_eq(open_quote.start.line, 3)
-      assert_eq(open_quote.start.column, 6)
-      assert_eq(open_quote.end.line, 3)
-      assert_eq(open_quote.end.column, 6)
-      assert_eq(open_quote.text, "\"")
-      assert_eq(open_quote.precedence, 7)
-      assert_true(open_quote.insertion_point == @fixer.InsertionPoint::after())
-      let close_quote = fix.replacements[1]
-      assert_eq(close_quote.start.line, 3)
-      assert_eq(close_quote.start.column, 10)
-      assert_eq(close_quote.end.line, 3)
-      assert_eq(close_quote.end.column, 10)
-      assert_eq(close_quote.text, "\"")
-      assert_eq(close_quote.precedence, 7)
-      assert_true(
-        close_quote.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|#!/bin/bash
-            #|# shellcheck disable=SC2154
-            #|echo "$foo"
-            #|echo ${foo:-bar}
-            #|echo $1
-            #|echo $*
-            #|echo ${array[*]}
-            #|echo ${array[@]}
-            #|echo ${foo:+bar}
-            #|echo ${#foo}
-            #|
-          ),
+  if first_code(diagnostics, 2086).fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 2)
+    let open_quote = fix.replacements[0]
+    assert_eq(open_quote.start.line, 3)
+    assert_eq(open_quote.start.column, 6)
+    assert_eq(open_quote.end.line, 3)
+    assert_eq(open_quote.end.column, 6)
+    assert_eq(open_quote.text, "\"")
+    assert_eq(open_quote.precedence, 7)
+    assert_true(open_quote.insertion_point == @fixer.InsertionPoint::after())
+    let close_quote = fix.replacements[1]
+    assert_eq(close_quote.start.line, 3)
+    assert_eq(close_quote.start.column, 10)
+    assert_eq(close_quote.end.line, 3)
+    assert_eq(close_quote.end.column, 10)
+    assert_eq(close_quote.text, "\"")
+    assert_eq(close_quote.precedence, 7)
+    assert_true(close_quote.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2154
+          #|echo "$foo"
+          #|echo ${foo:-bar}
+          #|echo $1
+          #|echo $*
+          #|echo ${array[*]}
+          #|echo ${array[@]}
+          #|echo ${foo:+bar}
+          #|echo ${#foo}
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2086 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2086 fix")
   }
 }
 
@@ -230,20 +227,20 @@ test "analytics batch a flags mixed unquoted parameter words with shellcheck-sty
   let diagnostics = check_source(source)
 
   assert_eq(count_code(diagnostics, 2086), 1)
-  match first_code(diagnostics, 2086).fix {
-    Some(fix) =>
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|#!/bin/bash
-            #|# shellcheck disable=SC2154
-            #|echo x"$foo"
-            #|
-          ),
+  if first_code(diagnostics, 2086).fix is Some(fix) {
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2154
+          #|echo x"$foo"
+          #|
         ),
-      )
-    None => checks_fail("expected SC2086 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2086 fix")
   }
 }
 
@@ -351,31 +348,28 @@ test "analytics batch a trailing comma diagnostics carry a delete fix" {
     #|
   let diagnostic = first_code(check_source(source), 2258)
 
-  match diagnostic.fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 3)
-      assert_eq(replacement.start.column, 13)
-      assert_eq(replacement.end.line, 3)
-      assert_eq(replacement.end.column, 14)
-      assert_eq(replacement.text, "")
-      assert_eq(replacement.precedence, 7)
-      assert_true(
-        replacement.insertion_point == @fixer.InsertionPoint::before(),
-      )
-      @test.assert_eq(
-        @fixer.apply_fix(fix, source),
-        Some(
-          (
-            #|#!/bin/bash
-            #|# shellcheck disable=SC2034
-            #|for f in foo bar,; do true; done
-            #|
-          ),
+  if diagnostic.fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 3)
+    assert_eq(replacement.start.column, 13)
+    assert_eq(replacement.end.line, 3)
+    assert_eq(replacement.end.column, 14)
+    assert_eq(replacement.text, "")
+    assert_eq(replacement.precedence, 7)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::before())
+    @test.assert_eq(
+      @fixer.apply_fix(fix, source),
+      Some(
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2034
+          #|for f in foo bar,; do true; done
+          #|
         ),
-      )
-    }
-    None => checks_fail("expected SC2258 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2258 fix")
   }
 }

@@ -124,23 +124,17 @@ fn check_mkdir_dash_pm(
     let mut saw_parents = false
     let mut mode_span : @parser.Span? = None
     for argument in arguments {
-      match @semantics.literal_text(argument) {
-        Some(text) => {
-          if mkdir_text_has_parents_flag(text) {
-            saw_parents = true
-          }
-          if mkdir_text_has_mode_flag(text) && mode_span is None {
-            mode_span = Some(argument.span)
-          }
+      if @semantics.literal_text(argument) is Some(text) {
+        if mkdir_text_has_parents_flag(text) {
+          saw_parents = true
         }
-        None => ()
+        if mkdir_text_has_mode_flag(text) && mode_span is None {
+          mode_span = Some(argument.span)
+        }
       }
     }
     guard saw_parents else { return }
-    let span = match mode_span {
-      Some(span) => span
-      None => return
-    }
+    let span = if mode_span is Some(span) { span } else { return }
     for argument in arguments {
       if mkdir_argument_could_have_subdirs(argument) {
         push_diagnostic(
@@ -186,10 +180,10 @@ fn short_option_cluster_contains(text : String, flag : Char) -> Bool {
 
 ///|
 fn mkdir_argument_could_have_subdirs(argument : @parser.Word) -> Bool {
-  match @semantics.literal_text(argument) {
-    Some(text) =>
-      text.contains("/") && !mkdir_literal_is_single_relative_segment(text)
-    None => true
+  if @semantics.literal_text(argument) is Some(text) {
+    text.contains("/") && !mkdir_literal_is_single_relative_segment(text)
+  } else {
+    true
   }
 }
 
@@ -242,42 +236,40 @@ fn check_ssh_command_string(
       return
     }
     let last_argument = arguments[arguments.length() - 1]
-    match ssh_remote_command_span(last_argument) {
-      Some(span) =>
-        push_diagnostic(
-          diagnostics,
-          span,
-          Info,
-          2029,
-          "Note that, unescaped, this expands on the client side.",
-        )
-      None => ()
+    if ssh_remote_command_span(last_argument) is Some(span) {
+      push_diagnostic(
+        diagnostics,
+        span,
+        Info,
+        2029,
+        "Note that, unescaped, this expands on the client side.",
+      )
     }
   })
 }
 
 ///|
 fn ssh_remote_command_span(argument : @parser.Word) -> @parser.Span? {
-  match word_is_plain_double_quoted(argument) {
-    Some(parts) =>
-      match ssh_first_dynamic_needle(parts) {
-        Some(needle) =>
-          match word_subspan(argument, needle) {
-            Some(span) => Some(span)
-            None => Some(argument.span)
-          }
-        None => None
+  if word_is_plain_double_quoted(argument) is Some(parts) {
+    if ssh_first_dynamic_needle(parts) is Some(needle) {
+      if word_subspan(argument, needle) is Some(span) {
+        Some(span)
+      } else {
+        Some(argument.span)
       }
-    None => None
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 
 ///|
 fn ssh_first_dynamic_needle(parts : Array[@parser.WordPart]) -> String? {
   for part in parts {
-    match ssh_dynamic_part_needle(part) {
-      Some(needle) => return Some(needle)
-      None => ()
+    if ssh_dynamic_part_needle(part) is Some(needle) {
+      return Some(needle)
     }
   }
   None
@@ -336,16 +328,14 @@ fn check_exported_expansions(
   visit_script_commands(script, fn(command) {
     guard command_matches_exact_name(command, "export") else { return }
     for argument in @semantics.effective_command_arguments(command) {
-      match read_expansion_target_name(argument) {
-        Some(name) =>
-          push_diagnostic(
-            diagnostics,
-            argument.span,
-            Warning,
-            2163,
-            "This does not export '\{name}'. Remove $/${} for that, or use ${var?} to quiet.",
-          )
-        None => ()
+      if read_expansion_target_name(argument) is Some(name) {
+        push_diagnostic(
+          diagnostics,
+          argument.span,
+          Warning,
+          2163,
+          "This does not export '\{name}'. Remove $/${} for that, or use ${var?} to quiet.",
+        )
       }
     }
   })
@@ -480,10 +470,8 @@ fn visit_command_with_function_scope(
         visit_commands_with_function_scope(arm.condition, in_function, visit)
         visit_commands_with_function_scope(arm.body, in_function, visit)
       }
-      match clause.else_body {
-        Some(body) =>
-          visit_commands_with_function_scope(body, in_function, visit)
-        None => ()
+      if clause.else_body is Some(body) {
+        visit_commands_with_function_scope(body, in_function, visit)
       }
     }
     While(clause) | Until(clause) => {
@@ -776,9 +764,11 @@ fn check_multiple_declaring(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_script_commands(script, fn(command) {
-    let command_name = match @semantics.effective_command_name(command) {
-      Some(name) => name
-      None => return
+    let command_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      name
+    } else {
+      return
     }
     if !@semantics.declaring_command_names().contains(command_name) {
       return
@@ -805,9 +795,11 @@ fn check_backreferencing_declaration(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_script_commands(script, fn(command) {
-    let command_name = match @semantics.effective_command_name(command) {
-      Some(name) => name
-      None => return
+    let command_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      name
+    } else {
+      return
     }
     if !@semantics.declaring_command_names().contains(command_name) {
       return
@@ -820,18 +812,15 @@ fn check_backreferencing_declaration(
       let references = declaration_element_references(element)
       for reference in references {
         guard !warned.contains(reference) else { continue }
-        match assigned.get(reference) {
-          Some(span) => {
-            push_diagnostic(
-              diagnostics,
-              span,
-              Warning,
-              2318,
-              "This assignment is used again in this '\{command_name}', but won't have taken effect. Use two '\{command_name}'s.",
-            )
-            warned.push(reference)
-          }
-          None => ()
+        if assigned.get(reference) is Some(span) {
+          push_diagnostic(
+            diagnostics,
+            span,
+            Warning,
+            2318,
+            "This assignment is used again in this '\{command_name}', but won't have taken effect. Use two '\{command_name}'s.",
+          )
+          warned.push(reference)
         }
       }
       match element {
@@ -949,9 +938,8 @@ fn collect_word_part_reference_names(
       match current {
         Parameter(name) => push_unique_reference_name(references, name)
         BracedParameter(expansion) =>
-          match expansion.name {
-            Some(name) => push_unique_reference_name(references, name)
-            None => ()
+          if expansion.name is Some(name) {
+            push_unique_reference_name(references, name)
           }
         ArithmeticExpansion(expr) | DollarBracket(expr) =>
           analytics_collect_arithmetic_reference_names(expr, references)

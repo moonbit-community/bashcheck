@@ -55,17 +55,19 @@ fn test_fix(replacements : Array[Replacement]) -> Fix {
 
 ///|
 fn apply_fixes(fixes : Array[Fix], source : String) -> String? {
-  match merge_fixes(fixes) {
-    Some(merged) => apply_fix(merged, source)
-    None => None
+  if merge_fixes(fixes) is Some(merged) {
+    apply_fix(merged, source)
+  } else {
+    None
   }
 }
 
 ///|
 fn apply_fix_with_cumulative_shifts(fix : Fix, source : String) -> String? {
-  let merged = match merge_fixes([fix]) {
-    Some(merged) => merged
-    None => return None
+  let merged = if merge_fixes([fix]) is Some(merged) {
+    merged
+  } else {
+    return None
   }
   if merged.replacements.length() == 0 {
     return Some(source)

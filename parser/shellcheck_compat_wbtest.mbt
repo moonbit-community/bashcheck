@@ -137,9 +137,10 @@ fn assert_config_ok(label : String, source : String) -> Unit {
 
 ///|
 fn is_any_shebang_text(line : String) -> Bool {
-  match classify_shebang_line(line) {
-    Some(kind) => is_any_shebang_line(kind)
-    None => false
+  if classify_shebang_line(line) is Some(kind) {
+    is_any_shebang_line(kind)
+  } else {
+    false
   }
 }
 

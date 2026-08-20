@@ -71,9 +71,10 @@ fn normalize_compat_diagnostics(
 ) -> Array[CompatDiagnostic] {
   let normalized : Array[CompatDiagnostic] = []
   for diagnostic in diagnostics {
-    let code = match diagnostic.code {
-      Some(code) => code
-      None => abort("expected lint diagnostic code")
+    let code = if diagnostic.code is Some(code) {
+      code
+    } else {
+      abort("expected lint diagnostic code")
     }
     normalized.push({
       severity: compat_severity_name(diagnostic.severity),

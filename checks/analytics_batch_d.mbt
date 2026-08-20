@@ -176,18 +176,16 @@ fn check_shebang_parameters_d(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match script.shebang {
-    Some(shebang) =>
-      if d_shebang_has_multiple_parameters(shebang) {
-        push_diagnostic(
-          diagnostics,
-          d_shebang_span(script, shebang),
-          Error,
-          2096,
-          "On most OS, shebangs can only specify a single parameter.",
-        )
-      }
-    None => ()
+  if script.shebang is Some(shebang) {
+    if d_shebang_has_multiple_parameters(shebang) {
+      push_diagnostic(
+        diagnostics,
+        d_shebang_span(script, shebang),
+        Error,
+        2096,
+        "On most OS, shebangs can only specify a single parameter.",
+      )
+    }
   }
 }
 
@@ -273,32 +271,28 @@ fn d_split_shell_words(text : String) -> Array[String] {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        current.write_char(ch.unsafe_to_char())
-        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
-          i += 1
-          current.write_char(view[i].unsafe_to_char())
-        } else if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == current_quote {
+        quote = None
       }
-      None =>
-        if ch == ' ' || ch == '\t' {
-          let item = current.to_string()
-          if item != "" {
-            values.push(item)
-            current.reset()
-          }
-        } else {
-          current.write_char(ch.unsafe_to_char())
-          if ch == '\\' && i + 1 < view.length() {
-            i += 1
-            current.write_char(view[i].unsafe_to_char())
-          } else if ch == '\'' || ch == '"' {
-            quote = Some(ch)
-          }
-        }
+    } else if ch == ' ' || ch == '\t' {
+      let item = current.to_string()
+      if item != "" {
+        values.push(item)
+        current.reset()
+      }
+    } else {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+      }
     }
     i += 1
   }
@@ -334,12 +328,10 @@ fn check_loop_keyword_scope(
   for id in indexed_all_node_ids(indexed) {
     match @semantics.node_ref_of(indexed, id) {
       Some(Command(command)) =>
-        match d_loop_keyword_name(command) {
-          Some(name) =>
-            d_check_loop_keyword_command(
-              indexed, id, command, name, lastpipe, diagnostics,
-            )
-          None => ()
+        if d_loop_keyword_name(command) is Some(name) {
+          d_check_loop_keyword_command(
+            indexed, id, command, name, lastpipe, diagnostics,
+          )
         }
       _ => ()
     }
@@ -350,13 +342,13 @@ fn check_loop_keyword_scope(
 fn d_loop_keyword_name(command : @parser.Command) -> String? {
   match command.kind {
     Simple(simple) =>
-      match simple.words.get(0) {
-        Some(word) =>
-          match word_single_literal_text(word) {
-            Some(name) if name == "break" || name == "continue" => Some(name)
-            _ => None
-          }
-        None => None
+      if simple.words.get(0) is Some(word) {
+        match word_single_literal_text(word) {
+          Some(name) if name == "break" || name == "continue" => Some(name)
+          _ => None
+        }
+      } else {
+        None
       }
     _ => None
   }
@@ -373,16 +365,14 @@ fn d_check_loop_keyword_command(
 ) -> Unit {
   let scopes = d_collect_loop_keyword_scopes(indexed, id, lastpipe)
   if d_loop_keyword_scopes_have_loop(scopes) {
-    match d_first_loop_keyword_subshell_scope(scopes) {
-      Some(reason) =>
-        push_diagnostic(
-          diagnostics,
-          command.span,
-          Warning,
-          2106,
-          "This only exits the subshell caused by the \{reason}.",
-        )
-      None => ()
+    if d_first_loop_keyword_subshell_scope(scopes) is Some(reason) {
+      push_diagnostic(
+        diagnostics,
+        command.span,
+        Warning,
+        2106,
+        "This only exits the subshell caused by the \{reason}.",
+      )
     }
     return
   }
@@ -415,9 +405,9 @@ fn d_collect_loop_keyword_scopes(
 ) -> Array[DLoopKeywordScopeKind] {
   let scopes : Array[DLoopKeywordScopeKind] = []
   for ancestor in @semantics.find_ancestors(indexed, id) {
-    match d_loop_keyword_scope_kind_for_ancestor(indexed, ancestor, lastpipe) {
-      Some(scope) => scopes.push(scope)
-      None => ()
+    if d_loop_keyword_scope_kind_for_ancestor(indexed, ancestor, lastpipe)
+      is Some(scope) {
+      scopes.push(scope)
     }
   }
   scopes
@@ -496,13 +486,13 @@ fn d_command_is_coproc_body(
   indexed : @semantics.IndexedScript,
   id : @semantics.NodeId,
 ) -> Bool {
-  match @semantics.parent_of(indexed, id) {
-    Some(parent) =>
-      match @semantics.node_ref_of(indexed, parent) {
-        Some(CoProcClause(_)) => true
-        _ => false
-      }
-    None => false
+  if @semantics.parent_of(indexed, id) is Some(parent) {
+    match @semantics.node_ref_of(indexed, parent) {
+      Some(CoProcClause(_)) => true
+      _ => false
+    }
+  } else {
+    false
   }
 }
 
@@ -512,34 +502,35 @@ fn d_command_is_pipeline_subshell(
   id : @semantics.NodeId,
   lastpipe : Bool,
 ) -> Bool {
-  let segment_id = match @semantics.parent_of(indexed, id) {
-    Some(parent) =>
-      match @semantics.node_ref_of(indexed, parent) {
-        Some(PipelineSegment(_)) => parent
-        _ => return false
-      }
-    None => return false
+  let segment_id = if @semantics.parent_of(indexed, id) is Some(parent) {
+    match @semantics.node_ref_of(indexed, parent) {
+      Some(PipelineSegment(_)) => parent
+      _ => return false
+    }
+  } else {
+    return false
   }
-  let pipeline_id = match @semantics.parent_of(indexed, segment_id) {
-    Some(parent) =>
-      match @semantics.node_ref_of(indexed, parent) {
-        Some(Pipeline(pipeline)) =>
-          if pipeline.segments.length() > 1 {
-            parent
-          } else {
-            return false
-          }
-        _ => return false
-      }
-    None => return false
+  let pipeline_id = if @semantics.parent_of(indexed, segment_id) is Some(parent) {
+    match @semantics.node_ref_of(indexed, parent) {
+      Some(Pipeline(pipeline)) =>
+        if pipeline.segments.length() > 1 {
+          parent
+        } else {
+          return false
+        }
+      _ => return false
+    }
+  } else {
+    return false
   }
   if !lastpipe {
     return true
   }
   let segment_ids = d_pipeline_segment_ids(indexed, pipeline_id)
-  match segment_ids.get(segment_ids.length() - 1) {
-    Some(last_segment) => last_segment != segment_id
-    None => false
+  if segment_ids.get(segment_ids.length() - 1) is Some(last_segment) {
+    last_segment != segment_id
+  } else {
+    false
   }
 }
 
@@ -653,37 +644,34 @@ fn check_functions_used_externally(
   let definitions : Map[String, AnalyticsFunctionInfo] = Map([])
   collect_function_and_alias_definitions(script, definitions)
   visit_script_commands(script, fn(command) {
-    let effective_name = match @semantics.effective_command_name(command) {
-      Some(name) => analytics_path_basename(name)
-      None => return
+    let effective_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      analytics_path_basename(name)
+    } else {
+      return
     }
     let candidates = analytics_external_command_candidate_words(
       effective_name,
       @semantics.effective_command_arguments(command),
     )
     for candidate in candidates {
-      match word_single_literal_text(candidate) {
-        Some(name) =>
-          match definitions.get(name) {
-            Some(info) => {
-              push_diagnostic(
-                diagnostics,
-                candidate.span,
-                Warning,
-                2033,
-                "Shell functions can't be passed to external commands. Use separate script or sh -c.",
-              )
-              push_diagnostic(
-                diagnostics,
-                info.declaration_span,
-                Info,
-                2032,
-                "This function can't be invoked via \{effective_name}\{analytics_line_context(command.span.start.line)}",
-              )
-            }
-            None => ()
-          }
-        None => ()
+      if word_single_literal_text(candidate) is Some(name) {
+        if definitions.get(name) is Some(info) {
+          push_diagnostic(
+            diagnostics,
+            candidate.span,
+            Warning,
+            2033,
+            "Shell functions can't be passed to external commands. Use separate script or sh -c.",
+          )
+          push_diagnostic(
+            diagnostics,
+            info.declaration_span,
+            Info,
+            2032,
+            "This function can't be invoked via \{effective_name}\{analytics_line_context(command.span.start.line)}",
+          )
+        }
       }
     }
   })
@@ -707,12 +695,10 @@ fn collect_function_and_alias_definitions(
       Simple(_) =>
         if @semantics.effective_command_name(command) == Some("alias") {
           for argument in @semantics.effective_command_arguments(command) {
-            match analytics_alias_definition_name(argument) {
-              Some(name) =>
-                if !definitions.contains(name) {
-                  definitions.set(name, { declaration_span: argument.span })
-                }
-              None => ()
+            if analytics_alias_definition_name(argument) is Some(name) {
+              if !definitions.contains(name) {
+                definitions.set(name, { declaration_span: argument.span })
+              }
             }
           }
         }
@@ -764,9 +750,10 @@ fn analytics_external_command_candidate_words(
     "find" => {
       let mut i = 0
       while i + 1 < arguments.length() {
-        let flag = match @semantics.literal_text(arguments[i]) {
-          Some(text) => text
-          None => ""
+        let flag = if @semantics.literal_text(arguments[i]) is Some(text) {
+          text
+        } else {
+          ""
         }
         if ["-exec", "-execdir", "-ok", "-okdir"].contains(flag) {
           candidates.push(arguments[i + 1])
@@ -798,9 +785,8 @@ fn analytics_push_word_at(
   index : Int,
   out : Array[@parser.Word],
 ) -> Unit {
-  match values.get(index) {
-    Some(value) => out.push(value)
-    None => ()
+  if values.get(index) is Some(value) {
+    out.push(value)
   }
 }
 
@@ -839,18 +825,18 @@ fn check_unpassed_in_functions(
 
   let calls : Map[String, Array[AnalyticsUnpassedCall]] = Map([])
   visit_script_commands(script, fn(command) {
-    let name = match direct_simple_command_name(command) {
-      Some(name) => name
-      None => return
+    let name = if direct_simple_command_name(command) is Some(name) {
+      name
+    } else {
+      return
     }
     guard functions.contains(name) else { return }
-    let group = match calls.get(name) {
-      Some(existing) => existing
-      None => {
-        let created : Array[AnalyticsUnpassedCall] = []
-        calls.set(name, created)
-        created
-      }
+    let group = if calls.get(name) is Some(existing) {
+      existing
+    } else {
+      let created : Array[AnalyticsUnpassedCall] = []
+      calls.set(name, created)
+      created
     }
     group.push({
       span: effective_command_span(command),
@@ -915,9 +901,10 @@ fn collect_unpassed_function_candidates(
 fn direct_simple_command_name(command : @parser.Command) -> String? {
   match command.kind {
     Simple(simple) =>
-      match simple.words.get(0) {
-        Some(word) => word_single_literal_text(word)
-        None => None
+      if simple.words.get(0) is Some(word) {
+        word_single_literal_text(word)
+      } else {
+        None
       }
     _ => None
   }
@@ -974,10 +961,8 @@ fn analytics_walk_command_ignoring_nested_functions(
         analytics_walk_script_ignoring_nested_functions(arm.condition, visit)
         analytics_walk_script_ignoring_nested_functions(arm.body, visit)
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_walk_script_ignoring_nested_functions(body, visit)
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_walk_script_ignoring_nested_functions(body, visit)
       }
     }
     While(clause) | Until(clause) => {
@@ -1042,13 +1027,11 @@ fn word_contains_direct_positional_reference(word : @parser.Word) -> Bool {
           found = true
         }
       BracedParameter(expansion) =>
-        match expansion.name {
-          Some(name) =>
-            if analytics_is_positional_parameter(name) &&
-              !parameter_expansion_allows_unset(expansion) {
-              found = true
-            }
-          None => ()
+        if expansion.name is Some(name) {
+          if analytics_is_positional_parameter(name) &&
+            !parameter_expansion_allows_unset(expansion) {
+            found = true
+          }
         }
       _ => ()
     }
@@ -1123,9 +1106,8 @@ fn d_visit_script_for_cd_back(
 ) -> Unit {
   let candidates : Array[AnalyticsCdBackCandidate] = []
   for item in script.items {
-    match d_cd_back_candidate(item) {
-      Some(candidate) => candidates.push(candidate)
-      None => ()
+    if d_cd_back_candidate(item) is Some(candidate) {
+      candidates.push(candidate)
     }
   }
   d_emit_cd_back_warning(candidates, diagnostics)
@@ -1214,9 +1196,8 @@ fn d_visit_command_for_cd_back(
         d_visit_script_for_cd_back(arm.condition, diagnostics)
         d_visit_script_for_cd_back(arm.body, diagnostics)
       }
-      match clause.else_body {
-        Some(body) => d_visit_script_for_cd_back(body, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        d_visit_script_for_cd_back(body, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -1291,9 +1272,10 @@ fn analytics_pipeline_has_or_exit_guard(
     OrIf => ()
     _ => return false
   }
-  match pipelines.get(index + 1) {
-    Some(pipeline) => pipeline_is_exit_or_return_guard(pipeline)
-    None => false
+  if pipelines.get(index + 1) is Some(pipeline) {
+    pipeline_is_exit_or_return_guard(pipeline)
+  } else {
+    false
   }
 }
 
@@ -1351,10 +1333,8 @@ fn analytics_visit_command_for_cd_guards(
         analytics_visit_script_for_cd_guards(arm.condition, true, diagnostics)
         analytics_visit_script_for_cd_guards(arm.body, false, diagnostics)
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_visit_script_for_cd_guards(body, false, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_visit_script_for_cd_guards(body, false, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -1397,9 +1377,10 @@ fn analytics_maybe_warn_unchecked_dir_change(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard !in_condition && !guarded else { return }
-  let name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return
+  let name = if @semantics.effective_command_name(command) is Some(name) {
+    name
+  } else {
+    return
   }
   guard ["cd", "pushd", "popd"].contains(name) else { return }
   guard !analytics_dir_change_is_safe(command, name) else { return }
@@ -1438,18 +1419,18 @@ fn analytics_dir_change_is_safe(
   name : String,
 ) -> Bool {
   let arguments = @semantics.effective_command_arguments(command)
-  match arguments.get(0) {
-    Some(argument) =>
-      match @semantics.literal_text(argument) {
-        Some(path) =>
-          if path.has_prefix("-") {
-            true
-          } else {
-            analytics_safe_directory_argument(path)
-          }
-        None => false
+  if arguments.get(0) is Some(argument) {
+    if @semantics.literal_text(argument) is Some(path) {
+      if path.has_prefix("-") {
+        true
+      } else {
+        analytics_safe_directory_argument(path)
       }
-    None => name == "cd" && false
+    } else {
+      false
+    }
+  } else {
+    name == "cd" && false
   }
 }
 
@@ -1561,24 +1542,21 @@ fn analytics_visit_command_for_loop_reassignment(
   let loop_name = analytics_loop_binding_name(command)
   let pushed = match loop_name {
     Some(name) if name != "_" => {
-      match analytics_find_loop_binding(stack, name) {
-        Some(parent) => {
-          push_diagnostic(
-            diagnostics,
-            command_keyword_span(command, "for"),
-            Warning,
-            2165,
-            "This nested loop overrides the index variable of its parent.",
-          )
-          push_diagnostic(
-            diagnostics,
-            parent.span,
-            Warning,
-            2167,
-            "This parent loop has its index variable overridden.",
-          )
-        }
-        None => ()
+      if analytics_find_loop_binding(stack, name) is Some(parent) {
+        push_diagnostic(
+          diagnostics,
+          command_keyword_span(command, "for"),
+          Warning,
+          2165,
+          "This nested loop overrides the index variable of its parent.",
+        )
+        push_diagnostic(
+          diagnostics,
+          parent.span,
+          Warning,
+          2167,
+          "This parent loop has its index variable overridden.",
+        )
       }
       stack.push({ name, span: command_keyword_span(command, "for") })
       true
@@ -1608,10 +1586,8 @@ fn analytics_visit_command_for_loop_reassignment(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_visit_script_for_loop_reassignment(body, stack, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_visit_script_for_loop_reassignment(body, stack, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -1711,48 +1687,44 @@ fn check_alias_used_in_same_parsing_unit(
       visit_and_or_list_commands(item.and_or, fn(command) {
         match command.kind {
           Simple(simple) =>
-            match simple.words.get(0) {
-              Some(first) =>
-                match word_single_literal_text(first) {
-                  Some("alias") =>
-                    for argument in @semantics.command_arguments(command) {
-                      match analytics_alias_definition_name(argument) {
-                        Some(name) =>
-                          if !aliases.contains(name) {
-                            aliases.set(name, argument.span)
-                          }
-                        None => ()
+            if simple.words.get(0) is Some(first) {
+              match word_single_literal_text(first) {
+                Some("alias") =>
+                  for argument in @semantics.command_arguments(command) {
+                    if analytics_alias_definition_name(argument) is Some(name) {
+                      if !aliases.contains(name) {
+                        aliases.set(name, argument.span)
                       }
-                    }
-                  Some(name) => {
-                    guard !name.contains("/") else { return }
-                    match aliases.get(name) {
-                      Some(alias_span) if !annotations_disable_code_at_position(
-                          script,
-                          alias_span.start,
-                          2262,
-                        ) => {
-                        push_diagnostic(
-                          diagnostics,
-                          alias_span,
-                          Warning,
-                          2262,
-                          "This alias can't be defined and used in the same parsing unit. Use a function instead.",
-                        )
-                        push_diagnostic(
-                          diagnostics,
-                          first.span,
-                          Info,
-                          2263,
-                          "Since they're in the same parsing unit, this command will not refer to the previously mentioned alias.",
-                        )
-                      }
-                      _ => ()
                     }
                   }
-                  None => ()
+                Some(name) => {
+                  guard !name.contains("/") else { return }
+                  match aliases.get(name) {
+                    Some(alias_span) if !annotations_disable_code_at_position(
+                        script,
+                        alias_span.start,
+                        2262,
+                      ) => {
+                      push_diagnostic(
+                        diagnostics,
+                        alias_span,
+                        Warning,
+                        2262,
+                        "This alias can't be defined and used in the same parsing unit. Use a function instead.",
+                      )
+                      push_diagnostic(
+                        diagnostics,
+                        first.span,
+                        Info,
+                        2263,
+                        "Since they're in the same parsing unit, this command will not refer to the previously mentioned alias.",
+                      )
+                    }
+                    _ => ()
+                  }
                 }
-              None => ()
+                None => ()
+              }
             }
           _ => ()
         }
@@ -1884,12 +1856,10 @@ fn analytics_visit_command_for_array_loop_values(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          analytics_visit_script_for_array_loop_values(
-            body, contexts, diagnostics,
-          )
-        None => ()
+      if clause.else_body is Some(body) {
+        analytics_visit_script_for_array_loop_values(
+          body, contexts, diagnostics,
+        )
       }
     }
     While(clause) | Until(clause) => {
@@ -1956,9 +1926,8 @@ fn analytics_collect_array_loop_values(
 ) -> Array[(@parser.Span, String)] {
   let arrays : Array[(@parser.Span, String)] = []
   for value in values {
-    match analytics_word_iterates_array_values(value) {
-      Some(name) => arrays.push((value.span, name))
-      None => ()
+    if analytics_word_iterates_array_values(value) is Some(name) {
+      arrays.push((value.span, name))
     }
   }
   arrays
@@ -2127,14 +2096,8 @@ fn analytics_maybe_report_array_loop_index_use(
   contexts : Array[AnalyticsArrayLoopContext],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let array_name = match array_name {
-    Some(name) => name
-    None => return
-  }
-  let index = match index {
-    Some(index) => index
-    None => return
-  }
+  let array_name = if array_name is Some(name) { name } else { return }
+  let index = if index is Some(index) { index } else { return }
   let mut i = contexts.length()
   while i > 0 {
     i -= 1
@@ -2143,25 +2106,23 @@ fn analytics_maybe_report_array_loop_index_use(
       analytics_array_index_uses_name(index, context.index_name) else {
       continue
     }
-    match analytics_find_loop_array_value(context.loop_values, array_name) {
-      Some(loop_span) => {
-        push_diagnostic(
-          diagnostics,
-          loop_span,
-          Warning,
-          2302,
-          "This loops over values. To loop over keys, use \"\\${!array[@]}\".",
-        )
-        push_diagnostic(
-          diagnostics,
-          span,
-          Warning,
-          2303,
-          "\{context.index_name} is an array value, not a key. Use directly or loop over keys instead.",
-        )
-        return
-      }
-      None => ()
+    if analytics_find_loop_array_value(context.loop_values, array_name)
+      is Some(loop_span) {
+      push_diagnostic(
+        diagnostics,
+        loop_span,
+        Warning,
+        2302,
+        "This loops over values. To loop over keys, use \"\\${!array[@]}\".",
+      )
+      push_diagnostic(
+        diagnostics,
+        span,
+        Warning,
+        2303,
+        "\{context.index_name} is an array value, not a key. Use directly or loop over keys instead.",
+      )
+      return
     }
   }
 }
@@ -2319,12 +2280,10 @@ fn d_check_unsupported_brace_command_expansions(
   for redirect in command.redirects {
     match redirect.target {
       HereDoc(doc) =>
-        match doc.parts {
-          Some(parts) =>
-            if d_here_doc_has_brace_command_expansion(parts) {
-              push_diagnostic(diagnostics, redirect.span, Error, 2127, message)
-            }
-          None => ()
+        if doc.parts is Some(parts) {
+          if d_here_doc_has_brace_command_expansion(parts) {
+            push_diagnostic(diagnostics, redirect.span, Error, 2127, message)
+          }
         }
       _ => ()
     }

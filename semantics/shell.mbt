@@ -77,9 +77,8 @@ pub fn shell_from_annotation(
   for annotation in annotations {
     match annotation {
       Shell(shell) =>
-        match shell_from_executable_name(trim_ascii_space(shell)) {
-          Some(dialect) => return Some(dialect)
-          None => ()
+        if shell_from_executable_name(trim_ascii_space(shell)) is Some(dialect) {
+          return Some(dialect)
         }
       _ => ()
     }
@@ -90,9 +89,10 @@ pub fn shell_from_annotation(
 ///|
 /// Infers a shell dialect from a filename convention.
 pub fn shell_from_filename(filename : String) -> ShellDialect? {
-  match shell_hint_from_filename(filename) {
-    Some(hint) => Some(hint.dialect)
-    None => None
+  if shell_hint_from_filename(filename) is Some(hint) {
+    Some(hint.dialect)
+  } else {
+    None
   }
 }
 
@@ -162,9 +162,12 @@ pub fn effective_execution_mode(
   mode_override? : ExecutionMode,
   sourced? : Bool = false,
 ) -> ExecutionMode {
-  match mode_override {
-    Some(mode) => mode
-    None => if sourced { Sourced } else { Executed }
+  if mode_override is Some(mode) {
+    mode
+  } else if sourced {
+    Sourced
+  } else {
+    Executed
   }
 }
 
@@ -175,21 +178,18 @@ fn resolve_shell(
   filename : String?,
   fallback_shell : ShellDialect?,
 ) -> ShellResolution {
-  match shell_override {
-    Some(dialect) => { dialect, suppresses_unknown_warning: true }
-    None =>
-      match shell_from_annotation(script.annotations) {
-        Some(dialect) => { dialect, suppresses_unknown_warning: true }
-        None =>
-          match script.shebang {
-            Some(shebang) =>
-              match shell_from_shebang(shebang) {
-                Some(dialect) => { dialect, suppresses_unknown_warning: true }
-                None => resolve_fallback_shell(filename, fallback_shell)
-              }
-            None => resolve_fallback_shell(filename, fallback_shell)
-          }
-      }
+  if shell_override is Some(dialect) {
+    { dialect, suppresses_unknown_warning: true }
+  } else if shell_from_annotation(script.annotations) is Some(dialect) {
+    { dialect, suppresses_unknown_warning: true }
+  } else if script.shebang is Some(shebang) {
+    if shell_from_shebang(shebang) is Some(dialect) {
+      { dialect, suppresses_unknown_warning: true }
+    } else {
+      resolve_fallback_shell(filename, fallback_shell)
+    }
+  } else {
+    resolve_fallback_shell(filename, fallback_shell)
   }
 }
 
@@ -198,25 +198,26 @@ fn resolve_fallback_shell(
   filename : String?,
   fallback_shell : ShellDialect?,
 ) -> ShellResolution {
-  match filename {
-    Some(filename) =>
-      match shell_hint_from_filename(filename) {
-        Some(hint) =>
-          {
-            dialect: hint.dialect,
-            suppresses_unknown_warning: hint.suppresses_unknown_warning,
-          }
-        None => default_shell_resolution(fallback_shell)
+  if filename is Some(filename) {
+    if shell_hint_from_filename(filename) is Some(hint) {
+      {
+        dialect: hint.dialect,
+        suppresses_unknown_warning: hint.suppresses_unknown_warning,
       }
-    None => default_shell_resolution(fallback_shell)
+    } else {
+      default_shell_resolution(fallback_shell)
+    }
+  } else {
+    default_shell_resolution(fallback_shell)
   }
 }
 
 ///|
 fn default_shell_resolution(fallback_shell : ShellDialect?) -> ShellResolution {
-  match fallback_shell {
-    Some(dialect) => { dialect, suppresses_unknown_warning: true }
-    None => { dialect: Bash, suppresses_unknown_warning: false }
+  if fallback_shell is Some(dialect) {
+    { dialect, suppresses_unknown_warning: true }
+  } else {
+    { dialect: Bash, suppresses_unknown_warning: false }
   }
 }
 
@@ -342,9 +343,10 @@ fn env_shell_from_args(args : Array[String], start : Int) -> String {
 
 ///|
 fn shebang_has_short_flag(shebang : String?, flag : UInt16) -> Bool {
-  match shebang {
-    Some(line) => shebang_args_have_short_flag(shebang_words(line), flag)
-    None => false
+  if shebang is Some(line) {
+    shebang_args_have_short_flag(shebang_words(line), flag)
+  } else {
+    false
   }
 }
 
@@ -354,31 +356,31 @@ fn shebang_enables_set_option(
   short_flag : UInt16?,
   long_option : String,
 ) -> Bool {
-  match shebang {
-    Some(line) =>
-      shebang_args_enable_option(
-        shebang_words(line),
-        short_flag,
-        long_option,
-        None,
-        false,
-      )
-    None => false
+  if shebang is Some(line) {
+    shebang_args_enable_option(
+      shebang_words(line),
+      short_flag,
+      long_option,
+      None,
+      false,
+    )
+  } else {
+    false
   }
 }
 
 ///|
 fn shebang_enables_shopt_option(shebang : String?, option : String) -> Bool {
-  match shebang {
-    Some(line) =>
-      shebang_args_enable_option(
-        shebang_words(line),
-        None,
-        "",
-        Some(option),
-        true,
-      )
-    None => false
+  if shebang is Some(line) {
+    shebang_args_enable_option(
+      shebang_words(line),
+      None,
+      "",
+      Some(option),
+      true,
+    )
+  } else {
+    false
   }
 }
 
@@ -544,9 +546,10 @@ fn shell_args_enable_option(
       i += 1
       continue
     }
-    match short_flag {
-      Some(flag) => if short_flag_in_cluster(arg, flag) { return true }
-      None => ()
+    if short_flag is Some(flag) {
+      if short_flag_in_cluster(arg, flag) {
+        return true
+      }
     }
     i += 1
   }
@@ -621,9 +624,10 @@ fn command_has_current_shell_command(
     | BatsTest(_) => false
     Source(source) =>
       // Sourced files run in the current shell, so their option changes apply.
-      match source.included {
-        Some(script) => script_has_current_shell_command(script, predicate)
-        None => false
+      if source.included is Some(script) {
+        script_has_current_shell_command(script, predicate)
+      } else {
+        false
       }
     Time(clause) => pipeline_has_current_shell_command(clause.body, predicate)
     Subshell(_) => false
@@ -635,9 +639,10 @@ fn command_has_current_shell_command(
           return true
         }
       }
-      match clause.else_body {
-        Some(script) => script_has_current_shell_command(script, predicate)
-        None => false
+      if clause.else_body is Some(script) {
+        script_has_current_shell_command(script, predicate)
+      } else {
+        false
       }
     }
     While(clause) | Until(clause) =>
@@ -679,15 +684,14 @@ fn shopt_simple_command_enables_option(
   let mut parsing_flags = true
   let mut i = 0
   while i < words.length() {
-    let text = match literal_text(words[i]) {
-      Some(text) => text
-      None => {
-        if parsing_flags {
-          parsing_flags = false
-        }
-        i += 1
-        continue
+    let text = if literal_text(words[i]) is Some(text) {
+      text
+    } else {
+      if parsing_flags {
+        parsing_flags = false
       }
+      i += 1
+      continue
     }
     if parsing_flags {
       if text == "--" {
@@ -727,9 +731,10 @@ fn set_command_enables_option(
   let words = command_arguments(command)
   let mut i = 0
   while i < words.length() {
-    let text = match literal_text(words[i]) {
-      Some(text) => text
-      None => return false
+    let text = if literal_text(words[i]) is Some(text) {
+      text
+    } else {
+      return false
     }
     if text == "--" || text == "-" || text == "+" {
       return false
@@ -867,32 +872,28 @@ fn split_shell_words(text : String) -> Array[String] {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        current.write_char(ch.unsafe_to_char())
-        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
-          i += 1
-          current.write_char(view[i].unsafe_to_char())
-        } else if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == current_quote {
+        quote = None
       }
-      None =>
-        if ch == ' ' || ch == '\t' {
-          let item = current.to_string()
-          if item != "" {
-            values.push(item)
-            current.reset()
-          }
-        } else {
-          current.write_char(ch.unsafe_to_char())
-          if ch == '\\' && i + 1 < view.length() {
-            i += 1
-            current.write_char(view[i].unsafe_to_char())
-          } else if ch == '\'' || ch == '"' {
-            quote = Some(ch)
-          }
-        }
+    } else if ch == ' ' || ch == '\t' {
+      let item = current.to_string()
+      if item != "" {
+        values.push(item)
+        current.reset()
+      }
+    } else {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+      }
     }
     i += 1
   }
@@ -911,46 +912,43 @@ fn quote_removed_source(raw : String) -> String {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current) => {
-        if ch == current {
-          quote = None
-          i += 1
-          continue
-        }
-        if current == '"' && ch == '\\' && i + 1 < view.length() {
-          let next = view[i + 1]
-          if next == '$' ||
-            next == '"' ||
-            next == '\\' ||
-            next == '\n' ||
-            next == '\r' {
-            buf.write_char(next.unsafe_to_char())
-            i += 2
-            continue
-          }
-        }
-        buf.write_char(ch.unsafe_to_char())
+    if quote is Some(current) {
+      if ch == current {
+        quote = None
         i += 1
+        continue
       }
-      None => {
-        if ch == '\'' || ch == '"' {
-          quote = Some(ch)
-          i += 1
+      if current == '"' && ch == '\\' && i + 1 < view.length() {
+        let next = view[i + 1]
+        if next == '$' ||
+          next == '"' ||
+          next == '\\' ||
+          next == '\n' ||
+          next == '\r' {
+          buf.write_char(next.unsafe_to_char())
+          i += 2
           continue
         }
-        if ch == '\\' {
-          if i + 1 < view.length() {
-            buf.write_char(view[i + 1].unsafe_to_char())
-            i += 2
-          } else {
-            i += 1
-          }
-          continue
-        }
-        buf.write_char(ch.unsafe_to_char())
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
+    } else {
+      if ch == '\'' || ch == '"' {
+        quote = Some(ch)
         i += 1
+        continue
       }
+      if ch == '\\' {
+        if i + 1 < view.length() {
+          buf.write_char(view[i + 1].unsafe_to_char())
+          i += 2
+        } else {
+          i += 1
+        }
+        continue
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
     }
   }
   buf.to_string()

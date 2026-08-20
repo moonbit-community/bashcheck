@@ -8,38 +8,37 @@ test "analytics batch o flags blatant recursion and offers command fixups" {
   let diagnostics = check_source(source)
 
   assert_eq(count_code(diagnostics, 2264), 2)
-  match first_code(diagnostics, 2264).fix {
-    Some(fix) => {
-      assert_eq(fix.replacements.length(), 1)
-      let replacement = fix.replacements[0]
-      assert_eq(replacement.start.line, 2)
-      assert_eq(replacement.start.column, 7)
-      assert_eq(replacement.end.line, 2)
-      assert_eq(replacement.end.column, 7)
-      assert_eq(replacement.text, "command ")
-      assert_eq(replacement.precedence, 10)
-      assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
-      @test.assert_eq(
-        @fixer.apply_fix(
-          fix,
-          (
-            #|#!/bin/bash
-            #|f() { f; }
-            #|cd() { cd "$1" || exit; }
-            #|,
-          ),
+  if first_code(diagnostics, 2264).fix is Some(fix) {
+    assert_eq(fix.replacements.length(), 1)
+    let replacement = fix.replacements[0]
+    assert_eq(replacement.start.line, 2)
+    assert_eq(replacement.start.column, 7)
+    assert_eq(replacement.end.line, 2)
+    assert_eq(replacement.end.column, 7)
+    assert_eq(replacement.text, "command ")
+    assert_eq(replacement.precedence, 10)
+    assert_true(replacement.insertion_point == @fixer.InsertionPoint::after())
+    @test.assert_eq(
+      @fixer.apply_fix(
+        fix,
+        (
+          #|#!/bin/bash
+          #|f() { f; }
+          #|cd() { cd "$1" || exit; }
+          #|,
         ),
-        Some(
-          (
-            #|#!/bin/bash
-            #|f() { command f; }
-            #|cd() { cd "$1" || exit; }
-            #|,
-          ),
+      ),
+      Some(
+        (
+          #|#!/bin/bash
+          #|f() { command f; }
+          #|cd() { cd "$1" || exit; }
+          #|,
         ),
-      )
-    }
-    None => checks_fail("expected SC2264 fix")
+      ),
+    )
+  } else {
+    checks_fail("expected SC2264 fix")
   }
 }
 
