@@ -17,9 +17,8 @@ fn compat_codes(
   let result = check_script(source, spec~)
   let codes : Array[Int] = []
   for diagnostic in result.diagnostics {
-    match diagnostic.code {
-      Some(code) => codes.push(code)
-      None => ()
+    if diagnostic.code is Some(code) {
+      codes.push(code)
     }
   }
   sort_ints(codes)

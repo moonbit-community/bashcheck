@@ -203,63 +203,70 @@ pub fn node_count(indexed : IndexedScript) -> Int {
 ///|
 /// Returns the indexed parser node associated with an id.
 pub fn node_ref_of(indexed : IndexedScript, id : NodeId) -> NodeRef? {
-  match indexed.node_at(id) {
-    Some(node) => Some(node.node)
-    None => None
+  if indexed.node_at(id) is Some(node) {
+    Some(node.node)
+  } else {
+    None
   }
 }
 
 ///|
 /// Returns the kind of node stored at an id.
 pub fn node_kind_of(indexed : IndexedScript, id : NodeId) -> NodeKind? {
-  match indexed.node_at(id) {
-    Some(node) => Some(node.kind)
-    None => None
+  if indexed.node_at(id) is Some(node) {
+    Some(node.kind)
+  } else {
+    None
   }
 }
 
 ///|
 /// Returns the exact span of a node when one exists.
 pub fn span_of(indexed : IndexedScript, id : NodeId) -> @parser.Span? {
-  match indexed.node_at(id) {
-    Some(node) => node.span
-    None => None
+  if indexed.node_at(id) is Some(node) {
+    node.span
+  } else {
+    None
   }
 }
 
 ///|
 /// Returns the enclosing span used when a node has no exact span of its own.
 pub fn enclosing_span_of(indexed : IndexedScript, id : NodeId) -> @parser.Span? {
-  match indexed.node_at(id) {
-    Some(node) => Some(node.enclosing_span)
-    None => None
+  if indexed.node_at(id) is Some(node) {
+    Some(node.enclosing_span)
+  } else {
+    None
   }
 }
 
 ///|
 /// Returns `span_of` when available, otherwise the enclosing span.
 pub fn effective_span_of(indexed : IndexedScript, id : NodeId) -> @parser.Span? {
-  match span_of(indexed, id) {
-    Some(span) => Some(span)
-    None => enclosing_span_of(indexed, id)
+  if span_of(indexed, id) is Some(span) {
+    Some(span)
+  } else {
+    enclosing_span_of(indexed, id)
   }
 }
 
 ///|
 /// Returns the parent id of a node.
 pub fn parent_of(indexed : IndexedScript, id : NodeId) -> NodeId? {
-  match indexed.node_at(id) {
-    Some(node) => node.parent
-    None => None
+  if indexed.node_at(id) is Some(node) {
+    node.parent
+  } else {
+    None
   }
 }
 
 ///|
 /// Returns the immediate child ids of a node.
 pub fn children_of(indexed : IndexedScript, id : NodeId) -> Array[NodeId] {
-  match indexed.node_at(id) {
-    Some(node) => copy_node_ids(node.children)
-    None => []
+  if indexed.node_at(id) is Some(node) {
+    copy_node_ids(node.children)
+  } else {
+    []
   }
 }
 
@@ -277,12 +284,9 @@ fn collect_ancestors(
   id : NodeId,
   ancestors : Array[NodeId],
 ) -> Unit {
-  match parent_of(indexed, id) {
-    Some(parent) => {
-      ancestors.push(parent)
-      collect_ancestors(indexed, parent, ancestors)
-    }
-    None => ()
+  if parent_of(indexed, id) is Some(parent) {
+    ancestors.push(parent)
+    collect_ancestors(indexed, parent, ancestors)
   }
 }
 
@@ -323,17 +327,18 @@ pub fn command_of(indexed : IndexedScript, id : NodeId) -> @parser.Command? {
 
 ///|
 fn find_command(indexed : IndexedScript, current : NodeId?) -> @parser.Command? {
-  match current {
-    Some(current) =>
-      match node_ref_of(indexed, current) {
-        Some(node) =>
-          match node.exact_command() {
-            Some(command) => Some(command)
-            None => find_command(indexed, parent_of(indexed, current))
-          }
-        None => None
+  if current is Some(current) {
+    if node_ref_of(indexed, current) is Some(node) {
+      if node.exact_command() is Some(command) {
+        Some(command)
+      } else {
+        find_command(indexed, parent_of(indexed, current))
       }
-    None => None
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 
@@ -345,17 +350,18 @@ pub fn word_of(indexed : IndexedScript, id : NodeId) -> @parser.Word? {
 
 ///|
 fn find_word(indexed : IndexedScript, current : NodeId?) -> @parser.Word? {
-  match current {
-    Some(current) =>
-      match node_ref_of(indexed, current) {
-        Some(node) =>
-          match node.exact_word() {
-            Some(word) => Some(word)
-            None => find_word(indexed, parent_of(indexed, current))
-          }
-        None => None
+  if current is Some(current) {
+    if node_ref_of(indexed, current) is Some(node) {
+      if node.exact_word() is Some(word) {
+        Some(word)
+      } else {
+        find_word(indexed, parent_of(indexed, current))
       }
-    None => None
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }
 
@@ -382,9 +388,8 @@ fn IndexBuilder::start_node(
   let kind = node.kind()
   let parent = self.stack.last()
   self.nodes.push({ id, kind, span, enclosing_span, parent, children: [], node })
-  match parent {
-    Some(parent) => self.add_child(parent, id)
-    None => ()
+  if parent is Some(parent) {
+    self.add_child(parent, id)
   }
   self.stack.push(id)
   id
@@ -401,13 +406,12 @@ fn IndexBuilder::add_child(
   parent : NodeId,
   child : NodeId,
 ) -> Unit {
-  match self.nodes.get(parent.value) {
-    Some(node) => {
-      let updated = node
-      updated.children.push(child)
-      self.nodes[parent.value] = updated
-    }
-    None => panic()
+  if self.nodes.get(parent.value) is Some(node) {
+    let updated = node
+    updated.children.push(child)
+    self.nodes[parent.value] = updated
+  } else {
+    panic()
   }
 }
 
@@ -688,11 +692,8 @@ fn IndexBuilder::visit_if_clause(
   for arm in clause.arms {
     let _ = self.visit_if_arm(arm, fallback_span)
   }
-  match clause.else_body {
-    Some(script) => {
-      let _ = self.visit_script(script)
-    }
-    None => ()
+  if clause.else_body is Some(script) {
+    let _ = self.visit_script(script)
   }
   self.finish_node()
   id
@@ -868,11 +869,8 @@ fn IndexBuilder::visit_co_proc_clause(
   fallback_span : @parser.Span,
 ) -> NodeId {
   let id = self.start_node(CoProcClause(clause), fallback_span, None)
-  match clause.name {
-    Some(name) => {
-      let _ = self.visit_word(name)
-    }
-    None => ()
+  if clause.name is Some(name) {
+    let _ = self.visit_word(name)
   }
   let _ = self.visit_command(clause.body)
   self.finish_node()
@@ -932,12 +930,10 @@ fn IndexBuilder::visit_here_doc(
   fallback_span : @parser.Span,
 ) -> NodeId {
   let id = self.start_node(HereDoc(doc), fallback_span, None)
-  match doc.parts {
-    Some(parts) =>
-      for part in parts {
-        let _ = self.visit_word_part(part, fallback_span)
-      }
-    None => ()
+  if doc.parts is Some(parts) {
+    for part in parts {
+      let _ = self.visit_word_part(part, fallback_span)
+    }
   }
   self.finish_node()
   id
@@ -1079,13 +1075,8 @@ fn IndexBuilder::visit_parameter_expansion_with_mode(
   exact_spans : Bool,
 ) -> NodeId {
   let id = self.start_node(ParameterExpansion(expansion), fallback_span, None)
-  match expansion.index {
-    Some(index) => {
-      let _ = self.visit_array_index_with_mode(
-        index, fallback_span, exact_spans,
-      )
-    }
-    None => ()
+  if expansion.index is Some(index) {
+    let _ = self.visit_array_index_with_mode(index, fallback_span, exact_spans)
   }
   if exact_spans {
     self.visit_parameter_operator(expansion.operator, fallback_span)
@@ -1118,16 +1109,14 @@ fn IndexBuilder::visit_parameter_operator_with_mode(
         fallback_span,
         false,
       )
-      match length {
-        Some(length) =>
-          ignore(
-            self.visit_arithmetic_expr_with_mode(
-              @parser.parse_arithmetic_expr(length),
-              fallback_span,
-              false,
-            ),
-          )
-        None => ()
+      if length is Some(length) {
+        ignore(
+          self.visit_arithmetic_expr_with_mode(
+            @parser.parse_arithmetic_expr(length),
+            fallback_span,
+            false,
+          ),
+        )
       }
     }
     Some(Replace(_, pattern, replacement)) => {
@@ -1136,16 +1125,14 @@ fn IndexBuilder::visit_parameter_operator_with_mode(
         fallback_span,
         false,
       )
-      match replacement {
-        Some(replacement) =>
-          ignore(
-            self.visit_word_with_mode(
-              @parser.parse_text_as_word(replacement),
-              fallback_span,
-              false,
-            ),
-          )
-        None => ()
+      if replacement is Some(replacement) {
+        ignore(
+          self.visit_word_with_mode(
+            @parser.parse_text_as_word(replacement),
+            fallback_span,
+            false,
+          ),
+        )
       }
     }
     Some(CaseModify(_, Some(pattern))) => {
@@ -1243,13 +1230,10 @@ fn IndexBuilder::visit_array_index_with_mode(
   for part in index.parts {
     let _ = self.visit_word_part_with_mode(part, fallback_span, exact_spans)
   }
-  match index.arithmetic {
-    Some(expr) => {
-      let _ = self.visit_arithmetic_expr_with_mode(
-        expr, fallback_span, exact_spans,
-      )
-    }
-    None => ()
+  if index.arithmetic is Some(expr) {
+    let _ = self.visit_arithmetic_expr_with_mode(
+      expr, fallback_span, exact_spans,
+    )
   }
   self.finish_node()
   id

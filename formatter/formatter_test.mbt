@@ -1,8 +1,9 @@
 ///|
 fn named_format(name : String) -> OutputFormat {
-  match parse_output_format(name) {
-    Some(format) => format
-    None => panic()
+  if parse_output_format(name) is Some(format) {
+    format
+  } else {
+    panic()
   }
 }
 
@@ -41,9 +42,10 @@ fn substring_index(text : String, pattern : String) -> Int? {
 
 ///|
 fn substring_index_or_panic(text : String, pattern : String) -> Int {
-  match substring_index(text, pattern) {
-    Some(index) => index
-    None => panic()
+  if substring_index(text, pattern) is Some(index) {
+    index
+  } else {
+    panic()
   }
 }
 

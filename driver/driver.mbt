@@ -108,9 +108,10 @@ async fn preload_config(spec : @checker.CheckSpec) -> @checker.CheckSpec {
   if spec.ignore_rc {
     return spec
   }
-  match spec.config_path_override {
-    Some(path) => preload_config_path(spec, path)
-    None => preload_first_config_file(spec)
+  if spec.config_path_override is Some(path) {
+    preload_config_path(spec, path)
+  } else {
+    preload_first_config_file(spec)
   }
 }
 
@@ -125,12 +126,12 @@ async fn preload_config_path(
     // re-reading it once cached in the spec.
     return spec
   }
-  match try_read_file_to_string(path) {
-    Some(contents) =>
-      spec.with_config_files(
-        append_config_file(spec.config_files, path, contents),
-      )
-    None => spec
+  if try_read_file_to_string(path) is Some(contents) {
+    spec.with_config_files(
+      append_config_file(spec.config_files, path, contents),
+    )
+  } else {
+    spec
   }
 }
 
@@ -143,21 +144,20 @@ async fn preload_config_path(
 async fn preload_first_config_file(
   spec : @checker.CheckSpec,
 ) -> @checker.CheckSpec {
-  let filename = match current_path_for_config(spec.filename) {
-    Some(filename) => filename
-    None => return spec
+  let filename = if current_path_for_config(spec.filename) is Some(filename) {
+    filename
+  } else {
+    return spec
   }
   for path in config_candidate_paths(filename) {
     if lookup_config_file(spec.config_files, path) is Some(_) {
       return spec
     }
-    match try_read_file_to_string(path) {
-      Some(contents) =>
-        // Stop at the first readable config file so nearer directories win.
-        return spec.with_config_files(
-          append_config_file(spec.config_files, path, contents),
-        )
-      None => ()
+    if try_read_file_to_string(path) is Some(contents) {
+      // Stop at the first readable config file so nearer directories win.
+      return spec.with_config_files(
+        append_config_file(spec.config_files, path, contents),
+      )
     }
   }
   spec
@@ -170,7 +170,8 @@ async fn preload_first_config_file(
 /// searching" or "act as if no rc file exists".
 async fn try_read_file_to_string(path : String) -> String? {
   Some(@fs.read_file(path).text()) catch {
-    _ => None
+    @os_error.OSError(_) => None
+    err => raise err
   }
 }
 

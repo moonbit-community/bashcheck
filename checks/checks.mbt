@@ -385,9 +385,10 @@ fn disable_value_matches_code(value : String, code : Int) -> Bool {
         _ => false
       }
     None =>
-      match parse_disable_code_number(value) {
-        Some(parsed) => parsed == code
-        None => false
+      if parse_disable_code_number(value) is Some(parsed) {
+        parsed == code
+      } else {
+        false
       }
   }
 }

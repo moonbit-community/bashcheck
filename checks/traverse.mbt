@@ -58,9 +58,8 @@ fn visit_command_and_includes(
   @semantics.walk_command(command, visit)
   match command.kind {
     Source(source) =>
-      match source.included {
-        Some(script) => visit_script_commands(script, visit)
-        None => ()
+      if source.included is Some(script) {
+        visit_script_commands(script, visit)
       }
     _ => ()
   }
@@ -113,9 +112,8 @@ fn visit_nested_pipelines_in_command(
         visit_script_pipelines(arm.condition, visit)
         visit_script_pipelines(arm.body, visit)
       }
-      match clause.else_body {
-        Some(body) => visit_script_pipelines(body, visit)
-        None => ()
+      if clause.else_body is Some(body) {
+        visit_script_pipelines(body, visit)
       }
     }
     While(clause) | Until(clause) => {
@@ -195,11 +193,7 @@ fn visit_direct_words_in_command(
       visit_arithmetic_expr_words(clause.condition, visit)
       visit_arithmetic_expr_words(clause.step, visit)
     }
-    CoProc(clause) =>
-      match clause.name {
-        Some(name) => visit(name, CoProcName)
-        None => ()
-      }
+    CoProc(clause) => if clause.name is Some(name) { visit(name, CoProcName) }
     Subshell(_)
     | BraceGroup(_)
     | If(_)

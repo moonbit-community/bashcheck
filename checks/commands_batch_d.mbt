@@ -170,9 +170,11 @@ fn check_masked_declaration_returns(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_script_commands(script, fn(command) {
-    let command_name = match @semantics.effective_command_name(command) {
-      Some(name) => name
-      None => return
+    let command_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      name
+    } else {
+      return
     }
     if !masked_return_declaration_names().contains(command_name) {
       return
@@ -273,9 +275,10 @@ fn check_trap_signal_literals(
   visit_script_commands(script, fn(command) {
     guard command_matches_exact_name(command, "trap") else { return }
     let arguments = @semantics.effective_command_arguments(command)
-    let signal_start = match trap_signal_start_index(arguments) {
-      Some(index) => index
-      None => return
+    let signal_start = if trap_signal_start_index(arguments) is Some(index) {
+      index
+    } else {
+      return
     }
     let mut i = signal_start
     while i < arguments.length() {

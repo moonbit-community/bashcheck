@@ -236,9 +236,11 @@ fn maybe_push_single_quoted_variable_diagnostic(
 
 ///|
 fn analytics_single_quoted_context_name(command : @parser.Command) -> String {
-  let effective_name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return ""
+  let effective_name = if @semantics.effective_command_name(command)
+    is Some(name) {
+    name
+  } else {
+    return ""
   }
   let arguments = @semantics.effective_command_arguments(command)
   match effective_name {
@@ -246,13 +248,14 @@ fn analytics_single_quoted_context_name(command : @parser.Command) -> String {
     "git" => analytics_git_context_name(arguments)
     "mumps" => analytics_mumps_context_name(arguments)
     "busybox" =>
-      match arguments.get(0) {
-        Some(word) =>
-          match @semantics.literal_text(word) {
-            Some(name) => "busybox " + name
-            None => effective_name
-          }
-        None => effective_name
+      if arguments.get(0) is Some(word) {
+        if @semantics.literal_text(word) is Some(name) {
+          "busybox " + name
+        } else {
+          effective_name
+        }
+      } else {
+        effective_name
       }
     _ => effective_name
   }
@@ -262,14 +265,16 @@ fn analytics_single_quoted_context_name(command : @parser.Command) -> String {
 fn analytics_find_exec_context_name(arguments : Array[@parser.Word]) -> String {
   let mut i = 0
   while i + 1 < arguments.length() {
-    let flag = match @semantics.literal_text(arguments[i]) {
-      Some(text) => text
-      None => ""
+    let flag = if @semantics.literal_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      ""
     }
     if ["-exec", "-execdir", "-ok", "-okdir"].contains(flag) {
-      match @semantics.literal_text(arguments[i + 1]) {
-        Some(name) => return name
-        None => return "find"
+      if @semantics.literal_text(arguments[i + 1]) is Some(name) {
+        return name
+      } else {
+        return "find"
       }
     }
     i += 1
@@ -279,13 +284,13 @@ fn analytics_find_exec_context_name(arguments : Array[@parser.Word]) -> String {
 
 ///|
 fn analytics_git_context_name(arguments : Array[@parser.Word]) -> String {
-  match arguments.get(0) {
-    Some(word) =>
-      match @semantics.literal_text(word) {
-        Some("filter-branch") => "git filter-branch"
-        _ => "git"
-      }
-    None => "git"
+  if arguments.get(0) is Some(word) {
+    match @semantics.literal_text(word) {
+      Some("filter-branch") => "git filter-branch"
+      _ => "git"
+    }
+  } else {
+    "git"
   }
 }
 
@@ -439,9 +444,10 @@ fn analytics_collect_declared_unused_candidates(
   command : @parser.Command,
   candidates : Array[(String, @parser.Span)],
 ) -> Unit {
-  let command_name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return
+  let command_name = if @semantics.effective_command_name(command) is Some(name) {
+    name
+  } else {
+    return
   }
   if !analytics_unused_assignment_command_names().contains(command_name) {
     return
@@ -458,14 +464,12 @@ fn analytics_collect_declared_unused_candidates(
     _ => ()
   }
   for word in @semantics.effective_command_arguments(command) {
-    match analytics_declared_name(word) {
-      Some(name) =>
-        analytics_maybe_push_unused_assignment_candidate(
-          candidates,
-          name,
-          analytics_span_for_word_text(word, name),
-        )
-      None => ()
+    if analytics_declared_name(word) is Some(name) {
+      analytics_maybe_push_unused_assignment_candidate(
+        candidates,
+        name,
+        analytics_span_for_word_text(word, name),
+      )
     }
   }
 }
@@ -660,9 +664,10 @@ fn analytics_skips_2086_for_2223(
   }
   match command.kind {
     Simple(simple) =>
-      match simple.words.get(0) {
-        Some(first) => @semantics.literal_text(first) == Some(":")
-        None => false
+      if simple.words.get(0) is Some(first) {
+        @semantics.literal_text(first) == Some(":")
+      } else {
+        false
       }
     _ => false
   }
@@ -712,9 +717,10 @@ fn analytics_declaration_argument_skips_2086(
   place : WordPlace,
 ) -> Bool {
   guard place == CommandArgument else { return false }
-  let command_name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return false
+  let command_name = if @semantics.effective_command_name(command) is Some(name) {
+    name
+  } else {
+    return false
   }
   @semantics.is_declaring_command(command_name) &&
   analytics_declared_name(word) is Some(_)
@@ -740,9 +746,11 @@ fn analytics_quote_targets_2086(
   for part in word.parts {
     let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
-    let fragment_offset = match analytics_string_offset(remaining, fragment) {
-      Some(inner) => offset + inner
-      None => offset
+    let fragment_offset = if analytics_string_offset(remaining, fragment)
+      is Some(inner) {
+      offset + inner
+    } else {
+      offset
     }
     let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
@@ -769,9 +777,11 @@ fn analytics_quote_safe_targets(
   for part in word.parts {
     let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
-    let fragment_offset = match analytics_string_offset(remaining, fragment) {
-      Some(inner) => offset + inner
-      None => offset
+    let fragment_offset = if analytics_string_offset(remaining, fragment)
+      is Some(inner) {
+      offset + inner
+    } else {
+      offset
     }
     let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
@@ -779,17 +789,11 @@ fn analytics_quote_safe_targets(
     } else {
       remaining_width
     }
-    match analytics_quote_safe_part_name(part) {
-      Some(name) =>
-        targets.push({
-          span: analytics_span_offset(
-            word.span,
-            fragment_offset,
-            fragment_width,
-          ),
-          name,
-        })
-      None => ()
+    if analytics_quote_safe_part_name(part) is Some(name) {
+      targets.push({
+        span: analytics_span_offset(word.span, fragment_offset, fragment_width),
+        name,
+      })
     }
     offset = fragment_offset + fragment_width
   }
@@ -918,23 +922,22 @@ fn analytics_bad_parameter_substitution(
         )
       }
     DoubleQuoted(parts) =>
-      match analytics_double_quoted_variable_name(parts) {
-        Some(name) =>
-          Some(
-            (
-              2297,
-              "\"" + name + "\"",
-              "Double quotes must be outside ${}: ${\"invalid\"} vs \"${valid}\".",
-            ),
-          )
-        None =>
-          Some(
-            (
-              2301,
-              analytics_bad_parameter_part_fragment(part, raw),
-              "Parameter expansion starts with unexpected quotes. Double check syntax.",
-            ),
-          )
+      if analytics_double_quoted_variable_name(parts) is Some(name) {
+        Some(
+          (
+            2297,
+            "\"" + name + "\"",
+            "Double quotes must be outside ${}: ${\"invalid\"} vs \"${valid}\".",
+          ),
+        )
+      } else {
+        Some(
+          (
+            2301,
+            analytics_bad_parameter_part_fragment(part, raw),
+            "Parameter expansion starts with unexpected quotes. Double check syntax.",
+          ),
+        )
       }
     SingleQuoted(_) | DollarSingleQuoted(_) | DollarDoubleQuoted(_) =>
       Some(
@@ -1298,16 +1301,14 @@ fn check_uppercase_variable_misspellings(
     if assigned_names.contains(name) || @semantics.is_internal_variable(name) {
       continue
     }
-    match analytics_best_assigned_name(name, assigned_names) {
-      Some(match_name) =>
-        push_diagnostic(
-          diagnostics,
-          span,
-          Info,
-          2153,
-          "Possible misspelling: \{name} may not be assigned. Did you mean \{match_name}?",
-        )
-      None => ()
+    if analytics_best_assigned_name(name, assigned_names) is Some(match_name) {
+      push_diagnostic(
+        diagnostics,
+        span,
+        Info,
+        2153,
+        "Possible misspelling: \{name} may not be assigned. Did you mean \{match_name}?",
+      )
     }
   }
 }
@@ -1340,26 +1341,27 @@ fn analytics_collect_declared_names(
   command : @parser.Command,
   names : Array[String],
 ) -> Unit {
-  let command_name = match @semantics.effective_command_name(command) {
-    Some(name) => name
-    None => return
+  let command_name = if @semantics.effective_command_name(command) is Some(name) {
+    name
+  } else {
+    return
   }
   if !@semantics.is_declaring_command(command_name) {
     return
   }
   for argument in @semantics.effective_command_arguments(command) {
-    match analytics_declared_name(argument) {
-      Some(name) => analytics_push_unique_name(names, name)
-      None => ()
+    if analytics_declared_name(argument) is Some(name) {
+      analytics_push_unique_name(names, name)
     }
   }
 }
 
 ///|
 fn analytics_declared_name(word : @parser.Word) -> String? {
-  let text = match @semantics.literal_text(word) {
-    Some(text) => text
-    None => return None
+  let text = if @semantics.literal_text(word) is Some(text) {
+    text
+  } else {
+    return None
   }
   if text == "" || text == "-" || text.has_prefix("-") {
     return None
@@ -1419,14 +1421,12 @@ fn analytics_collect_uppercase_word_parts(
         )
       BracedParameter(expansion) =>
         if !parameter_expansion_allows_unset(expansion) {
-          match expansion.name {
-            Some(name) =>
-              analytics_maybe_push_uppercase_reference(
-                references,
-                name,
-                analytics_span_for_word_text(word, "${\{expansion.raw}}"),
-              )
-            None => ()
+          if expansion.name is Some(name) {
+            analytics_maybe_push_uppercase_reference(
+              references,
+              name,
+              analytics_span_for_word_text(word, "${\{expansion.raw}}"),
+            )
           }
         }
       DoubleQuoted(nested) | DollarDoubleQuoted(nested) =>
@@ -1682,16 +1682,14 @@ fn check_tilde_in_quotes(
 ) -> Unit {
   visit_script_commands(script, fn(command) {
     visit_direct_words_in_command(command, fn(word, _) {
-      match analytics_quoted_tilde_text(word) {
-        Some(text) =>
-          push_diagnostic(
-            diagnostics,
-            analytics_span_for_word_text(word, text),
-            Warning,
-            2088,
-            "Tilde does not expand in quotes. Use $HOME.",
-          )
-        None => ()
+      if analytics_quoted_tilde_text(word) is Some(text) {
+        push_diagnostic(
+          diagnostics,
+          analytics_span_for_word_text(word, text),
+          Warning,
+          2088,
+          "Tilde does not expand in quotes. Use $HOME.",
+        )
       }
     })
   })
@@ -1882,9 +1880,10 @@ fn analytics_span_for_word_text(
   word : @parser.Word,
   text : String,
 ) -> @parser.Span {
-  match analytics_string_offset(word.source, text) {
-    Some(offset) => analytics_span_offset(word.span, offset, text.length())
-    None => word.span
+  if analytics_string_offset(word.source, text) is Some(offset) {
+    analytics_span_offset(word.span, offset, text.length())
+  } else {
+    word.span
   }
 }
 
@@ -1894,18 +1893,18 @@ fn analytics_span_for_nested_word_text(
   outer : String,
   inner : String,
 ) -> @parser.Span {
-  match analytics_string_offset(word.source, outer) {
-    Some(outer_offset) =>
-      match analytics_string_offset(outer, inner) {
-        Some(inner_offset) =>
-          analytics_span_offset(
-            word.span,
-            outer_offset + inner_offset,
-            inner.length(),
-          )
-        None => word.span
-      }
-    None => word.span
+  if analytics_string_offset(word.source, outer) is Some(outer_offset) {
+    if analytics_string_offset(outer, inner) is Some(inner_offset) {
+      analytics_span_offset(
+        word.span,
+        outer_offset + inner_offset,
+        inner.length(),
+      )
+    } else {
+      word.span
+    }
+  } else {
+    word.span
   }
 }
 

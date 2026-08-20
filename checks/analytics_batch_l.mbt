@@ -245,16 +245,14 @@ fn analytics_maybe_push_index_parens_diagnostic(
     assignment.name[:].length() + 1,
     index.raw[:].length(),
   )
-  match index.arithmetic {
-    Some(expr) =>
-      analytics_push_parens_diagnostics_for_text(
-        base_span,
-        index.raw,
-        expr,
-        ArrayIndex,
-        diagnostics,
-      )
-    None => ()
+  if index.arithmetic is Some(expr) {
+    analytics_push_parens_diagnostics_for_text(
+      base_span,
+      index.raw,
+      expr,
+      ArrayIndex,
+      diagnostics,
+    )
   }
 }
 
@@ -300,16 +298,14 @@ fn analytics_maybe_push_arithmetic_expr_parens_diagnostic(
         2323,
         analytics_outer_parens_message(context),
       )
-      match inner_fragment {
-        Some(_) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Style,
-            2322,
-            analytics_double_parens_message(),
-          )
-        None => ()
+      if inner_fragment is Some(_) {
+        push_diagnostic(
+          diagnostics,
+          span,
+          Style,
+          2322,
+          analytics_double_parens_message(),
+        )
       }
     }
     None => ()
@@ -337,21 +333,18 @@ fn analytics_push_parens_diagnostics_for_text(
         analytics_outer_parens_message(context),
         analytics_remove_parens_fix(outer_span, 9),
       )
-      match inner_fragment {
-        Some(fragment) => {
-          let inner_span = analytics_span_inside_text(
-            base_span, base_text, fragment,
-          )
-          push_diagnostic_with_fix(
-            diagnostics,
-            inner_span,
-            Style,
-            2322,
-            analytics_double_parens_message(),
-            analytics_remove_parens_fix(inner_span, 11),
-          )
-        }
-        None => ()
+      if inner_fragment is Some(fragment) {
+        let inner_span = analytics_span_inside_text(
+          base_span, base_text, fragment,
+        )
+        push_diagnostic_with_fix(
+          diagnostics,
+          inner_span,
+          Style,
+          2322,
+          analytics_double_parens_message(),
+          analytics_remove_parens_fix(inner_span, 11),
+        )
       }
     }
     None => ()
@@ -402,9 +395,10 @@ fn analytics_span_inside_text(
   base_text : String,
   fragment : String,
 ) -> @parser.Span {
-  match analytics_string_offset(base_text, fragment) {
-    Some(offset) => analytics_span_offset(base_span, offset, fragment.length())
-    None => base_span
+  if analytics_string_offset(base_text, fragment) is Some(offset) {
+    analytics_span_offset(base_span, offset, fragment.length())
+  } else {
+    base_span
   }
 }
 
@@ -474,20 +468,18 @@ fn analytics_maybe_push_plus_equals_number(
   }
   match assignment.value {
     Word(word) =>
-      match @cfg.incoming_state_of_ast(analysis, id) {
-        Some(state) =>
-          if state.state_is_reachable &&
-            !@cfg.variable_may_be_declared_integer(state, assignment.name) &&
-            analytics_word_is_numeric_append_value(word, state) {
-            push_diagnostic(
-              diagnostics,
-              assignment_name_span(assignment),
-              Warning,
-              2324,
-              "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence.",
-            )
-          }
-        None => ()
+      if @cfg.incoming_state_of_ast(analysis, id) is Some(state) {
+        if state.state_is_reachable &&
+          !@cfg.variable_may_be_declared_integer(state, assignment.name) &&
+          analytics_word_is_numeric_append_value(word, state) {
+          push_diagnostic(
+            diagnostics,
+            assignment_name_span(assignment),
+            Warning,
+            2324,
+            "var+=1 will append, not increment. Use (( var += 1 )), typeset -i var, or quote number to silence.",
+          )
+        }
       }
     _ => ()
   }
@@ -520,13 +512,12 @@ fn analytics_braced_parameter_is_numeric_name(
   if expansion.length_prefix || expansion.indirect || expansion.index is Some(_) {
     return false
   }
-  match expansion.operator {
-    Some(_) => false
-    None =>
-      match expansion.name {
-        Some(name) => @cfg.variable_may_be_assigned_integer(state, name)
-        None => false
-      }
+  if expansion.operator is Some(_) {
+    false
+  } else if expansion.name is Some(name) {
+    @cfg.variable_may_be_assigned_integer(state, name)
+  } else {
+    false
   }
 }
 

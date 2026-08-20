@@ -136,9 +136,11 @@ test "brace expansions and array indexes stay balanced across nested shell synta
     ),
   )
   let (_, parameter_index_simple) = first_simple(parameter_index_script)
-  match braced_parameter(parameter_index_simple.words[1].parts[0]).index {
-    Some(index) => assert_eq(index_raw(index), "$(printf %s ])")
-    None => fail("expected parameter expansion index")
+  if braced_parameter(parameter_index_simple.words[1].parts[0]).index
+    is Some(index) {
+    assert_eq(index_raw(index), "$(printf %s ])")
+  } else {
+    fail("expected parameter expansion index")
   }
 }
 
@@ -243,9 +245,10 @@ test "parameter operators ignore nested separator characters" {
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "${foo:-/}")
-      match replacement {
-        Some(text) => assert_eq(text, "x")
-        None => fail("expected replacement text")
+      if replacement is Some(text) {
+        assert_eq(text, "x")
+      } else {
+        fail("expected replacement text")
       }
     }
     _ => fail("expected replace operator with nested parameter expansion")
@@ -259,9 +262,10 @@ test "parameter operators ignore nested separator characters" {
         _ => fail("expected first replacement mode")
       }
       assert_eq(pattern, "$(printf %s /)")
-      match replacement {
-        Some(text) => assert_eq(text, "$(printf %s /)")
-        None => fail("expected replacement command substitution")
+      if replacement is Some(text) {
+        assert_eq(text, "$(printf %s /)")
+      } else {
+        fail("expected replacement command substitution")
       }
     }
     _ => fail("expected replace operator with nested command substitutions")

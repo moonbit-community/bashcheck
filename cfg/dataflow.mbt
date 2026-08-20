@@ -583,17 +583,19 @@ fn mark_unreachable(state : InternalState) -> InternalState {
 
 ///|
 fn read_global(state : InternalState, name : String) -> VariableState {
-  match state.global_values.get(name) {
-    Some(value) => value
-    None => unknown_variable_state()
+  if state.global_values.get(name) is Some(value) {
+    value
+  } else {
+    unknown_variable_state()
   }
 }
 
 ///|
 fn read_local(state : InternalState, name : String) -> VariableState {
-  match state.local_values.get(name) {
-    Some(value) => value
-    None => unset_variable_state()
+  if state.local_values.get(name) is Some(value) {
+    value
+  } else {
+    unset_variable_state()
   }
 }
 
@@ -602,17 +604,14 @@ fn read_variable_with_scope(
   state : InternalState,
   name : String,
 ) -> (VariableState, CfgScope) {
-  match state.prefix_values.get(name) {
-    Some(value) => (value, Prefix)
-    None =>
-      match state.local_values.get(name) {
-        Some(value) => (value, Local)
-        None =>
-          match state.global_values.get(name) {
-            Some(value) => (value, Global)
-            None => (unknown_variable_state(), Global)
-          }
-      }
+  if state.prefix_values.get(name) is Some(value) {
+    (value, Prefix)
+  } else if state.local_values.get(name) is Some(value) {
+    (value, Local)
+  } else if state.global_values.get(name) is Some(value) {
+    (value, Global)
+  } else {
+    (unknown_variable_state(), Global)
   }
 }
 
@@ -626,9 +625,10 @@ fn read_function_targets(
   state : InternalState,
   name : String,
 ) -> Set[FunctionTarget] {
-  match state.function_targets.get(name) {
-    Some(targets) => targets
-    None => unknown_function_targets()
+  if state.function_targets.get(name) is Some(targets) {
+    targets
+  } else {
+    unknown_function_targets()
   }
 }
 
@@ -808,9 +808,10 @@ fn merge_state_map_with_fallbacks(
 ) -> Map[String, VariableState] {
   let result = lhs.copy()
   rhs.each(fn(name, value) {
-    match result.get(name) {
-      Some(existing) => result.set(name, merge_variable_state(existing, value))
-      None => result.set(name, merge_variable_state(lhs_fallback(name), value))
+    if result.get(name) is Some(existing) {
+      result.set(name, merge_variable_state(existing, value))
+    } else {
+      result.set(name, merge_variable_state(lhs_fallback(name), value))
     }
   })
   lhs.each(fn(name, value) {
@@ -828,9 +829,10 @@ fn merge_function_target_map(
 ) -> Map[String, Set[FunctionTarget]] {
   let result = lhs.copy()
   rhs.each(fn(name, targets) {
-    match result.get(name) {
-      Some(existing) => result.set(name, union_set(existing, targets))
-      None => result.set(name, union_set(unknown_function_targets(), targets))
+    if result.get(name) is Some(existing) {
+      result.set(name, union_set(existing, targets))
+    } else {
+      result.set(name, union_set(unknown_function_targets(), targets))
     }
   })
   lhs.each(fn(name, targets) {
@@ -1093,9 +1095,10 @@ fn stack_with(stack : Array[CfgNodeId], id : CfgNodeId) -> Array[CfgNodeId] {
 
 ///|
 fn node_kind_at(ctx : AnalysisContext, id : CfgNodeId) -> CfgNodeKind {
-  match node_at(ctx.cfg, id) {
-    Some(node) => node.kind
-    None => panic()
+  if node_at(ctx.cfg, id) is Some(node) {
+    node.kind
+  } else {
+    panic()
   }
 }
 
@@ -1105,14 +1108,12 @@ fn cached_invocation_for(
   entry : CfgNodeId,
   input : InternalState,
 ) -> InvocationResult? {
-  match ctx.cache.val.get(entry) {
-    Some(values) =>
-      for value in values {
-        if value.input == input {
-          return Some(value)
-        }
+  if ctx.cache.val.get(entry) is Some(values) {
+    for value in values {
+      if value.input == input {
+        return Some(value)
       }
-    None => ()
+    }
   }
   None
 }
@@ -1120,10 +1121,7 @@ fn cached_invocation_for(
 ///|
 fn store_invocation(ctx : AnalysisContext, result : InvocationResult) -> Unit {
   let cache = ctx.cache.val.copy()
-  let values = match cache.get(result.entry) {
-    Some(values) => values
-    None => []
-  }
+  let values = if cache.get(result.entry) is Some(values) { values } else { [] }
   values.push(result)
   cache.set(result.entry, values)
   ctx.cache.val = cache
@@ -1152,18 +1150,17 @@ fn run_invocation(
   input : InternalState,
   stack : Array[CfgNodeId],
 ) -> InvocationResult {
-  match cached_invocation_for(ctx, entry, input) {
-    Some(result) => result
-    None => {
-      let states = solve_invocation(ctx, entry, input, stack)
-      let exit_state = match states.get(exit_.to_int()) {
-        Some(Some((_, outgoing))) => outgoing
-        _ => mark_unreachable(input)
-      }
-      let result = { entry, input, states, exit_state }
-      store_invocation(ctx, result)
-      result
+  if cached_invocation_for(ctx, entry, input) is Some(result) {
+    result
+  } else {
+    let states = solve_invocation(ctx, entry, input, stack)
+    let exit_state = match states.get(exit_.to_int()) {
+      Some(Some((_, outgoing))) => outgoing
+      _ => mark_unreachable(input)
     }
+    let result = { entry, input, states, exit_state }
+    store_invocation(ctx, result)
+    result
   }
 }
 
@@ -1200,16 +1197,18 @@ fn invocation_input_for_node(
   for pred in preds {
     match states.get(pred.to_int()) {
       Some(Some((_, outgoing))) if outgoing.reachable =>
-        current = match current {
-          Some(existing) => Some(merge_internal_state(existing, outgoing))
-          None => Some(outgoing)
+        current = if current is Some(existing) {
+          Some(merge_internal_state(existing, outgoing))
+        } else {
+          Some(outgoing)
         }
       _ => ()
     }
   }
-  match current {
-    Some(state) => state
-    None => unreachable_internal_state()
+  if current is Some(state) {
+    state
+  } else {
+    unreachable_internal_state()
   }
 }
 
@@ -1220,23 +1219,24 @@ fn transfer_command(
   command_name : String?,
   stack : Array[CfgNodeId],
 ) -> InternalState {
-  match command_name {
-    None => state
-    Some(name) => {
-      let targets = read_function_targets(state, name)
-      let mut current : InternalState? = None
-      for target in targets {
-        let next = transfer_function_target(ctx, state, target, stack)
-        current = match current {
-          Some(existing) => Some(merge_internal_state(existing, next))
-          None => Some(next)
-        }
-      }
-      match current {
-        Some(result) => result
-        None => state
+  if command_name is Some(name) {
+    let targets = read_function_targets(state, name)
+    let mut current : InternalState? = None
+    for target in targets {
+      let next = transfer_function_target(ctx, state, target, stack)
+      current = if current is Some(existing) {
+        Some(merge_internal_state(existing, next))
+      } else {
+        Some(next)
       }
     }
+    if current is Some(result) {
+      result
+    } else {
+      state
+    }
+  } else {
+    state
   }
 }
 
@@ -1401,9 +1401,10 @@ fn merge_invocations(
             internal_to_program_state(incoming),
             internal_to_program_state(outgoing),
           )
-          merged[i] = match merged[i] {
-            Some(current) => Some(merge_node_pair(current, next))
-            None => Some(next)
+          merged[i] = if merged[i] is Some(current) {
+            Some(merge_node_pair(current, next))
+          } else {
+            Some(next)
           }
         }
         None => ()
@@ -1502,9 +1503,10 @@ fn run_stragglers(ctx : AnalysisContext, state : InternalState) -> Unit {
 /// Runs CFG dataflow and returns the resulting analysis object.
 pub fn analyze_control_flow(cfg : CFG) -> CfgAnalysis {
   let context = build_context(cfg)
-  let root_range = match id_to_range(cfg, root_ast_id(cfg)) {
-    Some(range) => range
-    None => panic()
+  let root_range = if id_to_range(cfg, root_ast_id(cfg)) is Some(range) {
+    range
+  } else {
+    panic()
   }
   let env = create_environment_state()
   let root = run_invocation(context, root_range.0, root_range.1, env, [
@@ -1530,9 +1532,10 @@ fn node_state_at(
   analysis : CfgAnalysis,
   node : CfgNodeId,
 ) -> (ProgramState, ProgramState)? {
-  match analysis.node_states.get(node.to_int()) {
-    Some(value) => value
-    None => None
+  if analysis.node_states.get(node.to_int()) is Some(value) {
+    value
+  } else {
+    None
   }
 }
 
@@ -1541,9 +1544,10 @@ fn live_node_state_at(
   analysis : CfgAnalysis,
   node : CfgNodeId,
 ) -> (ProgramState, ProgramState)? {
-  match analysis.live_node_states.get(node.to_int()) {
-    Some(value) => value
-    None => None
+  if analysis.live_node_states.get(node.to_int()) is Some(value) {
+    value
+  } else {
+    None
   }
 }
 
@@ -1632,9 +1636,10 @@ pub fn variable_may_be_declared_integer(
   state : ProgramState,
   name : String,
 ) -> Bool {
-  match variable_state_in_scope(state, name) {
-    Some(variable) => property_sets_have_integer(variable.variable_properties)
-    None => false
+  if variable_state_in_scope(state, name) is Some(variable) {
+    property_sets_have_integer(variable.variable_properties)
+  } else {
+    false
   }
 }
 
@@ -1644,30 +1649,31 @@ pub fn variable_may_be_assigned_integer(
   state : ProgramState,
   name : String,
 ) -> Bool {
-  match variable_state_in_scope(state, name) {
-    Some(variable) =>
-      variable.variable_value.numerical_status >= Maybe ||
-      kind_is_possible(variable.variable_value, Integer)
-    None => false
+  if variable_state_in_scope(state, name) is Some(variable) {
+    variable.variable_value.numerical_status >= Maybe ||
+    kind_is_possible(variable.variable_value, Integer)
+  } else {
+    false
   }
 }
 
 ///|
 /// Reports whether a variable may currently hold an array value.
 pub fn variable_may_be_array(state : ProgramState, name : String) -> Bool {
-  match variable_state_in_scope(state, name) {
-    Some(variable) =>
-      kind_is_possible(variable.variable_value, Array) ||
-      property_sets_have_array(variable.variable_properties)
-    None => false
+  if variable_state_in_scope(state, name) is Some(variable) {
+    kind_is_possible(variable.variable_value, Array) ||
+    property_sets_have_array(variable.variable_properties)
+  } else {
+    false
   }
 }
 
 ///|
 /// Reports whether a variable may currently be unset.
 pub fn variable_may_be_unset(state : ProgramState, name : String) -> Bool {
-  match variable_state_in_scope(state, name) {
-    Some(variable) => kind_is_possible(variable.variable_value, Unset)
-    None => false
+  if variable_state_in_scope(state, name) is Some(variable) {
+    kind_is_possible(variable.variable_value, Unset)
+  } else {
+    false
   }
 }

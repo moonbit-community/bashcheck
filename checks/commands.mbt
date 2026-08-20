@@ -147,20 +147,18 @@ fn check_time_parameters(
   visit_script_commands(script, fn(command) {
     match command.kind {
       Time(clause) =>
-        match clause.flags.get(0) {
-          Some(flag) =>
-            match @semantics.literal_text(flag) {
-              Some(text) if text.has_prefix("-") && text != "-p" =>
-                push_diagnostic(
-                  diagnostics,
-                  command_keyword_span(command, "time"),
-                  Info,
-                  2023,
-                  "The shell may override 'time' as seen in man time(1). Use 'command time ..' for that one.",
-                )
-              _ => ()
-            }
-          None => ()
+        if clause.flags.get(0) is Some(flag) {
+          match @semantics.literal_text(flag) {
+            Some(text) if text.has_prefix("-") && text != "-p" =>
+              push_diagnostic(
+                diagnostics,
+                command_keyword_span(command, "time"),
+                Info,
+                2023,
+                "The shell may override 'time' as seen in man time(1). Use 'command time ..' for that one.",
+              )
+            _ => ()
+          }
         }
       _ => ()
     }
@@ -224,14 +222,14 @@ fn find_has_help_flag(arguments : Array[@parser.Word]) -> Bool {
 fn find_has_path_argument(arguments : Array[@parser.Word]) -> Bool {
   let mut i = 0
   while i < arguments.length() {
-    match @semantics.literal_text(arguments[i]) {
-      Some(text) =>
-        if !text.has_prefix("-") {
-          return true
-        } else if !find_is_leading_flag(text) {
-          return false
-        }
-      None => return true
+    if @semantics.literal_text(arguments[i]) is Some(text) {
+      if !text.has_prefix("-") {
+        return true
+      } else if !find_is_leading_flag(text) {
+        return false
+      }
+    } else {
+      return true
     }
     i += 1
   }
@@ -286,24 +284,23 @@ fn check_read_without_r(
       @semantics.effective_command_arguments(command),
     )
     if !has_r && !has_t0 {
-      match read_without_r_fix(command) {
-        Some(fix) =>
-          push_diagnostic_with_fix(
-            diagnostics,
-            effective_command_span(command),
-            Info,
-            2162,
-            "read without -r will mangle backslashes.",
-            fix,
-          )
-        None =>
-          push_diagnostic(
-            diagnostics,
-            effective_command_span(command),
-            Info,
-            2162,
-            "read without -r will mangle backslashes.",
-          )
+      if read_without_r_fix(command) is Some(fix) {
+        push_diagnostic_with_fix(
+          diagnostics,
+          effective_command_span(command),
+          Info,
+          2162,
+          "read without -r will mangle backslashes.",
+          fix,
+        )
+      } else {
+        push_diagnostic(
+          diagnostics,
+          effective_command_span(command),
+          Info,
+          2162,
+          "read without -r will mangle backslashes.",
+        )
       }
     }
   })
@@ -335,10 +332,7 @@ fn maybe_push_sudo_redirect_diagnostic(
     _ => None
   }
   guard target is Some(_) else { return }
-  let target_word = match target {
-    Some(word) => word
-    None => panic()
-  }
+  let target_word = if target is Some(word) { word } else { panic() }
   guard @semantics.literal_text(target_word) != Some("/dev/null") else {
     return
   }
@@ -449,9 +443,10 @@ fn parse_read_options(arguments : Array[@parser.Word]) -> (Bool, Bool) {
   let mut has_t0 = false
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.leading_unquoted_text(arguments[i]) {
-      Some(text) => text
-      None => break
+    let text = if @semantics.leading_unquoted_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      break
     }
     if text == "--" {
       break

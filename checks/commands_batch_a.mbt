@@ -431,12 +431,12 @@ fn check_find_action_precedence(
 
 ///|
 fn find_is_match_test(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) =>
-      ["-name", "-regex", "-iname", "-iregex", "-wholename", "-iwholename"].contains(
-        text,
-      )
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    ["-name", "-regex", "-iname", "-iregex", "-wholename", "-iwholename"].contains(
+      text,
+    )
+  } else {
+    false
   }
 }
 
@@ -450,13 +450,13 @@ fn find_is_or_operator(word : @parser.Word) -> Bool {
 
 ///|
 fn find_is_action(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) =>
-      [
-        "-exec", "-execdir", "-delete", "-print", "-print0", "-fls", "-fprint", "-fprint0",
-        "-fprintf", "-ls", "-ok", "-okdir", "-printf",
-      ].contains(text)
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    [
+      "-exec", "-execdir", "-delete", "-print", "-print0", "-fls", "-fprint", "-fprint0",
+      "-fprintf", "-ls", "-ok", "-okdir", "-printf",
+    ].contains(text)
+  } else {
+    false
   }
 }
 
@@ -470,9 +470,10 @@ fn check_find_redirections(
       return
     }
     let words = @semantics.command_words(command)
-    let last_word = match words.get(words.length() - 1) {
-      Some(word) => word
-      None => return
+    let last_word = if words.get(words.length() - 1) is Some(word) {
+      word
+    } else {
+      return
     }
     for redirect in command.redirects {
       if redirect.span.start.offset < last_word.span.end.offset {
@@ -650,43 +651,38 @@ fn check_grep_patterns(
     }
     let arguments = @semantics.effective_command_arguments(command)
     let pattern = grep_pattern_argument(arguments)
-    match pattern {
-      Some(word) => {
-        if @semantics.is_glob_word(word) {
+    if pattern is Some(word) {
+      if @semantics.is_glob_word(word) {
+        push_diagnostic(
+          diagnostics,
+          word.span,
+          Warning,
+          2062,
+          "Quote the grep pattern so the shell won't interpret it.",
+        )
+      }
+      guard !grep_uses_glob_sensitive_flags(arguments) else { return }
+      match @semantics.literal_text(word) {
+        Some(text) if grep_regex_looks_like_glob(text) =>
           push_diagnostic(
             diagnostics,
             word.span,
             Warning,
-            2062,
-            "Quote the grep pattern so the shell won't interpret it.",
+            2063,
+            "Grep uses regex, but this looks like a glob.",
           )
-        }
-        guard !grep_uses_glob_sensitive_flags(arguments) else { return }
-        match @semantics.literal_text(word) {
-          Some(text) if grep_regex_looks_like_glob(text) =>
+        Some(text) =>
+          if grep_suspicious_regex_char(text) is Some(ch) {
             push_diagnostic(
               diagnostics,
               word.span,
-              Warning,
-              2063,
-              "Grep uses regex, but this looks like a glob.",
+              Info,
+              2022,
+              "Note that unlike globs, \{uint16_to_string(ch)}* here matches '\{uint16_to_string(ch)}\{uint16_to_string(ch)}\{uint16_to_string(ch)}' but not '\{grep_word_starting_with(ch)}'.",
             )
-          Some(text) =>
-            match grep_suspicious_regex_char(text) {
-              Some(ch) =>
-                push_diagnostic(
-                  diagnostics,
-                  word.span,
-                  Info,
-                  2022,
-                  "Note that unlike globs, \{uint16_to_string(ch)}* here matches '\{uint16_to_string(ch)}\{uint16_to_string(ch)}\{uint16_to_string(ch)}' but not '\{grep_word_starting_with(ch)}'.",
-                )
-              None => ()
-            }
-          None => ()
-        }
+          }
+        None => ()
       }
-      None => ()
     }
   })
 }
@@ -695,9 +691,10 @@ fn check_grep_patterns(
 fn grep_pattern_argument(arguments : Array[@parser.Word]) -> @parser.Word? {
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.literal_text(arguments[i]) {
-      Some(text) => text
-      None => arguments[i].source
+    let text = if @semantics.literal_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      arguments[i].source
     }
     if text == "--" || text == "-e" || text == "--regex" {
       if i + 1 < arguments.length() {
@@ -857,20 +854,18 @@ fn check_trap_quotes(
     if !command_matches_exact_name(command, "trap") {
       return
     }
-    match @semantics.effective_command_arguments(command).get(0) {
-      Some(argument) =>
-        match word_is_plain_double_quoted(argument) {
-          Some(parts) if trap_parts_expand_immediately(parts) =>
-            push_diagnostic(
-              diagnostics,
-              argument.span,
-              Warning,
-              2064,
-              "Use single quotes, otherwise this expands now rather than when signalled.",
-            )
-          _ => ()
-        }
-      None => ()
+    if @semantics.effective_command_arguments(command).get(0) is Some(argument) {
+      match word_is_plain_double_quoted(argument) {
+        Some(parts) if trap_parts_expand_immediately(parts) =>
+          push_diagnostic(
+            diagnostics,
+            argument.span,
+            Warning,
+            2064,
+            "Use single quotes, otherwise this expands now rather than when signalled.",
+          )
+        _ => ()
+      }
     }
   })
 }
@@ -1035,21 +1030,18 @@ fn check_printf_arguments(
     }
     let arguments = @semantics.effective_command_arguments(command)
     let (format, params) = printf_format_and_args(arguments)
-    match format {
-      Some(format_word) => {
-        check_printf_argument_count(format_word, params, diagnostics)
-        if !format_word.source.contains("%") &&
-          !@semantics.is_constant_word(format_word) {
-          push_diagnostic(
-            diagnostics,
-            format_word.span,
-            Info,
-            2059,
-            "Don't use variables in the printf format string. Use printf '..%s..' \"$foo\".",
-          )
-        }
+    if format is Some(format_word) {
+      check_printf_argument_count(format_word, params, diagnostics)
+      if !format_word.source.contains("%") &&
+        !@semantics.is_constant_word(format_word) {
+        push_diagnostic(
+          diagnostics,
+          format_word.span,
+          Info,
+          2059,
+          "Don't use variables in the printf format string. Use printf '..%s..' \"$foo\".",
+        )
       }
-      None => ()
     }
   })
 }
@@ -1067,10 +1059,10 @@ fn printf_format_and_args(
     Some(word) if @semantics.literal_text(word) == Some("-v") => start += 2
     _ => ()
   }
-  match arguments.get(start) {
-    Some(format_word) =>
-      (Some(format_word), copy_words_from(arguments, start + 1))
-    None => (None, [])
+  if arguments.get(start) is Some(format_word) {
+    (Some(format_word), copy_words_from(arguments, start + 1))
+  } else {
+    (None, [])
   }
 }
 
@@ -1094,44 +1086,41 @@ fn check_printf_argument_count(
   params : Array[@parser.Word],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match @semantics.literal_text(format) {
-    Some(text) => {
-      let formats = printf_formats(text)
-      let format_count = formats[:].length()
-      let arg_count = params.length()
-      if arg_count == 0 && format_count == 0 {
-        return
-      }
-      if format_count == 0 && arg_count > 0 {
-        push_diagnostic(
-          diagnostics,
-          format.span,
-          Error,
-          2182,
-          "This printf format string has no variables. Other arguments are ignored.",
-        )
-        return
-      }
-      if params.any(fn(param) { word_may_expand_to_multiple(param) }) {
-        return
-      }
-      if arg_count < format_count && printf_only_trailing_ts(formats, arg_count) {
-        return
-      }
-      if arg_count > 0 && arg_count % format_count == 0 {
-        return
-      }
-      let variable_word = printf_pluralize("variable", format_count)
-      let argument_word = printf_pluralize("argument", arg_count)
+  if @semantics.literal_text(format) is Some(text) {
+    let formats = printf_formats(text)
+    let format_count = formats[:].length()
+    let arg_count = params.length()
+    if arg_count == 0 && format_count == 0 {
+      return
+    }
+    if format_count == 0 && arg_count > 0 {
       push_diagnostic(
         diagnostics,
         format.span,
-        Warning,
-        2183,
-        "This format string has \{format_count} \{variable_word}, but is passed \{arg_count} \{argument_word}.",
+        Error,
+        2182,
+        "This printf format string has no variables. Other arguments are ignored.",
       )
+      return
     }
-    None => ()
+    if params.any(fn(param) { word_may_expand_to_multiple(param) }) {
+      return
+    }
+    if arg_count < format_count && printf_only_trailing_ts(formats, arg_count) {
+      return
+    }
+    if arg_count > 0 && arg_count % format_count == 0 {
+      return
+    }
+    let variable_word = printf_pluralize("variable", format_count)
+    let argument_word = printf_pluralize("argument", arg_count)
+    push_diagnostic(
+      diagnostics,
+      format.span,
+      Warning,
+      2183,
+      "This format string has \{format_count} \{variable_word}, but is passed \{arg_count} \{argument_word}.",
+    )
   }
 }
 
@@ -1257,16 +1246,14 @@ fn check_source_arguments(
   visit_script_commands(script, fn(command) {
     match command.kind {
       Source(source) =>
-        match source.args.get(0) {
-          Some(argument) =>
-            push_diagnostic(
-              diagnostics,
-              argument.span,
-              Warning,
-              2240,
-              "The dot command does not support arguments in sh/dash. Set them as variables.",
-            )
-          None => ()
+        if source.args.get(0) is Some(argument) {
+          push_diagnostic(
+            diagnostics,
+            argument.span,
+            Warning,
+            2240,
+            "The dot command does not support arguments in sh/dash. Set them as variables.",
+          )
         }
       _ => ()
     }
@@ -1282,20 +1269,19 @@ fn check_sudo_arguments(
     if !command_matches_basename(command, "sudo") {
       return
     }
-    match sudo_command_word(@semantics.effective_command_arguments(command)) {
-      Some(command_word) =>
-        match @semantics.literal_text(command_word) {
-          Some(name) if sudo_builtin_names().contains(name) =>
-            push_diagnostic(
-              diagnostics,
-              effective_command_span(command),
-              Warning,
-              2232,
-              "Can't use sudo with builtins like \{name}. Did you want sudo sh -c .. instead?",
-            )
-          _ => ()
-        }
-      None => ()
+    if sudo_command_word(@semantics.effective_command_arguments(command))
+      is Some(command_word) {
+      match @semantics.literal_text(command_word) {
+        Some(name) if sudo_builtin_names().contains(name) =>
+          push_diagnostic(
+            diagnostics,
+            effective_command_span(command),
+            Warning,
+            2232,
+            "Can't use sudo with builtins like \{name}. Did you want sudo sh -c .. instead?",
+          )
+        _ => ()
+      }
     }
   })
 }
@@ -1314,9 +1300,10 @@ fn sudo_builtin_names() -> Array[String] {
 fn sudo_command_word(arguments : Array[@parser.Word]) -> @parser.Word? {
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.literal_text(arguments[i]) {
-      Some(text) => text
-      None => return Some(arguments[i])
+    let text = if @semantics.literal_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      return Some(arguments[i])
     }
     if text == "--" {
       if i + 1 < arguments.length() {
@@ -1423,13 +1410,12 @@ fn read_variable_words(arguments : Array[@parser.Word]) -> Array[@parser.Word] {
   let variables : Array[@parser.Word] = []
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.leading_unquoted_text(arguments[i]) {
-      Some(text) => text
-      None => {
-        variables.push(arguments[i])
-        i += 1
-        continue
-      }
+    let text = if @semantics.leading_unquoted_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      variables.push(arguments[i])
+      i += 1
+      continue
     }
     if text == "--" {
       i += 1
@@ -1520,8 +1506,9 @@ fn read_word_has_unquoted_array_index(word : @parser.Word) -> Bool {
 
 ///|
 fn find_literal_argument_text(word : @parser.Word, fallback : String) -> String {
-  match @semantics.literal_text(word) {
-    Some(text) => text
-    None => fallback
+  if @semantics.literal_text(word) is Some(text) {
+    text
+  } else {
+    fallback
   }
 }

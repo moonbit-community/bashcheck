@@ -18,9 +18,10 @@ fn parse_shell_with_options(
   options : @parser.ParseOptions,
 ) -> @parser.Script {
   let report = @parser.parse_script_with_options(source, options)
-  match report.script {
-    Some(script) => script
-    None => shell_fail("expected script")
+  if report.script is Some(script) {
+    script
+  } else {
+    shell_fail("expected script")
   }
 }
 

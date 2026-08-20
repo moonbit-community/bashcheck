@@ -116,15 +116,13 @@ fn check_suspicious_ifs(
               if assignment.name == "IFS" &&
                 !assignment.append &&
                 assignment.indexes.length() == 0 {
-                match @semantics.literal_text(value) {
-                  Some(text) =>
-                    analytics_maybe_warn_suspicious_ifs(
-                      text,
-                      value.span,
-                      shell,
-                      diagnostics,
-                    )
-                  None => ()
+                if @semantics.literal_text(value) is Some(text) {
+                  analytics_maybe_warn_suspicious_ifs(
+                    text,
+                    value.span,
+                    shell,
+                    diagnostics,
+                  )
                 }
               }
             _ => ()

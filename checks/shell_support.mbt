@@ -295,17 +295,16 @@ fn pipe_operator_span(
   operator_index : Int,
   width : Int,
 ) -> @parser.Span {
-  match pipeline.segments.get(operator_index + 1) {
-    Some(next_segment) => {
-      let end_ = next_segment.span.start
-      let start = @parser.Position::new(
-        end_.offset - width,
-        end_.line,
-        end_.column - width,
-      )
-      @parser.Span::new(start, end_)
-    }
-    None => pipeline.span
+  if pipeline.segments.get(operator_index + 1) is Some(next_segment) {
+    let end_ = next_segment.span.start
+    let start = @parser.Position::new(
+      end_.offset - width,
+      end_.line,
+      end_.column - width,
+    )
+    @parser.Span::new(start, end_)
+  } else {
+    pipeline.span
   }
 }
 
@@ -527,20 +526,18 @@ fn maybe_push_echo_sed_diagnostic(
     return
   }
   let arguments = @semantics.effective_command_arguments(command)
-  match sed_script_argument(arguments) {
-    Some(word) =>
-      match @semantics.literal_text(word) {
-        Some(text) if shell_support_is_simple_sed_substitution(text) =>
-          push_diagnostic(
-            diagnostics,
-            span,
-            Style,
-            2001,
-            "See if you can use ${variable//search/replace} instead.",
-          )
-        _ => ()
-      }
-    None => ()
+  if sed_script_argument(arguments) is Some(word) {
+    match @semantics.literal_text(word) {
+      Some(text) if shell_support_is_simple_sed_substitution(text) =>
+        push_diagnostic(
+          diagnostics,
+          span,
+          Style,
+          2001,
+          "See if you can use ${variable//search/replace} instead.",
+        )
+      _ => ()
+    }
   }
 }
 
@@ -683,34 +680,26 @@ fn check_shell_support_test_command(
 ) -> Unit {
   match arguments {
     [_, op, _] =>
-      match @semantics.literal_text(op) {
-        Some(text) =>
-          match shell_support_binary_test_rule(text) {
-            Some(rule) =>
-              maybe_push_shell_support_rule_diagnostic(
-                diagnostics,
-                shell,
-                op.span,
-                rule,
-              )
-            None => ()
-          }
-        None => ()
+      if @semantics.literal_text(op) is Some(text) {
+        if shell_support_binary_test_rule(text) is Some(rule) {
+          maybe_push_shell_support_rule_diagnostic(
+            diagnostics,
+            shell,
+            op.span,
+            rule,
+          )
+        }
       }
     [op, _] =>
-      match @semantics.literal_text(op) {
-        Some(text) =>
-          match shell_support_unary_test_rule(text) {
-            Some(rule) =>
-              maybe_push_shell_support_rule_diagnostic(
-                diagnostics,
-                shell,
-                op.span,
-                rule,
-              )
-            None => ()
-          }
-        None => ()
+      if @semantics.literal_text(op) is Some(text) {
+        if shell_support_unary_test_rule(text) is Some(rule) {
+          maybe_push_shell_support_rule_diagnostic(
+            diagnostics,
+            shell,
+            op.span,
+            rule,
+          )
+        }
       }
     _ => ()
   }
@@ -722,44 +711,42 @@ fn check_shell_support_echo_command(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match arguments.get(0) {
-    Some(argument) =>
-      match @semantics.literal_text(argument) {
-        Some(text) if shell_support_echo_flag_word(text) =>
-          match shell {
-            BusyboxSh =>
-              if !shell_support_busybox_echo_flag_word(text) {
-                push_shell_support_diagnostic(
-                  diagnostics,
-                  shell,
-                  argument.span,
-                  3036,
-                  "echo flags besides -n and -e",
-                )
-              }
-            Dash =>
-              if text != "-n" {
-                push_shell_support_diagnostic(
-                  diagnostics,
-                  shell,
-                  argument.span,
-                  3036,
-                  "echo flags besides -n",
-                )
-              }
-            Sh =>
+  if arguments.get(0) is Some(argument) {
+    match @semantics.literal_text(argument) {
+      Some(text) if shell_support_echo_flag_word(text) =>
+        match shell {
+          BusyboxSh =>
+            if !shell_support_busybox_echo_flag_word(text) {
               push_shell_support_diagnostic(
                 diagnostics,
                 shell,
                 argument.span,
-                3037,
-                "echo flags are",
+                3036,
+                "echo flags besides -n and -e",
               )
-            _ => ()
-          }
-        _ => ()
-      }
-    None => ()
+            }
+          Dash =>
+            if text != "-n" {
+              push_shell_support_diagnostic(
+                diagnostics,
+                shell,
+                argument.span,
+                3036,
+                "echo flags besides -n",
+              )
+            }
+          Sh =>
+            push_shell_support_diagnostic(
+              diagnostics,
+              shell,
+              argument.span,
+              3037,
+              "echo flags are",
+            )
+          _ => ()
+        }
+      _ => ()
+    }
   }
 }
 
@@ -770,20 +757,18 @@ fn check_shell_support_exec_command(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match arguments.get(0) {
-    Some(argument) =>
-      match @semantics.literal_text(argument) {
-        Some(text) if text.has_prefix("-") && text != "--" =>
-          push_shell_support_diagnostic(
-            diagnostics,
-            shell,
-            argument.span,
-            3038,
-            "exec flags are",
-          )
-        _ => ()
-      }
-    None => ()
+  if arguments.get(0) is Some(argument) {
+    match @semantics.literal_text(argument) {
+      Some(text) if text.has_prefix("-") && text != "--" =>
+        push_shell_support_diagnostic(
+          diagnostics,
+          shell,
+          argument.span,
+          3038,
+          "exec flags are",
+        )
+      _ => ()
+    }
   }
   ignore(command)
 }
@@ -861,38 +846,35 @@ fn check_shell_support_trap_command(
   let mut i = 1
   while i < arguments.length() {
     let token = arguments[i]
-    match @semantics.literal_text(token) {
-      Some(text) => {
-        let upper = upper_ascii_string(text)
-        if ["ERR", "DEBUG", "RETURN"].contains(upper) {
-          push_shell_support_diagnostic(
-            diagnostics,
-            shell,
-            token.span,
-            3047,
-            "trapping \{text} is",
-          )
-        }
-        if !shell_is_busybox(shell) && upper.has_prefix("SIG") {
-          push_shell_support_diagnostic(
-            diagnostics,
-            shell,
-            token.span,
-            3048,
-            "prefixing signal names with 'SIG' is",
-          )
-        }
-        if shell == Sh && upper != text {
-          push_shell_support_diagnostic(
-            diagnostics,
-            shell,
-            token.span,
-            3049,
-            "using lower/mixed case for signal names is",
-          )
-        }
+    if @semantics.literal_text(token) is Some(text) {
+      let upper = upper_ascii_string(text)
+      if ["ERR", "DEBUG", "RETURN"].contains(upper) {
+        push_shell_support_diagnostic(
+          diagnostics,
+          shell,
+          token.span,
+          3047,
+          "trapping \{text} is",
+        )
       }
-      None => ()
+      if !shell_is_busybox(shell) && upper.has_prefix("SIG") {
+        push_shell_support_diagnostic(
+          diagnostics,
+          shell,
+          token.span,
+          3048,
+          "prefixing signal names with 'SIG' is",
+        )
+      }
+      if shell == Sh && upper != text {
+        push_shell_support_diagnostic(
+          diagnostics,
+          shell,
+          token.span,
+          3049,
+          "using lower/mixed case for signal names is",
+        )
+      }
     }
     i += 1
   }
@@ -905,20 +887,18 @@ fn check_shell_support_printf_command(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match arguments.get(0) {
-    Some(format) =>
-      match @semantics.literal_text(format) {
-        Some(text) if text.contains("%q") =>
-          push_shell_support_diagnostic(
-            diagnostics,
-            shell,
-            format.span,
-            3050,
-            "printf %q is",
-          )
-        _ => ()
-      }
-    None => ()
+  if arguments.get(0) is Some(format) {
+    match @semantics.literal_text(format) {
+      Some(text) if text.contains("%q") =>
+        push_shell_support_diagnostic(
+          diagnostics,
+          shell,
+          format.span,
+          3050,
+          "printf %q is",
+        )
+      _ => ()
+    }
   }
   ignore(command)
 }
@@ -1248,13 +1228,11 @@ fn check_shell_support_word(
         maybe_push_multidimensional_parameter_diagnostic(
           word, expansion, shell, diagnostics,
         )
-        match expansion.name {
-          Some(name) =>
-            if bash_variable_name is None &&
-              shell_support_is_bash_variable(name, shell, assigned_names) {
-              bash_variable_name = Some(name)
-            }
-          None => ()
+        if expansion.name is Some(name) {
+          if bash_variable_name is None &&
+            shell_support_is_bash_variable(name, shell, assigned_names) {
+            bash_variable_name = Some(name)
+          }
         }
       }
       _ => ()
@@ -1314,16 +1292,14 @@ fn check_shell_support_word(
       "^ in place of ! in glob bracket expressions is",
     )
   }
-  match bash_variable_name {
-    Some(name) =>
-      push_shell_support_diagnostic(
-        diagnostics,
-        shell,
-        word.span,
-        3028,
-        "\{name} is",
-      )
-    None => ()
+  if bash_variable_name is Some(name) {
+    push_shell_support_diagnostic(
+      diagnostics,
+      shell,
+      word.span,
+      3028,
+      "\{name} is",
+    )
   }
   if saw_dollar_redirection {
     push_shell_support_diagnostic(
@@ -1371,20 +1347,16 @@ fn maybe_push_decimal_arithmetic_command_diagnostic(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard shell != Ksh else { return }
-  match first_decimal_arithmetic_literal(expr) {
-    Some(literal) =>
-      match string_offset(expr.raw, literal) {
-        Some(offset) =>
-          push_diagnostic(
-            diagnostics,
-            span_offset(command.span, offset + 2, literal.length()),
-            Error,
-            2079,
-            "(( )) doesn't support decimals. Use bc or awk.",
-          )
-        None => ()
-      }
-    None => ()
+  if first_decimal_arithmetic_literal(expr) is Some(literal) {
+    if string_offset(expr.raw, literal) is Some(offset) {
+      push_diagnostic(
+        diagnostics,
+        span_offset(command.span, offset + 2, literal.length()),
+        Error,
+        2079,
+        "(( )) doesn't support decimals. Use bc or awk.",
+      )
+    }
   }
 }
 
@@ -1396,16 +1368,14 @@ fn maybe_push_decimal_arithmetic_word_diagnostic(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard shell != Ksh else { return }
-  match first_decimal_arithmetic_literal(expr) {
-    Some(literal) =>
-      push_diagnostic(
-        diagnostics,
-        span_for_nested_word_text(word, expr.raw, literal),
-        Error,
-        2079,
-        "(( )) doesn't support decimals. Use bc or awk.",
-      )
-    None => ()
+  if first_decimal_arithmetic_literal(expr) is Some(literal) {
+    push_diagnostic(
+      diagnostics,
+      span_for_nested_word_text(word, expr.raw, literal),
+      Error,
+      2079,
+      "(( )) doesn't support decimals. Use bc or awk.",
+    )
   }
 }
 
@@ -1601,20 +1571,12 @@ fn check_shell_support_condition_expr(
 ) -> Unit {
   match expr {
     Unary(op, _, _) =>
-      match shell_support_unary_test_rule(op) {
-        Some(rule) =>
-          maybe_push_shell_support_rule_diagnostic(
-            diagnostics, shell, span, rule,
-          )
-        None => ()
+      if shell_support_unary_test_rule(op) is Some(rule) {
+        maybe_push_shell_support_rule_diagnostic(diagnostics, shell, span, rule)
       }
     Binary(op, _, _, _) =>
-      match shell_support_binary_test_rule(op) {
-        Some(rule) =>
-          maybe_push_shell_support_rule_diagnostic(
-            diagnostics, shell, span, rule,
-          )
-        None => ()
+      if shell_support_binary_test_rule(op) is Some(rule) {
+        maybe_push_shell_support_rule_diagnostic(diagnostics, shell, span, rule)
       }
     Group(inner) | Not(inner) =>
       check_shell_support_condition_expr(inner, span, shell, diagnostics)
@@ -1703,16 +1665,19 @@ fn first_unsupported_shell_flag(
   arguments : Array[@parser.Word],
   shell : @semantics.ShellDialect,
 ) -> (@parser.Word, Int, String)? {
-  let allowed = match shell_support_allowed_flags(command_name, shell) {
-    Some(allowed) => allowed
-    None => return None
+  let allowed = if shell_support_allowed_flags(command_name, shell)
+    is Some(allowed) {
+    allowed
+  } else {
+    return None
   }
   let mut i = 0
   while i < arguments.length() {
     let word = arguments[i]
-    let text = match @semantics.literal_text(word) {
-      Some(text) => text
-      None => return None
+    let text = if @semantics.literal_text(word) is Some(text) {
+      text
+    } else {
+      return None
     }
     if text == "--" {
       return None
@@ -1800,9 +1765,10 @@ fn shell_support_literal_prefix(
 ) -> Array[(@parser.Word, String)] {
   let literal_args : Array[(@parser.Word, String)] = []
   for argument in arguments {
-    match @semantics.literal_text(argument) {
-      Some(text) => literal_args.push((argument, text))
-      None => break
+    if @semantics.literal_text(argument) is Some(text) {
+      literal_args.push((argument, text))
+    } else {
+      break
     }
   }
   literal_args
@@ -1865,14 +1831,14 @@ fn shell_support_set_valid_flag_text(text : String) -> Bool {
 
 ///|
 fn script_is_only_redirection(script : @parser.Script) -> Bool {
-  match first_command_in_script(script) {
-    Some(command) =>
-      script.items.length() == 1 &&
-      script.items[0].and_or.tail.length() == 0 &&
-      script.items[0].and_or.head.operators.length() == 0 &&
-      script.items[0].and_or.head.segments.length() == 1 &&
-      command_is_only_redirection(command)
-    None => false
+  if first_command_in_script(script) is Some(command) {
+    script.items.length() == 1 &&
+    script.items[0].and_or.tail.length() == 0 &&
+    script.items[0].and_or.head.operators.length() == 0 &&
+    script.items[0].and_or.head.segments.length() == 1 &&
+    command_is_only_redirection(command)
+  } else {
+    false
   }
 }
 
@@ -1889,9 +1855,10 @@ fn command_is_only_redirection(command : @parser.Command) -> Bool {
 
 ///|
 fn shell_support_is_network_redirection(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.has_prefix("/dev/tcp") || text.has_prefix("/dev/udp")
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.has_prefix("/dev/tcp") || text.has_prefix("/dev/udp")
+  } else {
+    false
   }
 }
 
@@ -1901,9 +1868,10 @@ fn redirection_dup_output_targets_filename(
 ) -> Bool {
   match redirect.target {
     Word(word) =>
-      match @semantics.literal_text(word) {
-        Some(text) => !shell_support_string_is_digits(text)
-        None => !word_is_bare_fd_reference(word)
+      if @semantics.literal_text(word) is Some(text) {
+        !shell_support_string_is_digits(text)
+      } else {
+        !word_is_bare_fd_reference(word)
       }
     _ => false
   }
@@ -2101,9 +2069,8 @@ fn first_decimal_arithmetic_literal(expr : @parser.ArithmeticExpr) -> String? {
           }
         }
       Group(inner) =>
-        match first_decimal_arithmetic_literal(inner) {
-          Some(literal) => return Some(literal)
-          None => ()
+        if first_decimal_arithmetic_literal(inner) is Some(literal) {
+          return Some(literal)
         }
       _ => ()
     }
@@ -2193,9 +2160,10 @@ fn string_offset(text : String, needle : String) -> Int? {
 
 ///|
 fn span_for_word_text(word : @parser.Word, text : String) -> @parser.Span {
-  match string_offset(word.source, text) {
-    Some(offset) => span_offset(word.span, offset, text.length())
-    None => word.span
+  if string_offset(word.source, text) is Some(offset) {
+    span_offset(word.span, offset, text.length())
+  } else {
+    word.span
   }
 }
 
@@ -2205,14 +2173,14 @@ fn span_for_nested_word_text(
   outer : String,
   inner : String,
 ) -> @parser.Span {
-  match string_offset(word.source, outer) {
-    Some(outer_offset) =>
-      match string_offset(outer, inner) {
-        Some(inner_offset) =>
-          span_offset(word.span, outer_offset + inner_offset, inner.length())
-        None => word.span
-      }
-    None => word.span
+  if string_offset(word.source, outer) is Some(outer_offset) {
+    if string_offset(outer, inner) is Some(inner_offset) {
+      span_offset(word.span, outer_offset + inner_offset, inner.length())
+    } else {
+      word.span
+    }
+  } else {
+    word.span
   }
 }
 
@@ -2221,9 +2189,10 @@ fn single_bracket_negation_span(
   command : @parser.Command,
   raw : String,
 ) -> @parser.Span {
-  let offset = match string_offset(raw, "!") {
-    Some(offset) => offset + 2
-    None => 2
+  let offset = if string_offset(raw, "!") is Some(offset) {
+    offset + 2
+  } else {
+    2
   }
   span_offset(command.span, offset, 1)
 }
@@ -2278,9 +2247,10 @@ fn shell_support_is_arithmetic_base_prefix(text : String) -> Bool {
 
 ///|
 fn command_name_span(command : @parser.Command) -> @parser.Span {
-  match @semantics.command_words(command).get(0) {
-    Some(word) => word.span
-    None => command.span
+  if @semantics.command_words(command).get(0) is Some(word) {
+    word.span
+  } else {
+    command.span
   }
 }
 
@@ -2398,7 +2368,7 @@ fn int_digit_width(value : Int) -> Int {
   let mut width = 0
   let mut current = value
   while current > 0 {
-    current = current / 10
+    current /= 10
     width += 1
   }
   width

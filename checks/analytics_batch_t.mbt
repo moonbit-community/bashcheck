@@ -119,16 +119,14 @@ fn check_dollar_brackets(
       walk_word_deep(word, fn(part) {
         match part {
           DollarBracket(expr) =>
-            match dollar_bracket_span(word, expr) {
-              Some(span) =>
-                push_diagnostic(
-                  diagnostics,
-                  span,
-                  Style,
-                  2007,
-                  "Use $((..)) instead of deprecated $[..]",
-                )
-              None => ()
+            if dollar_bracket_span(word, expr) is Some(span) {
+              push_diagnostic(
+                diagnostics,
+                span,
+                Style,
+                2007,
+                "Use $((..)) instead of deprecated $[..]",
+              )
             }
           _ => ()
         }
@@ -143,10 +141,10 @@ fn dollar_bracket_span(
   expr : @parser.ArithmeticExpr,
 ) -> @parser.Span? {
   let fragment = "$[" + expr.raw + "]"
-  match batch_t_string_offset(word.source, fragment) {
-    Some(offset) =>
-      Some(batch_t_span_offset(word.span, offset, fragment.length()))
-    None => None
+  if batch_t_string_offset(word.source, fragment) is Some(offset) {
+    Some(batch_t_span_offset(word.span, offset, fragment.length()))
+  } else {
+    None
   }
 }
 
@@ -334,16 +332,14 @@ fn batch_t_check_quote_literals_command(
           diagnostics,
         )
       }
-      match source.included {
-        Some(script) =>
-          batch_t_check_quote_literals_script(
-            script,
-            shell,
-            batch_t_copy_quote_assignment_map(quoted_assignments),
-            reported_origins,
-            diagnostics,
-          )
-        None => ()
+      if source.included is Some(script) {
+        batch_t_check_quote_literals_script(
+          script,
+          shell,
+          batch_t_copy_quote_assignment_map(quoted_assignments),
+          reported_origins,
+          diagnostics,
+        )
       }
     }
     Time(clause) =>
@@ -383,16 +379,14 @@ fn batch_t_check_quote_literals_command(
           diagnostics,
         )
       }
-      match clause.else_body {
-        Some(body) =>
-          batch_t_check_quote_literals_script(
-            body,
-            shell,
-            batch_t_copy_quote_assignment_map(quoted_assignments),
-            reported_origins,
-            diagnostics,
-          )
-        None => ()
+      if clause.else_body is Some(body) {
+        batch_t_check_quote_literals_script(
+          body,
+          shell,
+          batch_t_copy_quote_assignment_map(quoted_assignments),
+          reported_origins,
+          diagnostics,
+        )
       }
     }
     While(clause) | Until(clause) => {
@@ -535,18 +529,16 @@ fn batch_t_check_quote_literals_command(
       )
     }
     CoProc(clause) => {
-      match clause.name {
-        Some(name) =>
-          batch_t_check_quote_literal_word(
-            name,
-            command,
-            CoProcName,
-            shell,
-            quoted_assignments,
-            reported_origins,
-            diagnostics,
-          )
-        None => ()
+      if clause.name is Some(name) {
+        batch_t_check_quote_literal_word(
+          name,
+          command,
+          CoProcName,
+          shell,
+          quoted_assignments,
+          reported_origins,
+          diagnostics,
+        )
       }
       batch_t_check_quote_literals_command(
         clause.body,
@@ -666,9 +658,10 @@ fn batch_t_update_quote_literal_assignment_state(
     quoted_assignments.remove(assignment.name)
     return
   }
-  match origin {
-    Some(span) => quoted_assignments.set(assignment.name, span)
-    None => quoted_assignments.remove(assignment.name)
+  if origin is Some(span) {
+    quoted_assignments.set(assignment.name, span)
+  } else {
+    quoted_assignments.remove(assignment.name)
   }
 }
 
@@ -711,42 +704,36 @@ fn batch_t_parts_quote_origin(
     let absolute_offset = base_offset + location.relative_offset
     match part {
       Parameter(name) =>
-        match quoted_assignments.get(name) {
-          Some(span) => return Some(span)
-          None => ()
+        if quoted_assignments.get(name) is Some(span) {
+          return Some(span)
         }
       BracedParameter(expansion) =>
-        match batch_t_plain_braced_reference_name(expansion) {
-          Some(name) =>
-            match quoted_assignments.get(name) {
-              Some(span) => return Some(span)
-              None => ()
-            }
-          None => ()
+        if batch_t_plain_braced_reference_name(expansion) is Some(name) {
+          if quoted_assignments.get(name) is Some(span) {
+            return Some(span)
+          }
         }
       DoubleQuoted(nested) =>
-        match
-          batch_t_parts_quote_origin(
+        if batch_t_parts_quote_origin(
             word,
             nested,
             batch_t_trim_outer_fragment(location.fragment, 1),
             absolute_offset + 1,
             quoted_assignments,
-          ) {
-          Some(span) => return Some(span)
-          None => ()
+          )
+          is Some(span) {
+          return Some(span)
         }
       DollarDoubleQuoted(nested) =>
-        match
-          batch_t_parts_quote_origin(
+        if batch_t_parts_quote_origin(
             word,
             nested,
             batch_t_trim_outer_fragment(location.fragment, 2),
             absolute_offset + 2,
             quoted_assignments,
-          ) {
-          Some(span) => return Some(span)
-          None => ()
+          )
+          is Some(span) {
+          return Some(span)
         }
       Literal(text)
       | SingleQuoted(text)
@@ -820,12 +807,10 @@ fn batch_t_check_quote_literal_word_parts(
         }
       BracedParameter(expansion) =>
         if !quoted_context && !skip_eval {
-          match batch_t_plain_braced_reference_name(expansion) {
-            Some(name) =>
-              batch_t_maybe_push_quote_literal_read(
-                name, span, shell, quoted_assignments, reported_origins, diagnostics,
-              )
-            None => ()
+          if batch_t_plain_braced_reference_name(expansion) is Some(name) {
+            batch_t_maybe_push_quote_literal_read(
+              name, span, shell, quoted_assignments, reported_origins, diagnostics,
+            )
           }
         }
       DoubleQuoted(nested) =>
@@ -946,27 +931,24 @@ fn batch_t_maybe_push_quote_literal_read(
   reported_origins : Array[@parser.Span],
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match quoted_assignments.get(name) {
-    Some(origin) => {
-      if !reported_origins.any(fn(existing) { existing == origin }) {
-        reported_origins.push(origin)
-        push_diagnostic(
-          diagnostics,
-          origin,
-          Warning,
-          2089,
-          batch_t_quote_literal_assignment_message(shell),
-        )
-      }
+  if quoted_assignments.get(name) is Some(origin) {
+    if !reported_origins.any(fn(existing) { existing == origin }) {
+      reported_origins.push(origin)
       push_diagnostic(
         diagnostics,
-        span,
+        origin,
         Warning,
-        2090,
-        "Quotes/backslashes in this variable will not be respected.",
+        2089,
+        batch_t_quote_literal_assignment_message(shell),
       )
     }
-    None => ()
+    push_diagnostic(
+      diagnostics,
+      span,
+      Warning,
+      2090,
+      "Quotes/backslashes in this variable will not be respected.",
+    )
   }
 }
 
@@ -1032,9 +1014,11 @@ fn batch_t_part_location(
     raw.view(start_offset=offset).to_owned()
   }
   let fragment = analytics_bad_parameter_part_fragment(part, remaining)
-  let relative_offset = match analytics_string_offset(remaining, fragment) {
-    Some(inner) => offset + inner
-    None => offset
+  let relative_offset = if analytics_string_offset(remaining, fragment)
+    is Some(inner) {
+    offset + inner
+  } else {
+    offset
   }
   let available = if relative_offset >= raw.length() {
     0
@@ -1200,9 +1184,8 @@ fn visit_spurious_exec_nested_in_command(
 ) -> Unit {
   match command.kind {
     Source(source) =>
-      match source.included {
-        Some(script) => check_spurious_exec_script(script, false, diagnostics)
-        None => ()
+      if source.included is Some(script) {
+        check_spurious_exec_script(script, false, diagnostics)
       }
     Time(clause) =>
       visit_spurious_exec_nested_in_pipeline(clause.body, diagnostics)
@@ -1213,9 +1196,8 @@ fn visit_spurious_exec_nested_in_command(
         check_spurious_exec_script(arm.condition, false, diagnostics)
         check_spurious_exec_script(arm.body, false, diagnostics)
       }
-      match clause.else_body {
-        Some(body) => check_spurious_exec_script(body, false, diagnostics)
-        None => ()
+      if clause.else_body is Some(body) {
+        check_spurious_exec_script(body, false, diagnostics)
       }
     }
     While(clause) | Until(clause) => {
@@ -1374,9 +1356,10 @@ fn batch_t_maybe_warn_useless_echo(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let command = match batch_t_single_substitution_command(script) {
-    Some(command) => command
-    None => return
+  let command = if batch_t_single_substitution_command(script) is Some(command) {
+    command
+  } else {
+    return
   }
   guard command_matches_exact_name(command, "echo") else { return }
   let arguments = @semantics.command_arguments(command)
@@ -1421,9 +1404,10 @@ fn batch_t_echo_just_wraps_command_output(
 
 ///|
 fn batch_t_echo_argument_looks_like_flag(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.has_prefix("-")
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.has_prefix("-")
+  } else {
+    false
   }
 }
 
@@ -1452,14 +1436,14 @@ fn batch_t_substitution_span(
   word : @parser.Word,
   part : @parser.WordPart,
 ) -> @parser.Span {
-  match batch_t_substitution_fragment(word.source, part) {
-    Some(fragment) =>
-      match batch_t_string_offset(word.source, fragment) {
-        Some(offset) =>
-          batch_t_span_offset(word.span, offset, fragment.length())
-        None => word.span
-      }
-    None => word.span
+  if batch_t_substitution_fragment(word.source, part) is Some(fragment) {
+    if batch_t_string_offset(word.source, fragment) is Some(offset) {
+      batch_t_span_offset(word.span, offset, fragment.length())
+    } else {
+      word.span
+    }
+  } else {
+    word.span
   }
 }
 
@@ -1470,28 +1454,26 @@ fn batch_t_substitution_fragment(
 ) -> String? {
   match part {
     CommandSubstitution(_) =>
-      match batch_t_string_offset(raw, "$(") {
-        Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_owned()
-          Some(
-            fragment
-            .view(end_offset=analytics_command_substitution_width(fragment))
-            .to_owned(),
-          )
-        }
-        None => None
+      if batch_t_string_offset(raw, "$(") is Some(offset) {
+        let fragment = raw.view(start_offset=offset).to_owned()
+        Some(
+          fragment
+          .view(end_offset=analytics_command_substitution_width(fragment))
+          .to_owned(),
+        )
+      } else {
+        None
       }
     BackQuoted(_) =>
-      match batch_t_string_offset(raw, "`") {
-        Some(offset) => {
-          let fragment = raw.view(start_offset=offset).to_owned()
-          Some(
-            fragment
-            .view(end_offset=analytics_backquoted_width(fragment))
-            .to_owned(),
-          )
-        }
-        None => None
+      if batch_t_string_offset(raw, "`") is Some(offset) {
+        let fragment = raw.view(start_offset=offset).to_owned()
+        Some(
+          fragment
+          .view(end_offset=analytics_backquoted_width(fragment))
+          .to_owned(),
+        )
+      } else {
+        None
       }
     _ => None
   }
@@ -1499,9 +1481,10 @@ fn batch_t_substitution_fragment(
 
 ///|
 fn batch_t_special_redirect_word(word : @parser.Word) -> Bool {
-  match @semantics.literal_text(word) {
-    Some(text) => text.has_prefix("/dev/")
-    None => false
+  if @semantics.literal_text(word) is Some(text) {
+    text.has_prefix("/dev/")
+  } else {
+    false
   }
 }
 
@@ -1556,10 +1539,10 @@ fn check_command_like_assignments(
 
 ///|
 fn assignment_word_is_command_argument(words : Array[@parser.Word]) -> Bool {
-  match words.get(0) {
-    Some(word) =>
-      @semantics.is_glob_word(word) || @semantics.is_unquoted_flag(word)
-    None => false
+  if words.get(0) is Some(word) {
+    @semantics.is_glob_word(word) || @semantics.is_unquoted_flag(word)
+  } else {
+    false
   }
 }
 

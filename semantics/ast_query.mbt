@@ -476,12 +476,10 @@ fn traverse_if_clause(
       on_redirection,
     )
   }
-  match clause.else_body {
-    Some(script) =>
-      traverse_script(
-        script, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
-      )
-    None => ()
+  if clause.else_body is Some(script) {
+    traverse_script(
+      script, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+    )
   }
 }
 
@@ -701,12 +699,10 @@ fn traverse_co_proc_clause(
   on_word_part : (@parser.WordPart) -> Unit,
   on_redirection : (@parser.Redirection) -> Unit,
 ) -> Unit {
-  match clause.name {
-    Some(name) =>
-      traverse_word(
-        name, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
-      )
-    None => ()
+  if clause.name is Some(name) {
+    traverse_word(
+      name, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+    )
   }
   traverse_command(
     clause.body,
@@ -736,14 +732,12 @@ fn traverse_redirection(
         word, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
       )
     HereDoc(doc) =>
-      match doc.parts {
-        Some(parts) =>
-          for part in parts {
-            traverse_word_part(
-              part, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
-            )
-          }
-        None => ()
+      if doc.parts is Some(parts) {
+        for part in parts {
+          traverse_word_part(
+            part, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+          )
+        }
       }
   }
 }
@@ -831,12 +825,10 @@ fn traverse_parameter_expansion(
   on_word_part : (@parser.WordPart) -> Unit,
   on_redirection : (@parser.Redirection) -> Unit,
 ) -> Unit {
-  match expansion.index {
-    Some(index) =>
-      traverse_array_index(
-        index, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
-      )
-    None => ()
+  if expansion.index is Some(index) {
+    traverse_array_index(
+      index, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+    )
   }
   match expansion.operator {
     Some(Slice(offset, length)) => {
@@ -849,18 +841,16 @@ fn traverse_parameter_expansion(
         on_word_part,
         on_redirection,
       )
-      match length {
-        Some(length) =>
-          traverse_arithmetic_expr(
-            @parser.parse_arithmetic_expr(length),
-            on_script,
-            on_list_item,
-            on_command,
-            on_word,
-            on_word_part,
-            on_redirection,
-          )
-        None => ()
+      if length is Some(length) {
+        traverse_arithmetic_expr(
+          @parser.parse_arithmetic_expr(length),
+          on_script,
+          on_list_item,
+          on_command,
+          on_word,
+          on_word_part,
+          on_redirection,
+        )
       }
     }
     Some(Replace(_, pattern, replacement)) => {
@@ -873,18 +863,16 @@ fn traverse_parameter_expansion(
         on_word_part,
         on_redirection,
       )
-      match replacement {
-        Some(replacement) =>
-          traverse_word(
-            @parser.parse_text_as_word(replacement),
-            on_script,
-            on_list_item,
-            on_command,
-            on_word,
-            on_word_part,
-            on_redirection,
-          )
-        None => ()
+      if replacement is Some(replacement) {
+        traverse_word(
+          @parser.parse_text_as_word(replacement),
+          on_script,
+          on_list_item,
+          on_command,
+          on_word,
+          on_word_part,
+          on_redirection,
+        )
       }
     }
     Some(CaseModify(_, Some(pattern))) =>
@@ -935,12 +923,10 @@ fn traverse_array_index(
       part, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
     )
   }
-  match index.arithmetic {
-    Some(expr) =>
-      traverse_arithmetic_expr(
-        expr, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
-      )
-    None => ()
+  if index.arithmetic is Some(expr) {
+    traverse_arithmetic_expr(
+      expr, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+    )
   }
 }
 
@@ -980,9 +966,10 @@ fn traverse_arithmetic_expr(
 pub fn command_name(command : @parser.Command) -> String? {
   match command.kind {
     Simple(simple) =>
-      match simple.words.get(0) {
-        Some(word) => literal_text(word)
-        None => None
+      if simple.words.get(0) is Some(word) {
+        literal_text(word)
+      } else {
+        None
       }
     Source(source) => Some(source.keyword)
     _ => None
@@ -992,9 +979,10 @@ pub fn command_name(command : @parser.Command) -> String? {
 ///|
 /// Returns the basename of `command_name`.
 pub fn command_basename(command : @parser.Command) -> String? {
-  match command_name(command) {
-    Some(name) => Some(path_basename(name))
-    None => None
+  if command_name(command) is Some(name) {
+    Some(path_basename(name))
+  } else {
+    None
   }
 }
 
@@ -1044,13 +1032,14 @@ pub fn command_arguments(command : @parser.Command) -> Array[@parser.Word] {
 pub fn effective_command_name(command : @parser.Command) -> String? {
   match command.kind {
     Simple(simple) =>
-      match effective_simple_word_index(simple.words) {
-        Some(index) =>
-          match simple.words.get(index) {
-            Some(word) => literal_text(word)
-            None => None
-          }
-        None => None
+      if effective_simple_word_index(simple.words) is Some(index) {
+        if simple.words.get(index) is Some(word) {
+          literal_text(word)
+        } else {
+          None
+        }
+      } else {
+        None
       }
     Source(source) => Some(source.keyword)
     _ => None
@@ -1084,9 +1073,10 @@ pub fn effective_command_words(
     Simple(simple) =>
       copy_words_from(
         simple.words,
-        match effective_simple_word_index(simple.words) {
-          Some(index) => index
-          None => 0
+        if effective_simple_word_index(simple.words) is Some(index) {
+          index
+        } else {
+          0
         },
       )
     _ => command_words(command)
@@ -1100,9 +1090,10 @@ pub fn effective_command_arguments(
 ) -> Array[@parser.Word] {
   match command.kind {
     Simple(simple) =>
-      match effective_simple_word_index(simple.words) {
-        Some(index) => copy_words_from(simple.words, index + 1)
-        None => []
+      if effective_simple_word_index(simple.words) is Some(index) {
+        copy_words_from(simple.words, index + 1)
+      } else {
+        []
       }
     _ => command_arguments(command)
   }
@@ -1160,12 +1151,11 @@ fn leading_shell_text(word : @parser.Word) -> String? {
   let buf = StringBuilder::new()
   let mut saw_literal = false
   for part in flattened {
-    match leading_shell_word_part_text(part) {
-      Some(text) => {
-        saw_literal = true
-        buf.write_string(text)
-      }
-      None => break
+    if leading_shell_word_part_text(part) is Some(text) {
+      saw_literal = true
+      buf.write_string(text)
+    } else {
+      break
     }
   }
   if !saw_literal {
@@ -1255,9 +1245,10 @@ fn has_split_range(parts : Array[@parser.WordPart]) -> Bool {
 ///|
 /// Reports whether a word starts with an unquoted option flag.
 pub fn is_unquoted_flag(word : @parser.Word) -> Bool {
-  match leading_unquoted_text(word) {
-    Some(text) => text.has_prefix("-")
-    None => false
+  if leading_unquoted_text(word) is Some(text) {
+    text.has_prefix("-")
+  } else {
+    false
   }
 }
 
@@ -1563,25 +1554,29 @@ fn path_basename(path : String) -> String {
 ///|
 fn effective_simple_word_index(words : Array[@parser.Word]) -> Int? {
   guard words.length() > 0 else { return None }
-  let direct_name = match literal_text(words[0]) {
-    Some(name) => name
-    None => return Some(0)
+  let direct_name = if literal_text(words[0]) is Some(name) {
+    name
+  } else {
+    return Some(0)
   }
   match direct_name {
     "busybox" | "builtin" | "run" =>
-      match wrapper_effective_word_index(words, 1, []) {
-        Some(index) => Some(index)
-        None => Some(0)
+      if wrapper_effective_word_index(words, 1, []) is Some(index) {
+        Some(index)
+      } else {
+        Some(0)
       }
     "command" =>
-      match wrapper_effective_word_index(words, 1, ["-p"]) {
-        Some(index) => Some(index)
-        None => Some(0)
+      if wrapper_effective_word_index(words, 1, ["-p"]) is Some(index) {
+        Some(index)
+      } else {
+        Some(0)
       }
     "exec" =>
-      match exec_effective_word_index(words) {
-        Some(index) => Some(index)
-        None => Some(0)
+      if exec_effective_word_index(words) is Some(index) {
+        Some(index)
+      } else {
+        Some(0)
       }
     _ => Some(0)
   }
@@ -1625,55 +1620,53 @@ fn wrapper_effective_word_index(
 fn exec_effective_word_index(words : Array[@parser.Word]) -> Int? {
   let mut i = 1
   while i < words.length() {
-    match literal_text(words[i]) {
-      Some(text) => {
-        if text == "--" {
-          if i + 1 < words.length() {
-            return Some(i + 1)
-          }
-          return None
+    if literal_text(words[i]) is Some(text) {
+      if text == "--" {
+        if i + 1 < words.length() {
+          return Some(i + 1)
         }
-        if text == "-" || !text.has_prefix("-") {
-          return Some(i)
-        }
-        if text.has_prefix("--") {
-          return None
-        }
-        let view = text.view()
-        let mut j = 1
-        let mut valid = true
-        let mut consumes_next = false
-        while j < view.length() {
-          match view[j] {
-            'c' | 'l' => j += 1
-            'a' => {
-              if j + 1 == view.length() {
-                consumes_next = true
-              }
-              j = view.length()
-            }
-            _ => {
-              valid = false
-              j = view.length()
-            }
-          }
-        }
-        if !valid {
-          return None
-        }
-        if consumes_next {
-          i += 1
-          if i >= words.length() {
-            return None
-          }
-        }
-        i += 1
+        return None
       }
-      None =>
-        match leading_shell_text(words[i]) {
-          Some(text) if text.has_prefix("-") => return None
-          _ => return Some(i)
+      if text == "-" || !text.has_prefix("-") {
+        return Some(i)
+      }
+      if text.has_prefix("--") {
+        return None
+      }
+      let view = text.view()
+      let mut j = 1
+      let mut valid = true
+      let mut consumes_next = false
+      while j < view.length() {
+        match view[j] {
+          'c' | 'l' => j += 1
+          'a' => {
+            if j + 1 == view.length() {
+              consumes_next = true
+            }
+            j = view.length()
+          }
+          _ => {
+            valid = false
+            j = view.length()
+          }
         }
+      }
+      if !valid {
+        return None
+      }
+      if consumes_next {
+        i += 1
+        if i >= words.length() {
+          return None
+        }
+      }
+      i += 1
+    } else {
+      match leading_shell_text(words[i]) {
+        Some(text) if text.has_prefix("-") => return None
+        _ => return Some(i)
+      }
     }
   }
   None

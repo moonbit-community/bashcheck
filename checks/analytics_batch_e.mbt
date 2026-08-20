@@ -149,13 +149,13 @@ fn analytics_parameter_is_any_array_expansion(
   if expansion.length_prefix {
     return false
   }
-  match expansion.index {
-    Some(index) => index.raw == "@" || index.raw == "*"
-    None =>
-      match expansion.name {
-        Some("@") | Some("*") => true
-        _ => false
-      }
+  if expansion.index is Some(index) {
+    index.raw == "@" || index.raw == "*"
+  } else {
+    match expansion.name {
+      Some("@") | Some("*") => true
+      _ => false
+    }
   }
 }
 
@@ -200,10 +200,10 @@ fn maybe_push_nullary_literal_breaking_diagnostic(
 ) -> Unit {
   guard !analytics_condition_word_is_constant(word) else { return }
   if analytics_condition_parts_contain_equals(word.parts) {
-    let diagnostic_span = match string_index_of(word.source, "=") {
-      Some(offset) =>
-        analytics_span_offset(word.span, offset, word.source.length() - offset)
-      None => word.span
+    let diagnostic_span = if string_index_of(word.source, "=") is Some(offset) {
+      analytics_span_offset(word.span, offset, word.source.length() - offset)
+    } else {
+      word.span
     }
     push_diagnostic(
       diagnostics,
@@ -326,9 +326,10 @@ fn maybe_push_constant_nullary_diagnostic(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard analytics_condition_word_is_constant(word) else { return }
-  let text = match @semantics.literal_text(word) {
-    Some(text) => text
-    None => return
+  let text = if @semantics.literal_text(word) is Some(text) {
+    text
+  } else {
+    return
   }
   let (severity, code, message) = match text {
     "false" =>
@@ -430,9 +431,8 @@ fn visit_array_index_arithmetic_exprs(
   span : @parser.Span,
   visit : (@parser.ArithmeticExpr, @parser.Span) -> Unit,
 ) -> Unit {
-  match index.arithmetic {
-    Some(expr) => visit(expr, span)
-    None => ()
+  if index.arithmetic is Some(expr) {
+    visit(expr, span)
   }
   for part in index.parts {
     visit_word_part_arithmetic_exprs(part, span, visit)
@@ -461,16 +461,14 @@ fn visit_word_part_arithmetic_exprs(
         visit_word_part_arithmetic_exprs(nested, span, visit)
       }
     BracedParameter(expansion) => {
-      match expansion.index {
-        Some(index) => visit_array_index_arithmetic_exprs(index, span, visit)
-        None => ()
+      if expansion.index is Some(index) {
+        visit_array_index_arithmetic_exprs(index, span, visit)
       }
       match expansion.operator {
         Some(Slice(offset, length)) => {
           visit(@parser.parse_arithmetic_expr(offset), span)
-          match length {
-            Some(length) => visit(@parser.parse_arithmetic_expr(length), span)
-            None => ()
+          if length is Some(length) {
+            visit(@parser.parse_arithmetic_expr(length), span)
           }
         }
         _ => ()

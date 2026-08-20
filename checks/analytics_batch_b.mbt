@@ -194,9 +194,11 @@ fn b_check_char_range_word(
   for part in word.parts {
     let remaining = analytics_word_remaining_text(word, offset)
     let fragment = analytics_bad_parameter_part_fragment(part, remaining)
-    let fragment_offset = match analytics_string_offset(remaining, fragment) {
-      Some(inner) => offset + inner
-      None => offset
+    let fragment_offset = if analytics_string_offset(remaining, fragment)
+      is Some(inner) {
+      offset + inner
+    } else {
+      offset
     }
     let remaining_width = analytics_remaining_word_width(word, fragment_offset)
     let fragment_width = if fragment.length() <= remaining_width {
@@ -224,22 +226,15 @@ fn b_maybe_warn_named_char_class(
   text : String,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  match b_named_char_class_offset(text) {
-    Some(offset) => {
-      let fragment = b_named_char_class_fragment(text, offset)
-      push_diagnostic(
-        diagnostics,
-        analytics_span_offset(
-          word.span,
-          word_offset + offset,
-          fragment.length(),
-        ),
-        Warning,
-        2101,
-        "Named class needs outer [], e.g. [[:digit:]].",
-      )
-    }
-    None => ()
+  if b_named_char_class_offset(text) is Some(offset) {
+    let fragment = b_named_char_class_fragment(text, offset)
+    push_diagnostic(
+      diagnostics,
+      analytics_span_offset(word.span, word_offset + offset, fragment.length()),
+      Warning,
+      2101,
+      "Named class needs outer [], e.g. [[:digit:]].",
+    )
   }
 }
 
@@ -487,21 +482,19 @@ fn check_wrong_arithmetic_assignment(
           let assignment = simple.assignments[0]
           match assignment.value {
             Word(word) =>
-              match
-                arithmetic_assignment_reference(
+              if arithmetic_assignment_reference(
                   word,
                   assignment.name,
                   seen_names,
-                ) {
-                Some(op) =>
-                  push_diagnostic(
-                    diagnostics,
-                    word.span,
-                    Warning,
-                    2100,
-                    "Use $((..)) for arithmetics, e.g. i=$((i \{op} 2))",
-                  )
-                None => ()
+                )
+                is Some(op) {
+                push_diagnostic(
+                  diagnostics,
+                  word.span,
+                  Warning,
+                  2100,
+                  "Use $((..)) for arithmetics, e.g. i=$((i \{op} 2))",
+                )
               }
             _ => ()
           }
@@ -700,14 +693,12 @@ fn check_command_with_trailing_symbol(
   visit_script_commands(script, fn(command) {
     match command.kind {
       Simple(simple) =>
-        match simple.words.get(0) {
-          Some(word) =>
-            match command_name_issue(word) {
-              Some((severity, code, message)) =>
-                push_diagnostic(diagnostics, word.span, severity, code, message)
-              None => ()
-            }
-          None => ()
+        if simple.words.get(0) is Some(word) {
+          match command_name_issue(word) {
+            Some((severity, code, message)) =>
+              push_diagnostic(diagnostics, word.span, severity, code, message)
+            None => ()
+          }
         }
       _ => ()
     }
@@ -831,13 +822,15 @@ fn arithmetic_assignment_reference(
   current_name : String,
   seen_names : Array[String],
 ) -> String? {
-  let text = match word_unquoted_plain_text(word) {
-    Some(text) => text
-    None => return None
+  let text = if word_unquoted_plain_text(word) is Some(text) {
+    text
+  } else {
+    return None
   }
-  let parsed = match leading_variable_arithmetic_op(text) {
-    Some(parsed) => parsed
-    None => return None
+  let parsed = if leading_variable_arithmetic_op(text) is Some(parsed) {
+    parsed
+  } else {
+    return None
   }
   let (name, op) = parsed
   if name == current_name || seen_names.contains(name) {
@@ -887,9 +880,10 @@ fn redirection_points_to_plain_number(redirect : @parser.Redirection) -> Bool {
   }
   match redirect.target {
     Word(word) =>
-      match word_single_literal_text(word) {
-        Some(text) => string_is_digits(text)
-        None => false
+      if word_single_literal_text(word) is Some(text) {
+        string_is_digits(text)
+      } else {
+        false
       }
     HereDoc(_) => false
   }
@@ -901,9 +895,10 @@ fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
   if word_single_literal_text(word) == Some("./") {
     return None
   }
-  let text = match @semantics.literal_text(word) {
-    Some(text) => text
-    None => return None
+  let text = if @semantics.literal_text(word) is Some(text) {
+    text
+  } else {
+    return None
   }
   guard text != "." && text != ":" && text != " " && text != "//" else {
     return None
@@ -997,9 +992,10 @@ fn check_substitution_redirects(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let pipeline = match single_pipeline_in_script(script) {
-    Some(pipeline) => pipeline
-    None => return
+  let pipeline = if single_pipeline_in_script(script) is Some(pipeline) {
+    pipeline
+  } else {
+    return
   }
   guard pipeline.segments.length() > 0 else { return }
   let last_command = pipeline.segments[pipeline.segments.length() - 1].command
@@ -1066,22 +1062,22 @@ fn command_looks_like_test(
 ) -> Bool {
   match command.kind {
     Simple(simple) =>
-      match simple.words.get(0) {
-        Some(first_word) =>
-          match @semantics.literal_text(first_word) {
-            Some(op) if unary_ops.any(fn(current) { current == op }) => true
-            _ =>
-              match simple.words.get(1) {
-                Some(second_word) =>
-                  match @semantics.literal_text(second_word) {
-                    Some(op) if binary_ops.any(fn(current) { current == op }) =>
-                      true
-                    _ => false
-                  }
-                None => false
+      if simple.words.get(0) is Some(first_word) {
+        match @semantics.literal_text(first_word) {
+          Some(op) if unary_ops.any(fn(current) { current == op }) => true
+          _ =>
+            if simple.words.get(1) is Some(second_word) {
+              match @semantics.literal_text(second_word) {
+                Some(op) if binary_ops.any(fn(current) { current == op }) =>
+                  true
+                _ => false
               }
-          }
-        None => false
+            } else {
+              false
+            }
+        }
+      } else {
+        false
       }
     _ => false
   }

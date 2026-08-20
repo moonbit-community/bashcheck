@@ -85,11 +85,10 @@ fn merge_parse_and_lint_diagnostics(
     }
   }
   let base_script = report.script
-  let script = match base_script {
-    // Config annotations become part of the script before later filters inspect
-    // per-node disable directives.
-    Some(script) => Some(apply_config_to_script(script, config.annotations))
-    None => None
+  let script = if base_script is Some(script) {
+    Some(apply_config_to_script(script, config.annotations))
+  } else {
+    None
   }
   for diagnostic in report.diagnostics {
     let positioned = positioned_parse_diagnostic(filename, diagnostic)
@@ -98,10 +97,8 @@ fn merge_parse_and_lint_diagnostics(
       diagnostics.push(positioned)
     }
   }
-  match script {
-    Some(script) =>
-      append_missing_source_diagnostics(diagnostics, filename, spec, script)
-    None => ()
+  if script is Some(script) {
+    append_missing_source_diagnostics(diagnostics, filename, spec, script)
   }
   match (base_script, script) {
     (Some(base_script), Some(script)) => {
@@ -246,15 +243,13 @@ fn source_file_is_available(spec : CheckSpec, path : String) -> Bool {
   if path.has_prefix("/") {
     return false
   }
-  match spec.filename {
-    Some(filename) =>
-      if source_file_is_listed(
-          spec.source_files,
-          path_join(path_dirname(filename), path),
-        ) {
-        return true
-      }
-    None => ()
+  if spec.filename is Some(filename) {
+    if source_file_is_listed(
+        spec.source_files,
+        path_join(path_dirname(filename), path),
+      ) {
+      return true
+    }
   }
   for source_path in spec.source_paths {
     if source_file_is_listed(spec.source_files, path_join(source_path, path)) {
@@ -290,15 +285,12 @@ fn effective_extended_analysis(
 ) -> Bool {
   let enabled = if spec.extended_analysis_forced {
     spec.extended_analysis
+  } else if script_extended_analysis_override(script) is Some(flag) {
+    flag
+  } else if config_extended_analysis_override(config_annotations) is Some(flag) {
+    flag
   } else {
-    match script_extended_analysis_override(script) {
-      Some(flag) => flag
-      None =>
-        match config_extended_analysis_override(config_annotations) {
-          Some(flag) => flag
-          None => spec.extended_analysis
-        }
-    }
+    spec.extended_analysis
   }
   enabled || optional_checks.contains("control-flow")
 }
@@ -397,24 +389,23 @@ fn positioned_lint_diagnostic(
 /// Lint fixes are usually produced relative to the analyzed script. The public
 /// API, however, expects replacements to already carry the final filename.
 fn localize_lint_fix(filename : String, fix : @fixer.Fix?) -> @fixer.Fix? {
-  match fix {
-    Some(fix) => {
-      let replacements : Array[@fixer.Replacement] = []
-      for replacement in fix.replacements {
-        replacements.push(
-          @fixer.Replacement::new(
-            filename,
-            replacement.start,
-            replacement.end,
-            replacement.text,
-            replacement.precedence,
-            replacement.insertion_point,
-          ),
-        )
-      }
-      Some(@fixer.Fix::from_replacements(replacements))
+  if fix is Some(fix) {
+    let replacements : Array[@fixer.Replacement] = []
+    for replacement in fix.replacements {
+      replacements.push(
+        @fixer.Replacement::new(
+          filename,
+          replacement.start,
+          replacement.end,
+          replacement.text,
+          replacement.precedence,
+          replacement.insertion_point,
+        ),
+      )
     }
-    None => None
+    Some(@fixer.Fix::from_replacements(replacements))
+  } else {
+    None
   }
 }
 
@@ -455,10 +446,7 @@ fn append_shebang_entry_diagnostics(
   guard spec.shell_override is None && !script_has_shell_annotation(script) else {
     return
   }
-  let shebang = match script.shebang {
-    Some(shebang) => shebang
-    None => return
-  }
+  let shebang = if script.shebang is Some(shebang) { shebang } else { return }
   let command = checker_shebang_command_text(shebang)
   let span = checker_shebang_span(script, shebang)
   if checker_executable_from_shebang(shebang) == "ash" {
@@ -660,32 +648,28 @@ fn checker_split_shell_words(text : String) -> Array[String] {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current_quote) => {
-        current.write_char(ch.unsafe_to_char())
-        if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
-          i += 1
-          current.write_char(view[i].unsafe_to_char())
-        } else if ch == current_quote {
-          quote = None
-        }
+    if quote is Some(current_quote) {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && current_quote == '"' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == current_quote {
+        quote = None
       }
-      None =>
-        if ch == ' ' || ch == '\t' {
-          let item = current.to_string()
-          if item != "" {
-            values.push(item)
-            current.reset()
-          }
-        } else {
-          current.write_char(ch.unsafe_to_char())
-          if ch == '\\' && i + 1 < view.length() {
-            i += 1
-            current.write_char(view[i].unsafe_to_char())
-          } else if ch == '\'' || ch == '"' {
-            quote = Some(ch)
-          }
-        }
+    } else if ch == ' ' || ch == '\t' {
+      let item = current.to_string()
+      if item != "" {
+        values.push(item)
+        current.reset()
+      }
+    } else {
+      current.write_char(ch.unsafe_to_char())
+      if ch == '\\' && i + 1 < view.length() {
+        i += 1
+        current.write_char(view[i].unsafe_to_char())
+      } else if ch == '\'' || ch == '"' {
+        quote = Some(ch)
+      }
     }
     i += 1
   }
@@ -704,46 +688,43 @@ fn checker_quote_removed_source(raw : String) -> String {
   let mut quote : UInt16? = None
   while i < view.length() {
     let ch = view[i]
-    match quote {
-      Some(current) => {
-        if ch == current {
-          quote = None
-          i += 1
-          continue
-        }
-        if current == '"' && ch == '\\' && i + 1 < view.length() {
-          let next = view[i + 1]
-          if next == '$' ||
-            next == '"' ||
-            next == '\\' ||
-            next == '\n' ||
-            next == '\r' {
-            buf.write_char(next.unsafe_to_char())
-            i += 2
-            continue
-          }
-        }
-        buf.write_char(ch.unsafe_to_char())
+    if quote is Some(current) {
+      if ch == current {
+        quote = None
         i += 1
+        continue
       }
-      None => {
-        if ch == '\'' || ch == '"' {
-          quote = Some(ch)
-          i += 1
+      if current == '"' && ch == '\\' && i + 1 < view.length() {
+        let next = view[i + 1]
+        if next == '$' ||
+          next == '"' ||
+          next == '\\' ||
+          next == '\n' ||
+          next == '\r' {
+          buf.write_char(next.unsafe_to_char())
+          i += 2
           continue
         }
-        if ch == '\\' {
-          if i + 1 < view.length() {
-            buf.write_char(view[i + 1].unsafe_to_char())
-            i += 2
-          } else {
-            i += 1
-          }
-          continue
-        }
-        buf.write_char(ch.unsafe_to_char())
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
+    } else {
+      if ch == '\'' || ch == '"' {
+        quote = Some(ch)
         i += 1
+        continue
       }
+      if ch == '\\' {
+        if i + 1 < view.length() {
+          buf.write_char(view[i + 1].unsafe_to_char())
+          i += 2
+        } else {
+          i += 1
+        }
+        continue
+      }
+      buf.write_char(ch.unsafe_to_char())
+      i += 1
     }
   }
   buf.to_string()
@@ -848,14 +829,14 @@ fn severity_included(
 /// Include lists are exclusive: once present, only listed codes survive.
 /// Diagnostics without a code survive only when there is no include list.
 fn code_is_included(spec : CheckSpec, code : Int?) -> Bool {
-  match code {
-    Some(code) =>
-      if spec.include_codes.length() > 0 {
-        spec.include_codes.contains(code)
-      } else {
-        !spec.exclude_codes.contains(code)
-      }
-    None => spec.include_codes.length() == 0
+  if code is Some(code) {
+    if spec.include_codes.length() > 0 {
+      spec.include_codes.contains(code)
+    } else {
+      !spec.exclude_codes.contains(code)
+    }
+  } else {
+    spec.include_codes.length() == 0
   }
 }
 
@@ -1003,9 +984,10 @@ fn disable_value_matches_code(value : String, code : Int) -> Bool {
         _ => false
       }
     None =>
-      match parse_disable_code_number(value) {
-        Some(parsed) => parsed == code
-        None => false
+      if parse_disable_code_number(value) is Some(parsed) {
+        parsed == code
+      } else {
+        false
       }
   }
 }
@@ -1076,9 +1058,10 @@ fn digits_to_int(text : String) -> Int {
 ///|
 /// Chooses the filename rendered in public `CheckResult` objects.
 fn display_filename(filename : String?) -> String {
-  match filename {
-    Some(filename) => filename
-    None => "<input>"
+  if filename is Some(filename) {
+    filename
+  } else {
+    "<input>"
   }
 }
 

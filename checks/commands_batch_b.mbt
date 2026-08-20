@@ -121,13 +121,12 @@ fn check_aliases_use_args(
 
 ///|
 fn alias_argument_is_definition(argument : @parser.Word) -> Bool {
-  match @semantics.leading_unquoted_text(argument) {
-    Some(text) => text.contains("=")
-    None =>
-      match @semantics.literal_text(argument) {
-        Some(text) => text.contains("=")
-        None => false
-      }
+  if @semantics.leading_unquoted_text(argument) is Some(text) {
+    text.contains("=")
+  } else if @semantics.literal_text(argument) is Some(text) {
+    text.contains("=")
+  } else {
+    false
   }
 }
 
@@ -206,25 +205,29 @@ fn maybe_check_while_getopts_clause(
   clause : @parser.LoopClause,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let getopts_command = match first_getopts_command(clause.condition) {
-    Some(command) => command
-    None => return
+  let getopts_command = if first_getopts_command(clause.condition)
+    is Some(command) {
+    command
+  } else {
+    return
   }
   let arguments = @semantics.effective_command_arguments(getopts_command)
   guard arguments.length() >= 2 else { return }
-  let option_text = match @semantics.literal_text(arguments[0]) {
-    Some(text) => text
-    None => return
+  let option_text = if @semantics.literal_text(arguments[0]) is Some(text) {
+    text
+  } else {
+    return
   }
   let variable_name = match @semantics.literal_text(arguments[1]) {
     Some(text) if is_identifier_name(text) => text
     _ => return
   }
   guard !script_assigns_name(clause.body, variable_name) else { return }
-  let case_command = match
-    find_getopts_case_command(clause.body, variable_name) {
-    Some(command) => command
-    None => return
+  let case_command = if find_getopts_case_command(clause.body, variable_name)
+    is Some(command) {
+    command
+  } else {
+    return
   }
   let case_clause = match case_command.kind {
     Case(clause) => clause
@@ -486,13 +489,12 @@ fn destination_command_arguments(
   let mut has_target_directory = false
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.literal_text(arguments[i]) {
-      Some(text) => text
-      None => {
-        positionals.push(arguments[i])
-        i += 1
-        continue
-      }
+    let text = if @semantics.literal_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      positionals.push(arguments[i])
+      i += 1
+      continue
     }
     if text == "--" {
       i += 1
@@ -643,16 +645,15 @@ fn check_xargs_dash_i(
     if !command_matches_basename(command, "xargs") {
       return
     }
-    match xargs_dash_i_word(@semantics.effective_command_arguments(command)) {
-      Some(argument) =>
-        push_diagnostic(
-          diagnostics,
-          argument.span,
-          Info,
-          2267,
-          "GNU xargs -i is deprecated in favor of -I{}",
-        )
-      None => ()
+    if xargs_dash_i_word(@semantics.effective_command_arguments(command))
+      is Some(argument) {
+      push_diagnostic(
+        diagnostics,
+        argument.span,
+        Info,
+        2267,
+        "GNU xargs -i is deprecated in favor of -I{}",
+      )
     }
   })
 }
@@ -661,9 +662,10 @@ fn check_xargs_dash_i(
 fn xargs_dash_i_word(arguments : Array[@parser.Word]) -> @parser.Word? {
   let mut i = 0
   while i < arguments.length() {
-    let text = match @semantics.literal_text(arguments[i]) {
-      Some(text) => text
-      None => return None
+    let text = if @semantics.literal_text(arguments[i]) is Some(text) {
+      text
+    } else {
+      return None
     }
     if text == "--" {
       return None
@@ -728,9 +730,11 @@ fn check_argument_comparison_spacing(
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_script_commands(script, fn(command) {
-    let command_name = match @semantics.effective_command_name(command) {
-      Some(name) => name
-      None => return
+    let command_name = if @semantics.effective_command_name(command)
+      is Some(name) {
+      name
+    } else {
+      return
     }
     if !argument_comparison_command_names().contains(command_name) {
       return
