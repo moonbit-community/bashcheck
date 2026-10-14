@@ -254,29 +254,3 @@ fn assert_parser_diagnostics_match(
     @parser.ParseOptions::default(),
   )
 }
-
-///|
-async fn assert_cli_output_matches(
-  label : String,
-  action : @driver.CliAction,
-  expected_exit_code : Int32,
-  expected_output : String,
-) -> Unit {
-  let outcome = @driver.run_cli(
-    action,
-    [],
-    @checker.CheckSpec::default(),
-    @formatter.OutputFormat::default(),
-    @formatter.FormatOptions::default(),
-  )
-  if outcome.exit_code != expected_exit_code {
-    abort(
-      "\{label}: expected exit code \{expected_exit_code}, got \{outcome.exit_code}",
-    )
-  }
-  if outcome.output != expected_output {
-    abort(
-      "\{label}: expected CLI output \{@debug.to_string(expected_output)}, got \{@debug.to_string(outcome.output)}",
-    )
-  }
-}
