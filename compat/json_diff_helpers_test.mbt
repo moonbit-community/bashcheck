@@ -103,7 +103,7 @@ fn compat_diff_fixture_path(label : String) -> String {
 ///|
 fn compat_diff_slug(label : String) -> String {
   let view = label[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut wrote = false
   for ch in view {
     let char_ = ch

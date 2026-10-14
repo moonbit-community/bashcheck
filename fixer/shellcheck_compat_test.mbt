@@ -4,9 +4,9 @@ fn compat_replacement(
   end_offset : Int32,
   text : String,
   precedence : Int32,
-  insertion_point : InsertionPoint,
-) -> Replacement {
-  Replacement::new(
+  insertion_point : @fixer.InsertionPoint,
+) -> @fixer.Replacement {
+  @fixer.Replacement::new(
     "test.sh",
     @parser.Position::new(start_offset, 1, start_offset + 1),
     @parser.Position::new(end_offset, 1, end_offset + 1),
@@ -22,13 +22,13 @@ fn t_from_start(
   end_column : Int32,
   text : String,
   precedence : Int32,
-) -> Replacement {
+) -> @fixer.Replacement {
   compat_replacement(
     start_column - 1,
     end_column - 1,
     text,
     precedence,
-    InsertionPoint::after(),
+    @fixer.InsertionPoint::after(),
   )
 }
 
@@ -38,33 +38,36 @@ fn t_from_end(
   end_column : Int32,
   text : String,
   precedence : Int32,
-) -> Replacement {
+) -> @fixer.Replacement {
   compat_replacement(
     start_column - 1,
     end_column - 1,
     text,
     precedence,
-    InsertionPoint::before(),
+    @fixer.InsertionPoint::before(),
   )
 }
 
 ///|
-fn test_fix(replacements : Array[Replacement]) -> Fix {
-  Fix::from_replacements(replacements)
+fn test_fix(replacements : Array[@fixer.Replacement]) -> @fixer.Fix {
+  @fixer.Fix::from_replacements(replacements)
 }
 
 ///|
-fn apply_fixes(fixes : Array[Fix], source : String) -> String? {
-  if merge_fixes(fixes) is Some(merged) {
-    apply_fix(merged, source)
+fn apply_fixes(fixes : Array[@fixer.Fix], source : String) -> String? {
+  if @fixer.merge_fixes(fixes) is Some(merged) {
+    @fixer.apply_fix(merged, source)
   } else {
     None
   }
 }
 
 ///|
-fn apply_fix_with_cumulative_shifts(fix : Fix, source : String) -> String? {
-  let merged = if merge_fixes([fix]) is Some(merged) {
+fn apply_fix_with_cumulative_shifts(
+  fix : @fixer.Fix,
+  source : String,
+) -> String? {
+  let merged = if @fixer.merge_fixes([fix]) is Some(merged) {
     merged
   } else {
     return None
@@ -94,7 +97,11 @@ fn apply_fix_with_cumulative_shifts(fix : Fix, source : String) -> String? {
 }
 
 ///|
-fn test_fixes(expected : String, original : String, fixes : Array[Fix]) -> Bool {
+fn test_fixes(
+  expected : String,
+  original : String,
+  fixes : Array[@fixer.Fix],
+) -> Bool {
   apply_fixes(fixes, original) == Some(expected)
 }
 
@@ -127,13 +134,16 @@ fn do_replace(
 }
 
 ///|
-fn compat_overlap(lhs : Replacement, rhs : Replacement) -> Bool {
-  detect_overlap(lhs, rhs) && detect_overlap(rhs, lhs)
+fn compat_overlap(lhs : @fixer.Replacement, rhs : @fixer.Replacement) -> Bool {
+  @fixer.detect_overlap(lhs, rhs) && @fixer.detect_overlap(rhs, lhs)
 }
 
 ///|
-fn compat_no_overlap(lhs : Replacement, rhs : Replacement) -> Bool {
-  !detect_overlap(lhs, rhs) && !detect_overlap(rhs, lhs)
+fn compat_no_overlap(
+  lhs : @fixer.Replacement,
+  rhs : @fixer.Replacement,
+) -> Bool {
+  !@fixer.detect_overlap(lhs, rhs) && !@fixer.detect_overlap(rhs, lhs)
 }
 
 ///|
@@ -166,7 +176,7 @@ fn compat_shift_text(seed : Int32) -> String {
     1 => 'y'
     _ => 'z'
   }
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   let mut i = 0
   while i < width {
     builder.write_char(ch)
@@ -176,8 +186,8 @@ fn compat_shift_text(seed : Int32) -> String {
 }
 
 ///|
-fn pstree_compat_fix(offsets : Array[Int32], source : String) -> Fix {
-  let replacements : Array[Replacement] = []
+fn pstree_compat_fix(offsets : Array[Int32], source : String) -> @fixer.Fix {
+  let replacements : Array[@fixer.Replacement] = []
   let mut i = 0
   let limit = source.length() + 1
   while i < offsets.length() && i < 8 {
@@ -188,12 +198,12 @@ fn pstree_compat_fix(offsets : Array[Int32], source : String) -> Fix {
         offset,
         compat_shift_text(i + offset),
         i,
-        InsertionPoint::after(),
+        @fixer.InsertionPoint::after(),
       ),
     )
     i += 1
   }
-  Fix::from_replacements(replacements)
+  @fixer.Fix::from_replacements(replacements)
 }
 
 ///|
@@ -328,16 +338,16 @@ test "shellcheck fixer quickcheck overlap commutes" {
         lhs.1,
         "x",
         1,
-        InsertionPoint::after(),
+        @fixer.InsertionPoint::after(),
       )
       let right = compat_replacement(
         rhs.0,
         rhs.1,
         "y",
         2,
-        InsertionPoint::after(),
+        @fixer.InsertionPoint::after(),
       )
-      detect_overlap(left, right) == detect_overlap(right, left)
+      @fixer.detect_overlap(left, right) == @fixer.detect_overlap(right, left)
     }),
     max_success=200,
   )
@@ -352,7 +362,8 @@ test "shellcheck fixer adapted pstree sums correctly" {
     fn(offsets : Array[Int32]) {
       let source = "0123456789"
       let fix = pstree_compat_fix(offsets, source)
-      apply_fix(fix, source) == apply_fix_with_cumulative_shifts(fix, source)
+      @fixer.apply_fix(fix, source) ==
+      apply_fix_with_cumulative_shifts(fix, source)
     },
     max_success=200,
   )

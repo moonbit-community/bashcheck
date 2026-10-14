@@ -561,7 +561,7 @@ fn p_is_leading_number_var(text : String) -> Bool {
 
 ///|
 fn p_may_be_variable_name(parts : Array[@parser.WordPart]) -> Bool {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in parts {
     if p_variable_name_placeholder(part) is Some(text) {
       buf.write_string(text)

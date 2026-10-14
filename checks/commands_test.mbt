@@ -280,9 +280,11 @@ test "command optional checks flag deprecated which" {
       #|
     ),
   )
-  let diagnostics = check_script(
+  let diagnostics = @checks.check_script(
     script,
-    options=CheckOptions::default().with_optional_checks(["deprecate-which"]),
+    options=@checks.CheckOptions::default().with_optional_checks([
+      "deprecate-which",
+    ]),
   )
 
   assert_eq(count_code(diagnostics, 2230), 2)
@@ -300,9 +302,11 @@ test "command optional checks allow modern command -v lookups" {
       #|
     ),
   )
-  let diagnostics = check_script(
+  let diagnostics = @checks.check_script(
     script,
-    options=CheckOptions::default().with_optional_checks(["deprecate-which"]),
+    options=@checks.CheckOptions::default().with_optional_checks([
+      "deprecate-which",
+    ]),
   )
   assert_true(!has_code(diagnostics, 2230))
 }

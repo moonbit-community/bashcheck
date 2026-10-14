@@ -3473,7 +3473,7 @@ fn append_string_parts(
 ///|
 fn decode_dollar_single_quoted(text : String) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     let ch = view[i]

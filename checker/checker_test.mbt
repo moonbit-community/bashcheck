@@ -1,6 +1,6 @@
 ///|
 fn checker_has_code(
-  diagnostics : Array[PositionedDiagnostic],
+  diagnostics : Array[@checker.PositionedDiagnostic],
   code : Int32,
 ) -> Bool {
   for diagnostic in diagnostics {
@@ -14,9 +14,9 @@ fn checker_has_code(
 
 ///|
 fn checker_first_code(
-  diagnostics : Array[PositionedDiagnostic],
+  diagnostics : Array[@checker.PositionedDiagnostic],
   code : Int32,
-) -> PositionedDiagnostic {
+) -> @checker.PositionedDiagnostic {
   for diagnostic in diagnostics {
     match diagnostic.code {
       Some(found) if found == code => return diagnostic
@@ -32,13 +32,13 @@ test "checker filters included and excluded codes" {
     #|echo `foo`
     #|rm $(ls)
     #|
-  let excluded = check_script(
+  let excluded = @checker.check_script(
     source,
-    spec=CheckSpec::default().with_exclude_codes([2006]),
+    spec=@checker.CheckSpec::default().with_exclude_codes([2006]),
   )
-  let included = check_script(
+  let included = @checker.check_script(
     source,
-    spec=CheckSpec::default().with_include_codes([2006]),
+    spec=@checker.CheckSpec::default().with_include_codes([2006]),
   )
 
   assert_true(!checker_has_code(excluded.diagnostics, 2006))
@@ -49,21 +49,21 @@ test "checker filters included and excluded codes" {
 
 ///|
 test "checker honors severity thresholds and annotations" {
-  let error = if parse_diagnostic_severity("error") is Some(severity) {
+  let error = if @checker.parse_diagnostic_severity("error") is Some(severity) {
     severity
   } else {
     panic()
   }
-  let threshold = check_script(
+  let threshold = @checker.check_script(
     (
       #|#!/bin/dash
       #|((x += 1))
       #|rm $(ls)
       #|
     ),
-    spec=CheckSpec::default().with_min_severity(error),
+    spec=@checker.CheckSpec::default().with_min_severity(error),
   )
-  let annotated = check_script(
+  let annotated = @checker.check_script(
     (
       #|# shellcheck disable=SC2006
       #|printf '%s' `foo`
@@ -78,18 +78,18 @@ test "checker honors severity thresholds and annotations" {
 
 ///|
 test "checker enables control-flow analysis by default but can disable it" {
-  let enabled = check_script(
+  let enabled = @checker.check_script(
     (
       #|echo $foo
       #|
     ),
   )
-  let disabled = check_script(
+  let disabled = @checker.check_script(
     (
       #|echo $foo
       #|
     ),
-    spec=CheckSpec::default().with_extended_analysis(false),
+    spec=@checker.CheckSpec::default().with_extended_analysis(false),
   )
 
   assert_true(checker_has_code(enabled.diagnostics, 2154))
@@ -98,39 +98,39 @@ test "checker enables control-flow analysis by default but can disable it" {
 
 ///|
 test "checker emits SC2148 only when the entry shell stays unknown" {
-  let plain = check_script(
+  let plain = @checker.check_script(
     (
       #|echo hello
       #|
     ),
   )
-  let from_directive = check_script(
+  let from_directive = @checker.check_script(
     (
       #|# shellcheck shell=bash
       #|echo hello
       #|
     ),
   )
-  let from_extension = check_script(
+  let from_extension = @checker.check_script(
     (
       #|echo hello
       #|
     ),
-    spec=CheckSpec::default().with_filename(Some("script.bash")),
+    spec=@checker.CheckSpec::default().with_filename(Some("script.bash")),
   )
-  let from_envrc = check_script(
+  let from_envrc = @checker.check_script(
     (
       #|echo hello
       #|
     ),
-    spec=CheckSpec::default().with_filename(Some(".envrc")),
+    spec=@checker.CheckSpec::default().with_filename(Some(".envrc")),
   )
-  let from_override = check_script(
+  let from_override = @checker.check_script(
     (
       #|echo hello
       #|
     ),
-    spec=CheckSpec::default().with_shell_override(Some(Dash)),
+    spec=@checker.CheckSpec::default().with_shell_override(Some(Dash)),
   )
 
   assert_true(checker_has_code(plain.diagnostics, 2148))
@@ -142,15 +142,15 @@ test "checker emits SC2148 only when the entry shell stays unknown" {
 
 ///|
 test "checker shell precedence keeps stronger entry signals above filename hints" {
-  let shebang_over_extension = check_script(
+  let shebang_over_extension = @checker.check_script(
     (
       #|#!/bin/sh
       #|[[ x ]]
       #|
     ),
-    spec=CheckSpec::default().with_filename(Some("script.bash")),
+    spec=@checker.CheckSpec::default().with_filename(Some("script.bash")),
   )
-  let directive_over_shebang = check_script(
+  let directive_over_shebang = @checker.check_script(
     (
       #|#!/bin/sh
       #|# shellcheck shell=bash
@@ -165,21 +165,21 @@ test "checker shell precedence keeps stronger entry signals above filename hints
 
 ///|
 test "checker emits shebang entry diagnostics and respects shell overrides" {
-  let ash = check_script(
+  let ash = @checker.check_script(
     (
       #|#!bin/ash
       #|true
       #|
     ),
   )
-  let directory = check_script(
+  let directory = @checker.check_script(
     (
       #|#!/bin/sh/
       #|true
       #|
     ),
   )
-  let overridden = check_script(
+  let overridden = @checker.check_script(
     (
       #|#!bin/ash
       #|# shellcheck shell=dash
@@ -197,23 +197,37 @@ test "checker emits shebang entry diagnostics and respects shell overrides" {
 
 ///|
 test "checker advertises shellcheck-compatible optional checks without exposing control-flow" {
-  assert_true(!supported_optional_checks().contains("control-flow"))
-  assert_true(supported_optional_checks().contains("useless-use-of-cat"))
-  assert_true(supported_optional_checks().contains("add-default-case"))
-  assert_true(supported_optional_checks().contains("quote-safe-variables"))
-  assert_true(supported_optional_checks().contains("avoid-nullary-conditions"))
-  assert_true(supported_optional_checks().contains("avoid-negated-conditions"))
-  assert_true(supported_optional_checks().contains("require-variable-braces"))
+  assert_true(!@checker.supported_optional_checks().contains("control-flow"))
   assert_true(
-    supported_optional_checks().contains("check-unassigned-uppercase"),
+    @checker.supported_optional_checks().contains("useless-use-of-cat"),
   )
-  assert_true(supported_optional_checks().contains("require-double-brackets"))
-  assert_true(supported_optional_checks().contains("check-set-e-suppressed"))
+  assert_true(@checker.supported_optional_checks().contains("add-default-case"))
   assert_true(
-    supported_optional_checks().contains("check-extra-masked-returns"),
+    @checker.supported_optional_checks().contains("quote-safe-variables"),
   )
-  assert_true(supported_optional_checks().contains("deprecate-which"))
-  let descriptions = supported_checks()
+  assert_true(
+    @checker.supported_optional_checks().contains("avoid-nullary-conditions"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("avoid-negated-conditions"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("require-variable-braces"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("check-unassigned-uppercase"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("require-double-brackets"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("check-set-e-suppressed"),
+  )
+  assert_true(
+    @checker.supported_optional_checks().contains("check-extra-masked-returns"),
+  )
+  assert_true(@checker.supported_optional_checks().contains("deprecate-which"))
+  let descriptions = @checker.supported_checks()
   let mut found = false
   let mut found_optional = false
   for description in descriptions {
@@ -230,15 +244,15 @@ test "checker advertises shellcheck-compatible optional checks without exposing 
 
 ///|
 test "checker honors enable and extended-analysis directives" {
-  let enabled = check_script(
+  let enabled = @checker.check_script(
     (
       #|# shellcheck enable=control-flow
       #| echo $foo
       #|
     ),
-    spec=CheckSpec::default().with_extended_analysis(false),
+    spec=@checker.CheckSpec::default().with_extended_analysis(false),
   )
-  let disabled = check_script(
+  let disabled = @checker.check_script(
     (
       #|# shellcheck extended-analysis=false
       #| echo $foo
@@ -252,22 +266,24 @@ test "checker honors enable and extended-analysis directives" {
 
 ///|
 test "checker honors optional checks from spec and directives" {
-  let from_spec = check_script(
+  let from_spec = @checker.check_script(
     (
       #|safe=hello
       #|echo $safe
       #|
     ),
-    spec=CheckSpec::default().with_optional_checks(["quote-safe-variables"]),
+    spec=@checker.CheckSpec::default().with_optional_checks([
+      "quote-safe-variables",
+    ]),
   )
-  let from_directive = check_script(
+  let from_directive = @checker.check_script(
     (
       #|# shellcheck enable=require-double-brackets
       #|[ -x foo ]
       #|
     ),
   )
-  let default_result = check_script(
+  let default_result = @checker.check_script(
     (
       #|safe=hello
       #|echo $safe
@@ -284,23 +300,23 @@ test "checker honors optional checks from spec and directives" {
 
 ///|
 test "checker loads .shellcheckrc unless disabled" {
-  let with_rc = check_script(
+  let with_rc = @checker.check_script(
     (
       #|printf '%s' `foo`
       #|
     ),
-    spec=CheckSpec::default()
+    spec=@checker.CheckSpec::default()
       .with_filename(Some("checker/testdata/rc/script.sh"))
       .with_config_files([
         ("checker/testdata/rc/.shellcheckrc", "disable=SC2006"),
       ]),
   )
-  let without_rc = check_script(
+  let without_rc = @checker.check_script(
     (
       #|printf '%s' `foo`
       #|
     ),
-    spec=CheckSpec::default()
+    spec=@checker.CheckSpec::default()
       .with_filename(Some("checker/testdata/rc/script.sh"))
       .with_config_files([
         ("checker/testdata/rc/.shellcheckrc", "disable=SC2006"),
@@ -314,12 +330,12 @@ test "checker loads .shellcheckrc unless disabled" {
 
 ///|
 test "checker honors explicit rcfile override paths" {
-  let result = check_script(
+  let result = @checker.check_script(
     (
       #|printf '%s' `foo`
       #|
     ),
-    spec=CheckSpec::default()
+    spec=@checker.CheckSpec::default()
       .with_config_path_override(Some("custom.rc"))
       .with_config_files([("custom.rc", "disable=SC2006")]),
   )
@@ -329,20 +345,20 @@ test "checker honors explicit rcfile override paths" {
 
 ///|
 test "checker keeps explicit extended analysis overrides above directives and rc" {
-  let from_directive = check_script(
+  let from_directive = @checker.check_script(
     (
       #|# shellcheck extended-analysis=true
       #|echo $foo
       #|
     ),
-    spec=CheckSpec::default().with_extended_analysis(false),
+    spec=@checker.CheckSpec::default().with_extended_analysis(false),
   )
-  let from_rc = check_script(
+  let from_rc = @checker.check_script(
     (
       #|echo $foo
       #|
     ),
-    spec=CheckSpec::default()
+    spec=@checker.CheckSpec::default()
       .with_extended_analysis(false)
       .with_filename(Some("checker/testdata/rc/script.sh"))
       .with_config_files([
@@ -356,12 +372,12 @@ test "checker keeps explicit extended analysis overrides above directives and rc
 
 ///|
 test "checker localizes lint fixes to the reported filename" {
-  let result = check_script(
+  let result = @checker.check_script(
     (
       #|echo `foo`
       #|
     ),
-    spec=CheckSpec::default().with_filename(Some("script.sh")),
+    spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
   let diagnostic = checker_first_code(result.diagnostics, 2006)
 

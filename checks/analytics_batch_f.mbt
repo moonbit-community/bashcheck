@@ -904,7 +904,7 @@ fn analytics_arithmetic_token_key(token : @parser.ArithmeticToken) -> String {
     Literal(text) => "lit:" + text
     Operator(op) => "op:" + op
     Variable(name, indexes) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       buf.write_string("var:")
       buf.write_string(name)
       for index in indexes {

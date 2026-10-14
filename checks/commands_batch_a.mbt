@@ -969,7 +969,7 @@ fn return_or_exit_argument_is_invalid(word : @parser.Word) -> Bool {
 
 ///|
 fn return_or_exit_literal_text(word : @parser.Word) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if !append_return_or_exit_parts(word.parts, buf) {
     return ""
   }
@@ -1127,7 +1127,7 @@ fn check_printf_argument_count(
 ///|
 fn printf_formats(text : String) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     if view[i] != '%' {

@@ -563,7 +563,7 @@ fn analytics_position_at_source_offset(
 ///|
 fn rewrite_legacy_backticks(text : String) -> String {
   let view = text[:]
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   let mut in_backticks = false
   let mut escaped = false
   let mut i = 0
@@ -1204,7 +1204,7 @@ fn condition_raw_escaped_angle_operator(raw : String) -> String? {
 
 ///|
 fn uint16_to_string(ch : UInt16) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char(ch.unsafe_to_char())
   buf.to_string()
 }

@@ -1118,7 +1118,7 @@ fn g_maybe_push_div_before_mult_diagnostic(
 fn g_arithmetic_tokens_signature(
   tokens : Array[@parser.ArithmeticToken],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for token in tokens {
     buf.write_string(g_arithmetic_token_signature(token))
     buf.write_char('|')
@@ -1132,7 +1132,7 @@ fn g_arithmetic_token_signature(token : @parser.ArithmeticToken) -> String {
     Literal(text) => "L:" + text
     Operator(op) => "O:" + op
     Variable(name, indexes) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       buf.write_string("V:")
       buf.write_string(name)
       for index in indexes {

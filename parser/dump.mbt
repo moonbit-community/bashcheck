@@ -1,6 +1,6 @@
 ///|
 fn dump_quoted(text : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('"')
   for ch in text {
     match ch {
@@ -18,7 +18,7 @@ fn dump_quoted(text : String) -> String {
 
 ///|
 fn join(parts : Array[String], sep : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut first = true
   for part in parts {
     if !first {

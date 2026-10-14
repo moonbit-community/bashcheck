@@ -67,7 +67,7 @@ fn compat_style(
 
 ///|
 fn normalize_compat_diagnostics(
-  diagnostics : Array[PositionedDiagnostic],
+  diagnostics : Array[@checker.PositionedDiagnostic],
 ) -> Array[CompatDiagnostic] {
   let normalized : Array[CompatDiagnostic] = []
   for diagnostic in diagnostics {
@@ -90,7 +90,7 @@ fn normalize_compat_diagnostics(
 }
 
 ///|
-fn compat_severity_name(severity : DiagnosticSeverity) -> String {
+fn compat_severity_name(severity : @checker.DiagnosticSeverity) -> String {
   match severity {
     Error => "error"
     Warning => "warning"
@@ -105,7 +105,12 @@ fn assert_compat_case(
   source : String,
   expected : Array[CompatDiagnostic],
 ) -> Unit {
-  assert_compat_case_with_spec(label, source, expected, CheckSpec::default())
+  assert_compat_case_with_spec(
+    label,
+    source,
+    expected,
+    @checker.CheckSpec::default(),
+  )
 }
 
 ///|
@@ -119,7 +124,7 @@ fn assert_compat_case_with_optional_checks(
     label,
     source,
     expected,
-    CheckSpec::default().with_optional_checks(optional_checks),
+    @checker.CheckSpec::default().with_optional_checks(optional_checks),
   )
 }
 
@@ -128,9 +133,9 @@ fn assert_compat_case_with_spec(
   label : String,
   source : String,
   expected : Array[CompatDiagnostic],
-  spec : CheckSpec,
+  spec : @checker.CheckSpec,
 ) -> Unit {
-  let result = check_script(source, spec~)
+  let result = @checker.check_script(source, spec~)
   let actual = normalize_compat_diagnostics(result.diagnostics)
   if actual != expected {
     abort(
@@ -1286,7 +1291,7 @@ test "compat regression covers equals in command diagnostics" {
         2278, 1, 1, 3, "$0 can't be assigned in Ksh (but it does reflect the current function).",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Ksh)),
+    @checker.CheckSpec::default().with_shell_override(Some(Ksh)),
   )
 
   assert_compat_case_with_spec(
@@ -1300,7 +1305,7 @@ test "compat regression covers equals in command diagnostics" {
         2279, 1, 1, 5, "$0 can't be assigned in Dash. This becomes a command name.",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Dash)),
+    @checker.CheckSpec::default().with_shell_override(Some(Dash)),
   )
 
   assert_compat_case_with_spec(
@@ -1314,7 +1319,7 @@ test "compat regression covers equals in command diagnostics" {
         2280, 1, 1, 3, "$0 can't be assigned this way, and there is no portable alternative.",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Sh)),
+    @checker.CheckSpec::default().with_shell_override(Some(Sh)),
   )
 }
 
@@ -2124,7 +2129,7 @@ test "compat regression covers shell-sensitive directives and rc settings" {
         2292, 1, 1, 11, "Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busybox.",
       ),
     ],
-    CheckSpec::default()
+    @checker.CheckSpec::default()
     .with_filename(Some("checker/testdata/rc/script.sh"))
     .with_config_files([
       (
@@ -2154,7 +2159,7 @@ test "compat regression lets explicit shell overrides win over annotations" {
         2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Sh)),
+    @checker.CheckSpec::default().with_shell_override(Some(Sh)),
   )
 
   assert_compat_case_with_spec(
@@ -2169,7 +2174,7 @@ test "compat regression lets explicit shell overrides win over annotations" {
         2078, 2, 4, 5, "This expression is constant. Did you forget a $ somewhere?",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Bash)),
+    @checker.CheckSpec::default().with_shell_override(Some(Bash)),
   )
 }
 
@@ -2595,7 +2600,7 @@ test "compat regression covers analytics batch m unmatchable case diagnostics" {
         2090, 1, 26, 32, "Quotes/backslashes in this variable will not be respected.",
       ),
     ],
-    CheckSpec::default().with_shell_override(Some(Sh)),
+    @checker.CheckSpec::default().with_shell_override(Some(Sh)),
   )
 
   assert_compat_case(

@@ -8,10 +8,6 @@ import {
 }
 
 import {
-  "moonbitlang/core/debug",
-} for "test"
-
-import {
   "moonbitlang/core/test",
 } for "wbtest"
 

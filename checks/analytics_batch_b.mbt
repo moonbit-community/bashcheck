@@ -841,7 +841,7 @@ fn arithmetic_assignment_reference(
 
 ///|
 fn word_unquoted_plain_text(word : @parser.Word) -> String? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in word.parts {
     match part {
       Literal(text) | Glob(text) => buf.write_string(text)
