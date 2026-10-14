@@ -1,0 +1,4 @@
+shell=bash
+disable=SC2034
+enable=require-double-brackets
+extended-analysis=true
