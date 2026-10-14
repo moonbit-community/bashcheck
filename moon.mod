@@ -13,6 +13,6 @@ repository = "https://github.com/moonbit-community/bashcheck"
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "shellcheck", "bash", "linter" ]
 
-description = ""
+description = "MoonBit reimplementation of ShellCheck"
