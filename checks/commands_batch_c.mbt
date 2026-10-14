@@ -715,7 +715,7 @@ fn check_unquoted_echo_spaces(
     if arguments.length() < 2 {
       return
     }
-    let redirect_offsets : Array[Int] = []
+    let redirect_offsets : Array[Int32] = []
     for redirect in command.redirects {
       redirect_offsets.push(redirect.span.start.offset)
     }
@@ -746,9 +746,9 @@ fn check_unquoted_echo_spaces(
 
 ///|
 fn echo_has_redirection_between(
-  redirect_offsets : Array[Int],
-  start : Int,
-  end_ : Int,
+  redirect_offsets : Array[Int32],
+  start : Int32,
+  end_ : Int32,
 ) -> Bool {
   for offset in redirect_offsets {
     if start < offset && offset < end_ {
@@ -844,7 +844,7 @@ fn declaration_elements_in_command(
 ) -> Array[DeclarationCommandElement] {
   match command.kind {
     Simple(simple) => {
-      let elements : Array[(Int, DeclarationCommandElement)] = []
+      let elements : Array[(Int32, DeclarationCommandElement)] = []
       for assignment in simple.assignments {
         elements.push((assignment.span.start.offset, Assignment(assignment)))
       }
@@ -859,9 +859,9 @@ fn declaration_elements_in_command(
 
 ///|
 fn declaration_sort_elements(
-  elements : Array[(Int, DeclarationCommandElement)],
+  elements : Array[(Int32, DeclarationCommandElement)],
 ) -> Array[DeclarationCommandElement] {
-  let sorted : Array[(Int, DeclarationCommandElement)] = []
+  let sorted : Array[(Int32, DeclarationCommandElement)] = []
   for element in elements {
     sorted.push(element)
   }

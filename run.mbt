@@ -272,17 +272,17 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
 fn parse_short_options(
   arg : String,
   args : Array[String],
-  index : Int,
+  index : Int32,
   current_spec : @checker.CheckSpec,
   ignore_format : Bool,
 ) -> Result[
   (
-    Int,
+    Int32,
     (
       @checker.CheckSpec,
       @formatter.OutputFormat?,
       CliColorOption?,
-      Int?,
+      Int32?,
       @driver.CliAction,
     ),
   ),
@@ -291,7 +291,7 @@ fn parse_short_options(
   let mut spec = current_spec
   let mut format : @formatter.OutputFormat? = None
   let mut color : CliColorOption? = None
-  let mut wiki_link_count : Int? = None
+  let mut wiki_link_count : Int32? = None
   let mut action = @driver.CliAction::Run
   let flags = arg.view(start_offset=1).to_owned()
   guard flags != "" else { return Err(usage_error("Unknown option: " + arg)) }
@@ -467,9 +467,9 @@ fn split_flag_value(arg : String) -> (String, String?) {
 fn read_required_value(
   inline : String?,
   args : Array[String],
-  index : Int,
+  index : Int32,
   flag : String,
-) -> Result[(String, Int), CliError] {
+) -> Result[(String, Int32), CliError] {
   if inline is Some(value) {
     Ok((value, index))
   } else if index + 1 < args.length() {
@@ -485,9 +485,9 @@ fn read_required_value(
 fn read_short_value(
   inline : String,
   args : Array[String],
-  index : Int,
+  index : Int32,
   flag : String,
-) -> Result[(String, Int), CliError] {
+) -> Result[(String, Int32), CliError] {
   if inline != "" {
     return Ok((inline, index))
   }
@@ -572,8 +572,8 @@ fn parse_severity(text : String) -> @checker.DiagnosticSeverity? {
 ///
 /// Each item may optionally include the `SC` prefix, but anything that is not a
 /// clean non-negative integer is rejected.
-fn parse_code_list(text : String) -> Result[Array[Int], CliError] {
-  let codes : Array[Int] = []
+fn parse_code_list(text : String) -> Result[Array[Int32], CliError] {
+  let codes : Array[Int32] = []
   for value in split_csv(text) {
     if parse_code(value) is Some(code) {
       codes.push(code)
@@ -586,7 +586,7 @@ fn parse_code_list(text : String) -> Result[Array[Int], CliError] {
 
 ///|
 /// Parses one ShellCheck code in either `1234` or `SC1234` form.
-fn parse_code(text : String) -> Int? {
+fn parse_code(text : String) -> Int32? {
   let trimmed = text.trim().to_owned()
   let digits = if trimmed.has_prefix("SC") {
     trimmed.view(start_offset=2).to_owned()
@@ -615,7 +615,7 @@ fn parse_code(text : String) -> Int? {
 ///|
 /// Parses a non-negative integer and reuses the same validation rules as code
 /// parsing so diagnostics stay consistent.
-fn parse_nonnegative_int(text : String) -> Result[Int, CliError] {
+fn parse_nonnegative_int(text : String) -> Result[Int32, CliError] {
   if parse_code(text) is Some(value) {
     Ok(value)
   } else {
@@ -655,8 +655,8 @@ fn split_source_paths(text : String) -> Array[String] {
 
 ///|
 /// Returns a fresh array containing the contents of `lhs` followed by `rhs`.
-fn append_ints(lhs : Array[Int], rhs : Array[Int]) -> Array[Int] {
-  let values : Array[Int] = []
+fn append_ints(lhs : Array[Int32], rhs : Array[Int32]) -> Array[Int32] {
+  let values : Array[Int32] = []
   for value in lhs {
     values.push(value)
   }
@@ -697,13 +697,13 @@ fn append_optional_checks(
 ///|
 /// Constructs a usage error that should terminate with the CLI usage exit code.
 fn usage_error(message : String) -> CliError {
-  { kind: Usage, message }
+  { kind: Usage, message, }
 }
 
 ///|
 /// Constructs a support error for syntactically valid but unsupported input.
 fn support_error(message : String) -> CliError {
-  { kind: Support, message }
+  { kind: Support, message, }
 }
 
 ///|
@@ -737,7 +737,7 @@ fn unknown_severity_error() -> CliError {
 
 ///|
 /// Maps parser error classes to shell exit codes.
-fn cli_exit_code(kind : CliErrorKind) -> Int {
+fn cli_exit_code(kind : CliErrorKind) -> Int32 {
   match kind {
     Usage => 3
     Support => 4

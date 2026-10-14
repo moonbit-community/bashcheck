@@ -526,7 +526,7 @@ fn analytics_simple_test_binary(
       if word_single_literal_text(open) == Some("[") &&
         word_single_literal_text(close) == Some("]") {
         if @semantics.literal_text(op_word) is Some(op) {
-          Some({ lhs, op, rhs })
+          Some({ lhs, op, rhs, })
         } else {
           None
         }
@@ -536,7 +536,7 @@ fn analytics_simple_test_binary(
     [name, lhs, op_word, rhs] =>
       if word_single_literal_text(name) == Some("test") {
         if @semantics.literal_text(op_word) is Some(op) {
-          Some({ lhs, op, rhs })
+          Some({ lhs, op, rhs, })
         } else {
           None
         }
@@ -552,7 +552,7 @@ fn analytics_condition_expr_binary(
   expr : @parser.ConditionExpr,
 ) -> AnalyticsConditionBinary? {
   match expr {
-    Binary(op, _, lhs, rhs) => Some({ lhs, op, rhs })
+    Binary(op, _, lhs, rhs) => Some({ lhs, op, rhs, })
     Group(inner) | Not(inner) => analytics_condition_expr_binary(inner)
     _ => None
   }
@@ -697,7 +697,7 @@ fn analytics_maybe_push_condition_and_eq(
 }
 
 ///|
-fn analytics_condition_or_neq_code(kind : @parser.ConditionKind) -> Int {
+fn analytics_condition_or_neq_code(kind : @parser.ConditionKind) -> Int32 {
   match kind {
     SingleBracket => 2055
     DoubleBracket => 2056
@@ -705,7 +705,7 @@ fn analytics_condition_or_neq_code(kind : @parser.ConditionKind) -> Int {
 }
 
 ///|
-fn analytics_condition_and_eq_code(kind : @parser.ConditionKind) -> Int {
+fn analytics_condition_and_eq_code(kind : @parser.ConditionKind) -> Int32 {
   match kind {
     SingleBracket => 2333
     DoubleBracket => 2333
@@ -806,7 +806,7 @@ fn analytics_check_arithmetic_expr(
   expr : @parser.ArithmeticExpr,
   logical_op : String,
   comparison_op : String,
-  code : Int,
+  code : Int32,
   span : @parser.Span,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -842,7 +842,7 @@ fn analytics_maybe_push_arithmetic_logical_diagnostic(
   lhs_tokens : Array[@parser.ArithmeticToken],
   rhs_tokens : Array[@parser.ArithmeticToken],
   comparison_op : String,
-  code : Int,
+  code : Int32,
   span : @parser.Span,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {

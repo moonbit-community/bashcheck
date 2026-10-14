@@ -53,7 +53,7 @@ fn load_config_from_path(
 ///|
 /// Returns the neutral config object used when no rc file applies.
 fn empty_loaded_config() -> LoadedConfig {
-  { annotations: [], diagnostics: [] }
+  { annotations: [], diagnostics: [], }
 }
 
 ///|
@@ -129,7 +129,7 @@ fn config_error_cause(
 
 ///|
 /// Returns the raw text of a 1-based line from config contents.
-fn config_line_text(contents : String, line : Int) -> String {
+fn config_line_text(contents : String, line : Int32) -> String {
   let mut current = 1
   for raw in contents.split("\n") {
     if current == line {
@@ -355,7 +355,7 @@ fn config_candidate_paths(filename : String) -> Array[String] {
 /// Returns the directory portion of a POSIX-style path.
 fn path_dirname(path : String) -> String {
   let view = path[:]
-  let mut slash : Int? = None
+  let mut slash : Int32? = None
   let mut i = 0
   while i < view.length() {
     if view[i] == '/' {

@@ -15,7 +15,7 @@ rule engine, and returns one `CheckResult` containing filename-aware
 ///|
 fn checker_doc_has_code(
   diagnostics : Array[@checker.PositionedDiagnostic],
-  code : Int,
+  code : Int32,
 ) -> Bool {
   for diagnostic in diagnostics {
     match diagnostic.code {

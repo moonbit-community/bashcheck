@@ -1,22 +1,25 @@
 ///|
 priv struct ShellSupportRule {
-  code : Int
+  code : Int32
   feature : String
   exempt_shells : Array[@semantics.ShellDialect]
 }
 
 ///|
-fn shell_support_description(code : Int, summary : String) -> CheckDescription {
+fn shell_support_description(
+  code : Int32,
+  summary : String,
+) -> CheckDescription {
   shell_support_description_with_severity(code, Warning, summary)
 }
 
 ///|
 fn shell_support_description_with_severity(
-  code : Int,
+  code : Int32,
   severity : CheckSeverity,
   summary : String,
 ) -> CheckDescription {
-  { code, severity, category: "shell-support", summary }
+  { code, severity, category: "shell-support", summary, }
 }
 
 ///|
@@ -210,7 +213,7 @@ fn shell_support_descriptions() -> Array[CheckDescription] {
 
 ///|
 fn shell_support_suite() -> CheckSuiteRegistration {
-  { descriptions: shell_support_descriptions(), run: run_shell_support_checks }
+  { descriptions: shell_support_descriptions(), run: run_shell_support_checks, }
 }
 
 ///|
@@ -292,8 +295,8 @@ fn check_shell_support_pipeline(
 ///|
 fn pipe_operator_span(
   pipeline : @parser.Pipeline,
-  operator_index : Int,
-  width : Int,
+  operator_index : Int32,
+  width : Int32,
 ) -> @parser.Span {
   if pipeline.segments.get(operator_index + 1) is Some(next_segment) {
     let end_ = next_segment.span.start
@@ -1179,8 +1182,8 @@ fn check_shell_support_word(
   let mut saw_dollar_redirection = false
   let mut saw_backquoted_redirection = false
   let mut bash_variable_name : String? = None
-  let parameter_codes : Array[Int] = []
-  let arithmetic_codes : Array[Int] = []
+  let parameter_codes : Array[Int32] = []
+  let arithmetic_codes : Array[Int32] = []
   walk_word_deep(word, fn(part) {
     match part {
       ProcessSubstitution(_, _) => saw_process_substitution = true
@@ -1486,7 +1489,7 @@ fn check_shell_support_substitution_script(
 fn collect_parameter_expansion_codes(
   expansion : @parser.ParameterExpansion,
   shell : @semantics.ShellDialect,
-  codes : Array[Int],
+  codes : Array[Int32],
 ) -> Unit {
   if expansion.indirect {
     if parameter_index_is(expansion, "@") || parameter_index_is(expansion, "*") {
@@ -1522,7 +1525,7 @@ fn collect_parameter_expansion_codes(
 ///|
 fn collect_shell_support_arithmetic_codes(
   expr : @parser.ArithmeticExpr,
-  codes : Array[Int],
+  codes : Array[Int32],
 ) -> Unit {
   if expr.raw.contains("++") || expr.raw.contains("--") {
     push_unique_code(codes, 3018)
@@ -1549,7 +1552,7 @@ fn check_shell_support_arithmetic_expr(
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let codes : Array[Int] = []
+  let codes : Array[Int32] = []
   collect_shell_support_arithmetic_codes(expr, codes)
   for code in codes {
     push_shell_support_diagnostic(
@@ -1604,7 +1607,11 @@ fn shell_support_binary_test_rule(op : String) -> ShellSupportRule? {
         exempt_shells: [BusyboxSh],
       })
     "=~" =>
-      Some({ code: 3015, feature: "\{op} regex matching is", exempt_shells: [] })
+      Some({
+        code: 3015,
+        feature: "\{op} regex matching is",
+        exempt_shells: [],
+      })
     _ => None
   }
 }
@@ -1636,7 +1643,7 @@ fn shell_support_unary_test_rule(op : String) -> ShellSupportRule? {
         feature: "test \{op} and namerefs in general are",
         exempt_shells: [],
       })
-    "-N" => Some({ code: 3064, feature: "test \{op} is", exempt_shells: [] })
+    "-N" => Some({ code: 3064, feature: "test \{op} is", exempt_shells: [], })
     "-k" =>
       Some({
         code: 3065,
@@ -1664,7 +1671,7 @@ fn first_unsupported_shell_flag(
   command_name : String,
   arguments : Array[@parser.Word],
   shell : @semantics.ShellDialect,
-) -> (@parser.Word, Int, String)? {
+) -> (@parser.Word, Int32, String)? {
   let allowed = if shell_support_allowed_flags(command_name, shell)
     is Some(allowed) {
     allowed
@@ -2138,7 +2145,7 @@ fn strip_ps1_prompt_enclosures(text : String) -> String {
 }
 
 ///|
-fn string_offset(text : String, needle : String) -> Int? {
+fn string_offset(text : String, needle : String) -> Int32? {
   let view = text[:]
   let needle_view = needle[:]
   if needle_view.length() == 0 {
@@ -2220,7 +2227,11 @@ fn assignment_multidimensional_index_span(
 }
 
 ///|
-fn span_offset(span : @parser.Span, offset : Int, width : Int) -> @parser.Span {
+fn span_offset(
+  span : @parser.Span,
+  offset : Int32,
+  width : Int32,
+) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(
       span.start.offset + offset,
@@ -2267,7 +2278,7 @@ fn redirection_named_source_span(
 ///|
 fn redirection_fd_source_span(
   redirect : @parser.Redirection,
-  fd : Int,
+  fd : Int32,
 ) -> @parser.Span {
   span_prefix(redirect.span, int_digit_width(fd))
 }
@@ -2281,7 +2292,7 @@ fn redirection_is_write(redirect : @parser.Redirection) -> Bool {
 }
 
 ///|
-fn short_flag_span(word : @parser.Word, offset : Int) -> @parser.Span {
+fn short_flag_span(word : @parser.Word, offset : Int32) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(
       word.span.start.offset + offset,
@@ -2316,7 +2327,7 @@ fn maybe_push_shell_support_rule_diagnostic(
 }
 
 ///|
-fn push_unique_code(codes : Array[Int], code : Int) -> Unit {
+fn push_unique_code(codes : Array[Int32], code : Int32) -> Unit {
   if !codes.contains(code) {
     codes.push(code)
   }
@@ -2333,7 +2344,7 @@ fn shell_support_push_unique_string(
 }
 
 ///|
-fn shell_support_feature_name(code : Int) -> String {
+fn shell_support_feature_name(code : Int32) -> String {
   match code {
     3018 => "++/-- is"
     3019 => "exponentials are"
@@ -2361,7 +2372,7 @@ fn shell_is_busybox(shell : @semantics.ShellDialect) -> Bool {
 }
 
 ///|
-fn int_digit_width(value : Int) -> Int {
+fn int_digit_width(value : Int32) -> Int32 {
   if value < 10 {
     return 1
   }
@@ -2430,7 +2441,7 @@ fn push_shell_support_diagnostic(
   diagnostics : Array[CheckDiagnostic],
   shell : @semantics.ShellDialect,
   span : @parser.Span,
-  code : Int,
+  code : Int32,
   feature : String,
 ) -> Unit {
   match shell {

@@ -7,7 +7,7 @@ fn parse_fixer_ok(source : String) -> @parser.Script {
 }
 
 ///|
-fn command_span(source : String, index : Int) -> @parser.Span {
+fn command_span(source : String, index : Int32) -> @parser.Span {
   let script = parse_fixer_ok(source)
   script.items[index].and_or.head.segments[0].command.span
 }

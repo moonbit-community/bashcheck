@@ -105,8 +105,8 @@ priv struct BatchTWordOccurrence {
 ///|
 priv struct BatchTPartLocation {
   fragment : String
-  relative_offset : Int
-  width : Int
+  relative_offset : Int32
+  width : Int32
 }
 
 ///|
@@ -695,7 +695,7 @@ fn batch_t_parts_quote_origin(
   word : @parser.Word,
   parts : Array[@parser.WordPart],
   raw : String,
-  base_offset : Int,
+  base_offset : Int32,
   quoted_assignments : Map[String, @parser.Span],
 ) -> @parser.Span? {
   let mut offset = 0
@@ -782,7 +782,7 @@ fn batch_t_check_quote_literal_word_parts(
   word : @parser.Word,
   parts : Array[@parser.WordPart],
   raw : String,
-  base_offset : Int,
+  base_offset : Int32,
   quoted_context : Bool,
   skip_eval : Bool,
   shell : @semantics.ShellDialect,
@@ -1003,7 +1003,7 @@ fn batch_t_text_contains_quote_literals(text : String) -> Bool {
 ///|
 fn batch_t_part_location(
   raw : String,
-  offset : Int,
+  offset : Int32,
   part : @parser.WordPart,
 ) -> BatchTPartLocation {
   let remaining = if offset <= 0 {
@@ -1030,11 +1030,14 @@ fn batch_t_part_location(
   } else {
     available
   }
-  { fragment, relative_offset, width }
+  { fragment, relative_offset, width, }
 }
 
 ///|
-fn batch_t_trim_outer_fragment(fragment : String, prefix_width : Int) -> String {
+fn batch_t_trim_outer_fragment(
+  fragment : String,
+  prefix_width : Int32,
+) -> String {
   if fragment.length() <= prefix_width + 1 {
     return ""
   }
@@ -1273,7 +1276,7 @@ fn batch_t_collect_command_occurrences(
   visit_direct_words_in_command(command, fn(word, place) {
     match place {
       AssignmentValue | RedirectionTarget => ()
-      _ => occurrences.push({ word, command, usage: Other })
+      _ => occurrences.push({ word, command, usage: Other, })
     }
   })
   for redirect in command.redirects {
@@ -1283,7 +1286,7 @@ fn batch_t_collect_command_occurrences(
       _ => None
     }
     match (usage, redirect.target) {
-      (Some(usage), Word(word)) => occurrences.push({ word, command, usage })
+      (Some(usage), Word(word)) => occurrences.push({ word, command, usage, })
       _ => ()
     }
   }
@@ -1559,7 +1562,7 @@ fn unquoted_assignment_text(word : @parser.Word) -> String? {
 }
 
 ///|
-fn batch_t_string_offset(text : String, needle : String) -> Int? {
+fn batch_t_string_offset(text : String, needle : String) -> Int32? {
   let view = text[:]
   let needle_view = needle[:]
   if needle_view.length() == 0 {
@@ -1582,8 +1585,8 @@ fn batch_t_string_offset(text : String, needle : String) -> Int? {
 ///|
 fn batch_t_span_offset(
   span : @parser.Span,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
 ) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(

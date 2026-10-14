@@ -13,12 +13,15 @@ fn parse_batch_g_ok(source : String) -> @parser.Script {
 }
 
 ///|
-fn batch_g_has_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Bool {
+fn batch_g_has_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Bool {
   diagnostics.any(fn(diagnostic) { diagnostic.code == code })
 }
 
 ///|
-fn batch_g_count_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Int {
+fn batch_g_count_code(
+  diagnostics : Array[CheckDiagnostic],
+  code : Int32,
+) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == code {

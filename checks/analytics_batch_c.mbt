@@ -723,7 +723,7 @@ fn word_subspan(word : @parser.Word, needle : String) -> @parser.Span? {
 }
 
 ///|
-fn string_index_of(text : String, needle : String) -> Int? {
+fn string_index_of(text : String, needle : String) -> Int32? {
   let haystack = text[:]
   let target = needle[:]
   guard target.length() > 0 else { return Some(0) }

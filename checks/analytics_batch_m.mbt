@@ -338,8 +338,8 @@ fn m_array_assignment_equals_kind(
 ///|
 fn m_spaced_index_assignment_pattern(
   elements : Array[@parser.ArrayElement],
-  index : Int,
-) -> (@parser.Word, Int)? {
+  index : Int32,
+) -> (@parser.Word, Int32)? {
   guard index + 1 < elements.length() else { return None }
   guard elements[index].indexes.length() == 0 else { return None }
   let index_word = match m_array_element_word(elements[index]) {
@@ -363,8 +363,8 @@ fn m_spaced_index_assignment_pattern(
 ///|
 fn m_empty_indexed_element_consumed(
   elements : Array[@parser.ArrayElement],
-  index : Int,
-) -> Int {
+  index : Int32,
+) -> Int32 {
   guard index + 1 < elements.length() else { return 1 }
   if elements[index + 1].indexes.length() == 0 &&
     m_array_element_word(elements[index + 1]) is Some(_) {
@@ -377,7 +377,7 @@ fn m_empty_indexed_element_consumed(
 ///|
 fn m_empty_indexed_element_span(
   elements : Array[@parser.ArrayElement],
-  index : Int,
+  index : Int32,
   assignment_span : @parser.Span,
 ) -> @parser.Span {
   if index + 1 < elements.length() && elements[index + 1].indexes.length() == 0 {
@@ -555,7 +555,7 @@ fn m_is_identifier_continue(ch : Char) -> Bool {
 }
 
 ///|
-fn m_find_char(text : String, target : Char) -> Int? {
+fn m_find_char(text : String, target : Char) -> Int32? {
   let view = text[:]
   let mut i = 0
   while i < view.length() {
@@ -568,7 +568,7 @@ fn m_find_char(text : String, target : Char) -> Int? {
 }
 
 ///|
-fn m_string_offset(text : String, fragment : String) -> Int? {
+fn m_string_offset(text : String, fragment : String) -> Int32? {
   let source = text[:]
   let needle = fragment[:]
   if needle.length() == 0 {
@@ -599,7 +599,7 @@ fn m_string_offset(text : String, fragment : String) -> Int? {
 ///|
 fn m_position_offset(
   position : @parser.Position,
-  offset : Int,
+  offset : Int32,
 ) -> @parser.Position {
   @parser.Position::new(
     position.offset + offset,
@@ -611,8 +611,8 @@ fn m_position_offset(
 ///|
 fn m_span_offset(
   span : @parser.Span,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
 ) -> @parser.Span {
   @parser.Span::new(
     m_position_offset(span.start, offset),
@@ -662,7 +662,7 @@ fn check_unmatchable_cases(
         }
 
         let break_patterns : Array[
-          (Int, @parser.Word, Array[PseudoGlob]?, Array[PseudoGlob]),
+          (Int32, @parser.Word, Array[PseudoGlob]?, Array[PseudoGlob]),
         ] = []
         let mut pattern_index = 0
         for item in clause.items {
@@ -1089,7 +1089,7 @@ fn decode_dollar_single_quoted_local(text : String) -> String {
 }
 
 ///|
-fn decode_hex_digit(ch : UInt16) -> Int? {
+fn decode_hex_digit(ch : UInt16) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -1103,7 +1103,7 @@ fn decode_hex_digit(ch : UInt16) -> Int? {
 }
 
 ///|
-fn octal_digit_value(ch : UInt16) -> Int {
+fn octal_digit_value(ch : UInt16) -> Int32 {
   ch.to_int() - '0'.to_int()
 }
 

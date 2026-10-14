@@ -82,22 +82,22 @@ fn analytics_word_content(
     has_array = has_array || content.has_array
     has_other = has_other || content.has_other
   }
-  { has_array, has_other }
+  { has_array, has_other, }
 }
 
 ///|
 fn analytics_word_part_content(part : @parser.WordPart) -> AnalyticsWordContent {
   match part {
-    SpecialParameter("@") => { has_array: true, has_other: false }
+    SpecialParameter("@") => { has_array: true, has_other: false, }
     BracedParameter(expansion) =>
       if braced_parameter_is_unquoted_array_expansion(expansion) {
-        { has_array: true, has_other: false }
+        { has_array: true, has_other: false, }
       } else {
-        { has_array: false, has_other: true }
+        { has_array: false, has_other: true, }
       }
     DoubleQuoted(parts) | DollarDoubleQuoted(parts) =>
       analytics_word_content(parts)
-    _ => { has_array: false, has_other: true }
+    _ => { has_array: false, has_other: true, }
   }
 }
 
@@ -278,7 +278,7 @@ fn analytics_warn_parameter_pattern_part(
 ///|
 fn analytics_quote_nested_span_fix(
   span : @parser.Span,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(

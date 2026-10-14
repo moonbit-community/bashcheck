@@ -31,7 +31,7 @@ fn root_nodes(cfg : CFG) -> Array[CfgNodeId] {
 }
 
 ///|
-fn count_structural_nodes(cfg : CFG) -> Int {
+fn count_structural_nodes(cfg : CFG) -> Int32 {
   let mut count = 0
   for node in cfg.nodes {
     if node.kind == Structural {
@@ -125,7 +125,7 @@ fn assert_same_ast_nodes(lhs : CFG, rhs : CFG) -> Unit {
 }
 
 ///|
-fn count_execute_subshells(cfg : CFG) -> Int {
+fn count_execute_subshells(cfg : CFG) -> Int32 {
   let mut count = 0
   for id in root_nodes(cfg) {
     match node_of(cfg, id) {
@@ -311,7 +311,7 @@ fn incoming_edge_count(
   cfg : CFG,
   target : CfgNodeId,
   kind : CfgEdgeKind,
-) -> Int {
+) -> Int32 {
   let mut count = 0
   for edge in edges(cfg) {
     if edge.to == target && edge.kind == kind {

@@ -13,7 +13,10 @@ fn parse_batch_f_ok(source : String) -> @parser.Script {
 }
 
 ///|
-fn batch_f_count_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Int {
+fn batch_f_count_code(
+  diagnostics : Array[CheckDiagnostic],
+  code : Int32,
+) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == code {

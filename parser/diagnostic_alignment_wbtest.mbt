@@ -1,5 +1,8 @@
 ///|
-fn find_diagnostic(diagnostics : Array[Diagnostic], code : Int) -> Diagnostic? {
+fn find_diagnostic(
+  diagnostics : Array[Diagnostic],
+  code : Int32,
+) -> Diagnostic? {
   for diagnostic in diagnostics {
     if diagnostic.code == Some(code) {
       return Some(diagnostic)
@@ -9,7 +12,7 @@ fn find_diagnostic(diagnostics : Array[Diagnostic], code : Int) -> Diagnostic? {
 }
 
 ///|
-fn count_diagnostics(diagnostics : Array[Diagnostic], code : Int) -> Int {
+fn count_diagnostics(diagnostics : Array[Diagnostic], code : Int32) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == Some(code) {
@@ -22,9 +25,9 @@ fn count_diagnostics(diagnostics : Array[Diagnostic], code : Int) -> Int {
 ///|
 fn expect_diagnostic(
   diagnostics : Array[Diagnostic],
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> Unit {
   if find_diagnostic(diagnostics, code) is Some(diagnostic) {
@@ -51,9 +54,9 @@ fn expect_diagnostic(
 ///|
 fn expect_diagnostic_at(
   diagnostics : Array[Diagnostic],
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> Unit {
   for diagnostic in diagnostics {

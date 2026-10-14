@@ -222,7 +222,7 @@ fn b_check_char_range_word(
 ///|
 fn b_maybe_warn_named_char_class(
   word : @parser.Word,
-  word_offset : Int,
+  word_offset : Int32,
   text : String,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -239,7 +239,7 @@ fn b_maybe_warn_named_char_class(
 }
 
 ///|
-fn b_named_char_class_offset(text : String) -> Int? {
+fn b_named_char_class_offset(text : String) -> Int32? {
   let view = text[:]
   let mut i = 0
   while i + 3 < view.length() {
@@ -267,7 +267,7 @@ fn b_named_char_class_offset(text : String) -> Int? {
 }
 
 ///|
-fn b_named_char_class_fragment(text : String, offset : Int) -> String {
+fn b_named_char_class_fragment(text : String, offset : Int32) -> String {
   let view = text[:]
   let mut end_ = offset + 2
   while end_ + 1 < view.length() {
@@ -282,7 +282,7 @@ fn b_named_char_class_fragment(text : String, offset : Int) -> String {
 ///|
 fn b_maybe_warn_duplicate_char_range(
   word : @parser.Word,
-  word_offset : Int,
+  word_offset : Int32,
   text : String,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -890,7 +890,7 @@ fn redirection_points_to_plain_number(redirect : @parser.Redirection) -> Bool {
 }
 
 ///|
-fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int, String)? {
+fn command_name_issue(word : @parser.Word) -> (CheckSeverity, Int32, String)? {
   guard !@semantics.is_glob_word(word) else { return None }
   if word_single_literal_text(word) == Some("./") {
     return None
@@ -1171,7 +1171,7 @@ fn has_unescaped_char(text : String, target : UInt16) -> Bool {
 }
 
 ///|
-fn count_unescaped_char(text : String, target : UInt16) -> Int {
+fn count_unescaped_char(text : String, target : UInt16) -> Int32 {
   let view = text[:]
   let mut count = 0
   let mut i = 0

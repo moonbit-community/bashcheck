@@ -77,10 +77,10 @@ fn assert_parameter_expansion_shape(
 fn assert_parameter_reference_shape(
   label : String,
   raw : String,
-  start : Int,
+  start : Int32,
   expected_name : String?,
   expected_index : String?,
-  expected_next : Int,
+  expected_next : Int32,
 ) -> Unit {
   let (name, index, next) = parse_parameter_reference(raw, start)
   assert_string_option(label, "name", name, expected_name)

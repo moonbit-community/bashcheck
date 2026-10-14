@@ -30,7 +30,7 @@ pub struct Replacement {
   start : @parser.Position
   end : @parser.Position
   text : String
-  precedence : Int
+  precedence : Int32
   insertion_point : InsertionPoint
 } derive(Eq, Debug)
 
@@ -41,10 +41,10 @@ pub fn Replacement::new(
   start : @parser.Position,
   end : @parser.Position,
   text : String,
-  precedence : Int,
+  precedence : Int32,
   insertion_point : InsertionPoint,
 ) -> Replacement {
-  { filename, start, end, text, precedence, insertion_point }
+  { filename, start, end, text, precedence, insertion_point, }
 }
 
 ///|
@@ -65,7 +65,7 @@ pub struct Fix {
 ///|
 /// Creates an empty fix.
 pub fn Fix::new() -> Fix {
-  { replacements: [] }
+  { replacements: [], }
 }
 
 ///|
@@ -114,7 +114,7 @@ pub fn merge_fixes(fixes : Array[Fix]) -> Fix? {
     }
     i += 1
   }
-  Some({ replacements: sorted })
+  Some({ replacements: sorted, })
 }
 
 ///|
@@ -266,7 +266,7 @@ fn replacement_precedes(lhs : Replacement, rhs : Replacement) -> Bool {
 
 ///|
 /// Converts insertion semantics into a sortable tiebreaker.
-fn insertion_rank(point : InsertionPoint) -> Int {
+fn insertion_rank(point : InsertionPoint) -> Int32 {
   match point {
     InsertBefore => 0
     InsertAfter => 1
@@ -285,7 +285,7 @@ fn copy_replacements(replacements : Array[Replacement]) -> Array[Replacement] {
 
 ///|
 /// Returns a 1-based line from `lines`, or `""` when out of range.
-fn line_at(lines : Array[String], line : Int) -> String {
+fn line_at(lines : Array[String], line : Int32) -> String {
   if 1 <= line && line <= lines.length() {
     lines[line - 1].to_string()
   } else {
@@ -299,7 +299,7 @@ fn line_at(lines : Array[String], line : Int) -> String {
 /// Tabs expand to the next tab stop visually, but still occupy one character in
 /// the source string. The function walks the line until the requested display
 /// column is reached and then returns the matching raw column.
-fn realign_tabstop_column(line : String, target : Int) -> Int {
+fn realign_tabstop_column(line : String, target : Int32) -> Int32 {
   if target <= 0 {
     return target
   }

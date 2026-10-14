@@ -307,7 +307,7 @@ fn check_trap_signal_literals(
 }
 
 ///|
-fn trap_signal_start_index(arguments : Array[@parser.Word]) -> Int? {
+fn trap_signal_start_index(arguments : Array[@parser.Word]) -> Int32? {
   guard arguments.length() > 1 else { return None }
   match @semantics.literal_text(arguments[0]) {
     Some("-") | Some("--") | Some("-l") | Some("-p") => None
@@ -327,12 +327,12 @@ fn trap_signal_is_nonportable_number(text : String) -> Bool {
 }
 
 ///|
-fn portable_trap_signal_numbers() -> Array[Int] {
+fn portable_trap_signal_numbers() -> Array[Int32] {
   [0, 1, 2, 3, 6, 9, 14, 15]
 }
 
 ///|
-fn trap_signal_number(text : String) -> Int? {
+fn trap_signal_number(text : String) -> Int32? {
   let view = text[:]
   guard view.length() > 0 else { return None }
   let mut value = 0

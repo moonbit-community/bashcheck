@@ -1,12 +1,12 @@
 ///|
 /// Identifier for a node in an `IndexedScript`.
 pub struct NodeId {
-  priv value : Int
+  priv value : Int32
 } derive(Eq, Compare, Hash, Debug)
 
 ///|
 /// Returns the raw integer value of a node id.
-pub fn NodeId::to_int(self : NodeId) -> Int {
+pub fn NodeId::to_int(self : NodeId) -> Int32 {
   self.value
 }
 
@@ -155,7 +155,7 @@ pub struct IndexedScript {
 } derive(Eq, Debug)
 
 ///|
-fn node_id(value : Int) -> NodeId {
+fn node_id(value : Int32) -> NodeId {
   { value, }
 }
 
@@ -185,7 +185,7 @@ fn NodeRef::exact_word(self : NodeRef) -> @parser.Word? {
 pub fn build_index(script : @parser.Script) -> IndexedScript {
   let builder = IndexBuilder::new()
   let root = builder.visit_script(script)
-  { script, root, nodes: builder.nodes }
+  { script, root, nodes: builder.nodes, }
 }
 
 ///|
@@ -196,7 +196,7 @@ pub fn root_id(indexed : IndexedScript) -> NodeId {
 
 ///|
 /// Returns the total number of indexed nodes.
-pub fn node_count(indexed : IndexedScript) -> Int {
+pub fn node_count(indexed : IndexedScript) -> Int32 {
   indexed.nodes.length()
 }
 
@@ -374,7 +374,7 @@ priv struct IndexBuilder {
 ///|
 // CHECK THIS: THUNK
 fn IndexBuilder::new() -> IndexBuilder {
-  { nodes: [], stack: [] }
+  { nodes: [], stack: [], }
 }
 
 ///|
@@ -387,7 +387,15 @@ fn IndexBuilder::start_node(
   let id = node_id(self.nodes.length())
   let kind = node.kind()
   let parent = self.stack.last()
-  self.nodes.push({ id, kind, span, enclosing_span, parent, children: [], node })
+  self.nodes.push({
+    id,
+    kind,
+    span,
+    enclosing_span,
+    parent,
+    children: [],
+    node,
+  })
   if parent is Some(parent) {
     self.add_child(parent, id)
   }

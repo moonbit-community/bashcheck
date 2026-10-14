@@ -926,9 +926,9 @@ fn check_exit_status_values(
 fn check_return_or_exit_value(
   command : @parser.Command,
   diagnostics : Array[CheckDiagnostic],
-  multi_code : Int,
+  multi_code : Int32,
   multi_message : String,
-  invalid_code : Int,
+  invalid_code : Int32,
   invalid_message : String,
 ) -> Unit {
   match @semantics.effective_command_arguments(command) {
@@ -1069,7 +1069,7 @@ fn printf_format_and_args(
 ///|
 fn copy_words_from(
   words : Array[@parser.Word],
-  start : Int,
+  start : Int32,
 ) -> Array[@parser.Word] {
   let copied : Array[@parser.Word] = []
   let mut i = start
@@ -1209,7 +1209,7 @@ fn printf_formats(text : String) -> String {
 }
 
 ///|
-fn printf_only_trailing_ts(formats : String, arg_count : Int) -> Bool {
+fn printf_only_trailing_ts(formats : String, arg_count : Int32) -> Bool {
   let view = formats[:]
   let mut i = arg_count
   while i < view.length() {
@@ -1222,7 +1222,7 @@ fn printf_only_trailing_ts(formats : String, arg_count : Int) -> Bool {
 }
 
 ///|
-fn printf_pluralize(word : String, count : Int) -> String {
+fn printf_pluralize(word : String, count : Int32) -> String {
   if count == 1 {
     word
   } else {

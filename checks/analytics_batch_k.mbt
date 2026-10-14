@@ -41,10 +41,10 @@ fn check_while_read_pitfalls(
 fn analytics_visit_while_read_script(
   script : @parser.Script,
   active_loop_span : @parser.Span?,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   for item in script.items {
@@ -76,10 +76,10 @@ fn analytics_visit_while_read_script(
 fn analytics_visit_while_read_pipeline(
   pipeline : @parser.Pipeline,
   active_loop_span : @parser.Span?,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   if pipeline.segments.get(0) is Some(segment) {
@@ -99,10 +99,10 @@ fn analytics_visit_while_read_pipeline(
 fn analytics_visit_while_read_command(
   command : @parser.Command,
   active_loop_span : @parser.Span?,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   visit_direct_words_in_command(command, fn(word, place) {
@@ -287,10 +287,10 @@ fn analytics_visit_while_read_word(
   word : @parser.Word,
   place : WordPlace,
   active_loop_span : @parser.Span?,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   walk_word_deep(word, fn(part) {
@@ -376,10 +376,10 @@ fn analytics_redirection_reads_from_stdin(
 ///|
 fn analytics_while_read_muncher_diagnostic(
   command : @parser.Command,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
 ) -> (String, String, @fixer.Fix)? {
   let command_name = if @semantics.effective_command_name(command) is Some(name) {
     name
@@ -501,12 +501,12 @@ fn analytics_while_read_warning_span(command : @parser.Command) -> @parser.Span 
 
 ///|
 fn analytics_while_read_fix_precedence(
-  base_precedence : Int,
-  structure_depth : Int,
-  substitution_depth : Int,
-  substitution_bonus : Int,
-  background_bonus : Int,
-) -> Int {
+  base_precedence : Int32,
+  structure_depth : Int32,
+  substitution_depth : Int32,
+  substitution_bonus : Int32,
+  background_bonus : Int32,
+) -> Int32 {
   let structure_bonus = if structure_depth > 0 {
     (structure_depth - 1) * 3
   } else {
@@ -523,7 +523,7 @@ fn analytics_while_read_fix_precedence(
 fn analytics_insert_before_position_fix(
   position : @parser.Position,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(

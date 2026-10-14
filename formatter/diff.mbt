@@ -158,7 +158,7 @@ fn render_diff_line(line : DiffLine, options : FormatOptions) -> String {
 
 ///|
 /// Formats the range syntax used in unified diff hunk headers.
-fn diff_range(start : Int, count : Int) -> String {
+fn diff_range(start : Int32, count : Int32) -> String {
   if count == 0 {
     max_int(0, start - 1).to_string() + ",0"
   } else {
@@ -170,8 +170,11 @@ fn diff_range(start : Int, count : Int) -> String {
 /// Groups changed lines into hunks with `context` lines on each side.
 ///
 /// Nearby changed regions are merged when their context windows overlap.
-fn diff_hunks(diffs : Array[DiffLine], context : Int) -> Array[(Int, Int)] {
-  let changed : Array[Int] = []
+fn diff_hunks(
+  diffs : Array[DiffLine],
+  context : Int32,
+) -> Array[(Int32, Int32)] {
+  let changed : Array[Int32] = []
   let mut i = 0
   while i < diffs.length() {
     match diffs[i] {
@@ -180,7 +183,7 @@ fn diff_hunks(diffs : Array[DiffLine], context : Int) -> Array[(Int, Int)] {
     }
     i += 1
   }
-  let hunks : Array[(Int, Int)] = []
+  let hunks : Array[(Int32, Int32)] = []
   if changed.length() == 0 {
     return hunks
   }
@@ -208,9 +211,9 @@ fn diff_hunks(diffs : Array[DiffLine], context : Int) -> Array[(Int, Int)] {
 /// hunk header.
 fn diff_hunk_header(
   diffs : Array[DiffLine],
-  start : Int,
-  end_ : Int,
-) -> (Int, Int, Int, Int) {
+  start : Int32,
+  end_ : Int32,
+) -> (Int32, Int32, Int32, Int32) {
   let mut old_start = 1
   let mut new_start = 1
   let mut i = 0
@@ -236,7 +239,7 @@ fn diff_hunk_header(
 
 ///|
 /// Returns how one diff line advances the old and new cursors.
-fn diff_line_counts(line : DiffLine) -> (Int, Int) {
+fn diff_line_counts(line : DiffLine) -> (Int32, Int32) {
   match line {
     Both(_) => (1, 1)
     First(_) => (1, 0)
@@ -303,6 +306,6 @@ fn build_line_diff(
 
 ///|
 /// Flattens 2D dynamic-programming coordinates into the backing 1D array.
-fn dp_index(i : Int, j : Int, width : Int) -> Int {
+fn dp_index(i : Int32, j : Int32, width : Int32) -> Int32 {
   i * width + j
 }

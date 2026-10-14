@@ -124,7 +124,7 @@ fn[A : Hash + Eq] union_set(lhs : Set[A], rhs : Set[A]) -> Set[A] {
 ///|
 // CHECK THIS: THUNK
 fn empty_property_set() -> VariablePropertySet {
-  { exported: false, array_: false, associative: false, integer: false }
+  { exported: false, array_: false, associative: false, integer: false, }
 }
 
 ///|
@@ -192,7 +192,7 @@ fn unset_variable_state() -> VariableState {
 fn array_variable_state() -> VariableState {
   {
     variable_value: array_variable_value(),
-    variable_properties: singleton_set({ ..empty_property_set(), array_: true }),
+    variable_properties: singleton_set({ ..empty_property_set(), array_: true, }),
   }
 }
 
@@ -218,7 +218,7 @@ fn empty_internal_state() -> InternalState {
 
 ///|
 fn unreachable_internal_state() -> InternalState {
-  { ..empty_internal_state(), reachable: false }
+  { ..empty_internal_state(), reachable: false, }
 }
 
 ///|
@@ -232,10 +232,10 @@ fn property_set_add(
   prop : CfgVariableProp,
 ) -> VariablePropertySet {
   match prop {
-    Export => { ..props, exported: true }
-    Array => { ..props, array_: true }
-    Associative => { ..props, associative: true }
-    Integer => { ..props, integer: true }
+    Export => { ..props, exported: true, }
+    Array => { ..props, array_: true, }
+    Associative => { ..props, associative: true, }
+    Integer => { ..props, integer: true, }
   }
 }
 
@@ -245,10 +245,10 @@ fn property_set_remove(
   prop : CfgVariableProp,
 ) -> VariablePropertySet {
   match prop {
-    Export => { ..props, exported: false }
-    Array => { ..props, array_: false }
-    Associative => { ..props, associative: false }
-    Integer => { ..props, integer: false }
+    Export => { ..props, exported: false, }
+    Array => { ..props, array_: false, }
+    Associative => { ..props, associative: false, }
+    Integer => { ..props, integer: false, }
   }
 }
 
@@ -501,7 +501,7 @@ fn create_environment_state() -> InternalState {
   }
   for name in @semantics.variable_names_without_spaces() {
     state = set_global_value(state, name, {
-      variable_value: { ..unknown_variable_value(), space_status: Clean },
+      variable_value: { ..unknown_variable_value(), space_status: Clean, },
       variable_properties: default_properties(),
     })
   }
@@ -522,7 +522,7 @@ fn set_global_value(
 ) -> InternalState {
   let globals = state.global_values.copy()
   globals.set(name, value)
-  { ..state, global_values: globals }
+  { ..state, global_values: globals, }
 }
 
 ///|
@@ -533,7 +533,7 @@ fn set_local_value(
 ) -> InternalState {
   let locals = state.local_values.copy()
   locals.set(name, value)
-  { ..state, local_values: locals }
+  { ..state, local_values: locals, }
 }
 
 ///|
@@ -544,7 +544,7 @@ fn set_prefix_value(
 ) -> InternalState {
   let prefix = state.prefix_values.copy()
   prefix.set(name, value)
-  { ..state, prefix_values: prefix }
+  { ..state, prefix_values: prefix, }
 }
 
 ///|
@@ -555,7 +555,7 @@ fn set_function_targets(
 ) -> InternalState {
   let functions = state.function_targets.copy()
   functions.set(name, targets)
-  { ..state, function_targets: functions }
+  { ..state, function_targets: functions, }
 }
 
 ///|
@@ -563,7 +563,7 @@ fn set_exit_codes(
   state : InternalState,
   exit_codes : Set[CfgAstId],
 ) -> InternalState {
-  { ..state, exit_codes: exit_codes.copy() }
+  { ..state, exit_codes: exit_codes.copy(), }
 }
 
 ///|
@@ -573,12 +573,12 @@ fn set_single_exit_code(state : InternalState, id : CfgAstId) -> InternalState {
 
 ///|
 fn clear_prefix_values(state : InternalState) -> InternalState {
-  { ..state, prefix_values: Map([]) }
+  { ..state, prefix_values: Map([]), }
 }
 
 ///|
 fn mark_unreachable(state : InternalState) -> InternalState {
-  { ..state, reachable: false }
+  { ..state, reachable: false, }
 }
 
 ///|
@@ -1060,7 +1060,7 @@ fn build_context(cfg : CFG) -> AnalysisContext {
 }
 
 ///|
-fn init_node_id_grid(count : Int) -> Array[Array[CfgNodeId]] {
+fn init_node_id_grid(count : Int32) -> Array[Array[CfgNodeId]] {
   let values : Array[Array[CfgNodeId]] = []
   for _ in 0..<count {
     values.push([])
@@ -1069,7 +1069,7 @@ fn init_node_id_grid(count : Int) -> Array[Array[CfgNodeId]] {
 }
 
 ///|
-fn init_state_grid(count : Int) -> Array[(InternalState, InternalState)?] {
+fn init_state_grid(count : Int32) -> Array[(InternalState, InternalState)?] {
   let values : Array[(InternalState, InternalState)?] = []
   for _ in 0..<count {
     values.push(None)
@@ -1078,7 +1078,9 @@ fn init_state_grid(count : Int) -> Array[(InternalState, InternalState)?] {
 }
 
 ///|
-fn init_program_state_grid(count : Int) -> Array[(ProgramState, ProgramState)?] {
+fn init_program_state_grid(
+  count : Int32,
+) -> Array[(ProgramState, ProgramState)?] {
   let values : Array[(ProgramState, ProgramState)?] = []
   for _ in 0..<count {
     values.push(None)
@@ -1158,7 +1160,7 @@ fn run_invocation(
       Some(Some((_, outgoing))) => outgoing
       _ => mark_unreachable(input)
     }
-    let result = { entry, input, states, exit_state }
+    let result = { entry, input, states, exit_state, }
     store_invocation(ctx, result)
     result
   }
@@ -1285,7 +1287,7 @@ fn transfer_subshell(
     state,
     stack_with(stack, entry),
   )
-  { ..state, exit_codes: result.exit_state.exit_codes.copy() }
+  { ..state, exit_codes: result.exit_state.exit_codes.copy(), }
 }
 
 ///|
@@ -1358,7 +1360,7 @@ fn solve_invocation(
 }
 
 ///|
-fn init_pending_flags(count : Int) -> Array[Bool] {
+fn init_pending_flags(count : Int32) -> Array[Bool] {
   let values : Array[Bool] = []
   for _ in 0..<count {
     values.push(false)
@@ -1435,12 +1437,12 @@ fn complete_node_states(
 
 ///|
 fn straggler_state(root_exit : InternalState) -> InternalState {
-  { ..root_exit, exit_codes: Set([]) }
+  { ..root_exit, exit_codes: Set([]), }
 }
 
 ///|
 fn nested_straggler_state(state : InternalState) -> InternalState {
-  { ..straggler_state(state), local_values: Map([]), prefix_values: Map([]) }
+  { ..straggler_state(state), local_values: Map([]), prefix_values: Map([]), }
 }
 
 ///|
@@ -1468,7 +1470,7 @@ fn enqueue_declared_stragglers(
   declared_function_entries(input).each(fn(entry, target) {
     if !seen.contains(entry) {
       seen.add(entry)
-      queue.push({ input, target })
+      queue.push({ input, target, })
     }
   })
 }

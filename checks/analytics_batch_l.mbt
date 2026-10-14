@@ -122,7 +122,7 @@ fn analytics_array_index_is_unnecessary_arithmetic_expansion(
 ///|
 fn analytics_array_index_expansion_widths(
   index : @parser.ArrayIndex,
-) -> (Int, Int)? {
+) -> (Int32, Int32)? {
   guard index.arithmetic is Some(_) else { return None }
   match index.parts {
     [ArithmeticExpansion(_)] => Some((3, 2))
@@ -405,7 +405,7 @@ fn analytics_span_inside_text(
 ///|
 fn analytics_remove_parens_fix(
   span : @parser.Span,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   analytics_remove_wrapper_fix(span, 1, 1, precedence)
 }
@@ -413,9 +413,9 @@ fn analytics_remove_parens_fix(
 ///|
 fn analytics_remove_wrapper_fix(
   span : @parser.Span,
-  prefix_width : Int,
-  suffix_width : Int,
-  precedence : Int,
+  prefix_width : Int32,
+  suffix_width : Int32,
+  precedence : Int32,
 ) -> @fixer.Fix {
   let prefix_end = analytics_position_offset(span.start, prefix_width)
   let suffix_start = analytics_position_offset(span.end, -suffix_width)

@@ -9,7 +9,7 @@ const WIKI_LINK_PREFIX = "https://www.shellcheck.net/wiki/"
 /// and deterministic even when many diagnostics share the same code.
 struct WikiEntry {
   severity : @checker.DiagnosticSeverity
-  code : Int
+  code : Int32
   message : String
 } derive(Eq, Debug)
 
@@ -72,7 +72,7 @@ fn render_tty(
 /// starting line.
 fn diagnostics_for_line(
   diagnostics : Array[@checker.PositionedDiagnostic],
-  start : Int,
+  start : Int32,
 ) -> Array[@checker.PositionedDiagnostic] {
   let grouped : Array[@checker.PositionedDiagnostic] = []
   let filename = diagnostics[start].filename
@@ -107,7 +107,7 @@ fn remember_wiki_entry(
 
 ///|
 /// Returns whether a wiki entry for `code` is already present.
-fn wiki_entries_contains(entries : Array[WikiEntry], code : Int) -> Bool {
+fn wiki_entries_contains(entries : Array[WikiEntry], code : Int32) -> Bool {
   for entry in entries {
     if entry.code == code {
       return true
@@ -191,7 +191,7 @@ fn wiki_entry_precedes(lhs : WikiEntry, rhs : WikiEntry) -> Bool {
 
 ///|
 /// Maps severities to footer sort priority.
-fn wiki_entry_severity_rank(severity : @checker.DiagnosticSeverity) -> Int {
+fn wiki_entry_severity_rank(severity : @checker.DiagnosticSeverity) -> Int32 {
   match severity {
     Error => 0
     Warning => 1
@@ -247,7 +247,7 @@ fn render_fixed_excerpt(source : String, fix : @fixer.Fix) -> String? {
 
 ///|
 /// Computes the min/max line range touched by a merged fix.
-fn affected_line_range(fix : @fixer.Fix) -> (Int, Int) {
+fn affected_line_range(fix : @fixer.Fix) -> (Int32, Int32) {
   let mut min_line = fix.replacements[0].start.line
   let mut max_line = fix.replacements[0].end.line
   for replacement in fix.replacements {

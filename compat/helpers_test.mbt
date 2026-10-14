@@ -1,28 +1,28 @@
 ///|
 struct BaselineDiagnostic {
   severity : String
-  code : Int?
-  line : Int
-  column : Int
+  code : Int32?
+  line : Int32
+  column : Int32
   message : String
 } derive(Eq, Debug)
 
 ///|
 fn baseline_diagnostic(
   severity : String,
-  code : Int?,
-  line : Int,
-  column : Int,
+  code : Int32?,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> BaselineDiagnostic {
-  { severity, code, line, column, message }
+  { severity, code, line, column, message, }
 }
 
 ///|
 fn shellcheck_error(
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> BaselineDiagnostic {
   baseline_diagnostic("error", Some(code), line, column, message)
@@ -30,9 +30,9 @@ fn shellcheck_error(
 
 ///|
 fn shellcheck_warning(
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> BaselineDiagnostic {
   baseline_diagnostic("warning", Some(code), line, column, message)
@@ -40,9 +40,9 @@ fn shellcheck_warning(
 
 ///|
 fn shellcheck_info(
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> BaselineDiagnostic {
   baseline_diagnostic("info", Some(code), line, column, message)
@@ -50,9 +50,9 @@ fn shellcheck_info(
 
 ///|
 fn shellcheck_style(
-  code : Int,
-  line : Int,
-  column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
   message : String,
 ) -> BaselineDiagnostic {
   baseline_diagnostic("style", Some(code), line, column, message)
@@ -143,7 +143,7 @@ fn baseline_diagnostic_precedes(
 }
 
 ///|
-fn baseline_severity_rank(severity : String) -> Int {
+fn baseline_severity_rank(severity : String) -> Int32 {
   match severity {
     "error" => 0
     "warning" => 1
@@ -209,7 +209,7 @@ fn assert_diagnostics_match(
   label : String,
   source : String,
   shellcheck_baseline : Array[BaselineDiagnostic],
-  spec? : @checker.CheckSpec = bash_shell_spec(),
+  spec~ : @checker.CheckSpec = bash_shell_spec(),
 ) -> Unit {
   let actual = normalize_baseline_diagnostics(
     @checker.check_script(source, spec~).diagnostics,
@@ -259,7 +259,7 @@ fn assert_parser_diagnostics_match(
 async fn assert_cli_output_matches(
   label : String,
   action : @driver.CliAction,
-  expected_exit_code : Int,
+  expected_exit_code : Int32,
   expected_output : String,
 ) -> Unit {
   let outcome = @driver.run_cli(

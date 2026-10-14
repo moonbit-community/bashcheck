@@ -697,7 +697,7 @@ fn collect_function_and_alias_definitions(
           for argument in @semantics.effective_command_arguments(command) {
             if analytics_alias_definition_name(argument) is Some(name) {
               if !definitions.contains(name) {
-                definitions.set(name, { declaration_span: argument.span })
+                definitions.set(name, { declaration_span: argument.span, })
               }
             }
           }
@@ -768,7 +768,7 @@ fn analytics_external_command_candidate_words(
 }
 
 ///|
-fn analytics_drop_flag_words(arguments : Array[@parser.Word]) -> Int {
+fn analytics_drop_flag_words(arguments : Array[@parser.Word]) -> Int32 {
   let mut i = 0
   while i < arguments.length() {
     match @semantics.literal_text(arguments[i]) {
@@ -782,7 +782,7 @@ fn analytics_drop_flag_words(arguments : Array[@parser.Word]) -> Int {
 ///|
 fn analytics_push_word_at(
   values : Array[@parser.Word],
-  index : Int,
+  index : Int32,
   out : Array[@parser.Word],
 ) -> Unit {
   if values.get(index) is Some(value) {
@@ -805,7 +805,7 @@ fn analytics_path_basename(path : String) -> String {
 }
 
 ///|
-fn analytics_line_context(line : Int) -> String {
+fn analytics_line_context(line : Int32) -> String {
   " on line \{line}."
 }
 
@@ -1126,7 +1126,7 @@ fn d_cd_back_candidate(item : @parser.ListItem) -> AnalyticsCdBackCandidate? {
   guard @semantics.effective_command_name(command) == Some("cd") else {
     return None
   }
-  Some({ command, reverts: d_cd_command_is_revert(command) })
+  Some({ command, reverts: d_cd_command_is_revert(command), })
 }
 
 ///|
@@ -1263,7 +1263,7 @@ fn analytics_visit_and_or_for_cd_guards(
 fn analytics_pipeline_has_or_exit_guard(
   pipelines : Array[@parser.Pipeline],
   operators : Array[@parser.AndOrOperator],
-  index : Int,
+  index : Int32,
 ) -> Bool {
   if index >= operators.length() {
     return false
@@ -1558,7 +1558,7 @@ fn analytics_visit_command_for_loop_reassignment(
           "This parent loop has its index variable overridden.",
         )
       }
-      stack.push({ name, span: command_keyword_span(command, "for") })
+      stack.push({ name, span: command_keyword_span(command, "for"), })
       true
     }
     _ => false
@@ -1823,7 +1823,7 @@ fn analytics_visit_command_for_array_loop_values(
     ForIn(clause) => {
       let loop_values = analytics_collect_array_loop_values(clause.values)
       if loop_values.length() > 0 {
-        contexts.push({ index_name: clause.name, loop_values, active: true })
+        contexts.push({ index_name: clause.name, loop_values, active: true, })
         true
       } else {
         false
@@ -1954,7 +1954,7 @@ fn analytics_invalidate_array_loop_contexts(
   let mut i = 0
   while i < contexts.length() {
     if contexts[i].active && names.contains(contexts[i].index_name) {
-      contexts[i] = { ..contexts[i], active: false }
+      contexts[i] = { ..contexts[i], active: false, }
     }
     i += 1
   }
@@ -2157,7 +2157,7 @@ fn analytics_array_index_uses_name(
           operator: None,
           indirect: false,
           length_prefix: false,
-          ..,
+          ..
         }
       ),
     ] => text == name
@@ -2332,8 +2332,8 @@ fn d_brace_command_expansion_span(word : @parser.Word) -> @parser.Span {
 ///|
 fn d_span_offset(
   span : @parser.Span,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
 ) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(

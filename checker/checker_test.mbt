@@ -1,7 +1,7 @@
 ///|
 fn checker_has_code(
   diagnostics : Array[PositionedDiagnostic],
-  code : Int,
+  code : Int32,
 ) -> Bool {
   for diagnostic in diagnostics {
     match diagnostic.code {
@@ -15,7 +15,7 @@ fn checker_has_code(
 ///|
 fn checker_first_code(
   diagnostics : Array[PositionedDiagnostic],
-  code : Int,
+  code : Int32,
 ) -> PositionedDiagnostic {
   for diagnostic in diagnostics {
     match diagnostic.code {

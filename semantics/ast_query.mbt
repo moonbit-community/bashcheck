@@ -1488,7 +1488,7 @@ fn decode_dollar_single_quoted(text : String) -> String {
 }
 
 ///|
-fn hex_digit_value(ch : UInt16) -> Int? {
+fn hex_digit_value(ch : UInt16) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -1507,14 +1507,14 @@ fn is_octal_digit(ch : UInt16) -> Bool {
 }
 
 ///|
-fn octal_digit_value(ch : UInt16) -> Int {
+fn octal_digit_value(ch : UInt16) -> Int32 {
   ch.to_int() - '0'.to_int()
 }
 
 ///|
 fn copy_words_from(
   words : Array[@parser.Word],
-  start : Int,
+  start : Int32,
 ) -> Array[@parser.Word] {
   let copied : Array[@parser.Word] = []
   let mut i = start
@@ -1552,7 +1552,7 @@ fn path_basename(path : String) -> String {
 }
 
 ///|
-fn effective_simple_word_index(words : Array[@parser.Word]) -> Int? {
+fn effective_simple_word_index(words : Array[@parser.Word]) -> Int32? {
   guard words.length() > 0 else { return None }
   let direct_name = if literal_text(words[0]) is Some(name) {
     name
@@ -1585,9 +1585,9 @@ fn effective_simple_word_index(words : Array[@parser.Word]) -> Int? {
 ///|
 fn wrapper_effective_word_index(
   words : Array[@parser.Word],
-  start : Int,
+  start : Int32,
   pass_through_options : Array[String],
-) -> Int? {
+) -> Int32? {
   let mut i = start
   while i < words.length() {
     match plain_literal_text(words[i]) {
@@ -1617,7 +1617,7 @@ fn wrapper_effective_word_index(
 }
 
 ///|
-fn exec_effective_word_index(words : Array[@parser.Word]) -> Int? {
+fn exec_effective_word_index(words : Array[@parser.Word]) -> Int32? {
   let mut i = 1
   while i < words.length() {
     if literal_text(words[i]) is Some(text) {

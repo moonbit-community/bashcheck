@@ -1,9 +1,9 @@
 ///|
 fn compat_replacement(
-  start_offset : Int,
-  end_offset : Int,
+  start_offset : Int32,
+  end_offset : Int32,
   text : String,
-  precedence : Int,
+  precedence : Int32,
   insertion_point : InsertionPoint,
 ) -> Replacement {
   Replacement::new(
@@ -18,10 +18,10 @@ fn compat_replacement(
 
 ///|
 fn t_from_start(
-  start_column : Int,
-  end_column : Int,
+  start_column : Int32,
+  end_column : Int32,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> Replacement {
   compat_replacement(
     start_column - 1,
@@ -34,10 +34,10 @@ fn t_from_start(
 
 ///|
 fn t_from_end(
-  start_column : Int,
-  end_column : Int,
+  start_column : Int32,
+  end_column : Int32,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> Replacement {
   compat_replacement(
     start_column - 1,
@@ -114,8 +114,8 @@ fn assert_fixer_eq(label : String, actual : String, expected : String) -> Unit {
 
 ///|
 fn do_replace(
-  start_column : Int,
-  end_column : Int,
+  start_column : Int32,
+  end_column : Int32,
   original : String,
   replacement : String,
 ) -> String {
@@ -137,7 +137,7 @@ fn compat_no_overlap(lhs : Replacement, rhs : Replacement) -> Bool {
 }
 
 ///|
-fn ordered_pair(lhs : Int, rhs : Int) -> (Int, Int) {
+fn ordered_pair(lhs : Int32, rhs : Int32) -> (Int32, Int32) {
   if lhs <= rhs {
     (lhs, rhs)
   } else {
@@ -146,7 +146,7 @@ fn ordered_pair(lhs : Int, rhs : Int) -> (Int, Int) {
 }
 
 ///|
-fn bounded_offset(value : Int, limit : Int) -> Int {
+fn bounded_offset(value : Int32, limit : Int32) -> Int32 {
   if limit <= 0 {
     return 0
   }
@@ -159,7 +159,7 @@ fn bounded_offset(value : Int, limit : Int) -> Int {
 }
 
 ///|
-fn compat_shift_text(seed : Int) -> String {
+fn compat_shift_text(seed : Int32) -> String {
   let width = bounded_offset(seed, 3) + 1
   let ch = match bounded_offset(seed, 3) {
     0 => 'x'
@@ -176,7 +176,7 @@ fn compat_shift_text(seed : Int) -> String {
 }
 
 ///|
-fn pstree_compat_fix(offsets : Array[Int], source : String) -> Fix {
+fn pstree_compat_fix(offsets : Array[Int32], source : String) -> Fix {
   let replacements : Array[Replacement] = []
   let mut i = 0
   let limit = source.length() + 1
@@ -316,10 +316,10 @@ test "shellcheck fixer fixed replacement props" {
 ///|
 test "shellcheck fixer quickcheck overlap commutes" {
   let offset = @gen.int_range(0, 12)
+  let pair = offset.zip(offset)
+  let sample = pair.zip_with(pair, fn(lhs, rhs) { (lhs.0, lhs.1, rhs.0, rhs.1) })
   @qc.quick_check(
-    @qc.forall(@gen.quad(offset, offset, offset, offset), fn(
-      sample : (Int, Int, Int, Int),
-    ) {
+    @qc.forall(sample, fn(sample : (Int32, Int32, Int32, Int32)) {
       let (a, b, c, d) = sample
       let lhs = ordered_pair(a, b)
       let rhs = ordered_pair(c, d)
@@ -349,7 +349,7 @@ test "shellcheck fixer quickcheck overlap commutes" {
 /// against a straightforward offset-adjusting implementation.
 test "shellcheck fixer adapted pstree sums correctly" {
   @qc.quick_check_fn(
-    fn(offsets : Array[Int]) {
+    fn(offsets : Array[Int32]) {
       let source = "0123456789"
       let fix = pstree_compat_fix(offsets, source)
       apply_fix(fix, source) == apply_fix_with_cumulative_shifts(fix, source)

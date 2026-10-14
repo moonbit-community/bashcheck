@@ -1208,7 +1208,7 @@ fn g_maybe_push_arithmetic_deref_diagnostic(
 ///|
 fn g_token_is_base_prefix(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> Bool {
   if index == 0 {
     return false
@@ -1252,7 +1252,7 @@ fn g_arithmetic_mul_div_operator_span(
   expr : @parser.ArithmeticExpr,
   span : @parser.Span,
   source : String?,
-  operator_index : Int,
+  operator_index : Int32,
 ) -> @parser.Span {
   if source is Some(source_text) {
     if string_index_of(source_text, expr.raw) is Some(expr_offset) {
@@ -1288,7 +1288,7 @@ fn g_arithmetic_fragment_span(
 }
 
 ///|
-fn g_nth_top_level_mul_div_offset(raw : String, target_index : Int) -> Int? {
+fn g_nth_top_level_mul_div_offset(raw : String, target_index : Int32) -> Int32? {
   let view = raw[:]
   let mut i = 0
   let mut seen = 0

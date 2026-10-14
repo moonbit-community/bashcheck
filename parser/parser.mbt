@@ -1,8 +1,8 @@
 ///|
 priv struct Cursor {
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 }
 
 ///|
@@ -35,19 +35,19 @@ priv enum ShebangShellStatus {
 priv struct ConditionCursor {
   tokens : Array[ConditionToken]
   kind : ConditionKind
-  mut index : Int
+  mut index : Int32
 }
 
 ///|
 priv struct ArithmeticCursor {
   tokens : Array[ArithmeticToken]
-  mut index : Int
+  mut index : Int32
 }
 
 ///|
 priv struct PendingHereDoc {
   redirections : Array[Redirection]
-  index : Int
+  index : Int32
   delimiter : String
   quoted : Bool
   strip_tabs : Bool
@@ -63,9 +63,9 @@ priv struct Parser {
   source : StringView
   options : ParseOptions
   source_stack : Array[String]
-  mut offset : Int
-  mut line : Int
-  mut column : Int
+  mut offset : Int32
+  mut line : Int32
+  mut column : Int32
   mut pending_heredocs : Array[PendingHereDoc]
   mut current_annotations : Array[Annotation]
   mut file_annotations : Array[Annotation]
@@ -96,17 +96,17 @@ fn Parser::new(
 
 ///|
 fn Parser::position(self : Parser) -> Position {
-  { offset: self.offset, line: self.line, column: self.column }
+  { offset: self.offset, line: self.line, column: self.column, }
 }
 
 ///|
 fn make_span(start : Position, end_ : Position) -> Span {
-  { start, end: end_ }
+  { start, end: end_, }
 }
 
 ///|
 fn span_at(pos : Position) -> Span {
-  { start: pos, end: pos }
+  { start: pos, end: pos, }
 }
 
 ///|
@@ -148,7 +148,7 @@ fn translate_script(base : Position, script : Script) -> Script {
   for item in script.items {
     items.push(translate_list_item(base, item))
   }
-  { ..script, span: translate_span(base, script.span), items }
+  { ..script, span: translate_span(base, script.span), items, }
 }
 
 ///|
@@ -179,7 +179,7 @@ fn translate_pipeline(base : Position, pipeline : Pipeline) -> Pipeline {
   for segment in pipeline.segments {
     segments.push(translate_pipeline_segment(base, segment))
   }
-  { ..pipeline, span: translate_span(base, pipeline.span), segments }
+  { ..pipeline, span: translate_span(base, pipeline.span), segments, }
 }
 
 ///|
@@ -398,7 +398,7 @@ fn translate_case_clause(base : Position, clause : CaseClause) -> CaseClause {
   for item in clause.items {
     items.push(translate_case_item(base, item))
   }
-  { word: translate_word(base, clause.word), items }
+  { word: translate_word(base, clause.word), items, }
 }
 
 ///|
@@ -415,7 +415,7 @@ fn translate_condition_command(
   base : Position,
   condition : ConditionCommand,
 ) -> ConditionCommand {
-  { ..condition, expr: translate_condition_expr(base, condition.expr) }
+  { ..condition, expr: translate_condition_expr(base, condition.expr), }
 }
 
 ///|
@@ -423,7 +423,7 @@ fn translate_condition_logical_operator(
   base : Position,
   op : ConditionLogicalOperator,
 ) -> ConditionLogicalOperator {
-  { ..op, span: translate_span(base, op.span) }
+  { ..op, span: translate_span(base, op.span), }
 }
 
 ///|
@@ -465,7 +465,7 @@ fn translate_arithmetic_command(
   base : Position,
   command : ArithmeticCommand,
 ) -> ArithmeticCommand {
-  { ..command, expr: translate_arithmetic_expr(base, command.expr) }
+  { ..command, expr: translate_arithmetic_expr(base, command.expr), }
 }
 
 ///|
@@ -488,7 +488,7 @@ fn translate_bats_test_clause(
   base : Position,
   clause : BatsTestClause,
 ) -> BatsTestClause {
-  { ..clause, body: translate_script(base, clause.body) }
+  { ..clause, body: translate_script(base, clause.body), }
 }
 
 ///|
@@ -496,7 +496,7 @@ fn translate_function_def(
   base : Position,
   function_ : FunctionDef,
 ) -> FunctionDef {
-  { ..function_, body: translate_command(base, function_.body) }
+  { ..function_, body: translate_command(base, function_.body), }
 }
 
 ///|
@@ -626,7 +626,7 @@ fn translate_extglob_pattern(
   base : Position,
   pattern : ExtGlobPattern,
 ) -> ExtGlobPattern {
-  { ..pattern, alternatives: translate_words(base, pattern.alternatives) }
+  { ..pattern, alternatives: translate_words(base, pattern.alternatives), }
 }
 
 ///|
@@ -634,7 +634,7 @@ fn translate_brace_expansion(
   base : Position,
   expansion : BraceExpansion,
 ) -> BraceExpansion {
-  { ..expansion, elements: translate_words(base, expansion.elements) }
+  { ..expansion, elements: translate_words(base, expansion.elements), }
 }
 
 ///|
@@ -776,9 +776,9 @@ fn Parser::emit_diagnostic(
   severity : DiagnosticSeverity,
   pos : Position,
   message : String,
-  code : Int?,
+  code : Int32?,
 ) -> Unit {
-  self.diagnostics.push({ span: span_at(pos), severity, code, message })
+  self.diagnostics.push({ span: span_at(pos), severity, code, message, })
 }
 
 ///|
@@ -832,7 +832,7 @@ fn Parser::maybe_emit_unicode_quote(self : Parser, ch : UInt16) -> Unit {
 
 ///|
 fn Parser::mark(self : Parser) -> Cursor {
-  { offset: self.offset, line: self.line, column: self.column }
+  { offset: self.offset, line: self.line, column: self.column, }
 }
 
 ///|
@@ -857,7 +857,7 @@ fn Parser::peek(self : Parser) -> UInt16? {
 }
 
 ///|
-fn Parser::peek_n(self : Parser, n : Int) -> UInt16? {
+fn Parser::peek_n(self : Parser, n : Int32) -> UInt16? {
   let idx = self.offset + n
   if idx < 0 || idx >= self.source.length() {
     None
@@ -891,7 +891,7 @@ fn Parser::advance_one(self : Parser) -> UInt16? {
 }
 
 ///|
-fn Parser::advance_n(self : Parser, n : Int) -> Unit {
+fn Parser::advance_n(self : Parser, n : Int32) -> Unit {
   for _ in 0..<n {
     ignore(self.advance_one())
   }
@@ -924,7 +924,7 @@ fn Parser::consume_newline(self : Parser) -> Bool {
 }
 
 ///|
-fn Parser::current_slice(self : Parser, start_offset : Int) -> String {
+fn Parser::current_slice(self : Parser, start_offset : Int32) -> String {
   self.source.view(start_offset~, end_offset=self.offset).to_owned()
 }
 
@@ -1166,7 +1166,7 @@ fn is_condition_internal_message(message : String, tag : String) -> Bool {
 }
 
 ///|
-fn digits_to_int(digits : String) -> Int {
+fn digits_to_int(digits : String) -> Int32 {
   let mut acc = 0
   for ch in digits {
     acc = acc * 10 + (ch.to_int() - '0'.to_int())
@@ -1292,7 +1292,7 @@ fn Parser::peek_comment_after_inline_space(
     }
     if ch == '\\' && i + 1 < self.source.length() && self.source[i + 1] == '\n' {
       i += 2
-      pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1 }
+      pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1, }
       continue
     }
     if ch == '\\' &&
@@ -1300,7 +1300,7 @@ fn Parser::peek_comment_after_inline_space(
       self.source[i + 1] == '\r' &&
       self.source[i + 2] == '\n' {
       i += 3
-      pos = { offset: pos.offset + 3, line: pos.line + 1, column: 1 }
+      pos = { offset: pos.offset + 3, line: pos.line + 1, column: 1, }
       continue
     }
     if ch != '#' {
@@ -1322,7 +1322,7 @@ fn Parser::peek_comment_after_inline_space(
 }
 
 ///|
-fn Parser::peek_after_linebreak_gaps(self : Parser) -> (Position, Int)? {
+fn Parser::peek_after_linebreak_gaps(self : Parser) -> (Position, Int32)? {
   let mut i = self.offset
   let mut pos = self.position()
   while i < self.source.length() {
@@ -1334,16 +1334,16 @@ fn Parser::peek_after_linebreak_gaps(self : Parser) -> (Position, Int)? {
     }
     if ch == '\n' {
       i += 1
-      pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1 }
+      pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1, }
       continue
     }
     if ch == '\r' {
       i += 1
       if i < self.source.length() && self.source[i] == '\n' {
         i += 1
-        pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1 }
+        pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1, }
       } else {
-        pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1 }
+        pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1, }
       }
       continue
     }
@@ -1386,7 +1386,7 @@ fn Parser::skip_command_gaps(self : Parser) -> Unit {
 }
 
 ///|
-fn Parser::has_line_continuation_at(self : Parser, offset : Int) -> Bool {
+fn Parser::has_line_continuation_at(self : Parser, offset : Int32) -> Bool {
   self.peek_n(offset) == Some('\\') &&
   (
     self.peek_n(offset + 1) == Some('\n') ||
@@ -1398,7 +1398,7 @@ fn Parser::has_line_continuation_at(self : Parser, offset : Int) -> Bool {
 }
 
 ///|
-fn Parser::is_keyword_boundary_after(self : Parser, offset : Int) -> Bool {
+fn Parser::is_keyword_boundary_after(self : Parser, offset : Int32) -> Bool {
   self.has_line_continuation_at(offset) ||
   is_keyword_boundary(self.peek_n(offset))
 }
@@ -1467,7 +1467,7 @@ fn Parser::is_at_any_keyword(self : Parser, keywords : Array[String]) -> Bool {
 ///|
 fn Parser::accept_but_warn_semicolon(
   self : Parser,
-  code : Int,
+  code : Int32,
   message : String,
 ) -> Unit {
   let mark = self.mark()
@@ -1580,12 +1580,16 @@ fn trim_ascii_space(text : String) -> String {
 }
 
 ///|
-fn advance_position_columns(pos : Position, columns : Int) -> Position {
-  { offset: pos.offset + columns, line: pos.line, column: pos.column + columns }
+fn advance_position_columns(pos : Position, columns : Int32) -> Position {
+  {
+    offset: pos.offset + columns,
+    line: pos.line,
+    column: pos.column + columns,
+  }
 }
 
 ///|
-fn retreat_position_columns(pos : Position, columns : Int) -> Position {
+fn retreat_position_columns(pos : Position, columns : Int32) -> Position {
   {
     offset: pos.offset - columns,
     line: pos.line,
@@ -1812,7 +1816,7 @@ fn is_disable_value(text : String) -> Bool {
 }
 
 ///|
-fn parse_disable_code_number(text : String) -> Int? {
+fn parse_disable_code_number(text : String) -> Int32? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
   let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !is_disable_code(text) {
@@ -1822,7 +1826,7 @@ fn parse_disable_code_number(text : String) -> Int? {
 }
 
 ///|
-fn disable_value_matches_code(value : String, code : Int) -> Bool {
+fn disable_value_matches_code(value : String, code : Int32) -> Bool {
   if value == "all" {
     return true
   }
@@ -1850,7 +1854,7 @@ fn disable_value_matches_code(value : String, code : Int) -> Bool {
 ///|
 fn annotations_disable_code(
   annotations : Array[Annotation],
-  code : Int?,
+  code : Int32?,
 ) -> Bool {
   if code is Some(value) {
     for annotation in annotations {
@@ -2128,7 +2132,7 @@ fn classify_shebang_line(line : String) -> ShebangLineKind? {
 }
 
 ///|
-fn shebang_leading_space_count(line : String) -> Int {
+fn shebang_leading_space_count(line : String) -> Int32 {
   let view = line[:]
   let mut count = 0
   while count < view.length() && is_space_char(view[count]) {
@@ -2138,7 +2142,7 @@ fn shebang_leading_space_count(line : String) -> Int {
 }
 
 ///|
-fn shebang_hash_bang_gap_count(line : String) -> Int {
+fn shebang_hash_bang_gap_count(line : String) -> Int32 {
   let view = line[:]
   let start = shebang_leading_space_count(line)
   if start >= view.length() || view[start] != '#' {
@@ -2178,7 +2182,7 @@ fn basename(text : String) -> String {
 }
 
 ///|
-fn env_shell_from_args(args : Array[String], start : Int) -> String {
+fn env_shell_from_args(args : Array[String], start : Int32) -> String {
   let mut i = start
   while i < args.length() {
     let arg = quote_removed_source(args[i])
@@ -2260,7 +2264,7 @@ fn classify_shebang_shell(shell : String) -> ShebangShellStatus {
 ///|
 // CHECK THIS: THUNK
 fn initial_position() -> Position {
-  { offset: 0, line: 1, column: 1 }
+  { offset: 0, line: 1, column: 1, }
 }
 
 ///|
@@ -2465,7 +2469,7 @@ fn trailing_command_kind(item : ListItem) -> CommandKind {
 }
 
 ///|
-fn trailing_command_parse_stop_message(item : ListItem) -> (Int, String)? {
+fn trailing_command_parse_stop_message(item : ListItem) -> (Int32, String)? {
   match trailing_command_kind(item) {
     Condition(_) =>
       Some(
@@ -2710,7 +2714,7 @@ fn Parser::parse_and_or(self : Parser) -> AndOrList raise ParseError {
     }
     break
   }
-  { span: make_span(start, self.position()), head, tail }
+  { span: make_span(start, self.position()), head, tail, }
 }
 
 ///|
@@ -2736,7 +2740,7 @@ fn Parser::parse_pipeline(self : Parser) -> Pipeline raise ParseError {
     }
     break
   }
-  { span: make_span(start, self.position()), segments, operators }
+  { span: make_span(start, self.position()), segments, operators, }
 }
 
 ///|
@@ -2760,7 +2764,7 @@ fn Parser::parse_pipeline_segment(
     self.skip_command_gaps()
   }
   let command = self.parse_command()
-  { span: make_span(start, self.position()), bangs, command }
+  { span: make_span(start, self.position()), bangs, command, }
 }
 
 ///|
@@ -2778,7 +2782,7 @@ fn Parser::parse_command(self : Parser) -> Command raise ParseError {
       _ => self.maybe_emit_post_compound_command_diagnostic()
     }
     let end = self.position()
-    { span: make_span(start, end), kind, redirects }
+    { span: make_span(start, end), kind, redirects, }
   } else if self.unexpected_reserved_word() is Some(word) {
     raise Message(
       pos=self.position(),
@@ -2942,7 +2946,7 @@ fn Parser::try_parse_timed_command(self : Parser) -> Command? raise ParseError {
   let body = self.parse_pipeline()
   let redirects = self.parse_trailing_redirections()
   let end = self.position()
-  Some({ span: make_span(start, end), kind: Time({ flags, body }), redirects })
+  Some({ span: make_span(start, end), kind: Time({ flags, body, }), redirects, })
 }
 
 ///|
@@ -3038,13 +3042,13 @@ fn Parser::try_parse_function_definition(
   }
   let body_command = {
     let body_end = self.position()
-    { span: make_span(body_start, body_end), kind: body_kind, redirects: [] }
+    { span: make_span(body_start, body_end), kind: body_kind, redirects: [], }
   }
   let redirects = self.parse_trailing_redirections()
   let end = self.position()
   Some({
     span: make_span(start, end),
-    kind: Function({ name, uses_keyword, has_parentheses, body: body_command }),
+    kind: Function({ name, uses_keyword, has_parentheses, body: body_command, }),
     redirects,
   })
 }
@@ -3128,9 +3132,9 @@ fn Parser::try_parse_non_coproc_compound_command(
 }
 
 ///|
-fn Parser::find_bats_test_name_end(self : Parser, start : Int) -> Int? {
+fn Parser::find_bats_test_name_end(self : Parser, start : Int32) -> Int32? {
   let mut i = start
-  let mut brace_offset : Int? = None
+  let mut brace_offset : Int32? = None
   let mut quote : UInt16? = None
   while i < self.source.length() {
     let ch = self.source[i]
@@ -3222,7 +3226,7 @@ fn Parser::try_parse_bats_test(self : Parser) -> CommandKind? raise ParseError {
     )
     return None
   }
-  Some(BatsTest({ name, body: self.parse_brace_group() }))
+  Some(BatsTest({ name, body: self.parse_brace_group(), }))
 }
 
 ///|
@@ -3349,7 +3353,7 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
   )
   self.warn_if_empty_clause("then", ["elif", "else", "fi"])
   let body = self.parse_script(["elif", "else", "fi"], None)
-  arms.push({ condition, body })
+  arms.push({ condition, body, })
   while true {
     let elif_pos = self.position()
     if !self.eat_keyword("elif") {
@@ -3373,7 +3377,7 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
     )
     self.warn_if_empty_clause("then", ["elif", "else", "fi"])
     let elif_body = self.parse_script(["elif", "else", "fi"], None)
-    arms.push({ condition: elif_condition, body: elif_body })
+    arms.push({ condition: elif_condition, body: elif_body, })
   }
   let else_body = if self.is_at_keyword("else") {
     let else_pos = self.position()
@@ -3411,7 +3415,7 @@ fn Parser::parse_if_clause(self : Parser) -> IfClause raise ParseError {
       Some(1047),
     )
   }
-  { arms, else_body }
+  { arms, else_body, }
 }
 
 ///|
@@ -3420,7 +3424,7 @@ fn Parser::parse_while_clause(self : Parser) -> LoopClause raise ParseError {
   self.expect_keyword("while")
   let condition = self.parse_script(["do", "done"], None)
   let body = self.parse_do_group_body(loop_pos)
-  { condition, body }
+  { condition, body, }
 }
 
 ///|
@@ -3429,7 +3433,7 @@ fn Parser::parse_until_clause(self : Parser) -> LoopClause raise ParseError {
   self.expect_keyword("until")
   let condition = self.parse_script(["do", "done"], None)
   let body = self.parse_do_group_body(loop_pos)
-  { condition, body }
+  { condition, body, }
 }
 
 ///|
@@ -3797,13 +3801,13 @@ fn Parser::parse_for_command(self : Parser) -> CommandKind raise ParseError {
   let (name, values, body) = self.parse_for_values_and_body_after_keyword(
     "for", true, true, false, loop_pos,
   )
-  ForIn({ name, values, body })
+  ForIn({ name, values, body, })
 }
 
 ///|
 fn Parser::parse_select_clause(self : Parser) -> SelectClause raise ParseError {
   let (name, values, body) = self.parse_for_values_and_body("select")
-  { name, values, body }
+  { name, values, body, }
 }
 
 ///|
@@ -3971,7 +3975,7 @@ fn Parser::condition_closing_delimiter(
   self : Parser,
   double_bracket : Bool,
   regex_rhs_expected : Bool,
-  group_depth : Int,
+  group_depth : Int32,
 ) -> String? {
   if self.starts_with("]]") {
     return Some("]]")
@@ -4192,11 +4196,11 @@ fn Parser::read_condition_tokens(
     } else if self.starts_with("&&") {
       let start = self.position()
       self.advance_n(2)
-      tokens.push(And({ text: "&&", span: make_span(start, self.position()) }))
+      tokens.push(And({ text: "&&", span: make_span(start, self.position()), }))
     } else if self.starts_with("||") {
       let start = self.position()
       self.advance_n(2)
-      tokens.push(Or({ text: "||", span: make_span(start, self.position()) }))
+      tokens.push(Or({ text: "||", span: make_span(start, self.position()), }))
     } else if double_bracket && self.peek() == Some('(') {
       ignore(self.advance_one())
       group_depth += 1
@@ -4379,10 +4383,10 @@ fn condition_token_position(
 fn condition_specific_diagnostic(
   severity : DiagnosticSeverity,
   pos : Position,
-  code : Int,
+  code : Int32,
   message : String,
 ) -> Diagnostic {
-  { span: span_at(pos), severity, code: Some(code), message }
+  { span: span_at(pos), severity, code: Some(code), message, }
 }
 
 ///|
@@ -4470,9 +4474,9 @@ fn consume_condition_logical(
       } else {
         word.source
       }
-      { text, span: word.span }
+      { text, span: word.span, }
     }
-    _ => { text: "", span: span_at(fallback) }
+    _ => { text: "", span: span_at(fallback), }
   }
 }
 
@@ -4639,11 +4643,11 @@ fn parse_condition_expression_from_tokens(
   tokens : Array[ConditionToken],
   kind : ConditionKind,
   fallback : Position,
-) -> (ConditionExpr, Int) raise ParseError {
+) -> (ConditionExpr, Int32) raise ParseError {
   if tokens.length() == 0 {
     return (Empty, 0)
   }
-  let cursor = { tokens, kind, index: 0 }
+  let cursor = { tokens, kind, index: 0, }
   let expr = parse_condition_or_expr(cursor, fallback)
   (expr, cursor.index)
 }
@@ -4879,7 +4883,7 @@ fn Parser::parse_condition_command(
       fallback,
     )
   }
-  { kind, raw, expr }
+  { kind, raw, expr, }
 }
 
 ///|
@@ -4889,7 +4893,7 @@ fn Parser::parse_arithmetic_command(
   self.advance_n(2)
   let raw = trim_ascii_space(self.read_arithmetic_expansion())
   self.advance_n(2)
-  { raw, expr: parse_arithmetic_expr(raw) }
+  { raw, expr: parse_arithmetic_expr(raw), }
 }
 
 ///|
@@ -4917,7 +4921,7 @@ fn Parser::parse_case_list_item(
   let start = self.position()
   let and_or = self.parse_and_or()
   let terminator = self.parse_case_terminator()
-  { span: make_span(start, self.position()), annotations, and_or, terminator }
+  { span: make_span(start, self.position()), annotations, and_or, terminator, }
 }
 
 ///|
@@ -5083,7 +5087,7 @@ fn Parser::parse_case_clause(self : Parser) -> CaseClause raise ParseError {
   let mut invalid_annotation_positions = self.skip_case_item_gaps()
   while !self.eof() {
     if self.eat_keyword("esac") {
-      return { word, items }
+      return { word, items, }
     }
     self.emit_case_item_context_diagnostics(
       case_pos, invalid_annotation_positions,
@@ -5113,7 +5117,7 @@ fn Parser::parse_case_clause(self : Parser) -> CaseClause raise ParseError {
     self.skip_command_gaps()
     let body = self.parse_case_item_body()
     let separator = self.parse_case_separator()
-    items.push({ patterns, body, separator })
+    items.push({ patterns, body, separator, })
     invalid_annotation_positions = self.skip_case_item_gaps()
   }
   raise self.unexpected_end("case clause")
@@ -5137,7 +5141,7 @@ fn Parser::parse_coproc_clause(self : Parser) -> CoProcClause raise ParseError {
     }
   }
   let body = self.parse_command()
-  { name, body }
+  { name, body, }
 }
 
 ///|
@@ -5198,7 +5202,7 @@ fn Parser::parse_simple_command(self : Parser) -> Command raise ParseError {
   }
   self.validate_simple_command(assignments, words)
   let kind = classify_simple_command(assignments, words)
-  { span: make_span(start, self.position()), kind, redirects }
+  { span: make_span(start, self.position()), kind, redirects, }
 }
 
 ///|
@@ -5461,8 +5465,8 @@ fn word_is_dollar_assignment_lhs(word : Word) -> Bool {
 ///|
 fn assignment_like_word_start(
   words : Array[Word],
-  assignments_len : Int,
-) -> Int {
+  assignments_len : Int32,
+) -> Int32 {
   if words.length() == 0 {
     return 0
   }
@@ -5519,7 +5523,7 @@ fn Parser::validate_assignments(
 }
 
 ///|
-fn keyword_spacing_diagnostic(name : String) -> (Int, String)? {
+fn keyword_spacing_diagnostic(name : String) -> (Int32, String)? {
   if name.length() > 2 &&
     lower_ascii_string(name.view(end_offset=2).to_owned()) == "if" &&
     name[2] == '[' {
@@ -5669,7 +5673,7 @@ fn classify_simple_command(
   if parse_source_command(assignments, words) is Some(source) {
     return Source(source)
   }
-  Simple({ assignments, words })
+  Simple({ assignments, words, })
 }
 
 ///|
@@ -5752,7 +5756,7 @@ fn Parser::next_starts_word(self : Parser) -> Bool {
 }
 
 ///|
-fn redirect_operator_len_at(source : StringView, start : Int) -> Int {
+fn redirect_operator_len_at(source : StringView, start : Int32) -> Int32 {
   if start >= source.length() {
     return 0
   }
@@ -5871,7 +5875,13 @@ fn Parser::parse_redirection(
         span: make_span(start, self.position()),
         source,
         op,
-        target: HereDoc({ delimiter, quoted, strip_tabs, body: "", parts: None }),
+        target: HereDoc({
+          delimiter,
+          quoted,
+          strip_tabs,
+          body: "",
+          parts: None,
+        }),
       }
       self.pending_heredocs.push({
         redirections: redirects,
@@ -5941,7 +5951,7 @@ fn Parser::parse_optional_redirection_source(
 ///|
 fn Parser::parse_redirection_operator(
   self : Parser,
-) -> (RedirectionOperator, Int) raise ParseError {
+) -> (RedirectionOperator, Int32) raise ParseError {
   let view = self.source.view(start_offset=self.offset)
   if view.has_prefix("&>>") {
     return (Append, 3)
@@ -6044,7 +6054,13 @@ fn Parser::try_parse_assignment(self : Parser) -> Assignment? raise ParseError {
     return None
   }
   let value = self.parse_assignment_value(true)
-  Some({ span: make_span(start, self.position()), name, indexes, append, value })
+  Some({
+    span: make_span(start, self.position()),
+    name,
+    indexes,
+    append,
+    value,
+  })
 }
 
 ///|
@@ -6346,7 +6362,7 @@ fn Parser::read_array_element(self : Parser) -> ArrayElement raise ParseError {
     }
   }
   let value = self.parse_assignment_value(indexes.length() > 0)
-  { indexes, append, value }
+  { indexes, append, value, }
 }
 
 ///|
@@ -6391,7 +6407,7 @@ fn is_parameter_reference_start(ch : UInt16) -> Bool {
 }
 
 ///|
-fn find_unescaped_char(text : String, separator : UInt16) -> Int? {
+fn find_unescaped_char(text : String, separator : UInt16) -> Int32? {
   let parser = Parser::new(text.view(), ParseOptions::default(), [])
   let mut bracket_depth = 0
   while parser.peek() is Some(ch) {
@@ -6432,7 +6448,7 @@ fn split_unescaped_once(text : String, separator : UInt16) -> (String, String)? 
 }
 
 ///|
-fn read_parameter_index(raw : String, start : Int) -> (String, Int)? {
+fn read_parameter_index(raw : String, start : Int32) -> (String, Int32)? {
   if start >= raw.length() || raw[start] != '[' {
     return None
   }
@@ -6455,8 +6471,8 @@ fn read_parameter_index(raw : String, start : Int) -> (String, Int)? {
 ///|
 fn parse_parameter_reference(
   raw : String,
-  start : Int,
-) -> (String?, ArrayIndex?, Int) {
+  start : Int32,
+) -> (String?, ArrayIndex?, Int32) {
   let view = raw[:]
   if start >= view.length() {
     return (None, None, start)
@@ -6588,7 +6604,7 @@ fn parse_parameter_expansion(raw : String) -> ParameterExpansion {
     Some(Raw("*")) if indirect => Some(Names(Star))
     _ => operator
   }
-  { raw, length_prefix, indirect, name, index, operator }
+  { raw, length_prefix, indirect, name, index, operator, }
 }
 
 ///|
@@ -6606,7 +6622,10 @@ pub fn parse_text_as_word(text : String) -> Word {
   try {
     let parts = parser.parse_text_parts_until_eof()
     {
-      span: { start: { offset: 0, line: 1, column: 1 }, end: parser.position() },
+      span: {
+        start: { offset: 0, line: 1, column: 1, },
+        end: parser.position(),
+      },
       source: text,
       parts,
     }
@@ -6614,8 +6633,8 @@ pub fn parse_text_as_word(text : String) -> Word {
     _ =>
       {
         span: {
-          start: { offset: 0, line: 1, column: 1 },
-          end: { offset: text.length(), line: 1, column: text.length() + 1 },
+          start: { offset: 0, line: 1, column: 1, },
+          end: { offset: text.length(), line: 1, column: text.length() + 1, },
         },
         source: text,
         parts: if text == "" {
@@ -6638,7 +6657,7 @@ fn parse_arithmetic_index(raw : String) -> ArrayIndex {
 
 ///|
 fn parse_array_index(raw : String) -> ArrayIndex {
-  { raw, parts: parse_text_parts(raw), arithmetic: None }
+  { raw, parts: parse_text_parts(raw), arithmetic: None, }
 }
 
 ///|
@@ -6654,7 +6673,7 @@ fn push_arithmetic_literal(
 }
 
 ///|
-fn arithmetic_literal_end(raw : String, start : Int) -> Int {
+fn arithmetic_literal_end(raw : String, start : Int32) -> Int32 {
   let view = raw[:]
   let mut i = start
   while i < view.length() {
@@ -6675,14 +6694,14 @@ fn make_fragment_word(
   parts : Array[WordPart],
 ) -> Word {
   {
-    span: { start: { offset: 0, line: 1, column: 1 }, end: end_ },
+    span: { start: { offset: 0, line: 1, column: 1, }, end: end_, },
     source,
     parts,
   }
 }
 
 ///|
-fn read_arithmetic_fragment(raw : String, start : Int) -> (Word, Int)? {
+fn read_arithmetic_fragment(raw : String, start : Int32) -> (Word, Int32)? {
   let source = raw.view(start_offset=start).to_owned()
   let parser = Parser::new(source.view(), ParseOptions::default(), [])
   try {
@@ -6853,7 +6872,7 @@ fn parse_brace_expansion(raw : String) -> BraceExpansion {
 }
 
 ///|
-fn arithmetic_operator_len_at(source : StringView, start : Int) -> Int {
+fn arithmetic_operator_len_at(source : StringView, start : Int32) -> Int32 {
   if start >= source.length() {
     return 0
   }
@@ -6872,7 +6891,7 @@ fn arithmetic_operator_len_at(source : StringView, start : Int) -> Int {
 }
 
 ///|
-fn read_balanced_paren_segment(raw : String, start : Int) -> (String, Int)? {
+fn read_balanced_paren_segment(raw : String, start : Int32) -> (String, Int32)? {
   let view = raw[:]
   if start >= view.length() || view[start] != '(' {
     return None
@@ -7008,7 +7027,7 @@ pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
     i += 1
   }
   push_arithmetic_literal(tokens, literal)
-  { raw, tokens }
+  { raw, tokens, }
 }
 
 ///|
@@ -7300,7 +7319,7 @@ fn validate_arithmetic_expr(expr : ArithmeticExpr) -> Bool {
   if expr.tokens.length() == 0 {
     return true
   }
-  let cursor = { tokens: expr.tokens, index: 0 }
+  let cursor = { tokens: expr.tokens, index: 0, }
   validate_arithmetic_comma_expression(cursor) &&
   cursor.index == cursor.tokens.length()
 }
@@ -7552,7 +7571,7 @@ fn parse_nested_script_text(
     )
   }
   let root = {
-    span: { start: { offset: 0, line: 1, column: 1 }, end: script.span.end },
+    span: { start: { offset: 0, line: 1, column: 1, }, end: script.span.end, },
     has_bom: false,
     shebang: None,
     annotations: [],
@@ -8662,7 +8681,7 @@ fn here_doc_trailer_start(rest : String) -> UInt16? {
 }
 
 ///|
-fn leading_space_tabs_count(input : String) -> Int {
+fn leading_space_tabs_count(input : String) -> Int32 {
   let view = input[:]
   let mut i = 0
   while i < view.length() && (view[i] == ' ' || view[i] == '\t') {
@@ -8676,7 +8695,7 @@ fn classify_here_doc_near_match(
   line : String,
   delimiter : String,
   strip_tabs : Bool,
-) -> (Int, Int, String)? {
+) -> (Int32, Int32, String)? {
   let trimmed_ws = strip_leading_space_tabs(line)
   if strip_tabs && trimmed_ws.has_prefix(delimiter) {
     let trimmed_tabs = strip_leading_tabs(line)
@@ -8970,7 +8989,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
                 message,
                 span: translate_span(body_start, diagnostic.span),
               }
-              self.diagnostics.push({ ..translated })
+              self.diagnostics.push({ ..translated, })
             }
           }
           None
@@ -9008,7 +9027,7 @@ fn parse_error_diagnostic(err : ParseError) -> Diagnostic {
         message: "expected \{expected}, found \{found}",
       }
     Message(pos~, message~) =>
-      { span: span_at(pos), severity: Error, code: None, message }
+      { span: span_at(pos), severity: Error, code: None, message, }
   }
 }
 
@@ -9020,7 +9039,7 @@ fn diagnostic_as_error(diagnostic : Diagnostic) -> ParseError {
 ///|
 fn dirname(path : String) -> String {
   let view = path[:]
-  let mut slash : Int? = None
+  let mut slash : Int32? = None
   let mut i = 0
   while i < view.length() {
     if view[i] == '/' {
@@ -9268,7 +9287,7 @@ fn resolve_command_sources(
                 code: Some(1093),
                 message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
               })
-              Source({ ..source, resolved_path: Some(resolved_path) })
+              Source({ ..source, resolved_path: Some(resolved_path), })
             } else if stack.length() >= 100 {
               diagnostics.push({
                 span: source_command_resolution_span(source),
@@ -9276,7 +9295,7 @@ fn resolve_command_sources(
                 code: Some(1092),
                 message: "Stopping at 100 'source' frames :O",
               })
-              Source({ ..source, resolved_path: Some(resolved_path) })
+              Source({ ..source, resolved_path: Some(resolved_path), })
             } else {
               let nested_options = {
                 ..options,
@@ -9304,7 +9323,7 @@ fn resolve_command_sources(
                   code: Some(1094),
                   message: "source file '\{resolved_path}' could not be parsed; include was skipped",
                 })
-                Source({ ..source, resolved_path: Some(resolved_path) })
+                Source({ ..source, resolved_path: Some(resolved_path), })
               } else if report.script is Some(script) {
                 for diagnostic in report.diagnostics {
                   diagnostics.push(diagnostic)
@@ -9321,7 +9340,7 @@ fn resolve_command_sources(
                   code: Some(1094),
                   message: "source file '\{resolved_path}' could not be parsed; include was skipped",
                 })
-                Source({ ..source, resolved_path: Some(resolved_path) })
+                Source({ ..source, resolved_path: Some(resolved_path), })
               }
             }
         }
@@ -9387,7 +9406,7 @@ fn resolve_command_sources(
       } else {
         None
       }
-      If({ arms, else_body })
+      If({ arms, else_body, })
     }
     While(loop_) =>
       While({
@@ -9510,7 +9529,7 @@ fn resolve_command_sources(
         ),
       })
   }
-  { ..command, kind: resolved_kind }
+  { ..command, kind: resolved_kind, }
 }
 
 ///|
@@ -10231,7 +10250,7 @@ fn normalize_command(
       for word in simple.words {
         words.push(normalize_word(word, associative_names))
       }
-      CommandKind::Simple({ assignments, words })
+      CommandKind::Simple({ assignments, words, })
     }
     Source(source) => {
       let assignments : Array[Assignment] = []
@@ -10265,7 +10284,7 @@ fn normalize_command(
       for flag in clause.flags {
         flags.push(normalize_word(flag, associative_names))
       }
-      Time({ flags, body: normalize_pipeline(clause.body, associative_names) })
+      Time({ flags, body: normalize_pipeline(clause.body, associative_names), })
     }
     Subshell(script) =>
       Subshell(normalize_array_indices_in_script(script, associative_names))
@@ -10287,7 +10306,7 @@ fn normalize_command(
       } else {
         None
       }
-      If({ arms, else_body })
+      If({ arms, else_body, })
     }
     While(loop_) =>
       While({
@@ -10350,7 +10369,7 @@ fn normalize_command(
           body: normalize_array_indices_in_script(item.body, associative_names),
         })
       }
-      Case({ word: normalize_word(clause.word, associative_names), items })
+      Case({ word: normalize_word(clause.word, associative_names), items, })
     }
     Condition(condition) =>
       Condition({
@@ -10382,7 +10401,7 @@ fn normalize_command(
         body: normalize_array_indices_in_script(clause.body, associative_names),
       })
   }
-  { ..command, kind, redirects }
+  { ..command, kind, redirects, }
 }
 
 ///|
@@ -10409,7 +10428,7 @@ fn normalize_and_or(
   for pair in and_or.tail {
     tail.push((pair.0, normalize_pipeline(pair.1, associative_names)))
   }
-  { ..and_or, head: normalize_pipeline(and_or.head, associative_names), tail }
+  { ..and_or, head: normalize_pipeline(and_or.head, associative_names), tail, }
 }
 
 ///|
@@ -10499,10 +10518,10 @@ fn parse_script_with_options_internal(
         code: None,
         message: "unexpected trailing input",
       })
-      return { script: None, diagnostics: parser.diagnostics }
+      return { script: None, diagnostics: parser.diagnostics, }
     }
     let root = {
-      span: { start: { offset: 0, line: 1, column: 1 }, end: script.span.end },
+      span: { start: { offset: 0, line: 1, column: 1, }, end: script.span.end, },
       has_bom,
       shebang,
       annotations,
@@ -10525,14 +10544,14 @@ fn parse_script_with_options_internal(
         Message(pos~, message~) => {
           for diagnostic in parser.diagnostics {
             if diagnostic.span.start == pos && diagnostic.message == message {
-              return { script: None, diagnostics: parser.diagnostics }
+              return { script: None, diagnostics: parser.diagnostics, }
             }
           }
           parser.diagnostics.push(parse_error_diagnostic(err))
         }
         _ => parser.diagnostics.push(parse_error_diagnostic(err))
       }
-      { script: None, diagnostics: parser.diagnostics }
+      { script: None, diagnostics: parser.diagnostics, }
     }
   }
 }
@@ -10557,7 +10576,7 @@ pub fn merge_script_annotations(
   if annotations.length() == 0 {
     return script
   }
-  { ..script, annotations: merge_annotations(script.annotations, annotations) }
+  { ..script, annotations: merge_annotations(script.annotations, annotations), }
 }
 
 ///|
@@ -10585,7 +10604,7 @@ pub fn parse_script_report(source : String) -> ParseReport {
 /// Parses config-style annotations from a `.shellcheckrc` file or directive
 /// stream.
 pub fn parse_config_report(source : String) -> ConfigParseReport {
-  let report = { annotations: [], diagnostics: [] }
+  let report = { annotations: [], diagnostics: [], }
   let options = ParseOptions::new(false, true, false, false, None, [], [])
   let mut offset = 0
   let mut line = 1
@@ -10596,7 +10615,7 @@ pub fn parse_config_report(source : String) -> ConfigParseReport {
       line += 1
       continue
     }
-    let position : Position = { offset, line, column: 1 }
+    let position : Position = { offset, line, column: 1, }
     let (annotations, diagnostics) = try {
       if is_shellcheck_annotation_comment(text) {
         parse_annotation_line(text, position, options)
@@ -10634,7 +10653,7 @@ pub fn parse_script(source : String) -> Result[Script, ParseError] {
   } else if report.diagnostics.get(0) is Some(diagnostic) {
     Err(diagnostic_as_error(diagnostic))
   } else {
-    Err(Message(pos={ offset: 0, line: 1, column: 1 }, message="parse failed"))
+    Err(Message(pos={ offset: 0, line: 1, column: 1, }, message="parse failed"))
   }
 }
 
