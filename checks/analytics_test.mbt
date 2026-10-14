@@ -541,7 +541,16 @@ test "analytics batch c attaches shellcheck-style quote swap fix" {
     #|#!/bin/bash
     #|$"(foo)"
     #|
-  let diagnostic = first_code(check_source(source), 2247)
+  let diagnostics = check_source(source)
+  assert_check_diagnostics(diagnostics, [
+    (
+      "warning", 2247, 2, 1, "Flip leading $ and \" if this should be a quoted substitution.",
+    ),
+    (
+      "warning", 2288, 2, 1, "This is interpreted as a command name ending with ')'. Double check syntax.",
+    ),
+  ])
+  let diagnostic = first_code(diagnostics, 2247)
   assert_eq(diagnostic.span.start.line, 2)
   assert_eq(diagnostic.span.start.column, 1)
   if diagnostic.fix is Some(fix) {
@@ -968,4 +977,71 @@ test "analytics optional checks flag additional masked return contexts" {
   )
 
   assert_eq(count_code(diagnostics, 2312), 4)
+}
+
+///|
+test "analytics diagnostics match ShellCheck for SC2181" {
+  assert_check_diagnostics(
+    @checks.run_checks_with_shell(
+      parse_checks_ok(
+        (
+          #|#!/bin/bash
+          #|true
+          #|[ $? == 0 ]
+          #|
+        ),
+      ),
+      Bash,
+      true,
+      [],
+    ),
+    [
+      (
+        "style", 2181, 3, 3, "Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.",
+      ),
+    ],
+  )
+}
+
+///|
+test "analytics diagnostics match ShellCheck for SC2000" {
+  assert_check_diagnostics(
+    @checks.run_checks_with_shell(
+      parse_checks_ok(
+        (
+          #|# shellcheck disable=SC2154
+          #|echo "$foo" | wc -c
+          #|
+        ),
+      ),
+      Bash,
+      true,
+      [],
+    ),
+    [("style", 2000, 2, 1, "See if you can use ${#variable} instead.")],
+  )
+}
+
+///|
+test "analytics diagnostics match ShellCheck for SC2087" {
+  assert_check_diagnostics(
+    @checks.run_checks_with_shell(
+      parse_checks_ok(
+        (
+          #|ssh host <<EOF2
+          #|echo $HOME
+          #|EOF2
+          #|
+        ),
+      ),
+      Bash,
+      true,
+      [],
+    ),
+    [
+      (
+        "warning", 2087, 1, 12, "Quote 'EOF2' to make here document expansions happen on the server side rather than on the client.",
+      ),
+    ],
+  )
 }

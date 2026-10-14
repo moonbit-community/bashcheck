@@ -47,7 +47,7 @@ all diagnostic documents share the root `normalize.jq` filter.
 | `formatter/formatter_test.mbt` | All seven formats, empty reports, ANSI color, wiki links, JSON fixes, missing final newline | Keep focused formatter assertions; add exact CLI snapshots in `formats.md` |
 | `checker/checker_test.mbt` | Filtering, dialect selection, annotations, optional checks, extended analysis, rc discovery and overrides | Keep pure checker assertions; add actual disk reads and argv parsing in `checking-options.md` |
 | Nine dynamic `compat/*diff_baseline_test.mbt` files and their JSON helper | 103 input cases checked against ShellCheck 0.11.0 | Migrated into the eight shell-feature documents listed above with static fixtures and jq-normalized snapshots; removed the live ShellCheck calls and helper |
-| Remaining `compat/*diff_baseline_test.mbt` files | In-memory parser and diagnostic assertions | Keep unit tests: these already use fixed expectations and do not invoke ShellCheck |
+| Former fixed `compat/*diff_baseline_test.mbt` files | In-memory parser and diagnostic assertions | Merged into `parser`, `checker` and `checks` unit tests with complete diagnostic comparisons; removed the `compat` package |
 | Parser, semantics, checks, CFG and fixer tests | AST shape, individual rules, dataflow and replacement algorithms | Keep unit tests for precise assertions and failure localization |
 
 E2E tests are most useful where several layers meet: argv → IO/config → checker
