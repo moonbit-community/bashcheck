@@ -1,7 +1,0 @@
-import {
-  "moonbit-community/bashcheck/checker",
-  "moonbit-community/bashcheck/parser",
-  "moonbitlang/core/debug",
-} for "test"
-
-supported_targets = "wasm+native"

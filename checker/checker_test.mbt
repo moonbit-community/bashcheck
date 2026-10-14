@@ -133,11 +133,20 @@ test "checker emits SC2148 only when the entry shell stays unknown" {
     spec=@checker.CheckSpec::default().with_shell_override(Some(Dash)),
   )
 
-  assert_true(checker_has_code(plain.diagnostics, 2148))
-  assert_true(!checker_has_code(from_directive.diagnostics, 2148))
-  assert_true(!checker_has_code(from_extension.diagnostics, 2148))
-  assert_true(checker_has_code(from_envrc.diagnostics, 2148))
-  assert_true(!checker_has_code(from_override.diagnostics, 2148))
+  let expected = [
+    (
+      "error",
+      Some(2148),
+      1,
+      1,
+      "Tips depend on target shell and yours is unknown. Add a shebang or a 'shell' directive.",
+    ),
+  ]
+  assert_checker_diagnostics(plain.diagnostics, expected)
+  assert_checker_diagnostics(from_directive.diagnostics, [])
+  assert_checker_diagnostics(from_extension.diagnostics, [])
+  assert_checker_diagnostics(from_envrc.diagnostics, expected)
+  assert_checker_diagnostics(from_override.diagnostics, [])
 }
 
 ///|
@@ -188,11 +197,32 @@ test "checker emits shebang entry diagnostics and respects shell overrides" {
     ),
   )
 
-  assert_true(checker_has_code(ash.diagnostics, 2187))
-  assert_true(checker_has_code(ash.diagnostics, 2239))
-  assert_true(checker_has_code(directory.diagnostics, 2246))
-  assert_true(!checker_has_code(overridden.diagnostics, 2187))
-  assert_true(!checker_has_code(overridden.diagnostics, 2239))
+  assert_checker_diagnostics(ash.diagnostics, [
+    (
+      "error",
+      Some(2239),
+      1,
+      1,
+      "Ensure the shebang uses an absolute path to the interpreter.",
+    ),
+    (
+      "warning",
+      Some(2187),
+      1,
+      1,
+      "Ash scripts will be checked as Dash. Add '# shellcheck shell=dash' to silence.",
+    ),
+  ])
+  assert_checker_diagnostics(directory.diagnostics, [
+    (
+      "error",
+      Some(2246),
+      1,
+      1,
+      "This shebang specifies a directory. Ensure the interpreter is a file.",
+    ),
+  ])
+  assert_checker_diagnostics(overridden.diagnostics, [])
 }
 
 ///|

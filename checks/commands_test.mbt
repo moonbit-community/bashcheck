@@ -812,9 +812,15 @@ test "command checks flag timed command and local scope edge cases" {
     ),
   )
 
-  assert_true(has_code(piped, 2176))
+  assert_check_diagnostics(piped, [
+    (
+      "warning", 2176, 2, 1, "'time' is undefined for pipelines. time single stage or bash -c instead.",
+    ),
+  ])
   assert_true(has_code(compound, 2177))
-  assert_true(has_code(local_top_level, 2168))
+  assert_check_diagnostics(local_top_level, [
+    ("error", 2168, 3, 1, "'local' is only valid in functions."),
+  ])
 }
 
 ///|
@@ -869,4 +875,38 @@ test "command checks avoid false positives for phase 4 command-specialized famil
   assert_true(!has_code(diagnostics, 2318))
   assert_true(!has_code(timed, 2176))
   assert_true(!has_code(timed_compound, 2177))
+}
+
+///|
+test "command diagnostics match ShellCheck for mkdir ssh rm and local assignments" {
+  assert_check_diagnostics(
+    @checks.run_checks_with_shell(
+      parse_checks_ok(
+        (
+          #|#!/bin/bash
+          #|# shellcheck disable=SC2154,SC2086,SC2034,SC2329
+          #|mkdir -p -m 0755 a/b
+          #|ssh host "echo $PS1"
+          #|rm -rf /home
+          #|q() { local x=1 y=$x; }
+          #|
+        ),
+      ),
+      Bash,
+      true,
+      [],
+    ),
+    [
+      (
+        "warning", 2174, 3, 10, "When used with -p, -m only applies to the deepest directory.",
+      ),
+      (
+        "info", 2029, 4, 16, "Note that, unescaped, this expands on the client side.",
+      ),
+      ("warning", 2114, 5, 8, "Warning: deletes a system directory."),
+      (
+        "warning", 2318, 6, 13, "This assignment is used again in this 'local', but won't have taken effect. Use two 'local's.",
+      ),
+    ],
+  )
 }

@@ -48,3 +48,25 @@ fn first_code(
   }
   checks_fail("missing diagnostic code \{code}")
 }
+
+///|
+fn assert_check_diagnostics(
+  diagnostics : Array[@checks.CheckDiagnostic],
+  expected : Array[(String, Int32, Int32, Int32, String)],
+) -> Unit raise {
+  let actual = diagnostics.map(fn(diagnostic) {
+    (
+      match diagnostic.severity {
+        Error => "error"
+        Warning => "warning"
+        Info => "info"
+        Style => "style"
+      },
+      diagnostic.code,
+      diagnostic.span.start.line,
+      diagnostic.span.start.column,
+      diagnostic.message,
+    )
+  })
+  @test.assert_eq(actual, expected)
+}
