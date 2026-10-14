@@ -8,7 +8,7 @@ fn[A] checks_fail(message : String) -> A {
 fn parse_checks_ok(source : String) -> @parser.Script {
   match @parser.parse_script(source) {
     Ok(script) => script
-    Err(error) => checks_fail(error.to_string())
+    Err(error) => checks_fail(Show::to_string(error))
   }
 }
 

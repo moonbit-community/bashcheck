@@ -8,7 +8,7 @@ fn[A] cfg_fail(message : String) -> A {
 fn parse_cfg_ok(source : String) -> @parser.Script {
   match @parser.parse_script(source) {
     Ok(script) => script
-    Err(error) => cfg_fail(error.to_string())
+    Err(error) => cfg_fail(Show::to_string(error))
   }
 }
 

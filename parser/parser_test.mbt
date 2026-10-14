@@ -10,7 +10,7 @@ fn parse_ok(source : String) -> @parser.Script {
 fn parse_error(source : String) -> String {
   match @parser.parse_script(source) {
     Ok(script) => abort("expected parse error, got \{script.dump()}")
-    Err(err) => err.to_string()
+    Err(err) => Show::to_string(err)
   }
 }
 

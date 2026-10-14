@@ -5,6 +5,26 @@ pub struct NodeId {
 } derive(Eq, Compare, Hash, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend NodeId with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeId with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeId with Hash::{hash, hash_combine}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeId with Debug::{to_repr}
+
+///|
 /// Returns the raw integer value of a node id.
 pub fn NodeId::to_int(self : NodeId) -> Int32 {
   self.value
@@ -52,6 +72,16 @@ pub enum NodeKind {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend NodeKind with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeKind with Debug::{to_repr}
+
+///|
 /// A tagged reference to one concrete parser node.
 pub enum NodeRef {
   Script(@parser.Script)
@@ -91,6 +121,16 @@ pub enum NodeRef {
   WordPart(@parser.WordPart)
   ParameterExpansion(@parser.ParameterExpansion)
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeRef with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NodeRef with Debug::{to_repr}
 
 ///|
 /// Returns the `NodeKind` corresponding to a `NodeRef`.
@@ -153,6 +193,16 @@ pub struct IndexedScript {
   priv root : NodeId
   priv nodes : Array[IndexedNode]
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend IndexedScript with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend IndexedScript with Debug::{to_repr}
 
 ///|
 fn node_id(value : Int32) -> NodeId {

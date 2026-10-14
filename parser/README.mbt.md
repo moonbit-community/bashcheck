@@ -17,7 +17,7 @@ these entry points and then inspect `Script`, `ListItem`, `Command`,
 test "doc parser parses complete scripts into AST nodes" {
   let script = match @parser.parse_script("FOO=bar echo \"hi $USER\" >out\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let command = script.items[0].and_or.head.segments[0].command
 
