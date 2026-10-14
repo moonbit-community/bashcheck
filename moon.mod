@@ -1,6 +1,6 @@
 name = "moonbit-community/bashcheck"
 
-version = "0.1.0"
+version = "0.0.1"
 
 import {
   "moonbitlang/async@0.22.4",
@@ -9,7 +9,7 @@ import {
 
 readme = "README.md"
 
-repository = ""
+repository = "https://github.com/moonbit-community/bashcheck"
 
 license = "Apache-2.0"
 
