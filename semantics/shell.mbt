@@ -866,7 +866,7 @@ fn basename(text : String) -> String {
 ///|
 fn split_shell_words(text : String) -> Array[String] {
   let values : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let view = text[:]
   let mut i = 0
   let mut quote : UInt16? = None
@@ -906,7 +906,7 @@ fn split_shell_words(text : String) -> Array[String] {
 
 ///|
 fn quote_removed_source(raw : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let view = raw[:]
   let mut i = 0
   let mut quote : UInt16? = None

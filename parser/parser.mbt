@@ -717,7 +717,7 @@ fn Parser::consume_backquote_start(self : Parser) -> Unit {
 
 ///|
 fn unescape_backquoted_body(body : String, quoted : Bool) -> String {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let view = body[:]
   let mut i = 0
   while i < view.length() {
@@ -1053,7 +1053,7 @@ fn is_special_parameter_char(ch : UInt16) -> Bool {
 ///|
 fn lower_ascii_alpha_prefix(text : String) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() && is_ascii_alpha(view[i]) {
     let ch = view[i]
@@ -1070,7 +1070,7 @@ fn lower_ascii_alpha_prefix(text : String) -> String {
 ///|
 fn lower_ascii_string(text : String) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     let ch = view[i]
@@ -1181,7 +1181,7 @@ fn char_display(ch : UInt16) -> String {
     '\r' => "\\r"
     '\t' => "\\t"
     _ => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       buf.write_char(ch.unsafe_to_char())
       buf.to_string()
     }
@@ -1619,7 +1619,7 @@ fn split_once(text : String, separator : UInt16) -> (String, String)? {
 ///|
 fn split_shell_words(text : String) -> Array[String] {
   let values : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let view = text[:]
   let mut i = 0
   let mut quote : UInt16? = None
@@ -1663,7 +1663,7 @@ fn split_shell_words_strict(
   base : Position,
 ) -> Array[String] raise ParseError {
   let values : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let view = text[:]
   let mut i = 0
   let mut quote : UInt16? = None
@@ -3694,7 +3694,7 @@ fn Parser::read_arithmetic_for_delimiter(
 fn Parser::read_arithmetic_for_loop_raw(
   self : Parser,
 ) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let mut depth = 1
   while self.peek() is Some(ch) {
     if ch == '\'' || ch == '"' {
@@ -4016,7 +4016,7 @@ fn Parser::parse_condition_regex_word(
   let start = self.position()
   let start_offset = self.offset
   let parts : Array[WordPart] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   let mut paren_depth = 0
   let mut bracket_depth = 0
   while self.peek() is Some(ch) {
@@ -5261,7 +5261,7 @@ fn append_literal_word_part_text(part : WordPart, buf : StringBuilder) -> Bool {
 
 ///|
 fn word_literal_text(word : Word) -> String? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if !append_literal_word_parts_text(word.parts, buf) {
     return None
   }
@@ -6938,7 +6938,7 @@ fn read_balanced_paren_segment(raw : String, start : Int32) -> (String, Int32)? 
 /// Parses shell arithmetic source into an `ArithmeticExpr`.
 pub fn parse_arithmetic_expr(raw : String) -> ArithmeticExpr {
   let tokens : Array[ArithmeticToken] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   let view = raw[:]
   let mut i = 0
   while i < view.length() {
@@ -7370,7 +7370,7 @@ fn push_word_literal(parts : Array[WordPart], literal : StringBuilder) -> Unit {
 
 ///|
 fn single_char_literal(ch : UInt16) -> WordPart {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char(ch.unsafe_to_char())
   Literal(buf.to_string())
 }
@@ -7596,7 +7596,7 @@ fn Parser::read_backquoted_script(
   open_pos : Position,
 ) -> Script raise ParseError {
   let start = self.position()
-  let body = StringBuilder::new()
+  let body = StringBuilder()
   while self.peek() is Some(ch) {
     if is_backquote_char(ch) {
       if ch == '´' {
@@ -7679,7 +7679,7 @@ fn Parser::read_extglob(self : Parser) -> ExtGlobPattern raise ParseError {
 
 ///|
 fn Parser::read_dollar_single_quoted(self : Parser) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   while self.peek() is Some(ch) {
     if ch == '\'' {
       ignore(self.advance_one())
@@ -7708,7 +7708,7 @@ fn Parser::read_until_closing_char(
   closing : UInt16,
   context : String,
 ) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   while self.peek() is Some(ch) {
     if ch == closing {
       ignore(self.advance_one())
@@ -7736,7 +7736,7 @@ fn Parser::read_dollar_bracket_content(
   self : Parser,
   context : String,
 ) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let mut bracket_depth = 0
   while self.peek() is Some(ch) {
     let nested_start = self.offset
@@ -7827,7 +7827,7 @@ fn Parser::parse_here_doc_parts(
   self : Parser,
 ) -> Array[WordPart] raise ParseError {
   let parts : Array[WordPart] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   while self.peek() is Some(ch) {
     match ch {
       ch if is_backquote_char(ch) => {
@@ -7861,7 +7861,7 @@ fn Parser::parse_text_parts_until_eof(
   self : Parser,
 ) -> Array[WordPart] raise ParseError {
   let parts : Array[WordPart] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   while self.peek() is Some(ch) {
     if self.starts_with("<(") || self.starts_with(">(") {
       push_word_literal(parts, literal)
@@ -7982,7 +7982,7 @@ fn Parser::parse_word_with_terminators(
   let start = self.position()
   let start_offset = self.offset
   let parts : Array[WordPart] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   while self.peek() is Some(ch) {
     if self.starts_with("<(") || self.starts_with(">(") {
       push_word_literal(parts, literal)
@@ -8092,7 +8092,7 @@ fn Parser::read_until_single_quote(
   self : Parser,
   open_pos : Position,
 ) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   while self.peek() is Some(ch) {
     if ch == '\'' {
       ignore(self.advance_one())
@@ -8244,7 +8244,7 @@ fn Parser::read_double_quoted_parts(
   open_pos : Position,
 ) -> Array[WordPart] raise ParseError {
   let parts : Array[WordPart] = []
-  let literal = StringBuilder::new()
+  let literal = StringBuilder()
   while self.peek() is Some(ch) {
     match ch {
       '"' => {
@@ -8447,7 +8447,7 @@ fn Parser::parse_dollar_part(self : Parser) -> WordPart? raise ParseError {
 
 ///|
 fn Parser::read_braced_parameter(self : Parser) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   while self.peek() is Some(ch) {
     if ch == '}' {
       ignore(self.advance_one())
@@ -8515,7 +8515,7 @@ fn Parser::read_braced_parameter(self : Parser) -> String raise ParseError {
 
 ///|
 fn Parser::read_arithmetic_expansion(self : Parser) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let mut depth = 1
   while self.peek() is Some(ch) {
     let nested_start = self.offset
@@ -8564,7 +8564,7 @@ fn Parser::read_until_matching_quote(
   self : Parser,
   quote : UInt16,
 ) -> String raise ParseError {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   while self.peek() is Some(ch) {
     if ch == quote {
       return content.to_string()
@@ -8588,7 +8588,7 @@ fn Parser::read_until_matching_quote(
 
 ///|
 fn quote_removed_source(raw : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let view = raw[:]
   let mut i = 0
   let mut quote : UInt16? = None
@@ -8798,7 +8798,7 @@ fn Parser::read_pending_heredocs(self : Parser) -> Unit {
   let pending = self.pending_heredocs
   self.pending_heredocs = []
   for entry in pending {
-    let body = StringBuilder::new()
+    let body = StringBuilder()
     let body_diagnostics : Array[Diagnostic] = []
     let mut body_diagnostics_emitted = false
     let mut saw_near_match = false
@@ -9181,7 +9181,7 @@ fn source_word_with_dynamic_prefix(word : Word) -> String? {
   if word.parts.length() == 0 {
     return None
   }
-  let suffix = StringBuilder::new()
+  let suffix = StringBuilder()
   if !append_dynamic_source_prefix_part(word.parts[0], suffix) {
     return None
   }

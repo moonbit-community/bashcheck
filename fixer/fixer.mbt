@@ -184,7 +184,7 @@ pub fn apply_fix(fix : Fix, source : String) -> String? {
       return None
     }
   }
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   let mut current_offset = 0
   for replacement in merged.replacements {
     let start = replacement.start.offset

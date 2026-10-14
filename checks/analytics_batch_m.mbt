@@ -985,7 +985,7 @@ fn matchable_superset(x : Array[PseudoGlob], y : Array[PseudoGlob]) -> Bool {
 ///|
 fn decode_dollar_single_quoted_local(text : String) -> String {
   let view = text.view()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     let ch = view[i]

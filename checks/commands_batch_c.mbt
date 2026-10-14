@@ -657,7 +657,7 @@ fn rm_normalize_path(path : String) -> String {
 ///|
 fn rm_skip_repeating(text : String, target : Char) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     let current = view[i].unsafe_to_char()

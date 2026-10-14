@@ -13,17 +13,20 @@ fn parse_checks_ok(source : String) -> @parser.Script {
 }
 
 ///|
-fn check_source(source : String) -> Array[CheckDiagnostic] {
-  check_script(parse_checks_ok(source))
+fn check_source(source : String) -> Array[@checks.CheckDiagnostic] {
+  @checks.check_script(parse_checks_ok(source))
 }
 
 ///|
-fn has_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Bool {
+fn has_code(diagnostics : Array[@checks.CheckDiagnostic], code : Int32) -> Bool {
   diagnostics.any(fn(diagnostic) { diagnostic.code == code })
 }
 
 ///|
-fn count_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Int32 {
+fn count_code(
+  diagnostics : Array[@checks.CheckDiagnostic],
+  code : Int32,
+) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == code {
@@ -35,9 +38,9 @@ fn count_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Int32 {
 
 ///|
 fn first_code(
-  diagnostics : Array[CheckDiagnostic],
+  diagnostics : Array[@checks.CheckDiagnostic],
   code : Int32,
-) -> CheckDiagnostic {
+) -> @checks.CheckDiagnostic {
   for diagnostic in diagnostics {
     if diagnostic.code == code {
       return diagnostic

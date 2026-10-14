@@ -1,8 +1,8 @@
 ///|
-fn check_source_extended(source : String) -> Array[CheckDiagnostic] {
-  check_script(
+fn check_source_extended(source : String) -> Array[@checks.CheckDiagnostic] {
+  @checks.check_script(
     parse_checks_ok(source),
-    options=CheckOptions::default().with_extended_analysis(true),
+    options=@checks.CheckOptions::default().with_extended_analysis(true),
   )
 }
 
@@ -108,14 +108,14 @@ test "control flow checks flag maybe-unset reads" {
 
 ///|
 test "control flow optional name enables analysis without global extended mode" {
-  let diagnostics = check_script(
+  let diagnostics = @checks.check_script(
     parse_checks_ok(
       (
         #|echo $foo
         #|
       ),
     ),
-    options=CheckOptions::default()
+    options=@checks.CheckOptions::default()
       .with_extended_analysis(false)
       .with_optional_checks(["control-flow"]),
   )
@@ -219,7 +219,7 @@ test "control flow checks flag array-to-scalar assignment conflicts" {
 
 ///|
 test "control flow checks advertise array scalar conflict rules" {
-  let descriptions = supported_checks()
+  let descriptions = @checks.supported_checks()
   let mut saw_2178 = false
   let mut saw_2179 = false
   for description in descriptions {

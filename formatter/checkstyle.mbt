@@ -30,7 +30,7 @@ fn render_checkstyle_file(result : @checker.CheckResult) -> String {
 ///|
 /// Escapes XML special characters inside attribute values.
 fn xml_escape(text : String) -> String {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   for ch in text {
     match ch {
       '&' => builder.write_string("&amp;")

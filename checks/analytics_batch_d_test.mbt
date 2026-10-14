@@ -151,7 +151,7 @@ test "analytics batch d keeps env split-string and loop-local keywords quiet" {
     ),
   )
 
-  let ksh_diagnostics = run_checks_with_shell(
+  let ksh_diagnostics = @checks.run_checks_with_shell(
     parse_checks_ok(
       (
         #|while true; do true | { break; }; done

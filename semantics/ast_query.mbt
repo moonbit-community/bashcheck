@@ -1116,7 +1116,7 @@ pub fn all_redirections(
 ///|
 /// Returns the literal text of a word when every part is statically known.
 pub fn literal_text(word : @parser.Word) -> String? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if !append_literal_word_parts_text(word.parts, buf) {
     return None
   }
@@ -1127,7 +1127,7 @@ pub fn literal_text(word : @parser.Word) -> String? {
 /// Returns the leading unquoted literal prefix of a word.
 pub fn leading_unquoted_text(word : @parser.Word) -> String? {
   guard word.parts.length() > 0 else { return None }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut saw_literal = false
   for part in word.parts {
     match part {
@@ -1148,7 +1148,7 @@ pub fn leading_unquoted_text(word : @parser.Word) -> String? {
 fn leading_shell_text(word : @parser.Word) -> String? {
   let flattened : Array[@parser.WordPart] = []
   append_flattened_word_parts(word.parts, flattened)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut saw_literal = false
   for part in flattened {
     if leading_shell_word_part_text(part) is Some(text) {
@@ -1280,7 +1280,7 @@ pub fn oversimplify_command(command : @parser.Command) -> Array[String] {
 
 ///|
 fn oversimplify_word(word : @parser.Word) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in word.parts {
     buf.write_string(oversimplify_word_part(part))
   }
@@ -1296,7 +1296,7 @@ fn oversimplify_word_part(part : @parser.WordPart) -> String {
     | Glob(text) => text
     SpecialParameter(name) => name
     DoubleQuoted(parts) | DollarDoubleQuoted(parts) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       for nested in parts {
         buf.write_string(oversimplify_word_part(nested))
       }
@@ -1384,7 +1384,7 @@ fn append_literal_word_part_text(
 ///|
 fn decode_dollar_single_quoted(text : String) -> String {
   let view = text.view()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     let ch = view[i]
@@ -1527,7 +1527,7 @@ fn copy_words_from(
 
 ///|
 fn plain_literal_text(word : @parser.Word) -> String? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in word.parts {
     match part {
       Literal(text) => buf.write_string(text)

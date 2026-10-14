@@ -1,6 +1,6 @@
 ///|
-fn named_format(name : String) -> OutputFormat {
-  if parse_output_format(name) is Some(format) {
+fn named_format(name : String) -> @formatter.OutputFormat {
+  if @formatter.parse_output_format(name) is Some(format) {
     format
   } else {
     panic()
@@ -70,19 +70,22 @@ test "formatter renders supported output formats" {
   )
   let results = [result]
 
-  let tty = render_results(
+  let tty = @formatter.render_results(
     results,
     named_format("tty"),
-    options=FormatOptions::default().with_wiki_link_count(1),
+    options=@formatter.FormatOptions::default().with_wiki_link_count(1),
   )
-  let json = render_results(results, named_format("json"))
-  let json1 = render_results(results, named_format("json1"))
-  let gcc = render_results(results, named_format("gcc"))
-  let checkstyle = render_results(results, named_format("checkstyle"))
-  let diff = render_results(
+  let json = @formatter.render_results(results, named_format("json"))
+  let json1 = @formatter.render_results(results, named_format("json1"))
+  let gcc = @formatter.render_results(results, named_format("gcc"))
+  let checkstyle = @formatter.render_results(
+    results,
+    named_format("checkstyle"),
+  )
+  let diff = @formatter.render_results(
     results,
     named_format("diff"),
-    options=FormatOptions::default().with_wiki_link_count(0),
+    options=@formatter.FormatOptions::default().with_wiki_link_count(0),
   )
 
   assert_true(tty.contains("In script.sh line 2:"))
@@ -96,7 +99,7 @@ test "formatter renders supported output formats" {
   assert_true(json1.contains("\"comments\":"))
   assert_true(gcc.contains("[SC2006]"))
   assert_true(checkstyle.contains("<checkstyle"))
-  assert_eq(render_results(results, named_format("quiet")), "")
+  assert_eq(@formatter.render_results(results, named_format("quiet")), "")
   assert_true(diff.contains("--- a/script.sh"))
   assert_true(diff.contains("+++ b/script.sh"))
   assert_true(diff.contains("@@ -1,3 +1,3 @@"))
@@ -115,12 +118,12 @@ test "formatter colorizes tty and diff output when enabled" {
     ),
   )
   let results = [result]
-  let options = FormatOptions::default()
+  let options = @formatter.FormatOptions::default()
     .with_wiki_link_count(0)
     .with_enable_color(true)
 
-  let tty = render_results(results, named_format("tty"), options~)
-  let diff = render_results(results, named_format("diff"), options~)
+  let tty = @formatter.render_results(results, named_format("tty"), options~)
+  let diff = @formatter.render_results(results, named_format("diff"), options~)
 
   assert_true(tty.contains("\u001B["))
   assert_true(diff.contains("\u001B["))
@@ -128,10 +131,10 @@ test "formatter colorizes tty and diff output when enabled" {
 
 ///|
 test "formatter parses named formats" {
-  assert_true(parse_output_format("tty") is Some(_))
-  assert_true(parse_output_format("json") is Some(_))
-  assert_true(parse_output_format("checkstyle") is Some(_))
-  assert_true(parse_output_format("bogus") is None)
+  assert_true(@formatter.parse_output_format("tty") is Some(_))
+  assert_true(@formatter.parse_output_format("json") is Some(_))
+  assert_true(@formatter.parse_output_format("checkstyle") is Some(_))
+  assert_true(@formatter.parse_output_format("bogus") is None)
 }
 
 ///|
@@ -146,10 +149,10 @@ test "formatter orders wiki footer like shellcheck severity buckets" {
     ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
-  let tty = render_results(
+  let tty = @formatter.render_results(
     [result],
     named_format("tty"),
-    options=FormatOptions::default().with_wiki_link_count(3),
+    options=@formatter.FormatOptions::default().with_wiki_link_count(3),
   )
   let first = substring_index_or_panic(tty, "SC2046 --")
   let second = substring_index_or_panic(tty, "SC2162 --")
@@ -167,7 +170,7 @@ test "formatter diff marks missing trailing newline" {
     ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
-  let diff = render_results([result], named_format("diff"))
+  let diff = @formatter.render_results([result], named_format("diff"))
   assert_true(diff.contains("-echo `foo`"))
   assert_true(diff.contains("\\ No newline at end of file"))
   assert_true(diff.contains("+echo $(foo)"))
@@ -184,8 +187,8 @@ test "formatter json fix replacements match shellcheck field shape" {
     ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.sh")),
   )
-  let json1 = render_results([result], named_format("json1"))
-  let diff = render_results([result], named_format("diff"))
+  let json1 = @formatter.render_results([result], named_format("json1"))
+  let diff = @formatter.render_results([result], named_format("diff"))
 
   assert_true(
     json1.contains(
@@ -225,11 +228,11 @@ test "formatter json fix replacements cover optional and token replacement shape
       .with_filename(Some("script.sh"))
       .with_include_codes([2336]),
   )
-  let json1 = render_results(
+  let json1 = @formatter.render_results(
     [double_bracket_result, cp_result],
     named_format("json1"),
   )
-  let diff = render_results(
+  let diff = @formatter.render_results(
     [double_bracket_result, cp_result],
     named_format("diff"),
   )

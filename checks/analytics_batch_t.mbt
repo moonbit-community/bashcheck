@@ -1551,7 +1551,7 @@ fn assignment_word_is_command_argument(words : Array[@parser.Word]) -> Bool {
 
 ///|
 fn unquoted_assignment_text(word : @parser.Word) -> String? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in word.parts {
     match part {
       Literal(text) | Glob(text) => buf.write_string(text)

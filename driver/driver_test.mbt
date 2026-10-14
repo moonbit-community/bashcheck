@@ -1,6 +1,8 @@
 ///|
-async fn default_driver_outcome(action : CliAction) -> CliOutcome {
-  run_cli(
+async fn default_driver_outcome(
+  action : @driver.CliAction,
+) -> @driver.CliOutcome {
+  @driver.run_cli(
     action,
     [],
     @checker.CheckSpec::default(),

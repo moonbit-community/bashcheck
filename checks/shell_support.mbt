@@ -2124,7 +2124,7 @@ fn shell_support_contains_unescaped_ps1_escape(text : String) -> Bool {
 ///|
 fn strip_ps1_prompt_enclosures(text : String) -> String {
   let view = text[:]
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < view.length() {
     if i + 1 < view.length() && view[i] == '\\' && view[i + 1] == '[' {
@@ -2403,7 +2403,7 @@ fn shell_support_string_is_digits(text : String) -> Bool {
 
 ///|
 fn upper_ascii_string(text : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let view = text[:]
   let mut i = 0
   while i < view.length() {

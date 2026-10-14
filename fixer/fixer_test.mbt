@@ -18,19 +18,22 @@ test "fixer detects overlapping replacements" {
     #|echo foo
     #|
   let span = command_span(source, 0)
-  let lhs = Replacement::new(
+  let lhs = @fixer.Replacement::new(
     "test.sh",
     span.start,
     span.end,
     "echo bar",
     0,
-    InsertionPoint::before(),
+    @fixer.InsertionPoint::before(),
   )
   let rhs = lhs.with_text("echo baz")
 
-  assert_true(detect_overlap(lhs, rhs))
+  assert_true(@fixer.detect_overlap(lhs, rhs))
   assert_true(
-    merge_fixes([Fix::from_replacements([lhs]), Fix::from_replacements([rhs])])
+    @fixer.merge_fixes([
+      @fixer.Fix::from_replacements([lhs]),
+      @fixer.Fix::from_replacements([rhs]),
+    ])
     is None,
   )
 }
@@ -43,26 +46,28 @@ test "fixer applies sorted non-overlapping replacements" {
     #|
   let first = command_span(source, 0)
   let second = command_span(source, 1)
-  let first_replacement = Replacement::new(
+  let first_replacement = @fixer.Replacement::new(
     "test.sh",
     first.start,
     first.end,
     "echo bar",
     1,
-    InsertionPoint::before(),
+    @fixer.InsertionPoint::before(),
   )
-  let second_replacement = Replacement::new(
+  let second_replacement = @fixer.Replacement::new(
     "test.sh",
     second.start,
     second.end,
     "printf bye",
     1,
-    InsertionPoint::before(),
+    @fixer.InsertionPoint::before(),
   )
 
-  let fix = Fix::from_replacements([second_replacement, first_replacement])
+  let fix = @fixer.Fix::from_replacements([
+    second_replacement, first_replacement,
+  ])
   @test.assert_eq(
-    apply_fix(fix, source),
+    @fixer.apply_fix(fix, source),
     Some(
       (
         #|echo bar
@@ -75,26 +80,26 @@ test "fixer applies sorted non-overlapping replacements" {
 
 ///|
 test "fixer realigns tab-expanded columns" {
-  let fix = Fix::from_replacements([
-    Replacement::new(
+  let fix = @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
       "test.sh",
       @parser.Position::new(1, 1, 9),
       @parser.Position::new(4, 1, 12),
       "bar",
       0,
-      InsertionPoint::before(),
+      @fixer.InsertionPoint::before(),
     ),
-    Replacement::new(
+    @fixer.Replacement::new(
       "test.sh",
       @parser.Position::new(9, 2, 9),
       @parser.Position::new(12, 2, 12),
       "qux",
       0,
-      InsertionPoint::before(),
+      @fixer.InsertionPoint::before(),
     ),
   ])
 
-  let realigned = realign_columns_for_tabs(
+  let realigned = @fixer.realign_columns_for_tabs(
     fix,
     (
       #|	foo
@@ -110,18 +115,18 @@ test "fixer realigns tab-expanded columns" {
 
 ///|
 test "fixer leaves out-of-range tab realignment untouched" {
-  let fix = Fix::from_replacements([
-    Replacement::new(
+  let fix = @fixer.Fix::from_replacements([
+    @fixer.Replacement::new(
       "test.sh",
       @parser.Position::new(0, 9, 4),
       @parser.Position::new(0, 9, 4),
       "x",
       0,
-      InsertionPoint::before(),
+      @fixer.InsertionPoint::before(),
     ),
   ])
 
-  let realigned = realign_columns_for_tabs(
+  let realigned = @fixer.realign_columns_for_tabs(
     fix,
     (
       #|echo ok

@@ -265,7 +265,7 @@ fn d_trim_ascii_space(text : String) -> String {
 ///|
 fn d_split_shell_words(text : String) -> Array[String] {
   let values : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let view = text[:]
   let mut i = 0
   let mut quote : UInt16? = None
@@ -2369,7 +2369,7 @@ fn d_unsupported_feature_message(
 fn d_supported_shell_names(
   supported : Array[@semantics.ShellDialect],
 ) -> String {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   let mut i = 0
   while i < supported.length() {
     if i > 0 {
