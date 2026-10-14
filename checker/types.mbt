@@ -10,6 +10,21 @@ pub enum DiagnosticSeverity {
 } derive(Eq, Show, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend DiagnosticSeverity with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend DiagnosticSeverity with Show::{to_string, output}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend DiagnosticSeverity with Debug::{to_repr}
+
+///|
 /// End-to-end checker configuration.
 ///
 /// `CheckSpec` controls filename context, shell selection, diagnostic filters,
@@ -33,6 +48,16 @@ pub struct CheckSpec {
   config_path_override : String?
   config_files : Array[(String, String)]
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckSpec with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckSpec with Debug::{to_repr}
 
 ///|
 // CHECK THIS: THUNK
@@ -194,12 +219,32 @@ pub struct PositionedDiagnostic {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend PositionedDiagnostic with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend PositionedDiagnostic with Debug::{to_repr}
+
+///|
 /// The result of checking a single source file or input stream.
 pub struct CheckResult {
   filename : String
   source : String
   diagnostics : Array[PositionedDiagnostic]
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckResult with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckResult with Debug::{to_repr}
 
 ///|
 /// Returns the names of optional checks that users can enable explicitly.

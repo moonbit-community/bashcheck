@@ -17,7 +17,7 @@ test "doc semantics builds an index that keeps node kinds and spans" {
   let script = match
     @parser.parse_script("command -- printf '%s' \"$x\" >out\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let indexed = @semantics.build_index(script)
   let root = @semantics.root_id(indexed)
@@ -51,7 +51,7 @@ test "doc semantics exposes command-oriented helpers" {
   let script = match
     @parser.parse_script("command -- printf '%s' \"$x\" >out\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let command = script.items[0].and_or.head.segments[0].command
 
@@ -86,7 +86,7 @@ test "doc semantics infers shell settings and directives" {
       "#!/usr/bin/env bash -e\n# shellcheck shell=dash disable=SC2000 enable=quote-check\nset -o pipefail\n",
     ) {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
 
   @test.assert_eq(@semantics.determine_shell(script), Dash)

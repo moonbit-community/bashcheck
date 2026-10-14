@@ -8,6 +8,21 @@ pub enum VariableKind {
 } derive(Eq, Hash, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend VariableKind with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend VariableKind with Hash::{hash, hash_combine}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend VariableKind with Debug::{to_repr}
+
+///|
 /// A concrete set of shell variable properties observed during analysis.
 pub struct VariablePropertySet {
   exported : Bool
@@ -17,12 +32,42 @@ pub struct VariablePropertySet {
 } derive(Eq, Hash, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend VariablePropertySet with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend VariablePropertySet with Hash::{hash, hash_combine}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend VariablePropertySet with Debug::{to_repr}
+
+///|
 /// Whether a tracked string is empty, clean, or may contain spaces.
 pub enum SpaceStatus {
   Empty
   Clean
   Dirty
 } derive(Eq, Compare, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SpaceStatus with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SpaceStatus with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SpaceStatus with Debug::{to_repr}
 
 ///|
 /// Whether a tracked value is known to behave numerically.
@@ -34,6 +79,21 @@ pub enum NumericalStatus {
 } derive(Eq, Compare, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend NumericalStatus with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NumericalStatus with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend NumericalStatus with Debug::{to_repr}
+
+///|
 /// The abstract value tracked for one shell variable.
 pub struct VariableValue {
   literal_value : String?
@@ -43,11 +103,21 @@ pub struct VariableValue {
 } derive(Eq)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend VariableValue with Eq::{not_equal, equal}
+
+///|
 /// The full tracked state for one shell variable.
 pub struct VariableState {
   variable_value : VariableValue
   variable_properties : Set[VariablePropertySet]
 } derive(Eq)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend VariableState with Eq::{not_equal, equal}
 
 ///|
 /// A snapshot of the abstract program state at one CFG boundary.
@@ -58,12 +128,22 @@ pub struct ProgramState {
 } derive(Eq)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend ProgramState with Eq::{not_equal, equal}
+
+///|
 /// Dataflow results derived from a `CFG`.
 pub struct CfgAnalysis {
   priv cfg : CFG
   priv live_node_states : Array[(ProgramState, ProgramState)?]
   priv node_states : Array[(ProgramState, ProgramState)?]
 } derive(Eq)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CfgAnalysis with Eq::{not_equal, equal}
 
 ///|
 priv enum FunctionTarget {

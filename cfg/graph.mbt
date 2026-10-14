@@ -69,6 +69,16 @@ pub struct CFG {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend CFG with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CFG with Debug::{to_repr}
+
+///|
 fn cfg_ast_id(value : Int32) -> CfgAstId {
   { value, }
 }

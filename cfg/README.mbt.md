@@ -17,7 +17,7 @@ Use `root_ast_id`, `ast_ref_of`, `node_kind_of`, `id_to_range`, `id_to_nodes`,
 test "doc cfg exposes the lowered graph and AST-to-node mapping" {
   let script = match @parser.parse_script("x=1\necho \"$x\"\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let cfg = @cfg.build_cfg(script, @cfg.CfgParameters::new(false, false))
   let root = @cfg.root_ast_id(cfg)
@@ -53,7 +53,7 @@ queries.
 test "doc cfg exposes incoming and outgoing abstract state" {
   let script = match @parser.parse_script("x=1\necho \"$x\"\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let cfg = @cfg.build_cfg(script, @cfg.CfgParameters::new(false, false))
   let analysis = @cfg.analyze_control_flow(cfg)
@@ -102,7 +102,7 @@ graph.
 test "doc cfg parameters influence how pipelines are lowered" {
   let pipeline = match @parser.parse_script("printf x | cat\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let detached = @cfg.build_cfg(pipeline, @cfg.CfgParameters::new(false, false))
   let lastpipe = @cfg.build_cfg(pipeline, @cfg.CfgParameters::new(true, false))

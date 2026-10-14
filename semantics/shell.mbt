@@ -10,12 +10,42 @@ pub(all) enum ShellDialect {
 } derive(Eq, Show, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend ShellDialect with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ShellDialect with Show::{to_string, output}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ShellDialect with Debug::{to_repr}
+
+///|
 /// Whether a script is analyzed as an executed file or as a sourced file.
 #warnings("-deprecated_syntax")
 pub(all) enum ExecutionMode {
   Executed
   Sourced
 } derive(Eq, Show, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ExecutionMode with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ExecutionMode with Show::{to_string, output}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ExecutionMode with Debug::{to_repr}
 
 ///|
 priv struct ShellResolution {

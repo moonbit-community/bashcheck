@@ -6,6 +6,16 @@ pub struct CliOutcome {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend CliOutcome with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CliOutcome with Debug::{to_repr}
+
+///|
 /// Constructs a CLI outcome from rendered output and an exit code.
 pub fn CliOutcome::new(output : String, exit_code : Int32) -> CliOutcome {
   { output, exit_code, }
@@ -19,6 +29,16 @@ pub(all) enum CliAction {
   ShowVersion
   ListOptional
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CliAction with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CliAction with Debug::{to_repr}
 
 ///|
 /// Executes one CLI action over the provided files and formatter settings.

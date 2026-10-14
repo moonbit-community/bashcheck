@@ -10,6 +10,21 @@ pub enum CheckSeverity {
 } derive(Eq, Show, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend CheckSeverity with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckSeverity with Show::{to_string, output}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckSeverity with Debug::{to_repr}
+
+///|
 /// A single lint diagnostic produced by the `checks` package.
 pub struct CheckDiagnostic {
   span : @parser.Span
@@ -18,6 +33,16 @@ pub struct CheckDiagnostic {
   message : String
   fix : @fixer.Fix?
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckDiagnostic with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckDiagnostic with Debug::{to_repr}
 
 ///|
 /// Static metadata describing a supported ShellCheck-style rule.
@@ -29,6 +54,16 @@ pub struct CheckDescription {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend CheckDescription with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckDescription with Debug::{to_repr}
+
+///|
 /// Human-readable documentation for an optional check toggle.
 pub struct OptionalCheckInfo {
   name : String
@@ -38,6 +73,16 @@ pub struct OptionalCheckInfo {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend OptionalCheckInfo with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend OptionalCheckInfo with Debug::{to_repr}
+
+///|
 /// Options that control how AST-level checks are executed.
 pub struct CheckOptions {
   shell_override : @semantics.ShellDialect?
@@ -45,6 +90,16 @@ pub struct CheckOptions {
   extended_analysis : Bool
   optional_checks : Array[String]
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckOptions with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend CheckOptions with Debug::{to_repr}
 
 ///|
 priv struct CheckSuiteRegistration {

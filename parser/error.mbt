@@ -10,6 +10,11 @@ pub suberror ParseError {
 } derive(Eq)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend ParseError with Eq::{not_equal, equal}
+
+///|
 fn parse_error_message(err : ParseError) -> String {
   match err {
     UnexpectedEnd(pos~, context~) =>
@@ -25,3 +30,8 @@ fn parse_error_message(err : ParseError) -> String {
 pub impl Show for ParseError with fn output(self, logger) {
   logger.write_string(parse_error_message(self))
 }
+
+///|
+#deprecated
+#doc(hidden)
+pub extend ParseError with Show::{to_string, output}

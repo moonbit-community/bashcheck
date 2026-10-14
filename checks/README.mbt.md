@@ -18,7 +18,7 @@ test "doc checks runs the default rule suites" {
   let script = match
     @parser.parse_script("#!/bin/sh\nsource lib.sh\nprintf '%s' $(date)\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let diagnostics = @checks.check_script(script)
 
@@ -40,7 +40,7 @@ Rule-discovery UIs should start from `supported_checks`, which returns stable
 test "doc checks exposes optional-check metadata" {
   let script = match @parser.parse_script("safe=hello\necho $safe\n") {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let diagnostics = @checks.check_script(
     script,
@@ -73,7 +73,7 @@ test "doc checks honors disable directives attached to the script" {
       "# shellcheck disable=SC2006,SC2046\nprintf '%s' `foo`\n",
     ) {
     Ok(script) => script
-    Err(err) => abort(err.to_string())
+    Err(err) => abort(Show::to_string(err))
   }
   let diagnostics = @checks.check_script(script)
 

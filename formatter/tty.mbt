@@ -14,6 +14,16 @@ struct WikiEntry {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend WikiEntry with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend WikiEntry with Debug::{to_repr}
+
+///|
 /// Renders diagnostics in the human-oriented tty format.
 ///
 /// Diagnostics are grouped by `(filename, line)` so the source line is printed

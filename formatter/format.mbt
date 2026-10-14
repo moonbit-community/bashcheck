@@ -11,11 +11,31 @@ pub enum OutputFormat {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend OutputFormat with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend OutputFormat with Debug::{to_repr}
+
+///|
 /// Formatting knobs shared by multiple output renderers.
 pub struct FormatOptions {
   wiki_link_count : Int32
   enable_color : Bool
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend FormatOptions with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend FormatOptions with Debug::{to_repr}
 
 ///|
 // CHECK THIS: THUNK

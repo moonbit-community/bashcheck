@@ -6,6 +6,16 @@ pub enum InsertionPoint {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend InsertionPoint with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend InsertionPoint with Debug::{to_repr}
+
+///|
 // CHECK THIS: THUNK
 
 ///|
@@ -35,6 +45,16 @@ pub struct Replacement {
 } derive(Eq, Debug)
 
 ///|
+#deprecated
+#doc(hidden)
+pub extend Replacement with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend Replacement with Debug::{to_repr}
+
+///|
 /// Constructs a replacement spanning `start..end` in `filename`.
 pub fn Replacement::new(
   filename : String,
@@ -58,6 +78,16 @@ pub fn Replacement::with_text(self : Replacement, text : String) -> Replacement 
 pub struct Fix {
   replacements : Array[Replacement]
 } derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend Fix with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend Fix with Debug::{to_repr}
 
 ///|
 // CHECK THIS: THUNK
