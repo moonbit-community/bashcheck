@@ -1,0 +1,57 @@
+name: check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      # Compatibility tests compare diagnostics against ShellCheck 0.11.0.
+      - name: install ShellCheck
+        run: |
+          curl -fsSL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz -o "$RUNNER_TEMP/shellcheck.tar.xz"
+          tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/bin"
+          install "$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck" "$RUNNER_TEMP/bin/shellcheck"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: tool versions
+        run: |
+          moon version --all
+          shellcheck --version
+
+      - name: moon check
+        run: |
+          moon update
+          moon check --target all --deny-warn
+
+      - name: moon info
+        run: |
+          moon info
+          git diff --exit-code
+
+      - name: format diff
+        run: |
+          moon fmt
+          git diff --exit-code
+
+      # The CLI and compatibility packages support wasm and native.
+      - name: moon test (wasm)
+        run: moon test --target wasm
+
+      - name: moon test (native)
+        run: moon test --target native
