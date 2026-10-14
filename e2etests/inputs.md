@@ -92,8 +92,7 @@ $ cat fixtures/fix.sh | bashcheck --norc -i2006 -fgcc -
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -sbash -fjson
-@STDOUT
-[]
+$ bashcheck --norc -sbash -fgcc
+@STDOUT (empty)
 @STDERR (empty)
 ```

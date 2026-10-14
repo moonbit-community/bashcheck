@@ -20,8 +20,10 @@ moonx moonbit-community/mooncram@0.0.6 test e2etests --target native
 
 The suite has 175 cases organized by behavior. Diagnostic baselines are grouped
 by the shell feature being checked, rather than by implementation stage or output
-format. Fixture subdirectories use the same categories as their test documents;
-all diagnostic documents share the root `normalize.jq` filter.
+format. Fixture subdirectories use the same categories as their test documents.
+Diagnostic cases use terminal output with source excerpts, carets and suggested
+fixes. Option and configuration cases use compact GCC output. JSON snapshots are
+reserved for the JSON and JSON1 renderer cases in `formats.md`.
 
 | Documents | Coverage | Cases |
 | --- | --- | --- |
@@ -46,7 +48,7 @@ all diagnostic documents share the root `normalize.jq` filter.
 | `driver/driver_test.mbt` | Meta actions, file IO, stdin, quiet short circuit, statuses 0–4 | Keep the driver API smoke test; add real IO in `inputs.md` |
 | `formatter/formatter_test.mbt` | All seven formats, empty reports, ANSI color, wiki links, JSON fixes, missing final newline | Keep focused formatter assertions; add exact CLI snapshots in `formats.md` |
 | `checker/checker_test.mbt` | Filtering, dialect selection, annotations, optional checks, extended analysis, rc discovery and overrides | Keep pure checker assertions; add actual disk reads and argv parsing in `checking-options.md` |
-| Nine dynamic `compat/*diff_baseline_test.mbt` files and their JSON helper | 103 input cases checked against ShellCheck 0.11.0 | Migrated into the eight shell-feature documents listed above with static fixtures and jq-normalized snapshots; removed the live ShellCheck calls and helper |
+| Nine dynamic `compat/*diff_baseline_test.mbt` files and their JSON helper | 103 input cases checked against ShellCheck 0.11.0 | Migrated into the eight shell-feature documents listed above with static fixtures; now checked with terminal snapshots; removed the live ShellCheck calls and helper |
 | Former fixed `compat/*diff_baseline_test.mbt` files | In-memory parser and diagnostic assertions | Merged into `parser`, `checker` and `checks` unit tests with complete diagnostic comparisons; removed the `compat` package |
 | Parser, semantics, checks, CFG and fixer tests | AST shape, individual rules, dataflow and replacement algorithms | Keep unit tests for precise assertions and failure localization |
 
@@ -73,30 +75,29 @@ The eight shell-feature documents preserve all 103 inputs from the dynamic
 differential tests, including both occurrences of the identical SC2331 case in
 `conditions.md`. There is no separate compatibility test directory.
 Fixture text and trailing newlines were checked against the original inputs.
-During migration, each case was compared with ShellCheck 0.11.0 for normalized
-JSON and exit status. ShellCheck is not invoked by the suite or installed by CI.
+During the original migration, each case was compared with ShellCheck 0.11.0 for
+normalized JSON and exit status. ShellCheck is not invoked by the suite or
+installed by CI.
 
-Each diagnostic document imports `cli/jq@0.2.1`. The pipeline runs bashcheck with
-`--norc -fjson`, then applies `normalize.jq` with `-c -S -M`. The filter
-retains `line`, `endLine`, `column`, `endColumn`, `level`, `code`, `message`,
-and `fix`. Each fix retains all replacement fields previously compared:
-`line`, `endLine`, `column`, `endColumn`, `insertionPoint`, `precedence`,
-and `replacement`. Null codes/fixes and empty arrays are preserved.
+The diagnostic documents now run bashcheck directly with
+`--norc --color=never -W0 -ftty`. Exact terminal snapshots show the filename,
+source line, diagnostic location, severity, code and message, plus the corrected
+source when a fix is available. Disabling wiki footers keeps the focus on the
+diagnostics; `formats.md` separately covers wiki links and color. Empty results
+assert empty stdout, and every case still checks stderr and process exit status.
+No jq dependency or JSON normalization is needed.
 
-The filename is omitted, as the original helper replaced it with a constant.
-Diagnostics are sorted by start/end line, start/end column, severity
-(error, warning, info, style), code (null last), and message. Replacements are
-sorted by start/end line, start/end column, precedence, insertion point, and
-replacement text. These orders match the removed helper; `-S` also sorts object
-keys. Expectations are compact JSON arrays, empty stderr, and status 0 or 1.
-Mooncram's pipefail behavior preserves a nonzero bashcheck status when jq succeeds.
+Terminal excerpts do not expose every span and replacement metadata field.
+Complete diagnostic comparisons and replacement algorithm assertions remain in
+the MoonBit unit tests; `formats.md` keeps exact JSON and JSON1 snapshots for
+diagnostics with replacements and for empty results.
 
 For an intentional compatibility change, review the affected snapshot and
-compare that fixture with ShellCheck 0.11.0 using the same filter locally:
+compare that fixture with ShellCheck 0.11.0 using the same output options locally:
 
 ```sh
 cd e2etests
-shellcheck --norc -f json fixtures/conditions/SC2331.sh | moonx cli/jq@0.2.1 -c -S -M -f normalize.jq
+shellcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2331.sh
 ```
 
 This optional reference comparison is for local maintenance, not CI. Normal

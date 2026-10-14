@@ -14,9 +14,9 @@ fixtures/fix.sh:2:13: note: Use $(...) notation instead of legacy backticks `...
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -i2006 -eSC2006 -fjson fixtures/fix.sh
+$ bashcheck --norc -i2006 -eSC2006 -fgcc fixtures/fix.sh
 @STDOUT
-[{"file":"fixtures/fix.sh","line":2,"endLine":2,"column":13,"endColumn":18,"level":"style","code":2006,"message":"Use $(...) notation instead of legacy backticks `...`.","fix":{"replacements":[{"column":13,"endColumn":14,"endLine":2,"insertionPoint":"afterEnd","line":2,"precedence":5,"replacement":"$("},{"column":17,"endColumn":18,"endLine":2,"insertionPoint":"beforeStart","line":2,"precedence":5,"replacement":")"}]}}]
+fixtures/fix.sh:2:13: note: Use $(...) notation instead of legacy backticks `...`. [SC2006]
 @STDERR (empty)
 [1]
 
@@ -33,9 +33,8 @@ fixtures/warnings.sh:2:6: note: Double quote to prevent globbing and word splitt
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -i2006 -Swarning -fjson fixtures/fix.sh
-@STDOUT
-[]
+$ bashcheck --norc -i2006 -Swarning -fgcc fixtures/fix.sh
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck --norc -i2006 -Sstyle -fgcc fixtures/fix.sh
@@ -44,9 +43,8 @@ fixtures/fix.sh:2:13: note: Use $(...) notation instead of legacy backticks `...
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -i2006 -fjson fixtures/annotated.sh
-@STDOUT
-[]
+$ bashcheck --norc -i2006 -fgcc fixtures/annotated.sh
+@STDOUT (empty)
 @STDERR (empty)
 ```
 
@@ -61,14 +59,12 @@ fixtures/dialect.bash:2:1: warning: In POSIX sh, [[ ]] is undefined. [SC3010]
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -sbash -i3010 -fjson fixtures/dialect.bash
-@STDOUT
-[]
+$ bashcheck --norc -sbash -i3010 -fgcc fixtures/dialect.bash
+@STDOUT (empty)
 @STDERR (empty)
 
-$ bashcheck --norc -fjson fixtures/plain.bash
-@STDOUT
-[]
+$ bashcheck --norc -fgcc fixtures/plain.bash
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck --norc -i2148 -fgcc fixtures/unknown.sh
@@ -77,9 +73,8 @@ fixtures/unknown.sh:1:1: error: Tips depend on target shell and yours is unknown
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -sbash -fjson fixtures/unknown.sh
-@STDOUT
-[]
+$ bashcheck --norc -sbash -fgcc fixtures/unknown.sh
+@STDOUT (empty)
 @STDERR (empty)
 ```
 
@@ -88,9 +83,8 @@ $ bashcheck --norc -sbash -fjson fixtures/unknown.sh
 Defaults, explicit optional checks, all, unknown check names and the control-flow extension keep their existing CLI behavior.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -i2248,2292 -fjson fixtures/optional.sh
-@STDOUT
-[]
+$ bashcheck --norc -i2248,2292 -fgcc fixtures/optional.sh
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck --norc -oquote-safe-variables,require-double-brackets -i2248,2292 -fgcc fixtures/optional.sh
@@ -107,9 +101,8 @@ fixtures/optional.sh:4:1: note: Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busy
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc -obogus -i2248,2292 -fjson fixtures/optional.sh
-@STDOUT
-[]
+$ bashcheck --norc -obogus -i2248,2292 -fgcc fixtures/optional.sh
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck --norc -i2154 -fgcc fixtures/warnings.sh
@@ -118,9 +111,8 @@ fixtures/warnings.sh:2:6: warning: foo is referenced but not assigned. [SC2154]
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc --extended-analysis=false -i2154 -fjson fixtures/analysis.sh
-@STDOUT
-[]
+$ bashcheck --norc --extended-analysis=false -i2154 -fgcc fixtures/analysis.sh
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck --norc --extended-analysis=false -ocontrol-flow -i2154 -fgcc fixtures/warnings.sh
@@ -132,13 +124,15 @@ fixtures/warnings.sh:2:6: warning: foo is referenced but not assigned. [SC2154]
 
 ## First format wins
 
-Later format selections do not replace the first one.
+Later format selections do not replace the first one. A diagnostic distinguishes
+the compact GCC output from the source excerpt and carets in terminal output.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson -ftty -i2006 fixtures/clean.sh
+$ bashcheck --norc --color=never -fgcc -ftty -i2006 fixtures/fix.sh
 @STDOUT
-[]
+fixtures/fix.sh:2:13: note: Use $(...) notation instead of legacy backticks `...`. [SC2006]
 @STDERR (empty)
+[1]
 ```
 
 ## Rc discovery and overrides
@@ -146,14 +140,12 @@ $ bashcheck --norc -fjson -ftty -i2006 fixtures/clean.sh
 The checked file directory and its parents are searched. The nearest readable rc file wins; --rcfile selects another file and --norc bypasses configuration.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck -i2006 -fjson fixtures/rc/script.sh
-@STDOUT
-[]
+$ bashcheck -i2006 -fgcc fixtures/rc/script.sh
+@STDOUT (empty)
 @STDERR (empty)
 
-$ bashcheck -i2006 -fjson fixtures/rc/subdir/script.sh
-@STDOUT
-[]
+$ bashcheck -i2006 -fgcc fixtures/rc/subdir/script.sh
+@STDOUT (empty)
 @STDERR (empty)
 
 $ bashcheck -i2006 -fgcc fixtures/rc/near/script.sh
@@ -180,13 +172,11 @@ fixtures/optional.sh:4:1: note: Prefer [[ ]] over [ ] for tests in Bash/Ksh/Busy
 @STDERR (empty)
 [1]
 
-$ bashcheck --norc --rcfile fixtures/custom.rc -i2292 -fjson fixtures/optional.sh
-@STDOUT
-[]
+$ bashcheck --norc --rcfile fixtures/custom.rc -i2292 -fgcc fixtures/optional.sh
+@STDOUT (empty)
 @STDERR (empty)
 
-$ bashcheck --rcfile fixtures/custom.rc --extended-analysis=false -i2154 -fjson fixtures/analysis.sh
-@STDOUT
-[]
+$ bashcheck --rcfile fixtures/custom.rc --extended-analysis=false -i2154 -fgcc fixtures/analysis.sh
+@STDOUT (empty)
 @STDERR (empty)
 ```

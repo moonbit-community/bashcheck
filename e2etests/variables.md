@@ -2,21 +2,23 @@
 
 Variable references, array assignments, environment variables and subshell scope.
 
-These 12 cases use fixed JSON baselines checked against ShellCheck 0.11.0.
-Runtime tests execute bashcheck and the pinned jq tool.
-
-```mooncram-import
-jq : cli/jq@0.2.1
-```
+These 12 cases show source lines, diagnostic locations and suggested fixes
+using terminal output. Colors and wiki footers are disabled for exact snapshots.
 
 ## Assignments and variable references
 
 ### SC2272-SC2276
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2272-SC2276.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2272-SC2276.sh
 @STDOUT
-[{"code":2272,"column":1,"endColumn":9,"endLine":3,"fix":null,"level":"error","line":3,"message":"Command name contains ==. For comparison, use [ \"$var\" = value ]."},{"code":2276,"column":1,"endColumn":15,"endLine":4,"fix":null,"level":"error","line":4,"message":"This is interpreted as a command name containing '='. Bad assignment or comparison?"}]
+In fixtures/variables/SC2272-SC2276.sh line 3:
+$var==42
+^------^ SC2272 (error): Command name contains ==. For comparison, use [ "$var" = value ].
+
+In fixtures/variables/SC2272-SC2276.sh line 4:
+var${x}/=value
+^------------^ SC2276 (error): This is interpreted as a command name containing '='. Bad assignment or comparison?
 @STDERR (empty)
 [1]
 ```
@@ -24,9 +26,11 @@ $ bashcheck --norc -fjson fixtures/variables/SC2272-SC2276.sh | jq -c -S -M -f n
 ### SC2034
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2034.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2034.sh
 @STDOUT
-[{"code":2034,"column":1,"endColumn":4,"endLine":2,"fix":null,"level":"warning","line":2,"message":"foo appears unused. Verify use (or export if used externally)."}]
+In fixtures/variables/SC2034.sh line 2:
+foo=bar
+^-^ SC2034 (warning): foo appears unused. Verify use (or export if used externally).
 @STDERR (empty)
 [1]
 ```
@@ -34,9 +38,11 @@ $ bashcheck --norc -fjson fixtures/variables/SC2034.sh | jq -c -S -M -f normaliz
 ### SC2153
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2153.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2153.sh
 @STDOUT
-[{"code":2153,"column":6,"endColumn":15,"endLine":4,"fix":null,"level":"info","line":4,"message":"Possible misspelling: HOMR_DIR may not be assigned. Did you mean HOME_DIR?"}]
+In fixtures/variables/SC2153.sh line 4:
+echo $HOMR_DIR
+     ^-------^ SC2153 (info): Possible misspelling: HOMR_DIR may not be assigned. Did you mean HOME_DIR?
 @STDERR (empty)
 [1]
 ```
@@ -44,9 +50,23 @@ $ bashcheck --norc -fjson fixtures/variables/SC2153.sh | jq -c -S -M -f normaliz
 ### SC2283-SC2285
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2283-SC2285.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2283-SC2285.sh
 @STDOUT
-[{"code":2283,"column":5,"endColumn":6,"endLine":3,"fix":null,"level":"error","line":3,"message":"Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal)."},{"code":2284,"column":1,"endColumn":12,"endLine":4,"fix":null,"level":"error","line":4,"message":"Use [ x = y ] to compare values (or quote '==' if literal)."},{"code":2285,"column":1,"endColumn":14,"endLine":5,"fix":null,"level":"error","line":5,"message":"Remove spaces around += to assign (or quote '+=' if literal)."},{"code":2285,"column":1,"endColumn":13,"endLine":6,"fix":null,"level":"error","line":6,"message":"Remove spaces around += to assign (or quote '+=' if literal)."}]
+In fixtures/variables/SC2283-SC2285.sh line 3:
+foo = $bar
+    ^-- SC2283 (error): Remove spaces around = to assign (or use [ ] to compare, or quote '=' if literal).
+
+In fixtures/variables/SC2283-SC2285.sh line 4:
+foo == $bar
+^---------^ SC2284 (error): Use [ x = y ] to compare values (or quote '==' if literal).
+
+In fixtures/variables/SC2283-SC2285.sh line 5:
+var += $(foo)
+^-----------^ SC2285 (error): Remove spaces around += to assign (or quote '+=' if literal).
+
+In fixtures/variables/SC2283-SC2285.sh line 6:
+var +=$(foo)
+^----------^ SC2285 (error): Remove spaces around += to assign (or quote '+=' if literal).
 @STDERR (empty)
 [1]
 ```
@@ -54,9 +74,52 @@ $ bashcheck --norc -fjson fixtures/variables/SC2283-SC2285.sh | jq -c -S -M -f n
 ### SC2270-SC2282
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2270-SC2282.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2270-SC2282.sh
 @STDOUT
-[{"code":2277,"column":1,"endColumn":3,"endLine":3,"fix":{"replacements":[{"column":1,"endColumn":2,"endLine":3,"insertionPoint":"afterEnd","line":3,"precedence":7,"replacement":"BASH_ARGV0"}]},"level":"error","line":3,"message":"Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare)."},{"code":2270,"column":1,"endColumn":3,"endLine":4,"fix":null,"level":"error","line":4,"message":"To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare)."},{"code":2281,"column":1,"endColumn":5,"endLine":5,"fix":{"replacements":[{"column":1,"endColumn":2,"endLine":5,"insertionPoint":"afterEnd","line":5,"precedence":7,"replacement":""}]},"level":"error","line":5,"message":"Don't use $ on the left side of assignments."},{"code":2281,"column":1,"endColumn":7,"endLine":6,"fix":{"replacements":[{"column":1,"endColumn":3,"endLine":6,"insertionPoint":"afterEnd","line":6,"precedence":7,"replacement":""},{"column":6,"endColumn":7,"endLine":6,"insertionPoint":"beforeStart","line":6,"precedence":7,"replacement":""}]},"level":"error","line":6,"message":"Don't use ${} on the left side of assignments."},{"code":2271,"column":1,"endColumn":14,"endLine":7,"fix":null,"level":"error","line":7,"message":"For indirection, use arrays, declare \"var$n=value\", or (for sh) read/eval."},{"code":2273,"column":1,"endColumn":8,"endLine":8,"fix":null,"level":"error","line":8,"message":"Sequence of ===s found. Merge conflict or intended as a commented border?"},{"code":2274,"column":1,"endColumn":21,"endLine":9,"fix":null,"level":"error","line":9,"message":"Command name starts with ===. Intended as a commented border?"},{"code":2275,"column":1,"endColumn":4,"endLine":11,"fix":null,"level":"error","line":11,"message":"Command name starts with =. Bad line break?"},{"code":2282,"column":1,"endColumn":14,"endLine":12,"fix":null,"level":"error","line":12,"message":"Variable names can't start with numbers, so this is interpreted as a command."}]
+In fixtures/variables/SC2270-SC2282.sh line 3:
+0='foo'
+^-- SC2277 (error): Use BASH_ARGV0 to assign to $0 in bash (or use [ ] to compare).
+
+Did you mean:
+BASH_ARGV0='foo'
+
+In fixtures/variables/SC2270-SC2282.sh line 4:
+1='foo'
+^-- SC2270 (error): To assign positional parameters, use 'set -- first second ..' (or use [ ] to compare).
+
+In fixtures/variables/SC2270-SC2282.sh line 5:
+$var=foo
+^--^ SC2281 (error): Don't use $ on the left side of assignments.
+
+Did you mean:
+var=foo
+
+In fixtures/variables/SC2270-SC2282.sh line 6:
+${var}=foo
+^----^ SC2281 (error): Don't use ${} on the left side of assignments.
+
+Did you mean:
+var=foo
+
+In fixtures/variables/SC2270-SC2282.sh line 7:
+var${x}=value
+^-----------^ SC2271 (error): For indirection, use arrays, declare "var$n=value", or (for sh) read/eval.
+
+In fixtures/variables/SC2270-SC2282.sh line 8:
+"=======" (escaped)
+^-----^ SC2273 (error): Sequence of ===s found. Merge conflict or intended as a commented border?
+
+In fixtures/variables/SC2270-SC2282.sh line 9:
+"======= Here =======" (escaped)
+^------------------^ SC2274 (error): Command name starts with ===. Intended as a commented border?
+
+In fixtures/variables/SC2270-SC2282.sh line 11:
+=42
+^-^ SC2275 (error): Command name starts with =. Bad line break?
+
+In fixtures/variables/SC2270-SC2282.sh line 12:
+411toppm=true
+^-----------^ SC2282 (error): Variable names can't start with numbers, so this is interpreted as a command.
 @STDERR (empty)
 [1]
 ```
@@ -64,9 +127,15 @@ $ bashcheck --norc -fjson fixtures/variables/SC2270-SC2282.sh | jq -c -S -M -f n
 ### SC2209
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2209.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2209.sh
 @STDOUT
-[{"code":2209,"column":1,"endColumn":12,"endLine":3,"fix":null,"level":"warning","line":3,"message":"Use var=$(command) to assign output (or quote to assign string)."},{"code":2209,"column":1,"endColumn":5,"endLine":4,"fix":null,"level":"warning","line":4,"message":"Use var=$(command) to assign output (or quote to assign string)."}]
+In fixtures/variables/SC2209.sh line 3:
+out=cat foo
+^---------^ SC2209 (warning): Use var=$(command) to assign output (or quote to assign string).
+
+In fixtures/variables/SC2209.sh line 4:
+here=pwd
+^--^ SC2209 (warning): Use var=$(command) to assign output (or quote to assign string).
 @STDERR (empty)
 [1]
 ```
@@ -76,9 +145,19 @@ $ bashcheck --norc -fjson fixtures/variables/SC2209.sh | jq -c -S -M -f normaliz
 ### SC2123
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2123.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2123.sh
 @STDOUT
-[{"code":2123,"column":1,"endColumn":5,"endLine":3,"fix":null,"level":"warning","line":3,"message":"PATH is the shell search path. Use another name."},{"code":2123,"column":1,"endColumn":5,"endLine":4,"fix":null,"level":"warning","line":4,"message":"PATH is the shell search path. Use another name."},{"code":2123,"column":1,"endColumn":5,"endLine":5,"fix":null,"level":"warning","line":5,"message":"PATH is the shell search path. Use another name."}]
+In fixtures/variables/SC2123.sh line 3:
+PATH="$var/$foo"
+^--^ SC2123 (warning): PATH is the shell search path. Use another name.
+
+In fixtures/variables/SC2123.sh line 4:
+PATH="mydir"
+^--^ SC2123 (warning): PATH is the shell search path. Use another name.
+
+In fixtures/variables/SC2123.sh line 5:
+PATH=/cow/foo
+^--^ SC2123 (warning): PATH is the shell search path. Use another name.
 @STDERR (empty)
 [1]
 ```
@@ -86,9 +165,19 @@ $ bashcheck --norc -fjson fixtures/variables/SC2123.sh | jq -c -S -M -f normaliz
 ### SC2054
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2054.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2054.sh
 @STDOUT
-[{"code":2054,"column":3,"endColumn":9,"endLine":3,"fix":null,"level":"warning","line":3,"message":"Use spaces, not commas, to separate array elements."},{"code":2054,"column":4,"endColumn":11,"endLine":4,"fix":null,"level":"warning","line":4,"message":"Use spaces, not commas, to separate array elements."},{"code":2054,"column":3,"endColumn":22,"endLine":7,"fix":null,"level":"warning","line":7,"message":"Use spaces, not commas, to separate array elements."}]
+In fixtures/variables/SC2054.sh line 3:
+a=(1, 2)
+  ^----^ SC2054 (warning): Use spaces, not commas, to separate array elements.
+
+In fixtures/variables/SC2054.sh line 4:
+a+=(1,2,3)
+   ^-----^ SC2054 (warning): Use spaces, not commas, to separate array elements.
+
+In fixtures/variables/SC2054.sh line 7:
+a=([a]=b,[c]=d,[e]=f)
+  ^-----------------^ SC2054 (warning): Use spaces, not commas, to separate array elements.
 @STDERR (empty)
 [1]
 ```
@@ -96,9 +185,47 @@ $ bashcheck --norc -fjson fixtures/variables/SC2054.sh | jq -c -S -M -f normaliz
 ### SC2190-SC2192
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2190-SC2192.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2190-SC2192.sh
 @STDOUT
-[{"code":2190,"column":22,"endColumn":25,"endLine":3,"fix":null,"level":"warning","line":3,"message":"Elements in associative arrays need index, e.g. array=( [index]=value ) ."},{"code":2192,"column":13,"endColumn":13,"endLine":4,"fix":null,"level":"warning","line":4,"message":"This array element has no value. Remove spaces after = or use \"\" for empty string."},{"code":2190,"column":23,"endColumn":32,"endLine":5,"fix":null,"level":"warning","line":5,"message":"Elements in associative arrays need index, e.g. array=( [index]=value ) ."},{"code":2191,"column":7,"endColumn":14,"endLine":6,"fix":{"replacements":[{"column":7,"endColumn":7,"endLine":6,"insertionPoint":"afterEnd","line":6,"precedence":9,"replacement":"\""},{"column":14,"endColumn":14,"endLine":6,"insertionPoint":"beforeStart","line":6,"precedence":9,"replacement":"\""}]},"level":"warning","line":6,"message":"The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it."},{"code":2191,"column":9,"endColumn":15,"endLine":7,"fix":{"replacements":[{"column":9,"endColumn":9,"endLine":7,"insertionPoint":"afterEnd","line":7,"precedence":9,"replacement":"\""},{"column":15,"endColumn":15,"endLine":7,"insertionPoint":"beforeStart","line":7,"precedence":9,"replacement":"\""}]},"level":"warning","line":7,"message":"The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it."},{"code":2191,"column":15,"endColumn":21,"endLine":8,"fix":{"replacements":[{"column":15,"endColumn":15,"endLine":8,"insertionPoint":"afterEnd","line":8,"precedence":9,"replacement":"\""},{"column":21,"endColumn":21,"endLine":8,"insertionPoint":"beforeStart","line":8,"precedence":9,"replacement":"\""}]},"level":"warning","line":8,"message":"The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it."},{"code":2191,"column":13,"endColumn":14,"endLine":9,"fix":{"replacements":[{"column":13,"endColumn":13,"endLine":9,"insertionPoint":"afterEnd","line":9,"precedence":9,"replacement":"\""},{"column":14,"endColumn":14,"endLine":9,"insertionPoint":"beforeStart","line":9,"precedence":9,"replacement":"\""}]},"level":"warning","line":9,"message":"The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it."}]
+In fixtures/variables/SC2190-SC2192.sh line 3:
+declare -A foo; foo=(bar)
+                     ^-^ SC2190 (warning): Elements in associative arrays need index, e.g. array=( [index]=value ) .
+
+In fixtures/variables/SC2190-SC2192.sh line 4:
+arr=( [foo]= bar )
+            ^-- SC2192 (warning): This array element has no value. Remove spaces after = or use "" for empty string.
+
+In fixtures/variables/SC2190-SC2192.sh line 5:
+declare -A map; map=( var=value )
+                      ^-------^ SC2190 (warning): Elements in associative arrays need index, e.g. array=( [index]=value ) .
+
+In fixtures/variables/SC2190-SC2192.sh line 6:
+arr=( 1=value )
+      ^-----^ SC2191 (warning): The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.
+
+Did you mean:
+arr=( "1=value" )
+
+In fixtures/variables/SC2190-SC2192.sh line 7:
+arr=( $a=value )
+        ^----^ SC2191 (warning): The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.
+
+Did you mean:
+arr=( $a"=value" )
+
+In fixtures/variables/SC2190-SC2192.sh line 8:
+arr=( $((1+1))=value )
+              ^----^ SC2191 (warning): The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.
+
+Did you mean:
+arr=( $((1+1))"=value" )
+
+In fixtures/variables/SC2190-SC2192.sh line 9:
+arr=( [foo] = bar )
+            ^-- SC2191 (warning): The = here is literal. To assign by index, use ( [index]=value ) with no spaces. To keep as literal, quote it.
+
+Did you mean:
+arr=( [foo] "=" bar )
 @STDERR (empty)
 [1]
 ```
@@ -108,9 +235,15 @@ $ bashcheck --norc -fjson fixtures/variables/SC2190-SC2192.sh | jq -c -S -M -f n
 ### SC2165-SC2167
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2165-SC2167.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2165-SC2167.sh
 @STDOUT
-[{"code":2167,"column":1,"endColumn":4,"endLine":3,"fix":null,"level":"warning","line":3,"message":"This parent loop has its index variable overridden."},{"code":2165,"column":3,"endColumn":6,"endLine":4,"fix":null,"level":"warning","line":4,"message":"This nested loop overrides the index variable of its parent."}]
+In fixtures/variables/SC2165-SC2167.sh line 3:
+for i in a; do
+^-^ SC2167 (warning): This parent loop has its index variable overridden.
+
+In fixtures/variables/SC2165-SC2167.sh line 4:
+  for ((i = 0; i < 3; i++)); do
+  ^-^ SC2165 (warning): This nested loop overrides the index variable of its parent.
 @STDERR (empty)
 [1]
 ```
@@ -118,9 +251,15 @@ $ bashcheck --norc -fjson fixtures/variables/SC2165-SC2167.sh | jq -c -S -M -f n
 ### SC2030-SC2031-pipeline
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2030-SC2031-pipeline.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-pipeline.sh
 @STDOUT
-[{"code":2030,"column":33,"endColumn":34,"endLine":2,"fix":null,"level":"info","line":2,"message":"Modification of a is local (to subshell caused by pipeline)."},{"code":2031,"column":7,"endColumn":13,"endLine":3,"fix":null,"level":"info","line":3,"message":"a was modified in a subshell. That change might be lost."}]
+In fixtures/variables/SC2030-SC2031-pipeline.sh line 2:
+cat foo | while read -r bar; do a=$bar; done
+                                ^-- SC2030 (info): Modification of a is local (to subshell caused by pipeline).
+
+In fixtures/variables/SC2030-SC2031-pipeline.sh line 3:
+echo "${a:-}"
+      ^----^ SC2031 (info): a was modified in a subshell. That change might be lost.
 @STDERR (empty)
 [1]
 ```
@@ -128,9 +267,12 @@ $ bashcheck --norc -fjson fixtures/variables/SC2030-SC2031-pipeline.sh | jq -c -
 ### SC2030-SC2031-background
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc -fjson fixtures/variables/SC2030-SC2031-background.sh | jq -c -S -M -f normalize.jq
+$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-background.sh
 @STDOUT
-[{"code":2030,"column":9,"endColumn":10,"endLine":2,"fix":null,"level":"info","line":2,"message":"Modification of n is local (to subshell caused by backgrounding &)."},{"code":2031,"column":18,"endColumn":20,"endLine":2,"fix":null,"level":"info","line":2,"message":"n was modified in a subshell. That change might be lost."}]
+In fixtures/variables/SC2030-SC2031-background.sh line 2:
+read -r n & n=foo$n
+        ^-- SC2030 (info): Modification of n is local (to subshell caused by backgrounding &).
+                 ^-- SC2031 (info): n was modified in a subshell. That change might be lost.
 @STDERR (empty)
 [1]
 ```
