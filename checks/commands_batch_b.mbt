@@ -453,7 +453,7 @@ fn check_missing_destination_command(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
   command_name : String,
-  code : Int,
+  code : Int32,
   severity : CheckSeverity,
   message : String,
 ) -> Unit {

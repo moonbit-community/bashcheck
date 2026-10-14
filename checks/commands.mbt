@@ -59,7 +59,7 @@ fn commands_descriptions() -> Array[CheckDescription] {
 
 ///|
 fn commands_suite() -> CheckSuiteRegistration {
-  { descriptions: commands_descriptions(), run: run_command_checks }
+  { descriptions: commands_descriptions(), run: run_command_checks, }
 }
 
 ///|

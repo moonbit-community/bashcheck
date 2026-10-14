@@ -5,7 +5,7 @@
 /// checks are executed.
 pub fn check_script(
   script : @parser.Script,
-  options? : CheckOptions = CheckOptions::default(),
+  options~ : CheckOptions = CheckOptions::default(),
 ) -> Array[CheckDiagnostic] {
   let shell = match (options.shell_override, options.filename) {
     (Some(shell_override), Some(filename)) =>
@@ -323,7 +323,7 @@ fn diagnostic_is_enabled(
 fn annotations_disable_code_at_position(
   script : @parser.Script,
   position : @parser.Position,
-  code : Int,
+  code : Int32,
 ) -> Bool {
   let mut disabled = false
   @semantics.walk_script(script, fn(current) {
@@ -356,7 +356,7 @@ fn span_contains_position(
 ///|
 fn annotations_disable_code(
   annotations : Array[@parser.Annotation],
-  code : Int,
+  code : Int32,
 ) -> Bool {
   for annotation in annotations {
     match annotation {
@@ -368,7 +368,7 @@ fn annotations_disable_code(
 }
 
 ///|
-fn disable_value_matches_code(value : String, code : Int) -> Bool {
+fn disable_value_matches_code(value : String, code : Int32) -> Bool {
   if value == "all" {
     return true
   }
@@ -412,7 +412,7 @@ fn split_disable_once(text : String) -> (String, String)? {
 }
 
 ///|
-fn parse_disable_code_number(text : String) -> Int? {
+fn parse_disable_code_number(text : String) -> Int32? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
   let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !disable_text_is_digits(text) {
@@ -440,7 +440,7 @@ fn disable_text_is_digits(text : String) -> Bool {
 }
 
 ///|
-fn digits_to_int(text : String) -> Int {
+fn digits_to_int(text : String) -> Int32 {
   let view = text[:]
   let mut value = 0
   let mut i = 0
@@ -489,7 +489,7 @@ fn diagnostic_precedes(lhs : CheckDiagnostic, rhs : CheckDiagnostic) -> Bool {
 }
 
 ///|
-fn severity_rank(severity : CheckSeverity) -> Int {
+fn severity_rank(severity : CheckSeverity) -> Int32 {
   match severity {
     Error => 0
     Warning => 1

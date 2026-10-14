@@ -14,7 +14,7 @@ pub enum CheckSeverity {
 pub struct CheckDiagnostic {
   span : @parser.Span
   severity : CheckSeverity
-  code : Int
+  code : Int32
   message : String
   fix : @fixer.Fix?
 } derive(Eq, Debug)
@@ -22,7 +22,7 @@ pub struct CheckDiagnostic {
 ///|
 /// Static metadata describing a supported ShellCheck-style rule.
 pub struct CheckDescription {
-  code : Int
+  code : Int32
   severity : CheckSeverity
   category : String
   summary : String
@@ -102,21 +102,21 @@ pub fn CheckOptions::with_optional_checks(
 fn check_diagnostic(
   span : @parser.Span,
   severity : CheckSeverity,
-  code : Int,
+  code : Int32,
   message : String,
 ) -> CheckDiagnostic {
-  { span, severity, code, message, fix: None }
+  { span, severity, code, message, fix: None, }
 }
 
 ///|
 fn check_diagnostic_with_fix(
   span : @parser.Span,
   severity : CheckSeverity,
-  code : Int,
+  code : Int32,
   message : String,
   fix : @fixer.Fix,
 ) -> CheckDiagnostic {
-  { span, severity, code, message, fix: Some(fix) }
+  { span, severity, code, message, fix: Some(fix), }
 }
 
 ///|
@@ -124,7 +124,7 @@ fn push_diagnostic(
   diagnostics : Array[CheckDiagnostic],
   span : @parser.Span,
   severity : CheckSeverity,
-  code : Int,
+  code : Int32,
   message : String,
 ) -> Unit {
   diagnostics.push(check_diagnostic(span, severity, code, message))
@@ -135,7 +135,7 @@ fn push_diagnostic_with_fix(
   diagnostics : Array[CheckDiagnostic],
   span : @parser.Span,
   severity : CheckSeverity,
-  code : Int,
+  code : Int32,
   message : String,
   fix : @fixer.Fix,
 ) -> Unit {

@@ -1,15 +1,15 @@
 ///|
 /// A concrete location in the original source text.
 pub struct Position {
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, Debug)
 
 ///|
 /// Constructs a source position from byte offset, line, and column values.
-pub fn Position::new(offset : Int, line : Int, column : Int) -> Position {
-  { offset, line, column }
+pub fn Position::new(offset : Int32, line : Int32, column : Int32) -> Position {
+  { offset, line, column, }
 }
 
 ///|
@@ -22,7 +22,7 @@ pub struct Span {
 ///|
 /// Constructs a source span from two positions.
 pub fn Span::new(start : Position, end_ : Position) -> Span {
-  { start, end: end_ }
+  { start, end: end_, }
 }
 
 ///|
@@ -38,7 +38,7 @@ pub enum DiagnosticSeverity {
 pub struct Diagnostic {
   span : Span
   severity : DiagnosticSeverity
-  code : Int?
+  code : Int32?
   message : String
 } derive(Eq, Debug)
 
@@ -172,7 +172,7 @@ pub struct Pipeline {
 /// One stage in a pipeline, including any leading `!` negation.
 pub struct PipelineSegment {
   span : Span
-  bangs : Int
+  bangs : Int32
   command : Command
 } derive(Eq, Debug)
 
@@ -436,7 +436,7 @@ pub struct Redirection {
 ///|
 /// The explicit source FD or pseudo-source of a redirection.
 pub enum RedirectionSource {
-  Fd(Int)
+  Fd(Int32)
   Named(String)
   All
 } derive(Eq, Debug)

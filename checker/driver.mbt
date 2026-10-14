@@ -12,7 +12,7 @@ pub fn supported_checks() -> Array[@checks.CheckDescription] {
 /// `CheckResult` from raw source text.
 pub fn check_script(
   source : String,
-  spec? : CheckSpec = CheckSpec::default(),
+  spec~ : CheckSpec = CheckSpec::default(),
 ) -> CheckResult {
   let filename = display_filename(spec.filename)
   // Config loading happens before parsing the main script because rc files can
@@ -28,7 +28,7 @@ pub fn check_script(
   let diagnostics = merge_parse_and_lint_diagnostics(
     report, filename, effective_spec, config,
   )
-  { filename, source, diagnostics }
+  { filename, source, diagnostics, }
 }
 
 ///|
@@ -154,7 +154,7 @@ fn merge_parse_and_lint_diagnostics(
 }
 
 ///|
-fn parse_report_has_code(report : @parser.ParseReport, code : Int) -> Bool {
+fn parse_report_has_code(report : @parser.ParseReport, code : Int32) -> Bool {
   for diagnostic in report.diagnostics {
     if diagnostic.code == Some(code) {
       return true
@@ -561,7 +561,7 @@ fn checker_shebang_words(shebang : String) -> Array[String] {
 }
 
 ///|
-fn checker_env_shell_from_args(args : Array[String], start : Int) -> String {
+fn checker_env_shell_from_args(args : Array[String], start : Int32) -> String {
   let mut i = start
   while i < args.length() {
     let arg = checker_quote_removed_source(args[i])
@@ -625,7 +625,7 @@ fn checker_env_shell_from_args(args : Array[String], start : Int) -> String {
 fn checker_split_string_args_with_tail(
   split : Array[String],
   args : Array[String],
-  tail_start : Int,
+  tail_start : Int32,
 ) -> Array[String] {
   let combined : Array[String] = []
   for part in split {
@@ -828,7 +828,7 @@ fn severity_included(
 ///
 /// Include lists are exclusive: once present, only listed codes survive.
 /// Diagnostics without a code survive only when there is no include list.
-fn code_is_included(spec : CheckSpec, code : Int?) -> Bool {
+fn code_is_included(spec : CheckSpec, code : Int32?) -> Bool {
   if code is Some(code) {
     if spec.include_codes.length() > 0 {
       spec.include_codes.contains(code)
@@ -842,7 +842,7 @@ fn code_is_included(spec : CheckSpec, code : Int?) -> Bool {
 
 ///|
 /// Assigns sortable numeric ranks to severities.
-fn severity_rank(severity : DiagnosticSeverity) -> Int {
+fn severity_rank(severity : DiagnosticSeverity) -> Int32 {
   match severity {
     Error => 0
     Warning => 1
@@ -916,7 +916,7 @@ fn diagnostic_precedes(
 fn annotations_disable_code_at_position(
   script : @parser.Script,
   position : @parser.Position,
-  code : Int,
+  code : Int32,
 ) -> Bool {
   let mut disabled = false
   @semantics.walk_script(script, fn(current) {
@@ -952,7 +952,7 @@ fn span_contains_position(
 /// Checks whether any annotation in the list disables the given code.
 fn annotations_disable_code(
   annotations : Array[@parser.Annotation],
-  code : Int,
+  code : Int32,
 ) -> Bool {
   for annotation in annotations {
     match annotation {
@@ -965,7 +965,7 @@ fn annotations_disable_code(
 
 ///|
 /// Matches disable directives such as `all`, `SC2086`, or `SC2086-SC2090`.
-fn disable_value_matches_code(value : String, code : Int) -> Bool {
+fn disable_value_matches_code(value : String, code : Int32) -> Bool {
   if value == "all" {
     return true
   }
@@ -1013,7 +1013,7 @@ fn split_disable_once(text : String) -> (String, String)? {
 
 ///|
 /// Parses one disable-code token in either `1234` or `SC1234` form.
-fn parse_disable_code_number(text : String) -> Int? {
+fn parse_disable_code_number(text : String) -> Int32? {
   let start = if text.has_prefix("SC") { 2 } else { 0 }
   let digits = text.view(start_offset=start).to_owned()
   if digits == "" || !disable_text_is_digits(text) {
@@ -1044,7 +1044,7 @@ fn disable_text_is_digits(text : String) -> Bool {
 
 ///|
 /// Converts an ASCII digit string into an integer.
-fn digits_to_int(text : String) -> Int {
+fn digits_to_int(text : String) -> Int32 {
   let view = text[:]
   let mut value = 0
   let mut i = 0

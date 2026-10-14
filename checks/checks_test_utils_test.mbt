@@ -18,12 +18,12 @@ fn check_source(source : String) -> Array[CheckDiagnostic] {
 }
 
 ///|
-fn has_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Bool {
+fn has_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Bool {
   diagnostics.any(fn(diagnostic) { diagnostic.code == code })
 }
 
 ///|
-fn count_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Int {
+fn count_code(diagnostics : Array[CheckDiagnostic], code : Int32) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == code {
@@ -36,7 +36,7 @@ fn count_code(diagnostics : Array[CheckDiagnostic], code : Int) -> Int {
 ///|
 fn first_code(
   diagnostics : Array[CheckDiagnostic],
-  code : Int,
+  code : Int32,
 ) -> CheckDiagnostic {
   for diagnostic in diagnostics {
     if diagnostic.code == code {

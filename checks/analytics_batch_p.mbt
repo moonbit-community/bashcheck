@@ -258,7 +258,7 @@ fn p_check_equals_command_word(
 fn p_push_direct_reference_assignment_diagnostic(
   word : @parser.Word,
   target : @parser.WordPart,
-  target_width : Int,
+  target_width : Int32,
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -315,7 +315,7 @@ fn p_push_direct_reference_assignment_diagnostic(
 fn p_push_braced_assignment_diagnostic(
   word_start : @parser.Position,
   target_span : @parser.Span,
-  target_width : Int,
+  target_width : Int32,
   expansion : @parser.ParameterExpansion,
   shell : @semantics.ShellDialect,
   diagnostics : Array[CheckDiagnostic],
@@ -482,7 +482,7 @@ fn p_assignment_target_is_direct_reference(
 ///|
 fn p_first_literal_with_equals(
   parts : Array[@parser.WordPart],
-) -> (Int, String)? {
+) -> (Int32, String)? {
   let mut i = 0
   while i < parts.length() {
     match parts[i] {
@@ -538,7 +538,7 @@ fn p_word_is_conflict_marker(word : @parser.Word) -> Bool {
 }
 
 ///|
-fn p_positional_assignment_width(text : String) -> Int? {
+fn p_positional_assignment_width(text : String) -> Int32? {
   let prefix = p_text_before_equals(text)
   if prefix.length() == 0 || prefix.length() > 2 {
     return None
@@ -642,7 +642,7 @@ fn p_is_ascii_digit(ch : Char) -> Bool {
 }
 
 ///|
-fn p_stripped_prefix_width(source : String) -> Int? {
+fn p_stripped_prefix_width(source : String) -> Int32? {
   let width = if p_first_equals_offset(source) is Some(width) {
     width
   } else {
@@ -664,7 +664,7 @@ fn p_source_has_plus_before_equals(source : String) -> Bool {
 }
 
 ///|
-fn p_first_equals_offset(source : String) -> Int? {
+fn p_first_equals_offset(source : String) -> Int32? {
   let view = source[:]
   let mut i = 0
   while i < view.length() {
@@ -677,7 +677,7 @@ fn p_first_equals_offset(source : String) -> Int? {
 }
 
 ///|
-fn p_char_at(text : String, index : Int) -> Char {
+fn p_char_at(text : String, index : Int32) -> Char {
   text[:][index].unsafe_to_char()
 }
 
@@ -711,7 +711,7 @@ fn p_remove_dollar_fix(start : @parser.Position) -> @fixer.Fix {
 ///|
 fn p_remove_braced_reference_fix(
   start : @parser.Position,
-  width : Int,
+  width : Int32,
 ) -> @fixer.Fix {
   let end_ = analytics_position_offset(start, width)
   @fixer.Fix::from_replacements([
@@ -737,7 +737,7 @@ fn p_remove_braced_reference_fix(
 ///|
 fn p_replace_prefix_fix(
   start : @parser.Position,
-  width : Int,
+  width : Int32,
   text : String,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([

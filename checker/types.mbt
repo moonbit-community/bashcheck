@@ -22,8 +22,8 @@ pub struct CheckSpec {
   fallback_shell : @semantics.ShellDialect?
   execution_mode : @semantics.ExecutionMode
   min_severity : DiagnosticSeverity
-  include_codes : Array[Int]
-  exclude_codes : Array[Int]
+  include_codes : Array[Int32]
+  exclude_codes : Array[Int32]
   optional_checks : Array[String]
   extended_analysis : Bool
   extended_analysis_forced : Bool
@@ -95,7 +95,7 @@ pub fn CheckSpec::with_min_severity(
 /// Returns a copy of the spec that only includes the given ShellCheck codes.
 pub fn CheckSpec::with_include_codes(
   self : CheckSpec,
-  include_codes : Array[Int],
+  include_codes : Array[Int32],
 ) -> CheckSpec {
   { ..self, include_codes, }
 }
@@ -104,7 +104,7 @@ pub fn CheckSpec::with_include_codes(
 /// Returns a copy of the spec with the given ShellCheck codes excluded.
 pub fn CheckSpec::with_exclude_codes(
   self : CheckSpec,
-  exclude_codes : Array[Int],
+  exclude_codes : Array[Int32],
 ) -> CheckSpec {
   { ..self, exclude_codes, }
 }
@@ -168,7 +168,7 @@ pub fn CheckSpec::with_extended_analysis(
   self : CheckSpec,
   extended_analysis : Bool,
 ) -> CheckSpec {
-  { ..self, extended_analysis, extended_analysis_forced: true }
+  { ..self, extended_analysis, extended_analysis_forced: true, }
 }
 
 ///|
@@ -188,7 +188,7 @@ pub struct PositionedDiagnostic {
   filename : String
   span : @parser.Span
   severity : DiagnosticSeverity
-  code : Int?
+  code : Int32?
   message : String
   fix : @fixer.Fix?
 } derive(Eq, Debug)

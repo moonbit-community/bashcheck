@@ -50,7 +50,7 @@ fn word_unquoted_single_variable_name(word : @parser.Word) -> String? {
           name: Some(name),
           index: None,
           operator: None,
-          ..,
+          ..
         }
       ),
     ] => if is_identifier_name(name) { Some(name) } else { None }
@@ -229,7 +229,7 @@ fn run_avoid_negated_conditions_optional_check(
 fn insert_after_position_fix(
   position : @parser.Position,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
@@ -1004,7 +1004,10 @@ fn maybe_push_masked_return_diagnostic(
 }
 
 ///|
-fn words_from(words : Array[@parser.Word], start : Int) -> Array[@parser.Word] {
+fn words_from(
+  words : Array[@parser.Word],
+  start : Int32,
+) -> Array[@parser.Word] {
   let rest : Array[@parser.Word] = []
   let mut i = start
   while i < words.length() {

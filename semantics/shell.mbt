@@ -160,7 +160,7 @@ pub fn has_execfail(script : @parser.Script, dialect : ShellDialect) -> Bool {
 /// Chooses the effective execution mode from an override and a `sourced` flag.
 pub fn effective_execution_mode(
   mode_override? : ExecutionMode,
-  sourced? : Bool = false,
+  sourced~ : Bool = false,
 ) -> ExecutionMode {
   if mode_override is Some(mode) {
     mode
@@ -179,12 +179,12 @@ fn resolve_shell(
   fallback_shell : ShellDialect?,
 ) -> ShellResolution {
   if shell_override is Some(dialect) {
-    { dialect, suppresses_unknown_warning: true }
+    { dialect, suppresses_unknown_warning: true, }
   } else if shell_from_annotation(script.annotations) is Some(dialect) {
-    { dialect, suppresses_unknown_warning: true }
+    { dialect, suppresses_unknown_warning: true, }
   } else if script.shebang is Some(shebang) {
     if shell_from_shebang(shebang) is Some(dialect) {
-      { dialect, suppresses_unknown_warning: true }
+      { dialect, suppresses_unknown_warning: true, }
     } else {
       resolve_fallback_shell(filename, fallback_shell)
     }
@@ -215,25 +215,25 @@ fn resolve_fallback_shell(
 ///|
 fn default_shell_resolution(fallback_shell : ShellDialect?) -> ShellResolution {
   if fallback_shell is Some(dialect) {
-    { dialect, suppresses_unknown_warning: true }
+    { dialect, suppresses_unknown_warning: true, }
   } else {
-    { dialect: Bash, suppresses_unknown_warning: false }
+    { dialect: Bash, suppresses_unknown_warning: false, }
   }
 }
 
 ///|
 fn shell_hint_from_filename(filename : String) -> FilenameShellHint? {
   if filename.has_suffix(".ksh") {
-    return Some({ dialect: Ksh, suppresses_unknown_warning: true })
+    return Some({ dialect: Ksh, suppresses_unknown_warning: true, })
   }
   if filename.has_suffix(".bash") || filename.has_suffix(".bats") {
-    return Some({ dialect: Bash, suppresses_unknown_warning: true })
+    return Some({ dialect: Bash, suppresses_unknown_warning: true, })
   }
   if filename.has_suffix(".dash") {
-    return Some({ dialect: Dash, suppresses_unknown_warning: true })
+    return Some({ dialect: Dash, suppresses_unknown_warning: true, })
   }
   if filename.has_suffix(".envrc") {
-    return Some({ dialect: Bash, suppresses_unknown_warning: false })
+    return Some({ dialect: Bash, suppresses_unknown_warning: false, })
   }
   None
 }
@@ -285,7 +285,7 @@ fn shebang_words(line : String) -> Array[String] {
 }
 
 ///|
-fn env_shell_from_args(args : Array[String], start : Int) -> String {
+fn env_shell_from_args(args : Array[String], start : Int32) -> String {
   let mut i = start
   while i < args.length() {
     let arg = quote_removed_source(args[i])
@@ -419,7 +419,7 @@ fn shebang_args_enable_option(
 ///|
 fn env_args_enable_option(
   args : Array[String],
-  start : Int,
+  start : Int32,
   short_flag : UInt16?,
   long_option : String,
   shopt_option : String?,
@@ -490,7 +490,7 @@ fn env_args_enable_option(
 fn split_string_args_with_tail(
   split : Array[String],
   args : Array[String],
-  tail_start : Int,
+  tail_start : Int32,
 ) -> Array[String] {
   let combined : Array[String] = []
   for part in split {
@@ -507,7 +507,7 @@ fn split_string_args_with_tail(
 ///|
 fn shell_args_enable_option(
   args : Array[String],
-  start : Int,
+  start : Int32,
   short_flag : UInt16?,
   long_option : String,
   shopt_option : String?,

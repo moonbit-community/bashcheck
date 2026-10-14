@@ -113,7 +113,7 @@ fn assert_config_ok(label : String, source : String) -> Unit {
     let line_diagnostics = try {
       let (_, diagnostics) = parse_annotation_line(
         "# shellcheck \{text}",
-        { offset: 0, line, column: 1 },
+        { offset: 0, line, column: 1, },
         compat_config_options(),
       )
       diagnostics

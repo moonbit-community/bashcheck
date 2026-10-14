@@ -47,7 +47,7 @@ fn build_analysis_with_options(
 }
 
 ///|
-fn nth_command_ast_id(cfg : CFG, name : String, nth : Int) -> CfgAstId {
+fn nth_command_ast_id(cfg : CFG, name : String, nth : Int32) -> CfgAstId {
   let mut seen = 0
   for entry in cfg.ast_entries {
     match entry.node_ref {

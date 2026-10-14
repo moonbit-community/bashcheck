@@ -1,32 +1,32 @@
 ///|
 struct CompatDiagnostic {
   severity : String
-  code : Int
-  line : Int
-  end_line : Int
-  column : Int
-  end_column : Int
+  code : Int32
+  line : Int32
+  end_line : Int32
+  column : Int32
+  end_column : Int32
   message : String
 } derive(Eq, Debug)
 
 ///|
 fn compat_diagnostic(
   severity : String,
-  code : Int,
-  line : Int,
-  column : Int,
-  end_column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
+  end_column : Int32,
   message : String,
 ) -> CompatDiagnostic {
-  { severity, code, line, end_line: line, column, end_column, message }
+  { severity, code, line, end_line: line, column, end_column, message, }
 }
 
 ///|
 fn compat_warning(
-  code : Int,
-  line : Int,
-  column : Int,
-  end_column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
+  end_column : Int32,
   message : String,
 ) -> CompatDiagnostic {
   compat_diagnostic("warning", code, line, column, end_column, message)
@@ -34,10 +34,10 @@ fn compat_warning(
 
 ///|
 fn compat_error(
-  code : Int,
-  line : Int,
-  column : Int,
-  end_column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
+  end_column : Int32,
   message : String,
 ) -> CompatDiagnostic {
   compat_diagnostic("error", code, line, column, end_column, message)
@@ -45,10 +45,10 @@ fn compat_error(
 
 ///|
 fn compat_info(
-  code : Int,
-  line : Int,
-  column : Int,
-  end_column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
+  end_column : Int32,
   message : String,
 ) -> CompatDiagnostic {
   compat_diagnostic("info", code, line, column, end_column, message)
@@ -56,10 +56,10 @@ fn compat_info(
 
 ///|
 fn compat_style(
-  code : Int,
-  line : Int,
-  column : Int,
-  end_column : Int,
+  code : Int32,
+  line : Int32,
+  column : Int32,
+  end_column : Int32,
   message : String,
 ) -> CompatDiagnostic {
   compat_diagnostic("style", code, line, column, end_column, message)

@@ -69,18 +69,18 @@ pub struct CFG {
 } derive(Eq, Debug)
 
 ///|
-fn cfg_ast_id(value : Int) -> CfgAstId {
+fn cfg_ast_id(value : Int32) -> CfgAstId {
   { value, }
 }
 
 ///|
-fn cfg_node_id(value : Int) -> CfgNodeId {
+fn cfg_node_id(value : Int32) -> CfgNodeId {
   { value, }
 }
 
 ///|
 fn node_range(node : CfgNodeId) -> Range {
-  { start: node, end_: node }
+  { start: node, end_: node, }
 }
 
 ///|
@@ -319,7 +319,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
   for old_id in kept_old_ids {
     let new_id = old_to_new[old_id.to_int()]
     let node = cfg.nodes[old_id.to_int()]
-    nodes.push({ id: new_id, kind: remap_node_kind(node.kind, old_to_new) })
+    nodes.push({ id: new_id, kind: remap_node_kind(node.kind, old_to_new), })
   }
   let graph_edges : Array[CfgEdge] = []
   for edge in cfg.graph_edges {
@@ -367,7 +367,7 @@ fn normalize_cfg(cfg : CFG) -> CFG {
 }
 
 ///|
-fn resolve_remap(direct_remap : Array[Int], index : Int) -> Int {
+fn resolve_remap(direct_remap : Array[Int32], index : Int32) -> Int32 {
   let next = direct_remap[index]
   if next == index {
     index
@@ -377,7 +377,7 @@ fn resolve_remap(direct_remap : Array[Int], index : Int) -> Int {
 }
 
 ///|
-fn union_remap(direct_remap : Array[Int], lhs : Int, rhs : Int) -> Unit {
+fn union_remap(direct_remap : Array[Int32], lhs : Int32, rhs : Int32) -> Unit {
   let lhs_root = resolve_remap(direct_remap, lhs)
   let rhs_root = resolve_remap(direct_remap, rhs)
   if lhs_root == rhs_root {
@@ -437,8 +437,8 @@ fn remap_effect(effect : CfgEffect, old_to_new : Array[CfgNodeId]) -> CfgEffect 
 }
 
 ///|
-fn init_int_grid(count : Int, value : Int) -> Array[Int] {
-  let values : Array[Int] = []
+fn init_int_grid(count : Int32, value : Int32) -> Array[Int32] {
+  let values : Array[Int32] = []
   for _ in 0..<count {
     values.push(value)
   }
@@ -446,7 +446,7 @@ fn init_int_grid(count : Int, value : Int) -> Array[Int] {
 }
 
 ///|
-fn init_bool_grid(count : Int, value : Bool) -> Array[Bool] {
+fn init_bool_grid(count : Int32, value : Bool) -> Array[Bool] {
   let values : Array[Bool] = []
   for _ in 0..<count {
     values.push(value)
@@ -521,7 +521,7 @@ priv struct AstCollector {
 ///|
 // CHECK THIS: THUNK
 fn AstCollector::new() -> AstCollector {
-  { entries: [] }
+  { entries: [], }
 }
 
 ///|
@@ -748,7 +748,7 @@ fn GraphBuilder::first_child_with_kind(
 ///|
 fn GraphBuilder::new_node(self : GraphBuilder, kind : CfgNodeKind) -> CfgNodeId {
   let id = cfg_node_id(self.nodes.length())
-  self.nodes.push({ id, kind })
+  self.nodes.push({ id, kind, })
   for ast_id in self.ast_stack {
     self.ast_nodes[ast_id.to_int()].push(id)
   }
@@ -819,7 +819,7 @@ fn GraphBuilder::link(
   to : CfgNodeId,
   kind : CfgEdgeKind,
 ) -> Unit {
-  self.edges.push({ from, to, kind })
+  self.edges.push({ from, to, kind, })
 }
 
 ///|
@@ -829,7 +829,7 @@ fn GraphBuilder::link_range(
   rhs : Range,
 ) -> Range {
   self.link(lhs.end_, rhs.start, Flow)
-  { start: lhs.start, end_: rhs.end_ }
+  { start: lhs.start, end_: rhs.end_, }
 }
 
 ///|
@@ -840,7 +840,7 @@ fn GraphBuilder::link_range_as(
   rhs : Range,
 ) -> Range {
   self.link(lhs.end_, rhs.start, kind)
-  { start: lhs.start, end_: rhs.end_ }
+  { start: lhs.start, end_: rhs.end_, }
 }
 
 ///|
@@ -850,7 +850,7 @@ fn GraphBuilder::span_range(
   rhs : Range,
 ) -> Range {
   ignore(self)
-  { start: lhs.start, end_: rhs.end_ }
+  { start: lhs.start, end_: rhs.end_, }
 }
 
 ///|
@@ -1293,7 +1293,7 @@ fn GraphBuilder::build_assignment(
   if assignment.append {
     ranges.push(
       self.new_node_range(
-        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name) }]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name), }]),
       ),
     )
   }
@@ -1479,7 +1479,7 @@ fn GraphBuilder::build_for_in_like(
   self.pop_loop_targets()
   for write in writes {
     let assign = self.new_node_range(
-      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, write) }]),
+      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, write), }]),
     )
     let _ = self.link_ranges([choice, assign, body])
   }
@@ -1689,10 +1689,10 @@ fn condition_unary_hint_effects(
     return []
   }
   let effects : Array[CfgTaggedEffect] = [
-    { ast_id: id, effect: HintDefined(name) },
+    { ast_id: id, effect: HintDefined(name), },
   ]
   if condition_test_target_is_indexed(word) {
-    effects.push({ ast_id: id, effect: HintArray(name) })
+    effects.push({ ast_id: id, effect: HintArray(name), })
   }
   effects
 }
@@ -1791,14 +1791,14 @@ fn GraphBuilder::build_co_proc_clause(
   let parent = if clause.name is Some(name) {
     if @semantics.literal_text(name) is Some(name) {
       self.new_node_range(
-        ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array) }]),
+        ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array), }]),
       )
     } else {
       self.none()
     }
   } else {
     self.new_node_range(
-      ApplyEffects([{ ast_id: id, effect: WriteVariable("COPROC", Array) }]),
+      ApplyEffects([{ ast_id: id, effect: WriteVariable("COPROC", Array), }]),
     )
   }
   let body_id = if self.first_child_with_kind(id, Command) is Some(body_id) {
@@ -1821,10 +1821,10 @@ fn GraphBuilder::build_bats_test_clause(
   id : CfgAstId,
 ) -> Range {
   let status = self.new_node_range(
-    ApplyEffects([{ ast_id: id, effect: WriteVariable("status", Integer) }]),
+    ApplyEffects([{ ast_id: id, effect: WriteVariable("status", Integer), }]),
   )
   let output = self.new_node_range(
-    ApplyEffects([{ ast_id: id, effect: WriteVariable("output", String) }]),
+    ApplyEffects([{ ast_id: id, effect: WriteVariable("output", String), }]),
   )
   let body = if self.first_child_with_kind(id, Script) is Some(body) {
     self.build_ast(body)
@@ -1902,14 +1902,14 @@ fn GraphBuilder::build_arithmetic_token_with_read(
         ranges.push(self.sequence_ids(index_ids))
         ranges.push(
           self.new_node_range(
-            ApplyEffects([{ ast_id: id, effect: HintArray(name) }]),
+            ApplyEffects([{ ast_id: id, effect: HintArray(name), }]),
           ),
         )
       }
       if should_read {
         ranges.push(
           self.new_node_range(
-            ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
+            ApplyEffects([{ ast_id: id, effect: ReadVariable(name), }]),
           ),
         )
       }
@@ -1936,11 +1936,11 @@ fn GraphBuilder::build_word_part(
       self.none()
     Parameter(name) =>
       self.new_node_range(
-        ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(name), }]),
       )
     SpecialParameter(name) =>
       self.new_node_range(
-        ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(name), }]),
       )
     DoubleQuoted(_) | DollarDoubleQuoted(_) | ExtGlob(_) | BraceExpansion(_) =>
       self.sequence_ids(self.children_of(id))
@@ -1991,12 +1991,12 @@ fn GraphBuilder::build_parameter_expansion(
     if expansion.index is Some(_) {
       ranges.push(
         self.new_node_range(
-          ApplyEffects([{ ast_id: id, effect: HintArray(name) }]),
+          ApplyEffects([{ ast_id: id, effect: HintArray(name), }]),
         ),
       )
     }
     let read = self.new_node_range(
-      ApplyEffects([{ ast_id: id, effect: ReadVariable(name) }]),
+      ApplyEffects([{ ast_id: id, effect: ReadVariable(name), }]),
     )
     ranges.push(read)
     match expansion.operator {
@@ -2004,7 +2004,7 @@ fn GraphBuilder::build_parameter_expansion(
         let assign_value = parameter_assign_default_value(id, expansion)
         let assign = self.new_node_range(
           ApplyEffects([
-            { ast_id: id, effect: WriteVariable(name, assign_value) },
+            { ast_id: id, effect: WriteVariable(name, assign_value), },
           ]),
         )
         let result = self.none()
@@ -2114,11 +2114,11 @@ fn GraphBuilder::build_exit_action(self : GraphBuilder) -> Range {
     let exit_ = self.new_node(ResolvedExit)
     self.link(exit_, target, Exit)
     let dead_end = self.new_node(Unreachable)
-    { start: exit_, end_: dead_end }
+    { start: exit_, end_: dead_end, }
   } else {
     let exit_ = self.new_node(UnresolvedExit)
     let dead_end = self.new_node(Unreachable)
-    { start: exit_, end_: dead_end }
+    { start: exit_, end_: dead_end, }
   }
 }
 
@@ -2128,7 +2128,7 @@ fn GraphBuilder::build_return_action(self : GraphBuilder) -> Range {
     let ret = self.new_node(Structural)
     self.link(ret, target, Flow)
     let dead_end = self.new_node(Unreachable)
-    { start: ret, end_: dead_end }
+    { start: ret, end_: dead_end, }
   } else {
     self.none()
   }
@@ -2165,7 +2165,7 @@ fn GraphBuilder::build_loop_control_action(
     self.link(status, jump, Flow)
     self.link(jump, target, Flow)
     let dead_end = self.new_node(Unreachable)
-    { start: status, end_: dead_end }
+    { start: status, end_: dead_end, }
   } else {
     self.append_status(id, self.none())
   }
@@ -2181,7 +2181,7 @@ fn GraphBuilder::build_unset_action(
   if parse_gnu_literal_args(args, "vfn") is Some(parsed) {
     let mode = unset_mode_from_parsed_flags(parsed.flags)
     for operand in parsed.operands {
-      effects.push({ ast_id: id, effect: unset_effect(mode, operand) })
+      effects.push({ ast_id: id, effect: unset_effect(mode, operand), })
     }
   } else {
     let flags = literal_args(args)
@@ -2190,7 +2190,7 @@ fn GraphBuilder::build_unset_action(
       if text.has_prefix("-") || text.has_prefix("+") {
         continue
       }
-      effects.push({ ast_id: id, effect: unset_effect(mode, text) })
+      effects.push({ ast_id: id, effect: unset_effect(mode, text), })
     }
   }
   self.append_status(id, self.new_node_range(ApplyEffects(effects)))
@@ -2252,7 +2252,7 @@ fn GraphBuilder::build_printf_action(
   let effects : Array[CfgTaggedEffect] = []
   if parse_bsd_literal_args(args, "v:") is Some(parsed) {
     if find_parsed_option_value(parsed.flags, "v") is Some(name) {
-      effects.push({ ast_id: id, effect: WriteVariable(name, String) })
+      effects.push({ ast_id: id, effect: WriteVariable(name, String), })
     }
   }
   self.append_status(id, self.new_node_range(ApplyEffects(effects)))
@@ -2268,13 +2268,13 @@ fn GraphBuilder::build_wait_action(
   if parse_gnu_literal_args(args, "fnp:") is Some(parsed) {
     match find_parsed_option_value(parsed.flags, "p") {
       Some(name) if is_variable_name(name) =>
-        effects.push({ ast_id: id, effect: WriteVariable(name, Integer) })
+        effects.push({ ast_id: id, effect: WriteVariable(name, Integer), })
       _ => ()
     }
   } else {
     match find_literal_gnu_option_value(args, "fnp:", "p") {
       Some(name) if is_variable_name(name) =>
-        effects.push({ ast_id: id, effect: WriteVariable(name, Integer) })
+        effects.push({ ast_id: id, effect: WriteVariable(name, Integer), })
       _ => ()
     }
   }
@@ -2291,7 +2291,7 @@ fn GraphBuilder::build_mapfile_action(
   self.append_status(
     id,
     self.new_node_range(
-      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array) }]),
+      ApplyEffects([{ ast_id: id, effect: WriteVariable(name, Array), }]),
     ),
   )
 }
@@ -2306,20 +2306,20 @@ fn GraphBuilder::build_read_action(
   if parse_gnu_literal_args(args, flags_for_read()) is Some(parsed) {
     match find_parsed_option_value(parsed.flags, "a") {
       Some(name) if is_variable_name(name) =>
-        effects.push({ ast_id: id, effect: WriteVariable(name, Array) })
+        effects.push({ ast_id: id, effect: WriteVariable(name, Array), })
       _ => append_read_string_effects(effects, id, parsed.operands)
     }
   } else {
     match find_literal_gnu_option_value(args, flags_for_read(), "a") {
       Some(name) if is_variable_name(name) =>
-        effects.push({ ast_id: id, effect: WriteVariable(name, Array) })
+        effects.push({ ast_id: id, effect: WriteVariable(name, Array), })
       _ => {
         let literal_suffix = trailing_literal_words(args)
         if parse_gnu_literal_args(literal_suffix, flags_for_read())
           is Some(parsed) {
           match find_parsed_option_value(parsed.flags, "a") {
             Some(name) if is_variable_name(name) =>
-              effects.push({ ast_id: id, effect: WriteVariable(name, Array) })
+              effects.push({ ast_id: id, effect: WriteVariable(name, Array), })
             _ => append_read_string_effects(effects, id, parsed.operands)
           }
         } else {
@@ -2423,7 +2423,7 @@ fn GraphBuilder::build_declare_assignment_operand(
   if assignment.append {
     ranges.push(
       self.new_node_range(
-        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name) }]),
+        ApplyEffects([{ ast_id: id, effect: ReadVariable(assignment.name), }]),
       ),
     )
   }
@@ -2504,7 +2504,7 @@ priv struct DeclareActionInfo {
 }
 
 ///|
-fn init_ast_ranges(count : Int) -> Array[(CfgNodeId, CfgNodeId)?] {
+fn init_ast_ranges(count : Int32) -> Array[(CfgNodeId, CfgNodeId)?] {
   let ranges : Array[(CfgNodeId, CfgNodeId)?] = []
   for _ in 0..<count {
     ranges.push(None)
@@ -2583,7 +2583,7 @@ fn resolve_wrapped_command_action(
           force_external: false,
         }
       } else {
-        { command_name: direct_name, args: direct_args, force_external: false }
+        { command_name: direct_name, args: direct_args, force_external: false, }
       }
     Some("command") =>
       if effective_name != direct_name {
@@ -2593,14 +2593,15 @@ fn resolve_wrapped_command_action(
           force_external: true,
         }
       } else {
-        { command_name: direct_name, args: direct_args, force_external: false }
+        { command_name: direct_name, args: direct_args, force_external: false, }
       }
-    _ => { command_name: direct_name, args: direct_args, force_external: false }
+    _ =>
+      { command_name: direct_name, args: direct_args, force_external: false, }
   }
 }
 
 ///|
-fn init_ast_nodes(count : Int) -> Array[Array[CfgNodeId]] {
+fn init_ast_nodes(count : Int32) -> Array[Array[CfgNodeId]] {
   let values : Array[Array[CfgNodeId]] = []
   for _ in 0..<count {
     values.push([])
@@ -2722,7 +2723,7 @@ fn loop_assignments(
 fn find_else_script_id(
   builder : GraphBuilder,
   id : CfgAstId,
-  arm_count : Int,
+  arm_count : Int32,
 ) -> CfgAstId? {
   ignore(arm_count)
   find_last_child_script(builder, builder.children_of(id))
@@ -2750,7 +2751,7 @@ fn literal_args(args : Array[@parser.Word]) -> Array[String] {
 }
 
 ///|
-fn loop_control_depth(args : Array[@parser.Word]) -> Int {
+fn loop_control_depth(args : Array[@parser.Word]) -> Int32 {
   if args.get(0) is Some(arg) {
     if @semantics.literal_text(arg) is Some(text) {
       if parse_positive_int(text) is Some(depth) {
@@ -2767,7 +2768,7 @@ fn loop_control_depth(args : Array[@parser.Word]) -> Int {
 }
 
 ///|
-fn parse_positive_int(text : String) -> Int? {
+fn parse_positive_int(text : String) -> Int32? {
   let view = text[:]
   if view.length() == 0 {
     return None
@@ -2998,7 +2999,7 @@ fn parse_declare_action_info(
         None
       }
   }
-  { operands, added_props, removed_props, scope, skip_variables }
+  { operands, added_props, removed_props, scope, skip_variables, }
 }
 
 ///|
@@ -3044,7 +3045,7 @@ fn append_declare_operand_effects(
     match split_declare_assignment(text) {
       Some((name, append, value)) => {
         if append {
-          effects.push({ ast_id: id, effect: ReadVariable(name) })
+          effects.push({ ast_id: id, effect: ReadVariable(name), })
         }
         effects.push({
           ast_id: id,
@@ -3074,7 +3075,7 @@ fn append_declare_operand_effects(
     match leading_declare_assignment(operand) {
       Some((name, append)) => {
         if append {
-          effects.push({ ast_id: id, effect: ReadVariable(name) })
+          effects.push({ ast_id: id, effect: ReadVariable(name), })
         }
         effects.push({
           ast_id: id,
@@ -3103,10 +3104,10 @@ fn append_declare_property_effects(
   name : String,
 ) -> Unit {
   if added_props.length() > 0 {
-    effects.push({ ast_id: id, effect: SetProps(scope, name, added_props) })
+    effects.push({ ast_id: id, effect: SetProps(scope, name, added_props), })
   }
   if removed_props.length() > 0 {
-    effects.push({ ast_id: id, effect: UnsetProps(scope, name, removed_props) })
+    effects.push({ ast_id: id, effect: UnsetProps(scope, name, removed_props), })
   }
 }
 
@@ -3190,11 +3191,11 @@ fn append_read_string_effects(
   names : Array[String],
 ) -> Unit {
   if names.length() == 0 {
-    effects.push({ ast_id: id, effect: WriteVariable("REPLY", String) })
+    effects.push({ ast_id: id, effect: WriteVariable("REPLY", String), })
     return
   }
   for name in names {
-    effects.push({ ast_id: id, effect: WriteVariable(name, String) })
+    effects.push({ ast_id: id, effect: WriteVariable(name, String), })
   }
 }
 
@@ -3287,12 +3288,12 @@ fn parse_short_literal_args(
             } else {
               return None
             }
-            flags.push({ name, value })
+            flags.push({ name, value, })
             i += 1
           }
           break
         }
-        flags.push({ name, value: name })
+        flags.push({ name, value: name, })
         j += 1
       }
     } else {
@@ -3303,7 +3304,7 @@ fn parse_short_literal_args(
     }
     i += 1
   }
-  Some({ flags, operands })
+  Some({ flags, operands, })
 }
 
 ///|
@@ -3576,7 +3577,7 @@ fn decode_dollar_single_quoted(text : String) -> String {
 }
 
 ///|
-fn hex_digit_value(ch : UInt16) -> Int? {
+fn hex_digit_value(ch : UInt16) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -3595,7 +3596,7 @@ fn is_octal_digit(ch : UInt16) -> Bool {
 }
 
 ///|
-fn octal_digit_value(ch : UInt16) -> Int {
+fn octal_digit_value(ch : UInt16) -> Int32 {
   ch.to_int() - '0'.to_int()
 }
 
@@ -3712,7 +3713,7 @@ fn reverse_words(values : Array[@parser.Word]) -> Array[@parser.Word] {
 }
 
 ///|
-fn slice_ast_ids(values : Array[CfgAstId], start : Int) -> Array[CfgAstId] {
+fn slice_ast_ids(values : Array[CfgAstId], start : Int32) -> Array[CfgAstId] {
   let sliced : Array[CfgAstId] = []
   let mut i = start
   while i < values.length() {
@@ -3725,7 +3726,7 @@ fn slice_ast_ids(values : Array[CfgAstId], start : Int) -> Array[CfgAstId] {
 ///|
 fn slice_words(
   values : Array[@parser.Word],
-  start : Int,
+  start : Int32,
 ) -> Array[@parser.Word] {
   let sliced : Array[@parser.Word] = []
   let mut i = start
@@ -3749,7 +3750,7 @@ fn contains_node_id(values : Array[CfgNodeId], target : CfgNodeId) -> Bool {
 ///|
 fn arithmetic_token_needs_read(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> Bool {
   match tokens[index] {
     Variable(_, _) =>
@@ -3802,7 +3803,7 @@ fn arithmetic_token_writes(previous : String?, next : String?) -> Bool {
 ///|
 fn arithmetic_prev_operator(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> String? {
   if index == 0 {
     return None
@@ -3816,7 +3817,7 @@ fn arithmetic_prev_operator(
 ///|
 fn arithmetic_next_operator(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> String? {
   if index + 1 >= tokens.length() {
     return None

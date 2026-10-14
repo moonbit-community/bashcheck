@@ -266,8 +266,8 @@ fn emit_competing_redirections(
 ///|
 fn redirect_has_competition(
   redirects : Array[@parser.Redirection],
-  index : Int,
-  fd : Int,
+  index : Int32,
+  fd : Int32,
 ) -> Bool {
   let mut i = 0
   while i < redirects.length() {
@@ -424,7 +424,7 @@ fn q_pipeline_segment_ids(
 priv struct QMultipleAppendState {
   target : String
   first_span : @parser.Span?
-  run_length : Int
+  run_length : Int32
   warned : Bool
 }
 
@@ -433,7 +433,12 @@ fn check_multiple_appends_q(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
-  let mut state = { target: "", first_span: None, run_length: 0, warned: false }
+  let mut state = {
+    target: "",
+    first_span: None,
+    run_length: 0,
+    warned: false,
+  }
   for item in script.items {
     state = q_advance_multiple_appends(state, item.and_or.head, diagnostics)
     for pair in item.and_or.tail {
@@ -464,14 +469,14 @@ fn q_advance_multiple_appends(
               "Consider using { cmd1; cmd2; } >> file instead of individual redirects.",
             )
           }
-          { ..state, run_length: next_run_length, warned: true }
+          { ..state, run_length: next_run_length, warned: true, }
         } else {
-          { ..state, run_length: next_run_length }
+          { ..state, run_length: next_run_length, }
         }
       } else {
-        { target, first_span: Some(span), run_length: 1, warned: false }
+        { target, first_span: Some(span), run_length: 1, warned: false, }
       }
-    None => { target: "", first_span: None, run_length: 0, warned: false }
+    None => { target: "", first_span: None, run_length: 0, warned: false, }
   }
 }
 
@@ -886,7 +891,7 @@ fn word_part_has_additional_producers(part : @parser.WordPart) -> Bool {
 ///|
 fn first_redirect_with_fd(
   redirects : Array[@parser.Redirection],
-  fd : Int,
+  fd : Int32,
 ) -> @parser.Redirection? {
   for redirect in redirects {
     if redirect_default_fds(redirect).contains(fd) {
@@ -897,7 +902,7 @@ fn first_redirect_with_fd(
 }
 
 ///|
-fn redirect_default_fds(redirect : @parser.Redirection) -> Array[Int] {
+fn redirect_default_fds(redirect : @parser.Redirection) -> Array[Int32] {
   match redirect.source {
     Some(All) =>
       match redirect.op {
@@ -941,7 +946,7 @@ fn redirect_target_is_dash(redirect : @parser.Redirection) -> Bool {
 }
 
 ///|
-fn competing_redirections_message(fds : Array[Int]) -> String {
+fn competing_redirections_message(fds : Array[Int32]) -> String {
   if fds.contains(0) {
     return "Multiple redirections compete for stdin. Use cat, tee, or pass filenames instead."
   }
@@ -1013,8 +1018,8 @@ fn check_useless_bang_q(
 ///|
 fn q_visit_script_for_useless_bang(
   script : @parser.Script,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   drop_last : Bool,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
@@ -1046,8 +1051,8 @@ fn q_visit_script_for_useless_bang(
 ///|
 fn q_maybe_push_useless_bang_item(
   item : @parser.ListItem,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   guard item.and_or.tail.length() == 0 else { return }
@@ -1080,8 +1085,8 @@ fn q_maybe_push_useless_bang_item(
 fn q_useless_bang_fix(
   bang_span : @parser.Span,
   pipeline_end : @parser.Position,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
@@ -1106,8 +1111,8 @@ fn q_useless_bang_fix(
 ///|
 fn q_visit_and_or_for_useless_bang(
   list : @parser.AndOrList,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   q_visit_pipeline_for_useless_bang(
@@ -1127,8 +1132,8 @@ fn q_visit_and_or_for_useless_bang(
 ///|
 fn q_visit_pipeline_for_useless_bang(
   pipeline : @parser.Pipeline,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   for segment in pipeline.segments {
@@ -1144,8 +1149,8 @@ fn q_visit_pipeline_for_useless_bang(
 ///|
 fn q_visit_function_body_for_useless_bang(
   body : @parser.Command,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match body.kind {
@@ -1170,8 +1175,8 @@ fn q_visit_function_body_for_useless_bang(
 ///|
 fn q_visit_command_for_useless_bang(
   command : @parser.Command,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
@@ -1383,7 +1388,7 @@ fn q_assignment_effect_span(
 }
 
 ///|
-fn q_first_assignment_effect_offset(raw : String) -> (Int, String)? {
+fn q_first_assignment_effect_offset(raw : String) -> (Int32, String)? {
   let view = raw[:]
   let mut i = 0
   let mut paren_depth = 0
@@ -1474,7 +1479,7 @@ fn q_first_assignment_effect_offset(raw : String) -> (Int, String)? {
 }
 
 ///|
-fn q_assignment_effect_operator_at(raw : String, offset : Int) -> String? {
+fn q_assignment_effect_operator_at(raw : String, offset : Int32) -> String? {
   for op in q_assignment_effect_operators() {
     let length = op[:].length()
     if offset + length > raw.length() {
@@ -1498,7 +1503,7 @@ fn q_assignment_effect_operators() -> Array[String] {
 }
 
 ///|
-fn q_operator_is_effectful(raw : String, offset : Int, op : String) -> Bool {
+fn q_operator_is_effectful(raw : String, offset : Int32, op : String) -> Bool {
   if op != "=" {
     return true
   }
@@ -1530,8 +1535,8 @@ fn check_bad_test_and_or_q(
 ///|
 fn q_visit_script_for_bad_test_and_or(
   script : @parser.Script,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   for item in script.items {
@@ -1589,8 +1594,8 @@ fn q_background_terminator_span(item : @parser.ListItem) -> @parser.Span {
 ///|
 fn q_visit_and_or_for_bad_test_and_or(
   list : @parser.AndOrList,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   q_visit_pipeline_for_bad_test_and_or(
@@ -1610,8 +1615,8 @@ fn q_visit_and_or_for_bad_test_and_or(
 ///|
 fn q_visit_pipeline_for_bad_test_and_or(
   pipeline : @parser.Pipeline,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   let mut i = 0
@@ -1655,8 +1660,8 @@ fn q_visit_pipeline_for_bad_test_and_or(
 ///|
 fn q_visit_function_body_for_bad_test_and_or(
   body : @parser.Command,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match body.kind {
@@ -1680,8 +1685,8 @@ fn q_visit_function_body_for_bad_test_and_or(
 ///|
 fn q_visit_command_for_bad_test_and_or(
   command : @parser.Command,
-  compound_depth : Int,
-  function_depth : Int,
+  compound_depth : Int32,
+  function_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match command.kind {
@@ -1799,18 +1804,18 @@ fn q_command_is_test_command(command : @parser.Command) -> Bool {
 
 ///|
 fn q_fix_precedence(
-  base : Int,
-  compound_depth : Int,
-  function_depth : Int,
-) -> Int {
+  base : Int32,
+  compound_depth : Int32,
+  function_depth : Int32,
+) -> Int32 {
   base + compound_depth * 3 + function_depth
 }
 
 ///|
 fn q_pipe_operator_span(
   pipeline : @parser.Pipeline,
-  operator_index : Int,
-  width : Int,
+  operator_index : Int32,
+  width : Int32,
 ) -> @parser.Span {
   if pipeline.segments.get(operator_index) is Some(current_segment) {
     let start = current_segment.span.end
@@ -1828,7 +1833,7 @@ fn q_pipe_operator_span(
 ///|
 fn q_position_advance(
   position : @parser.Position,
-  width : Int,
+  width : Int32,
 ) -> @parser.Position {
   @parser.Position::new(
     position.offset + width,
@@ -1840,8 +1845,8 @@ fn q_position_advance(
 ///|
 fn q_span_offset(
   span : @parser.Span,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
 ) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(
@@ -1858,7 +1863,7 @@ fn q_span_offset(
 }
 
 ///|
-fn q_string_index_of(text : String, needle : String) -> Int? {
+fn q_string_index_of(text : String, needle : String) -> Int32? {
   let haystack = text[:]
   let target = needle[:]
   guard target.length() > 0 else { return Some(0) }

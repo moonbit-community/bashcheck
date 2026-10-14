@@ -1,5 +1,5 @@
 ///|
-fn diagnostics_have_code(diagnostics : Array[Diagnostic], code : Int) -> Bool {
+fn diagnostics_have_code(diagnostics : Array[Diagnostic], code : Int32) -> Bool {
   for diagnostic in diagnostics {
     if diagnostic.code == Some(code) {
       return true

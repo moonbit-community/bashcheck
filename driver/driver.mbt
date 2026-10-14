@@ -2,13 +2,13 @@
 /// The rendered output and process exit code produced by the CLI driver.
 pub struct CliOutcome {
   output : String
-  exit_code : Int
+  exit_code : Int32
 } derive(Eq, Debug)
 
 ///|
 /// Constructs a CLI outcome from rendered output and an exit code.
-pub fn CliOutcome::new(output : String, exit_code : Int) -> CliOutcome {
-  { output, exit_code }
+pub fn CliOutcome::new(output : String, exit_code : Int32) -> CliOutcome {
+  { output, exit_code, }
 }
 
 ///|
@@ -35,10 +35,10 @@ pub async fn run_cli(
   format_options : @formatter.FormatOptions,
 ) -> CliOutcome {
   match action {
-    ShowHelp => { output: cli_usage_text(), exit_code: 0 }
-    ShowVersion => { output: "bashcheck 0.1.0", exit_code: 0 }
+    ShowHelp => { output: cli_usage_text(), exit_code: 0, }
+    ShowVersion => { output: "bashcheck 0.1.0", exit_code: 0, }
     ListOptional =>
-      { output: @checker.list_optional_checks_text(), exit_code: 0 }
+      { output: @checker.list_optional_checks_text(), exit_code: 0, }
     Run =>
       match collect_results(files, spec, format is Quiet) {
         Ok(results) => {
@@ -49,9 +49,9 @@ pub async fn run_cli(
             format,
             options=format_options,
           )
-          { output, exit_code: if any_diagnostics(results) { 1 } else { 0 } }
+          { output, exit_code: if any_diagnostics(results) { 1 } else { 0 }, }
         }
-        Err(message) => { output: message, exit_code: 2 }
+        Err(message) => { output: message, exit_code: 2, }
       }
   }
 }
@@ -242,7 +242,7 @@ fn config_candidate_paths(filename : String) -> Array[String] {
 /// to `.` when no slash is present, matching common shell expectations.
 fn path_dirname(path : String) -> String {
   let view = path[:]
-  let mut slash : Int? = None
+  let mut slash : Int32? = None
   let mut i = 0
   while i < view.length() {
     if view[i] == '/' {

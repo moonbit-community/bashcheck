@@ -174,7 +174,7 @@ fn analytics_descriptions() -> Array[CheckDescription] {
 
 ///|
 fn analytics_suite() -> CheckSuiteRegistration {
-  { descriptions: analytics_descriptions(), run: run_analytics_checks }
+  { descriptions: analytics_descriptions(), run: run_analytics_checks, }
 }
 
 ///|
@@ -540,7 +540,7 @@ fn backtick_fix(word : @parser.Word) -> @fixer.Fix {
 fn analytics_position_at_source_offset(
   start : @parser.Position,
   source : String,
-  target_offset : Int,
+  target_offset : Int32,
 ) -> @parser.Position {
   let view = source[:]
   let mut offset = start.offset

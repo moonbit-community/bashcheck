@@ -4,7 +4,7 @@ import {
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/quickcheck" @gen,
   "moonbitlang/core/test",
   "moonbitlang/quickcheck" @qc,
-  "moonbitlang/quickcheck/gen",
 } for "test"

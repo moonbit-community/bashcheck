@@ -327,7 +327,7 @@ fn insert_before_position_fix(
 ///|
 fn shellcheck_position_offset(
   position : @parser.Position,
-  delta : Int,
+  delta : Int32,
 ) -> @parser.Position {
   @parser.Position::new(
     position.offset + delta,
@@ -340,7 +340,7 @@ fn shellcheck_position_offset(
 fn shellcheck_surround_span_fix(
   span : @parser.Span,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
@@ -365,7 +365,7 @@ fn shellcheck_surround_span_fix(
 ///|
 fn shellcheck_brace_parameter_span_fix(
   span : @parser.Span,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
@@ -388,7 +388,7 @@ fn shellcheck_brace_parameter_span_fix(
 }
 
 ///|
-fn span_prefix(span : @parser.Span, width : Int) -> @parser.Span {
+fn span_prefix(span : @parser.Span, width : Int32) -> @parser.Span {
   @parser.Span::new(
     span.start,
     @parser.Position::new(
@@ -400,7 +400,7 @@ fn span_prefix(span : @parser.Span, width : Int) -> @parser.Span {
 }
 
 ///|
-fn span_suffix(span : @parser.Span, width : Int) -> @parser.Span {
+fn span_suffix(span : @parser.Span, width : Int32) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(
       span.end.offset - width,
@@ -439,7 +439,7 @@ fn redirect_operator_span(redirect : @parser.Redirection) -> @parser.Span {
 }
 
 ///|
-fn here_doc_delimiter_width(doc : @parser.HereDoc) -> Int {
+fn here_doc_delimiter_width(doc : @parser.HereDoc) -> Int32 {
   if doc.quoted {
     doc.delimiter.length() + 2
   } else {
@@ -448,7 +448,7 @@ fn here_doc_delimiter_width(doc : @parser.HereDoc) -> Int {
 }
 
 ///|
-fn redirection_operator_width(redirect : @parser.Redirection) -> Int {
+fn redirection_operator_width(redirect : @parser.Redirection) -> Int32 {
   let base = match redirect.op {
     Read | Write => 1
     Append | ReadWrite | Clobber | HereDoc | DupInput | DupOutput => 2

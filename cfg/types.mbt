@@ -1,24 +1,24 @@
 ///|
 /// Identifier for an AST node tracked by the CFG layer.
 pub struct CfgAstId {
-  priv value : Int
+  priv value : Int32
 } derive(Eq, Compare, Hash, Debug)
 
 ///|
 /// Returns the raw integer value of a CFG AST id.
-pub fn CfgAstId::to_int(self : CfgAstId) -> Int {
+pub fn CfgAstId::to_int(self : CfgAstId) -> Int32 {
   self.value
 }
 
 ///|
 /// Identifier for a graph node in the lowered control-flow graph.
 pub struct CfgNodeId {
-  priv value : Int
+  priv value : Int32
 } derive(Eq, Compare, Hash, Debug)
 
 ///|
 /// Returns the raw integer value of a CFG node id.
-pub fn CfgNodeId::to_int(self : CfgNodeId) -> Int {
+pub fn CfgNodeId::to_int(self : CfgNodeId) -> Int32 {
   self.value
 }
 
@@ -134,5 +134,5 @@ pub struct CfgParameters {
 ///|
 /// Constructs CFG lowering parameters.
 pub fn CfgParameters::new(lastpipe : Bool, pipefail : Bool) -> CfgParameters {
-  { lastpipe, pipefail }
+  { lastpipe, pipefail, }
 }

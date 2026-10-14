@@ -1,8 +1,8 @@
 ///|
 fn batch_k_count_warning_code(
   diagnostics : Array[CheckDiagnostic],
-  code : Int,
-) -> Int {
+  code : Int32,
+) -> Int32 {
   let mut count = 0
   for diagnostic in diagnostics {
     if diagnostic.code == code && diagnostic.severity is Warning {
@@ -15,7 +15,7 @@ fn batch_k_count_warning_code(
 ///|
 fn batch_k_first_warning_code(
   diagnostics : Array[CheckDiagnostic],
-  code : Int,
+  code : Int32,
 ) -> CheckDiagnostic {
   for diagnostic in diagnostics {
     if diagnostic.code == code && diagnostic.severity is Warning {

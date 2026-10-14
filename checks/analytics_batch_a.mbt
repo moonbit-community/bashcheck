@@ -562,7 +562,7 @@ fn analytics_collect_arithmetic_reference_names(
 ///|
 fn analytics_arithmetic_token_needs_read(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> Bool {
   match tokens[index] {
     Variable(_, _) =>
@@ -577,7 +577,7 @@ fn analytics_arithmetic_token_needs_read(
 ///|
 fn analytics_arithmetic_next_operator(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> String? {
   let mut i = index + 1
   while i < tokens.length() {
@@ -811,7 +811,7 @@ fn analytics_quote_safe_part_name(part : @parser.WordPart) -> String? {
         name: Some(name),
         index: None,
         operator: None,
-        ..,
+        ..
       }
     ) => if is_identifier_name(name) { Some(name) } else { None }
     _ => None
@@ -907,7 +907,7 @@ fn maybe_push_bad_parameter_substitution_diagnostic(
 fn analytics_bad_parameter_substitution(
   part : @parser.WordPart,
   raw : String,
-) -> (Int, String, String)? {
+) -> (Int32, String, String)? {
   match part {
     Literal(text) | Glob(text) =>
       if analytics_parameter_literal_has_valid_start(text) {
@@ -1121,7 +1121,7 @@ fn analytics_bad_parameter_part_fragment(
 }
 
 ///|
-fn analytics_word_remaining_text(word : @parser.Word, offset : Int) -> String {
+fn analytics_word_remaining_text(word : @parser.Word, offset : Int32) -> String {
   if offset <= 0 {
     return word.source
   }
@@ -1132,7 +1132,7 @@ fn analytics_word_remaining_text(word : @parser.Word, offset : Int) -> String {
 }
 
 ///|
-fn analytics_remaining_word_width(word : @parser.Word, offset : Int) -> Int {
+fn analytics_remaining_word_width(word : @parser.Word, offset : Int32) -> Int32 {
   if offset >= word.source.length() {
     0
   } else if offset <= 0 {
@@ -1143,7 +1143,7 @@ fn analytics_remaining_word_width(word : @parser.Word, offset : Int) -> Int {
 }
 
 ///|
-fn analytics_skip_prefix(text : String, width : Int) -> String {
+fn analytics_skip_prefix(text : String, width : Int32) -> String {
   if width <= 0 {
     return text
   }
@@ -1165,12 +1165,12 @@ fn analytics_word_parts_raw_text(
 }
 
 ///|
-fn analytics_command_substitution_width(raw : String) -> Int {
+fn analytics_command_substitution_width(raw : String) -> Int32 {
   analytics_prefixed_balanced_width(raw, "$(", '(', ')')
 }
 
 ///|
-fn analytics_backquoted_width(raw : String) -> Int {
+fn analytics_backquoted_width(raw : String) -> Int32 {
   let view = raw[:]
   if view.length() == 0 || view[0] != '`' {
     return raw.length()
@@ -1195,7 +1195,7 @@ fn analytics_prefixed_balanced_width(
   prefix : String,
   open_ch : Char,
   close_ch : Char,
-) -> Int {
+) -> Int32 {
   let view = raw[:]
   let prefix_view = prefix[:]
   if view.length() < prefix_view.length() {
@@ -1478,13 +1478,13 @@ fn analytics_best_assigned_name(
 }
 
 ///|
-fn analytics_good_match(match_name : String, score : Int) -> Bool {
+fn analytics_good_match(match_name : String, score : Int32) -> Bool {
   let length = match_name.length()
   (length > 3 && score <= 1) || (length > 7 && score <= 2)
 }
 
 ///|
-fn analytics_edit_distance(lhs : String, rhs : String) -> Int {
+fn analytics_edit_distance(lhs : String, rhs : String) -> Int32 {
   let lhs_view = lhs[:]
   let rhs_view = rhs[:]
   let width = rhs_view.length() + 1
@@ -1526,7 +1526,7 @@ fn analytics_push_unique_name(names : Array[String], name : String) -> Unit {
 }
 
 ///|
-fn analytics_min_int(lhs : Int, rhs : Int) -> Int {
+fn analytics_min_int(lhs : Int32, rhs : Int32) -> Int32 {
   if lhs <= rhs {
     lhs
   } else {
@@ -1909,7 +1909,7 @@ fn analytics_span_for_nested_word_text(
 }
 
 ///|
-fn analytics_string_offset(text : String, needle : String) -> Int? {
+fn analytics_string_offset(text : String, needle : String) -> Int32? {
   let view = text[:]
   let needle_view = needle[:]
   if needle_view.length() == 0 {
@@ -1932,8 +1932,8 @@ fn analytics_string_offset(text : String, needle : String) -> Int? {
 ///|
 fn analytics_span_offset(
   span : @parser.Span,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
 ) -> @parser.Span {
   @parser.Span::new(
     @parser.Position::new(

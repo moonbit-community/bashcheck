@@ -12,10 +12,10 @@ fn[A] compat_fail(message : String) -> A {
 ///|
 fn compat_codes(
   source : String,
-  spec? : CheckSpec = compat_spec(),
-) -> Array[Int] {
+  spec~ : CheckSpec = compat_spec(),
+) -> Array[Int32] {
   let result = check_script(source, spec~)
-  let codes : Array[Int] = []
+  let codes : Array[Int32] = []
   for diagnostic in result.diagnostics {
     if diagnostic.code is Some(code) {
       codes.push(code)
@@ -28,8 +28,8 @@ fn compat_codes(
 fn assert_compat_codes(
   label : String,
   source : String,
-  expected : Array[Int],
-  spec? : CheckSpec = compat_spec(),
+  expected : Array[Int32],
+  spec~ : CheckSpec = compat_spec(),
 ) -> Unit {
   let actual = compat_codes(source, spec~)
   if actual != expected {
@@ -43,8 +43,8 @@ fn assert_compat_codes(
 fn assert_compat_contains_code(
   label : String,
   source : String,
-  expected : Int,
-  spec? : CheckSpec = compat_spec(),
+  expected : Int32,
+  spec~ : CheckSpec = compat_spec(),
 ) -> Unit {
   let actual = compat_codes(source, spec~)
   if !actual.contains(expected) {
@@ -65,10 +65,10 @@ fn compat_rc_spec(contents : String) -> CheckSpec {
 fn assert_compat_diagnostic_at_line(
   label : String,
   source : String,
-  line : Int,
-  code : Int,
+  line : Int32,
+  code : Int32,
   severity : DiagnosticSeverity,
-  spec? : CheckSpec = compat_spec(),
+  spec~ : CheckSpec = compat_spec(),
 ) -> Unit {
   let result = check_script(source, spec~)
   for diagnostic in result.diagnostics {
@@ -126,8 +126,8 @@ fn assert_effective_external_sources(
 }
 
 ///|
-fn sort_ints(values : Array[Int]) -> Array[Int] {
-  let sorted : Array[Int] = []
+fn sort_ints(values : Array[Int32]) -> Array[Int32] {
+  let sorted : Array[Int32] = []
   for value in values {
     sorted.push(value)
   }
@@ -502,7 +502,7 @@ test "shellcheck checker source-path and external sources compatibility props" {
       #|
     ),
     [2086],
-    spec={ ..source_path_spec, source_files: [("foo/lib", "echo $1")] },
+    spec={ ..source_path_spec, source_files: [("foo/lib", "echo $1")], },
   )
 
   let source_path_annotation_spec = compat_spec()
@@ -545,7 +545,7 @@ test "shellcheck checker source-path and external sources compatibility props" {
       #|
     ),
     [2086],
-    spec={ ..source_path_spec, source_files: [("foo/lib", "echo $1")] },
+    spec={ ..source_path_spec, source_files: [("foo/lib", "echo $1")], },
   )
 
   // Adapted coverage: upstream uses a mock resolver to observe the
@@ -909,7 +909,11 @@ test "shellcheck checker source and recursion compatibility props" {
     "prop_canStripPrefixAndSource",
     "source \"$MYDIR/lib\"",
     [],
-    spec={ ..compat_spec(), check_sourced: true, source_files: [("./lib", "")] },
+    spec={
+      ..compat_spec(),
+      check_sourced: true,
+      source_files: [("./lib", "")],
+    },
   )
   assert_compat_codes(
     "prop_canStripPrefixAndSource2",
@@ -929,7 +933,7 @@ test "shellcheck checker source and recursion compatibility props" {
       #|
     ),
     [],
-    spec={ ..compat_spec(), check_sourced: true, source_files: [("lib", "")] },
+    spec={ ..compat_spec(), check_sourced: true, source_files: [("lib", "")], },
   )
   assert_compat_codes(
     "prop_canRedirectWithSpaces",

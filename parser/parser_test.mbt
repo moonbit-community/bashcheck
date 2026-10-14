@@ -20,7 +20,7 @@ fn first_command(script : @parser.Script) -> @parser.Command {
 }
 
 ///|
-fn command_at(script : @parser.Script, index : Int) -> @parser.Command {
+fn command_at(script : @parser.Script, index : Int32) -> @parser.Command {
   script.items[index].and_or.head.segments[0].command
 }
 
@@ -38,7 +38,7 @@ fn first_simple(
 ///|
 fn simple_at(
   script : @parser.Script,
-  index : Int,
+  index : Int32,
 ) -> (@parser.Command, @parser.SimpleCommand) {
   let command = command_at(script, index)
   match command.kind {
@@ -61,7 +61,7 @@ fn parse_report_with_options(
 }
 
 ///|
-fn report_has_code(report : @parser.ParseReport, code : Int) -> Bool {
+fn report_has_code(report : @parser.ParseReport, code : Int32) -> Bool {
   for diagnostic in report.diagnostics {
     if diagnostic.code == Some(code) {
       return true
@@ -73,8 +73,8 @@ fn report_has_code(report : @parser.ParseReport, code : Int) -> Bool {
 ///|
 fn report_has_code_on_line(
   report : @parser.ParseReport,
-  code : Int,
-  line : Int,
+  code : Int32,
+  line : Int32,
 ) -> Bool {
   for diagnostic in report.diagnostics {
     if diagnostic.code == Some(code) && diagnostic.span.start.line == line {

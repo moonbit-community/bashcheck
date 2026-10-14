@@ -740,7 +740,7 @@ fn check_arithmetic_expr_reads(
 ///|
 fn arithmetic_token_needs_read(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> Bool {
   match tokens[index] {
     Variable(_, _) =>
@@ -755,7 +755,7 @@ fn arithmetic_token_needs_read(
 ///|
 fn arithmetic_next_operator(
   tokens : Array[@parser.ArithmeticToken],
-  index : Int,
+  index : Int32,
 ) -> String? {
   let mut i = index + 1
   while i < tokens.length() {

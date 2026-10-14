@@ -1,5 +1,5 @@
 ///|
-fn count_equals_in_command_codes(diagnostics : Array[CheckDiagnostic]) -> Int {
+fn count_equals_in_command_codes(diagnostics : Array[CheckDiagnostic]) -> Int32 {
   let mut total = 0
   let mut code = 2270
   while code <= 2282 {

@@ -3,8 +3,8 @@ name = "moonbit-community/bashcheck"
 version = "0.1.0"
 
 import {
-  "moonbitlang/async@0.21.0",
-  "moonbitlang/quickcheck@0.14.0",
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/quickcheck@0.15.0",
 }
 
 readme = "README.md"

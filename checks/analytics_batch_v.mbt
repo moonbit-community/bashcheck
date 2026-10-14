@@ -421,7 +421,7 @@ fn walk_batch_v_ast(
   let assign_first = batch_v_assigns_before_children(cfg, ast_id)
   let mut pushed_scope = false
   if batch_v_scope_reason(cfg, ast_id, lastpipe) is Some(reason) {
-    scopes.push({ reason, writes: [] })
+    scopes.push({ reason, writes: [], })
     pushed_scope = true
   }
 
@@ -615,7 +615,7 @@ fn batch_v_process_ast_writes(
       dead_vars.remove(effect.name)
       if scopes.length() > 0 {
         if scopes.pop() is Some(scope) {
-          scope.writes.push({ name: effect.name, span: effect.span })
+          scope.writes.push({ name: effect.name, span: effect.span, })
           scopes.push(scope)
         }
       }
@@ -631,7 +631,7 @@ fn batch_v_close_scope(
   guard scopes.length() > 0 else { return }
   if scopes.pop() is Some(scope) {
     for write in scope.writes {
-      dead_vars.set(write.name, { span: write.span, reason: scope.reason })
+      dead_vars.set(write.name, { span: write.span, reason: scope.reason, })
     }
   }
 }

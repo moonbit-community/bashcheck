@@ -464,7 +464,7 @@ fn command_substitution_span_u(word : @parser.Word) -> @parser.Span {
 }
 
 ///|
-fn command_substitution_range_u(text : String) -> (Int, Int)? {
+fn command_substitution_range_u(text : String) -> (Int32, Int32)? {
   let view = text[:]
   let mut i = 0
   while i < view.length() {

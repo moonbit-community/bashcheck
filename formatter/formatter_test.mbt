@@ -8,7 +8,7 @@ fn named_format(name : String) -> OutputFormat {
 }
 
 ///|
-fn count_substring(text : String, pattern : String) -> Int {
+fn count_substring(text : String, pattern : String) -> Int32 {
   if pattern == "" {
     return 0
   }
@@ -26,7 +26,7 @@ fn count_substring(text : String, pattern : String) -> Int {
 }
 
 ///|
-fn substring_index(text : String, pattern : String) -> Int? {
+fn substring_index(text : String, pattern : String) -> Int32? {
   if pattern == "" {
     return Some(0)
   }
@@ -41,7 +41,7 @@ fn substring_index(text : String, pattern : String) -> Int? {
 }
 
 ///|
-fn substring_index_or_panic(text : String, pattern : String) -> Int {
+fn substring_index_or_panic(text : String, pattern : String) -> Int32 {
   if substring_index(text, pattern) is Some(index) {
     index
   } else {
@@ -52,7 +52,7 @@ fn substring_index_or_panic(text : String, pattern : String) -> Int {
 ///|
 fn check_ok(
   source : String,
-  spec? : @checker.CheckSpec = @checker.CheckSpec::default(),
+  spec~ : @checker.CheckSpec = @checker.CheckSpec::default(),
 ) -> @checker.CheckResult {
   @checker.check_script(source, spec~)
 }

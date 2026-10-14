@@ -13,7 +13,7 @@ pub enum OutputFormat {
 ///|
 /// Formatting knobs shared by multiple output renderers.
 pub struct FormatOptions {
-  wiki_link_count : Int
+  wiki_link_count : Int32
   enable_color : Bool
 } derive(Eq, Debug)
 
@@ -23,14 +23,14 @@ pub struct FormatOptions {
 ///|
 /// Returns the default formatting options.
 pub fn FormatOptions::default() -> FormatOptions {
-  { wiki_link_count: 3, enable_color: false }
+  { wiki_link_count: 3, enable_color: false, }
 }
 
 ///|
 /// Returns a copy of the options with a new wiki-link limit.
 pub fn FormatOptions::with_wiki_link_count(
   self : FormatOptions,
-  wiki_link_count : Int,
+  wiki_link_count : Int32,
 ) -> FormatOptions {
   { ..self, wiki_link_count, }
 }
@@ -76,7 +76,7 @@ pub fn parse_output_format(text : String) -> OutputFormat? {
 pub fn render_results(
   results : Array[@checker.CheckResult],
   format : OutputFormat,
-  options? : FormatOptions = FormatOptions::default(),
+  options~ : FormatOptions = FormatOptions::default(),
 ) -> String {
   match format {
     Tty => render_tty(results, options)
@@ -112,7 +112,7 @@ fn code_text(diagnostic : @checker.PositionedDiagnostic) -> String {
 
 ///|
 /// Returns the source text for a 1-based line number in one check result.
-fn line_text(result : @checker.CheckResult, line : Int) -> String {
+fn line_text(result : @checker.CheckResult, line : Int32) -> String {
   let lines = split_lines(result.source)
   if 1 <= line && line <= lines.length() {
     lines[line - 1]
@@ -152,7 +152,7 @@ fn supports_color(options : FormatOptions) -> Bool {
 
 ///|
 /// Wraps text in one ANSI escape sequence when color is enabled.
-fn ansi_wrap(code : Int, text : String, options : FormatOptions) -> String {
+fn ansi_wrap(code : Int32, text : String, options : FormatOptions) -> String {
   if supports_color(options) {
     "\u001B[\{code}m" + text + "\u001B[0m"
   } else {
@@ -189,7 +189,7 @@ fn diff_color(level : String, text : String, options : FormatOptions) -> String 
 
 ///|
 /// Truncates long text while reserving room for an ellipsis when possible.
-fn shorten_text(text : String, max_length : Int) -> String {
+fn shorten_text(text : String, max_length : Int32) -> String {
   if text.length() <= max_length {
     text
   } else if max_length <= 3 {
@@ -201,7 +201,7 @@ fn shorten_text(text : String, max_length : Int) -> String {
 
 ///|
 /// Returns the smaller of two integers.
-fn min_int(lhs : Int, rhs : Int) -> Int {
+fn min_int(lhs : Int32, rhs : Int32) -> Int32 {
   if lhs < rhs {
     lhs
   } else {
@@ -211,7 +211,7 @@ fn min_int(lhs : Int, rhs : Int) -> Int {
 
 ///|
 /// Returns the larger of two integers.
-fn max_int(lhs : Int, rhs : Int) -> Int {
+fn max_int(lhs : Int32, rhs : Int32) -> Int32 {
   if lhs > rhs {
     lhs
   } else {

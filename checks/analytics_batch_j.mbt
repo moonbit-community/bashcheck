@@ -140,7 +140,7 @@ fn check_comparison_with_leading_x(
 ///|
 fn analytics_leading_x_replacement(
   word : @parser.Word,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Replacement? {
   match word.parts {
     [SingleQuoted(text), ..] if analytics_text_starts_with_x(text) =>
@@ -176,7 +176,7 @@ fn analytics_leading_x_replacement(
 }
 
 ///|
-fn analytics_comparison_fix_precedence(command : @parser.Command) -> Int {
+fn analytics_comparison_fix_precedence(command : @parser.Command) -> Int32 {
   match command.kind {
     Simple(simple) =>
       match simple.words {
@@ -190,8 +190,8 @@ fn analytics_comparison_fix_precedence(command : @parser.Command) -> Int {
 ///|
 fn analytics_leading_x_offset(
   parts : Array[@parser.WordPart],
-  prefix_offset : Int,
-) -> Int? {
+  prefix_offset : Int32,
+) -> Int32? {
   match parts {
     [] => None
     [Literal(text), ..] =>
@@ -289,7 +289,7 @@ fn analytics_push_second_arg_comparison(
 ///|
 fn analytics_position_offset(
   position : @parser.Position,
-  delta : Int,
+  delta : Int32,
 ) -> @parser.Position {
   @parser.Position::new(
     position.offset + delta,
@@ -301,7 +301,7 @@ fn analytics_position_offset(
 ///|
 fn analytics_replace_prefix_fix(
   span : @parser.Span,
-  width : Int,
+  width : Int32,
   text : String,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([

@@ -46,7 +46,7 @@ fn check_unary_test_a(
 ///|
 fn r_visit_condition_unary_test_a(
   expr : @parser.ConditionExpr,
-  nesting_depth : Int,
+  nesting_depth : Int32,
   diagnostics : Array[CheckDiagnostic],
 ) -> Unit {
   match expr {
@@ -75,7 +75,7 @@ fn r_visit_condition_unary_test_a(
 fn r_replace_span_fix(
   span : @parser.Span,
   text : String,
-  precedence : Int,
+  precedence : Int32,
 ) -> @fixer.Fix {
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(

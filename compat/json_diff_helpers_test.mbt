@@ -1,11 +1,11 @@
 ///|
 struct JsonDiffReplacement {
-  line : Int
-  end_line : Int
-  column : Int
-  end_column : Int
+  line : Int32
+  end_line : Int32
+  column : Int32
+  end_column : Int32
   insertion_point : String
-  precedence : Int
+  precedence : Int32
   replacement : String
 } derive(Eq, Debug)
 
@@ -17,12 +17,12 @@ struct JsonDiffFix {
 ///|
 struct JsonDiffDiagnostic {
   file : String
-  line : Int
-  end_line : Int
-  column : Int
-  end_column : Int
+  line : Int32
+  end_line : Int32
+  column : Int32
+  end_column : Int32
   level : String
-  code : Int?
+  code : Int32?
   message : String
   fix : JsonDiffFix?
 } derive(Eq, Debug)
@@ -36,7 +36,7 @@ fn shellcheck_diff_spec() -> @checker.CheckSpec {
 async fn assert_shellcheck_json_matches(
   label : String,
   source : String,
-  spec? : @checker.CheckSpec = shellcheck_diff_spec(),
+  spec~ : @checker.CheckSpec = shellcheck_diff_spec(),
 ) -> Unit {
   let (shellcheck_output, bashcheck_output) = run_shellcheck_json_pair(
     label, source, spec,
@@ -194,7 +194,7 @@ fn json_diff_object_string(object : Map[String, Json], key : String) -> String {
 }
 
 ///|
-fn json_diff_object_int(object : Map[String, Json], key : String) -> Int {
+fn json_diff_object_int(object : Map[String, Json], key : String) -> Int32 {
   @json.from_json(json_diff_object_field(object, key)) catch {
     err => abort("failed to decode JSON int field \{key}: \{err.to_string()}")
   }
@@ -204,7 +204,7 @@ fn json_diff_object_int(object : Map[String, Json], key : String) -> Int {
 fn json_diff_object_optional_int(
   object : Map[String, Json],
   key : String,
-) -> Int? {
+) -> Int32? {
   match json_diff_object_field(object, key) {
     Null => None
     value =>
@@ -317,7 +317,7 @@ fn json_diff_diagnostic_precedes(
 }
 
 ///|
-fn json_diff_level_rank(level : String) -> Int {
+fn json_diff_level_rank(level : String) -> Int32 {
   match level {
     "error" => 0
     "warning" => 1
