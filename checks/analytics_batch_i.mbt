@@ -1,31 +1,4 @@
 ///|
-fn append_analytics_batch_i_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_i_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_i_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2145,
-      severity: Error,
-      category: "analytics",
-      summary: "Arguments should not mix string fragments with array expansions.",
-    },
-    {
-      code: 2295,
-      severity: Info,
-      category: "analytics",
-      summary: "Quote expansions inside ${..} pattern operators separately.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_i_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

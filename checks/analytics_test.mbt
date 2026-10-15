@@ -170,9 +170,9 @@ test "analytics optional checks flag useless use of cat" {
       #|
     ),
   )
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     script,
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "useless-use-of-cat",
     ]),
   )
@@ -196,9 +196,9 @@ test "analytics optional checks avoid useless-cat false positives" {
       #|
     ),
   )
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     script,
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "useless-use-of-cat",
     ]),
   )
@@ -214,9 +214,9 @@ test "analytics optional checks recommend default case arms" {
       #|
     ),
   )
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     script,
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "add-default-case",
     ]),
   )
@@ -236,9 +236,9 @@ test "analytics optional checks accept existing default case arms" {
       #|
     ),
   )
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     script,
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "add-default-case",
     ]),
   )
@@ -634,9 +634,9 @@ test "analytics optional checks flag quote-safe variables only for clean standal
     #|unsafe='hi there'
     #|echo $unsafe
     #|
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(source),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "quote-safe-variables",
     ]),
   )
@@ -684,7 +684,7 @@ test "analytics optional checks flag quote-safe variables only for clean standal
 
 ///|
 test "analytics optional checks flag nullary and negated conditions" {
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(
       (
         #|[ "$name" ]
@@ -699,7 +699,7 @@ test "analytics optional checks flag nullary and negated conditions" {
         #|
       ),
     ),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "avoid-nullary-conditions", "avoid-negated-conditions",
     ]),
   )
@@ -716,9 +716,9 @@ test "analytics optional checks attach shellcheck-style nullary condition fix" {
   let source =
     #|[[ $(cmd) ]]
     #|
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(source),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "avoid-nullary-conditions",
     ]),
   )
@@ -756,9 +756,9 @@ test "analytics optional checks attach shellcheck-style dynamic nullary fix" {
   let source =
     #|[[ "$a$b" ]]
     #|
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(source),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "avoid-nullary-conditions",
     ]),
   )
@@ -799,9 +799,9 @@ test "analytics optional checks require braces for bare variable references" {
     #|printf '%s' "$name"
     #|$tool=42
     #|
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(source),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "require-variable-braces",
     ]),
   )
@@ -845,7 +845,7 @@ test "analytics optional checks require braces for bare variable references" {
 
 ///|
 test "analytics optional checks extend unassigned-variable warnings to uppercase names" {
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(
       (
         #|echo $VAR
@@ -853,7 +853,7 @@ test "analytics optional checks extend unassigned-variable warnings to uppercase
         #|
       ),
     ),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "check-unassigned-uppercase",
     ]),
   )
@@ -888,9 +888,9 @@ test "analytics optional checks attach shellcheck-style double bracket fix" {
     #|#!/bin/bash
     #|[ -x foo ]
     #|
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(source),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "require-double-brackets",
     ]),
   )
@@ -959,7 +959,7 @@ test "analytics optional checks flag set-e suppression contexts for functions" {
 
 ///|
 test "analytics optional checks flag additional masked return contexts" {
-  let diagnostics = @checks.check_script(
+  let diagnostics = test_check_parsed_script(
     parse_checks_ok(
       (
         #|false | true
@@ -971,7 +971,7 @@ test "analytics optional checks flag additional masked return contexts" {
         #|
       ),
     ),
-    options=@checks.CheckOptions::default().with_optional_checks([
+    options=TestCheckOptions::default().with_optional_checks([
       "check-extra-masked-returns",
     ]),
   )

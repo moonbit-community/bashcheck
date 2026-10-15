@@ -1,49 +1,4 @@
 ///|
-fn append_analytics_batch_j_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_j_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_j_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2256,
-      severity: Warning,
-      category: "analytics",
-      summary: "Translated strings that are variable names should be quoted as substitutions.",
-    },
-    {
-      code: 2268,
-      severity: Style,
-      category: "analytics",
-      summary: "x-prefixes in comparisons no longer need to be written.",
-    },
-    {
-      code: 2283,
-      severity: Error,
-      category: "analytics",
-      summary: "Remove spaces around = when assigning or compare with [ ].",
-    },
-    {
-      code: 2284,
-      severity: Error,
-      category: "analytics",
-      summary: "Use [ x = y ] for comparisons, not a spaced == word.",
-    },
-    {
-      code: 2285,
-      severity: Error,
-      category: "analytics",
-      summary: "Remove spaces around += when assigning.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_j_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -295,6 +250,7 @@ fn analytics_position_offset(
     position.offset + delta,
     position.line,
     position.column + delta,
+    source_id=position.source_id,
   )
 }
 

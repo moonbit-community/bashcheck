@@ -1,4 +1,43 @@
 ///|
+using @parser {
+  type AndOrList,
+  type AndOrOperator,
+  type Annotation,
+  type ArithmeticExpr,
+  type ArithmeticToken,
+  type ArrayElement,
+  type ArrayIndex,
+  type Assignment,
+  type AssignmentValue,
+  type BraceExpansion,
+  type CaseItem,
+  type CaseSeparator,
+  type Command,
+  type CommandKind,
+  type ConditionExpr,
+  type ConditionKind,
+  type ExtGlobPattern,
+  type IfArm,
+  type ListItem,
+  type ParameterCaseMode,
+  type ParameterExpansion,
+  type ParameterNamesMode,
+  type ParameterOperator,
+  type ParameterReplaceMode,
+  type PipeOperator,
+  type Pipeline,
+  type Redirection,
+  type RedirectionOperator,
+  type RedirectionSource,
+  type RedirectionTarget,
+  type Script,
+  type SimpleCommand,
+  type Terminator,
+  type Word,
+  type WordPart,
+}
+
+///|
 fn dump_quoted(text : String) -> String {
   let buf = StringBuilder()
   buf.write_char('"')
@@ -537,6 +576,6 @@ fn dump_script(script : Script) -> String {
 
 ///|
 /// Dumps a parsed script into a compact debug-oriented textual representation.
-pub fn Script::dump(self : Script) -> String {
+fn @parser.Script::dump(self : Script) -> String {
   dump_script(self)
 }

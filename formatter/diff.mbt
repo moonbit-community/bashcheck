@@ -25,13 +25,25 @@ fn render_diff(
   options : FormatOptions,
 ) -> String {
   let outputs : Array[String] = []
-  for result in results {
-    let fixes : Array[@fixer.Fix] = []
+  for result in diff_results_by_file(results) {
+    let replacements : Array[@fixer.Replacement] = []
     for diagnostic in result.diagnostics {
       if diagnostic.fix is Some(fix) {
-        fixes.push(fix)
+        for replacement in fix.replacements {
+          if !replacements.any(existing => {
+              existing.filename == replacement.filename &&
+              existing.start.offset == replacement.start.offset &&
+              existing.end.offset == replacement.end.offset &&
+              existing.text == replacement.text &&
+              existing.precedence == replacement.precedence &&
+              existing.insertion_point == replacement.insertion_point
+            }) {
+            replacements.push(replacement)
+          }
+        }
       }
     }
+    let fixes = [@fixer.Fix::from_replacements(replacements)]
     if @fixer.merge_fixes(fixes) is Some(fix) {
       match @fixer.apply_fix(fix, result.source) {
         Some(updated) if updated != result.source =>
@@ -308,4 +320,27 @@ fn build_line_diff(
 /// Flattens 2D dynamic-programming coordinates into the backing 1D array.
 fn dp_index(i : Int32, j : Int32, width : Int32) -> Int32 {
   i * width + j
+}
+
+///|
+fn diff_results_by_file(
+  results : Array[@checker.CheckResult],
+) -> Array[@checker.CheckResult] {
+  let grouped : Array[@checker.CheckResult] = []
+  for result in results {
+    match
+      grouped.search_by(item => {
+        item.filename == result.filename && item.source == result.source
+      }) {
+      Some(index) => {
+        let item = grouped[index]
+        grouped[index] = {
+          ..item,
+          diagnostics: item.diagnostics + result.diagnostics,
+        }
+      }
+      None => grouped.push(result)
+    }
+  }
+  grouped
 }

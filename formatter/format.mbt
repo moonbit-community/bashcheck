@@ -98,6 +98,7 @@ pub fn render_results(
   format : OutputFormat,
   options~ : FormatOptions = FormatOptions::default(),
 ) -> String {
+  let results = results_by_file(results)
   match format {
     Tty => render_tty(results, options)
     Json => render_json(results)
@@ -111,7 +112,7 @@ pub fn render_results(
 
 ///|
 /// Converts a diagnostic severity into the textual level used by renderers.
-pub fn severity_text(diagnostic : @checker.PositionedDiagnostic) -> String {
+fn severity_text(diagnostic : @checker.PositionedDiagnostic) -> String {
   match diagnostic.severity {
     Error => "error"
     Warning => "warning"
@@ -282,4 +283,45 @@ fn render_comment_json(diagnostic : @checker.PositionedDiagnostic) -> String {
     "null"
   }
   "{\"file\":\{json_escape(diagnostic.filename)},\"line\":\{diagnostic.span.start.line},\"endLine\":\{diagnostic.span.end.line},\"column\":\{diagnostic.span.start.column},\"endColumn\":\{diagnostic.span.end.column},\"level\":\{json_escape(severity_text(diagnostic))},\"code\":\{code_json},\"message\":\{json_escape(diagnostic.message)},\"fix\":\{render_fix_json(diagnostic.fix)}}"
+}
+
+///|
+fn results_by_file(
+  results : Array[@checker.CheckResult],
+) -> Array[@checker.CheckResult] {
+  let grouped : Array[@checker.CheckResult] = []
+  for result in results {
+    let filenames : Array[String] = []
+    for diagnostic in result.diagnostics {
+      if !filenames.contains(diagnostic.filename) {
+        filenames.push(diagnostic.filename)
+      }
+    }
+    // Keep empty results for formats whose envelope contains input metadata.
+    if filenames.is_empty() {
+      filenames.push(result.filename)
+    }
+    for filename in filenames {
+      let source = if filename == result.filename {
+        result.source
+      } else {
+        source_text(result, filename)
+      }
+      let diagnostics = result.diagnostics.filter(diagnostic => {
+        diagnostic.filename == filename
+      })
+      grouped.push({ filename, source, sources: result.sources, diagnostics, })
+    }
+  }
+  grouped
+}
+
+///|
+fn source_text(result : @checker.CheckResult, filename : String) -> String {
+  for file in result.sources {
+    if file.filename == filename {
+      return file.source
+    }
+  }
+  ""
 }

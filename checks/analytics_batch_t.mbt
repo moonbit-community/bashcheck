@@ -1,79 +1,4 @@
 ///|
-fn append_analytics_batch_t_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_t_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_t_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2007,
-      severity: Style,
-      category: "analytics",
-      summary: "Use $((..)) instead of deprecated $[..].",
-    },
-    {
-      code: 2084,
-      severity: Error,
-      category: "analytics",
-      summary: "Standalone $((..)) in command position executes its result.",
-    },
-    {
-      code: 2089,
-      severity: Warning,
-      category: "analytics",
-      summary: "Quoted/backslashed fragments stored in scalars stay literal later.",
-    },
-    {
-      code: 2090,
-      severity: Warning,
-      category: "analytics",
-      summary: "Scalar expansions do not re-apply quotes or backslashes later.",
-    },
-    {
-      code: 2091,
-      severity: Warning,
-      category: "analytics",
-      summary: "Remove surrounding $() to avoid executing output.",
-    },
-    {
-      code: 2092,
-      severity: Warning,
-      category: "analytics",
-      summary: "Remove backticks to avoid executing output.",
-    },
-    {
-      code: 2093,
-      severity: Warning,
-      category: "analytics",
-      summary: "Remove exec if the script should continue afterward.",
-    },
-    {
-      code: 2094,
-      severity: Info,
-      category: "analytics",
-      summary: "Avoid reading and writing the same file in one pipeline.",
-    },
-    {
-      code: 2116,
-      severity: Style,
-      category: "analytics",
-      summary: "Avoid echo inside command substitutions when plain words suffice.",
-    },
-    {
-      code: 2209,
-      severity: Warning,
-      category: "analytics",
-      summary: "Common command-looking assignments usually need $(...).",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_t_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -1593,11 +1518,13 @@ fn batch_t_span_offset(
       span.start.offset + offset,
       span.start.line,
       span.start.column + offset,
+      source_id=span.start.source_id,
     ),
     @parser.Position::new(
       span.start.offset + offset + width,
       span.start.line,
       span.start.column + offset + width,
+      source_id=span.start.source_id,
     ),
   )
 }

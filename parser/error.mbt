@@ -1,37 +1,10 @@
 ///|
-/// Parse failures returned by `parse_script`.
+/// Internal structured parse failures.
 ///
 /// The structured variants preserve the source position and enough context to
 /// render ShellCheck-style error messages.
-pub suberror ParseError {
+priv suberror ParseError {
   UnexpectedEnd(pos~ : Position, context~ : String)
   UnexpectedToken(pos~ : Position, found~ : String, expected~ : String)
   Message(pos~ : Position, message~ : String)
-} derive(Eq)
-
-///|
-#deprecated
-#doc(hidden)
-pub extend ParseError with Eq::{not_equal, equal}
-
-///|
-fn parse_error_message(err : ParseError) -> String {
-  match err {
-    UnexpectedEnd(pos~, context~) =>
-      "\{pos.line}:\{pos.column}: unexpected end while parsing \{context}"
-    UnexpectedToken(pos~, found~, expected~) =>
-      "\{pos.line}:\{pos.column}: expected \{expected}, found \{found}"
-    Message(pos~, message~) => "\{pos.line}:\{pos.column}: \{message}"
-  }
 }
-
-///|
-/// Formats a parse error as user-facing text.
-pub impl Show for ParseError with fn output(self, logger) {
-  logger.write_string(parse_error_message(self))
-}
-
-///|
-#deprecated
-#doc(hidden)
-pub extend ParseError with Show::{to_string, output}

@@ -6,22 +6,9 @@ fn[A] query_fail(message : String) -> A {
 
 ///|
 fn parse_query_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(error) => query_fail(Show::to_string(error))
-  }
-}
-
-///|
-fn parse_query_with_options(
-  source : String,
-  options : @parser.ParseOptions,
-) -> @parser.Script {
-  let report = @parser.parse_script_with_options(source, options)
-  if report.script is Some(script) {
-    script
-  } else {
-    query_fail("expected script")
   }
 }
 
@@ -52,14 +39,6 @@ fn simple_of(command : @parser.Command) -> @parser.SimpleCommand {
   match command.kind {
     Simple(simple) => simple
     _ => query_fail("expected simple command")
-  }
-}
-
-///|
-fn source_of(command : @parser.Command) -> @parser.SourceCommand {
-  match command.kind {
-    Source(source) => source
-    _ => query_fail("expected source command")
   }
 }
 
@@ -107,7 +86,6 @@ test "command queries resolve wrappers and source commands" {
   @test.assert_eq(@semantics.oversimplify_command(wrapped_command), [
     "command", "--", "printf", "%s", "${VAR}",
   ])
-  @test.assert_eq(@semantics.all_redirections(wrapped_command).length(), 1)
 
   let introspection = parse_query_ok(
     (
@@ -325,123 +303,4 @@ test "literal text preserves special parameters and positional recovery" {
   @test.assert_eq(@semantics.literal_text(simple.words[3]), Some("10"))
   @test.assert_eq(@semantics.literal_text(simple.words[4]), Some("?"))
   @test.assert_eq(@semantics.literal_text(simple.words[5]), Some("10"))
-}
-
-///|
-test "walkers stay within the current script and can inspect includes separately" {
-  let options = @parser.ParseOptions::new(
-    true,
-    false,
-    false,
-    true,
-    Some("/tmp/main.sh"),
-    [],
-    [
-      (
-        "lib.sh",
-        (
-          #|echo "$(printf %s inner)" >out
-          #|
-        ),
-      ),
-    ],
-  )
-  let script = parse_query_with_options(
-    (
-      #|. lib.sh
-      #|
-    ),
-    options,
-  )
-  let root_item = first_item(script)
-  let root_command = first_command(script)
-  let source = source_of(root_command)
-
-  let mut script_count = 0
-  @semantics.walk_script(script, fn(_) { script_count += 1 })
-  @test.assert_eq(script_count, 1)
-
-  let mut item_count = 0
-  @semantics.walk_list_item(root_item, fn(_) { item_count += 1 })
-  @test.assert_eq(item_count, 1)
-
-  let mut root_command_count = 0
-  @semantics.walk_command(root_command, fn(_) { root_command_count += 1 })
-  @test.assert_eq(root_command_count, 1)
-
-  let root_redirects = @semantics.all_redirections(root_command)
-  @test.assert_eq(root_redirects.length(), 0)
-
-  let included = if source.included is Some(script) {
-    script
-  } else {
-    query_fail("expected included script")
-  }
-  let mut included_script_count = 0
-  @semantics.walk_script(included, fn(_) { included_script_count += 1 })
-  @test.assert_eq(included_script_count, 2)
-
-  let echo_command = first_command(included)
-  let names : Array[String] = []
-  @semantics.walk_command(echo_command, fn(command) {
-    if @semantics.command_name(command) is Some(name) {
-      names.push(name)
-    }
-  })
-  @test.assert_eq(names, ["echo", "printf"])
-
-  let redirects = @semantics.all_redirections(echo_command)
-  @test.assert_eq(redirects.length(), 1)
-
-  let echo_simple = simple_of(echo_command)
-  let nested_word = echo_simple.words[1]
-
-  let mut word_count = 0
-  @semantics.walk_word(nested_word, fn(_) { word_count += 1 })
-  @test.assert_eq(word_count, 4)
-
-  let mut part_count = 0
-  @semantics.walk_word_part(nested_word.parts[0], fn(_) { part_count += 1 })
-  @test.assert_eq(part_count, 5)
-
-  let mut redirection_count = 0
-  @semantics.walk_redirection(redirects[0], fn(_) { redirection_count += 1 })
-  @test.assert_eq(redirection_count, 1)
-}
-
-///|
-fn first_if_body_item(script : @parser.Script) -> @parser.ListItem {
-  match first_command(script).kind {
-    If(clause) =>
-      if clause.arms.get(0) is Some(arm) {
-        first_item(arm.body)
-      } else {
-        query_fail("expected if arm")
-      }
-    _ => query_fail("expected if command")
-  }
-}
-
-///|
-test "directive extraction stays local to the current script or list item" {
-  let script = parse_query_ok(
-    (
-      #|# shellcheck disable=SC1000 enable=root-check
-      #|if true; then
-      #|# shellcheck disable=SC2000 enable=inner-check
-      #|echo hi
-      #|fi
-      #|
-    ),
-  )
-  @test.assert_eq(@semantics.extract_disable_directives(script), ["SC1000"])
-  @test.assert_eq(@semantics.extract_enable_directives(script), ["root-check"])
-
-  let inner_item = first_if_body_item(script)
-  @test.assert_eq(@semantics.list_item_disable_directives(inner_item), [
-    "SC2000",
-  ])
-  @test.assert_eq(@semantics.list_item_enable_directives(inner_item), [
-    "inner-check",
-  ])
 }

@@ -14,7 +14,7 @@ fn compat_codes(
   source : String,
   spec~ : CheckSpec = compat_spec(),
 ) -> Array[Int32] {
-  let result = check_script(source, spec~)
+  let result = test_check_script(source, spec~)
   let codes : Array[Int32] = []
   for diagnostic in result.diagnostics {
     if diagnostic.code is Some(code) {
@@ -70,7 +70,7 @@ fn assert_compat_diagnostic_at_line(
   severity : DiagnosticSeverity,
   spec~ : CheckSpec = compat_spec(),
 ) -> Unit {
-  let result = check_script(source, spec~)
+  let result = test_check_script(source, spec~)
   for diagnostic in result.diagnostics {
     if diagnostic.code == Some(code) && diagnostic.span.start.line == line {
       if diagnostic.severity == severity {

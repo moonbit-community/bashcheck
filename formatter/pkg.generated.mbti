@@ -11,8 +11,6 @@ pub fn parse_output_format(String) -> OutputFormat?
 
 pub fn render_results(Array[@checker.CheckResult], OutputFormat, options? : FormatOptions) -> String
 
-pub fn severity_text(@checker.PositionedDiagnostic) -> String
-
 // Errors
 
 // Types and methods

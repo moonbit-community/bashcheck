@@ -1,5 +1,6 @@
 import {
   "moonbit-community/bashcheck/checker",
+  "moonbit-community/bashcheck/parser",
   "moonbit-community/bashcheck/formatter",
   "moonbitlang/async/fs",
   "moonbitlang/async/os_error",

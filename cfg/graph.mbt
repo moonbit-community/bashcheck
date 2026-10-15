@@ -172,25 +172,9 @@ pub fn ast_ids(cfg : CFG) -> Array[CfgAstId] {
 }
 
 ///|
-/// Returns the semantic node kind associated with a CFG AST id.
-pub fn node_kind_of(cfg : CFG, id : CfgAstId) -> @semantics.NodeKind? {
-  if ast_entry_at(cfg, id) is Some(entry) {
-    Some(entry.node_ref.kind())
-  } else {
-    None
-  }
-}
-
-///|
 /// Returns the CFG node stored at a node id.
 pub fn node_of(cfg : CFG, id : CfgNodeId) -> CfgNode? {
   node_at(cfg, id)
-}
-
-///|
-/// Returns a copy of all directed CFG edges.
-pub fn edges(cfg : CFG) -> Array[CfgEdge] {
-  copy_cfg_edges(cfg.graph_edges)
 }
 
 ///|
@@ -211,12 +195,6 @@ pub fn id_to_nodes(cfg : CFG, id : CfgAstId) -> Array[CfgNodeId] {
   } else {
     []
   }
-}
-
-///|
-/// Returns the precomputed post-dominator sets for every CFG node.
-pub fn compute_post_dominators(cfg : CFG) -> Array[Array[CfgNodeId]] {
-  copy_post_dominators(cfg.post_dominators)
 }
 
 ///|
@@ -242,18 +220,6 @@ pub fn build_cfg(script : @parser.Script, params : CfgParameters) -> CFG {
   let root = collector.copy_script(script, None)
   let builder = GraphBuilder::new(root, collector.entries, params)
   builder.build()
-}
-
-///|
-#warnings("-unused_value")
-fn build_cfg_unoptimized(
-  script : @parser.Script,
-  params : CfgParameters,
-) -> CFG {
-  let collector = AstCollector::new()
-  let root = collector.copy_script(script, None)
-  let builder = GraphBuilder::new(root, collector.entries, params)
-  builder.build_raw()
 }
 
 ///|
@@ -3691,17 +3657,6 @@ fn copy_ast_ranges(
 
 ///|
 fn copy_nested_node_ids(
-  values : Array[Array[CfgNodeId]],
-) -> Array[Array[CfgNodeId]] {
-  let copied : Array[Array[CfgNodeId]] = []
-  for value in values {
-    copied.push(copy_node_ids(value))
-  }
-  copied
-}
-
-///|
-fn copy_post_dominators(
   values : Array[Array[CfgNodeId]],
 ) -> Array[Array[CfgNodeId]] {
   let copied : Array[Array[CfgNodeId]] = []

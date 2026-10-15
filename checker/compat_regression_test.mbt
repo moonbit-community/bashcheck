@@ -135,7 +135,7 @@ fn assert_compat_case_with_spec(
   expected : Array[CompatDiagnostic],
   spec : @checker.CheckSpec,
 ) -> Unit {
-  let result = @checker.check_script(source, spec~)
+  let result = test_check_script(source, spec~)
   let actual = normalize_compat_diagnostics(result.diagnostics)
   if actual != expected {
     abort(

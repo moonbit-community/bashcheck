@@ -6,7 +6,7 @@ fn[A] fail(message : String) -> A {
 
 ///|
 fn parse_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(error) => fail(Show::to_string(error))
   }
@@ -107,22 +107,20 @@ test "indexed ast tracks parent chains and nearest word/command" {
   )
   let indexed = @semantics.build_index(script)
   let root = @semantics.root_id(indexed)
-  assert_eq(root.to_int(), 0)
   assert_true(@semantics.parent_of(indexed, root) is None)
-  assert_true(@semantics.node_count(indexed) > 0)
 
   let parameter = find_parameter_part(indexed)
   let ancestors = @semantics.find_ancestors(indexed, parameter)
   assert_true(ancestors.length() > 0)
 
-  let word = if @semantics.word_of(indexed, parameter) is Some(word) {
+  let word = if test_containing_word(indexed, parameter) is Some(word) {
     word
   } else {
     fail("expected containing word")
   }
   assert_eq(word.source, "\"hi $USER\"")
 
-  let command = if @semantics.command_of(indexed, parameter) is Some(command) {
+  let command = if test_containing_command(indexed, parameter) is Some(command) {
     command
   } else {
     fail("expected containing command")
@@ -134,9 +132,6 @@ test "indexed ast tracks parent chains and nearest word/command" {
     }
     _ => fail("expected simple command")
   }
-
-  let descendants = @semantics.find_descendants(indexed, root)
-  assert_eq(descendants.length() + 1, @semantics.node_count(indexed))
 }
 
 ///|
@@ -255,13 +250,13 @@ test "indexed ast effective spans fall back to enclosing spans" {
   )
   let indexed = @semantics.build_index(script)
   let parameter = find_parameter_part(indexed)
-  let containing_word = if @semantics.word_of(indexed, parameter) is Some(word) {
+  let containing_word = if test_containing_word(indexed, parameter)
+    is Some(word) {
     word
   } else {
     fail("expected containing word")
   }
-  let effective_span = if @semantics.effective_span_of(indexed, parameter)
-    is Some(span) {
+  let effective_span = if test_effective_span(indexed, parameter) is Some(span) {
     span
   } else {
     fail("expected effective span")
@@ -290,7 +285,8 @@ test "indexed ast distinguishes exact spans from enclosing fallback spans" {
   } else {
     fail("expected enclosing span")
   }
-  let containing_word = if @semantics.word_of(indexed, parameter) is Some(word) {
+  let containing_word = if test_containing_word(indexed, parameter)
+    is Some(word) {
     word
   } else {
     fail("expected containing word")

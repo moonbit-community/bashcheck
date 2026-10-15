@@ -1,103 +1,4 @@
 ///|
-fn append_analytics_batch_q_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_q_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_q_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2069,
-      severity: Warning,
-      category: "analytics",
-      summary: "Place 2>&1 after stdout redirections when you mean to merge both streams.",
-    },
-    {
-      code: 2129,
-      severity: Style,
-      category: "analytics",
-      summary: "Prefer grouping repeated >> redirects into one block redirect.",
-    },
-    {
-      code: 2143,
-      severity: Style,
-      category: "analytics",
-      summary: "Prefer grep -q over comparing grep output in test expressions.",
-    },
-    {
-      code: 2188,
-      severity: Warning,
-      category: "analytics",
-      summary: "This redirection doesn't have a command.",
-    },
-    {
-      code: 2189,
-      severity: Error,
-      category: "analytics",
-      summary: "A pipe separates this redirection from the command it should apply to.",
-    },
-    {
-      code: 2216,
-      severity: Warning,
-      category: "analytics",
-      summary: "Piping to a command that doesn't read stdin is usually a mistake.",
-    },
-    {
-      code: 2217,
-      severity: Warning,
-      category: "analytics",
-      summary: "Redirecting to a command that doesn't read stdin is usually a mistake.",
-    },
-    {
-      code: 2251,
-      severity: Info,
-      category: "analytics",
-      summary: "Bare ! under set -e skips errexit outside condition contexts.",
-    },
-    {
-      code: 2257,
-      severity: Warning,
-      category: "analytics",
-      summary: "Arithmetic side effects in redirection targets may be discarded.",
-    },
-    {
-      code: 2259,
-      severity: Error,
-      category: "analytics",
-      summary: "This redirection overrides piped input.",
-    },
-    {
-      code: 2260,
-      severity: Error,
-      category: "analytics",
-      summary: "This redirection overrides the output pipe.",
-    },
-    {
-      code: 2261,
-      severity: Error,
-      category: "analytics",
-      summary: "Multiple redirections compete for the same file descriptor.",
-    },
-    {
-      code: 2265,
-      severity: Error,
-      category: "analytics",
-      summary: "Single & after test commands backgrounds instead of doing logical AND.",
-    },
-    {
-      code: 2266,
-      severity: Warning,
-      category: "analytics",
-      summary: "Single | between test commands pipes instead of doing logical OR.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_q_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -676,6 +577,7 @@ fn q_nullary_condition_word_span(word : @parser.Word) -> @parser.Span {
       word.span.end.offset + 1,
       word.span.end.line,
       word.span.end.column + 1,
+      source_id=word.span.end.source_id,
     ),
   )
 }
@@ -1823,6 +1725,7 @@ fn q_pipe_operator_span(
       start.offset + width,
       start.line,
       start.column + width,
+      source_id=start.source_id,
     )
     @parser.Span::new(start, end_)
   } else {
@@ -1839,6 +1742,7 @@ fn q_position_advance(
     position.offset + width,
     position.line,
     position.column + width,
+    source_id=position.source_id,
   )
 }
 
@@ -1853,11 +1757,13 @@ fn q_span_offset(
       span.start.offset + offset,
       span.start.line,
       span.start.column + offset,
+      source_id=span.start.source_id,
     ),
     @parser.Position::new(
       span.start.offset + offset + width,
       span.start.line,
       span.start.column + offset + width,
+      source_id=span.start.source_id,
     ),
   )
 }

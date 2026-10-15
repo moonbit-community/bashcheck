@@ -54,7 +54,7 @@ fn check_ok(
   source : String,
   spec~ : @checker.CheckSpec = @checker.CheckSpec::default(),
 ) -> @checker.CheckResult {
-  @checker.check_script(source, spec~)
+  test_check_script(source, spec~)
 }
 
 ///|
@@ -111,7 +111,7 @@ test "formatter renders supported output formats" {
 
 ///|
 test "formatter colorizes tty and diff output when enabled" {
-  let result = @checker.check_script(
+  let result = test_check_script(
     (
       #|echo `foo`
       #|

@@ -1,6 +1,7 @@
 ///|
 /// A concrete location in the original source text.
 pub struct Position {
+  source_id : Int32
   offset : Int32
   line : Int32
   column : Int32
@@ -18,8 +19,13 @@ pub extend Position with Debug::{to_repr}
 
 ///|
 /// Constructs a source position from byte offset, line, and column values.
-pub fn Position::new(offset : Int32, line : Int32, column : Int32) -> Position {
-  { offset, line, column, }
+pub fn Position::new(
+  offset : Int32,
+  line : Int32,
+  column : Int32,
+  source_id~ : Int32 = 0,
+) -> Position {
+  { source_id, offset, line, column, }
 }
 
 ///|
@@ -84,7 +90,7 @@ pub extend Diagnostic with Debug::{to_repr}
 
 ///|
 /// Options that control sourced-file resolution and parser behavior.
-pub struct ParseOptions {
+pub(all) struct ParseOptions {
   sourced : Bool
   allow_inline_external_sources : Bool
   external_sources : Bool
@@ -92,6 +98,14 @@ pub struct ParseOptions {
   current_path : String?
   source_paths : Array[String]
   source_files : Array[(String, String)]
+  failed_sources : Array[(String, String)]
+  source_aliases : Array[(String, String)]
+  allowed_files : Array[String]?
+  initial_annotations : Array[Annotation]
+  requests : Array[SourceRequest]
+  sources : Array[SourceFile]
+  parent : (Int32, Span)?
+  source_depth : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -109,6 +123,8 @@ pub extend ParseOptions with Debug::{to_repr}
 pub struct ParseReport {
   script : Script?
   diagnostics : Array[Diagnostic]
+  requests : Array[SourceRequest]
+  sources : Array[SourceFile]
 } derive(Eq, Debug)
 
 ///|
@@ -152,6 +168,14 @@ pub fn ParseOptions::default() -> ParseOptions {
     current_path: None,
     source_paths: [],
     source_files: [],
+    failed_sources: [],
+    source_aliases: [],
+    allowed_files: None,
+    initial_annotations: [],
+    requests: [],
+    sources: [],
+    parent: None,
+    source_depth: 0,
   }
 }
 
@@ -174,6 +198,18 @@ pub fn ParseOptions::new(
     current_path,
     source_paths,
     source_files,
+    failed_sources: [],
+    source_aliases: [],
+    allowed_files: None,
+    initial_annotations: [],
+    requests: [],
+    sources: [],
+    parent: None,
+    source_depth: if sourced {
+      1
+    } else {
+      0
+    },
   }
 }
 
@@ -1154,3 +1190,40 @@ pub extend ParameterCaseMode with Eq::{not_equal, equal}
 #deprecated
 #doc(hidden)
 pub extend ParameterCaseMode with Debug::{to_repr}
+
+///|
+/// A filesystem lookup requested by the pure parser. The driver resolves aliases
+/// before checking permission, and caches text and read failures independently.
+pub struct SourceRequest {
+  path : String
+  external_sources : Bool
+} derive(Eq, Debug)
+
+///|
+/// One parse instance. Text can be shared by filename while each include retains
+/// its own parent location and directive scope.
+pub struct SourceFile {
+  filename : String
+  source : String
+  parent : (Int32, Span)?
+} derive(Eq, Debug)
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SourceFile with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SourceFile with Debug::{to_repr}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SourceRequest with Eq::{not_equal, equal}
+
+///|
+#deprecated
+#doc(hidden)
+pub extend SourceRequest with Debug::{to_repr}

@@ -1,14 +1,6 @@
 ///|
-fn determine_shell_compat(
-  source : String,
-  fallback : @semantics.ShellDialect?,
-) -> @semantics.ShellDialect {
-  let script = parse_shell_ok(source)
-  if fallback is Some(shell) {
-    @semantics.determine_shell_with_fallback(script, None, None, Some(shell))
-  } else {
-    @semantics.determine_shell(script)
-  }
+fn determine_shell_compat(source : String) -> @semantics.ShellDialect {
+  test_determine_shell(parse_shell_ok(source))
 }
 
 ///|
@@ -17,20 +9,7 @@ fn assert_determine_shell_case(
   source : String,
   expected : @semantics.ShellDialect,
 ) -> Unit {
-  let actual = determine_shell_compat(source, None)
-  if actual != expected {
-    fail("\{label}: expected \{expected}, got \{actual}")
-  }
-}
-
-///|
-fn assert_determine_shell_case_with_fallback(
-  label : String,
-  source : String,
-  expected : @semantics.ShellDialect,
-  fallback : @semantics.ShellDialect,
-) -> Unit {
-  let actual = determine_shell_compat(source, Some(fallback))
+  let actual = determine_shell_compat(source)
   if actual != expected {
     fail("\{label}: expected \{expected}, got \{actual}")
   }
@@ -116,15 +95,6 @@ test "shellcheck analyzerlib determineShell props" {
       #|
     ),
     Dash,
-  )
-  assert_determine_shell_case_with_fallback(
-    "prop_determineShell8",
-    (
-      #|#!/bin/sh
-      #|
-    ),
-    Sh,
-    Ksh,
   )
   assert_determine_shell_case(
     "prop_determineShell9",

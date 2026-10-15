@@ -41,17 +41,6 @@ pub fn walk_script(
 }
 
 ///|
-/// Traverses a list item and visits every nested `ListItem` node.
-pub fn walk_list_item(
-  item : @parser.ListItem,
-  visit : (@parser.ListItem) -> Unit,
-) -> Unit {
-  traverse_list_item(
-    item, ignore_script, visit, ignore_command, ignore_word, ignore_word_part, ignore_redirection,
-  )
-}
-
-///|
 /// Traverses a command and visits every nested `Command` node.
 pub fn walk_command(
   command : @parser.Command,
@@ -64,15 +53,6 @@ pub fn walk_command(
 }
 
 ///|
-/// Traverses a word and visits every nested `Word` node.
-pub fn walk_word(word : @parser.Word, visit : (@parser.Word) -> Unit) -> Unit {
-  traverse_word(
-    word, ignore_script, ignore_list_item, ignore_command, visit, ignore_word_part,
-    ignore_redirection,
-  )
-}
-
-///|
 /// Traverses a word part and visits every nested `WordPart` node.
 pub fn walk_word_part(
   part : @parser.WordPart,
@@ -80,18 +60,6 @@ pub fn walk_word_part(
 ) -> Unit {
   traverse_word_part(
     part, ignore_script, ignore_list_item, ignore_command, ignore_word, visit, ignore_redirection,
-  )
-}
-
-///|
-/// Traverses a redirection and visits every nested `Redirection` node.
-pub fn walk_redirection(
-  redirection : @parser.Redirection,
-  visit : (@parser.Redirection) -> Unit,
-) -> Unit {
-  traverse_redirection(
-    redirection, ignore_script, ignore_list_item, ignore_command, ignore_word, ignore_word_part,
-    visit,
   )
 }
 
@@ -354,6 +322,11 @@ fn traverse_source_command(
   for arg in source.args {
     traverse_word(
       arg, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
+    )
+  }
+  if source.included is Some(script) {
+    traverse_script(
+      script, on_script, on_list_item, on_command, on_word, on_word_part, on_redirection,
     )
   }
 }
@@ -1100,20 +1073,6 @@ pub fn effective_command_arguments(
 }
 
 ///|
-/// Returns every redirection attached to a command and its nested structure.
-pub fn all_redirections(
-  command : @parser.Command,
-) -> Array[@parser.Redirection] {
-  let redirects : Array[@parser.Redirection] = []
-  walk_command(command, fn(current) {
-    for redirect in current.redirects {
-      redirects.push(redirect)
-    }
-  })
-  redirects
-}
-
-///|
 /// Returns the literal text of a word when every part is statically known.
 pub fn literal_text(word : @parser.Word) -> String? {
   let buf = StringBuilder()
@@ -1253,12 +1212,6 @@ pub fn is_unquoted_flag(word : @parser.Word) -> Bool {
 }
 
 ///|
-/// Reports whether a simple command consists only of variable assignments.
-pub fn is_assignment_only(simple : @parser.SimpleCommand) -> Bool {
-  simple.words.length() == 0
-}
-
-///|
 /// Produces a simplified word list suitable for heuristics and diagnostics.
 pub fn oversimplify_command(command : @parser.Command) -> Array[String] {
   match command.kind {
@@ -1309,27 +1262,9 @@ fn oversimplify_word_part(part : @parser.WordPart) -> String {
 }
 
 ///|
-/// Returns `disable=` directives attached to the script.
-pub fn extract_disable_directives(script : @parser.Script) -> Array[String] {
-  directives_from_annotations(script.annotations, true)
-}
-
-///|
 /// Returns `enable=` directives attached to the script.
 pub fn extract_enable_directives(script : @parser.Script) -> Array[String] {
   directives_from_annotations(script.annotations, false)
-}
-
-///|
-/// Returns `disable=` directives attached to one list item.
-pub fn list_item_disable_directives(item : @parser.ListItem) -> Array[String] {
-  directives_from_annotations(item.annotations, true)
-}
-
-///|
-/// Returns `enable=` directives attached to one list item.
-pub fn list_item_enable_directives(item : @parser.ListItem) -> Array[String] {
-  directives_from_annotations(item.annotations, false)
 }
 
 ///|

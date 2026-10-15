@@ -2,7 +2,3 @@ import {
   "moonbit-community/bashcheck/parser",
   "moonbit-community/bashcheck/semantics",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

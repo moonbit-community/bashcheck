@@ -1,145 +1,4 @@
 ///|
-fn append_analytics_batch_d_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_d_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_d_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2032,
-      severity: Info,
-      category: "analytics",
-      summary: "Shell functions and aliases cannot be dispatched by external commands.",
-    },
-    {
-      code: 2033,
-      severity: Warning,
-      category: "analytics",
-      summary: "Shell functions and aliases cannot be passed to external commands as commands.",
-    },
-    {
-      code: 2119,
-      severity: Info,
-      category: "analytics",
-      summary: "Calls without arguments should pass \"$@\" when the function reads positional parameters.",
-    },
-    {
-      code: 2096,
-      severity: Error,
-      category: "analytics",
-      summary: "Most shebang implementations only allow one interpreter argument.",
-    },
-    {
-      code: 2104,
-      severity: Error,
-      category: "analytics",
-      summary: "Functions should use return instead of break/continue outside loops.",
-    },
-    {
-      code: 2105,
-      severity: Error,
-      category: "analytics",
-      summary: "break and continue are only valid in loops.",
-    },
-    {
-      code: 2106,
-      severity: Warning,
-      category: "analytics",
-      summary: "break/continue in subshell-like contexts only affect that subshell.",
-    },
-    {
-      code: 2111,
-      severity: Error,
-      category: "analytics",
-      summary: "ksh does not allow the function keyword together with parentheses.",
-    },
-    {
-      code: 2112,
-      severity: Warning,
-      category: "analytics",
-      summary: "The function keyword is non-standard when used with parentheses.",
-    },
-    {
-      code: 2113,
-      severity: Warning,
-      category: "analytics",
-      summary: "The function keyword is non-standard without parentheses.",
-    },
-    {
-      code: 2118,
-      severity: Error,
-      category: "analytics",
-      summary: "ksh does not support |& pipelines.",
-    },
-    {
-      code: 2120,
-      severity: Warning,
-      category: "analytics",
-      summary: "Function references positional parameters but is only invoked without arguments.",
-    },
-    {
-      code: 2127,
-      severity: Error,
-      category: "analytics",
-      summary: "Shell-specific syntax needs an explicit shell that supports it.",
-    },
-    {
-      code: 2103,
-      severity: Info,
-      category: "analytics",
-      summary: "Prefer a subshell over manually cd'ing back afterward.",
-    },
-    {
-      code: 2164,
-      severity: Warning,
-      category: "analytics",
-      summary: "cd/pushd/popd should be guarded with || exit/return unless failure is already handled.",
-    },
-    {
-      code: 2165,
-      severity: Warning,
-      category: "analytics",
-      summary: "Nested loops should not reuse a parent loop variable.",
-    },
-    {
-      code: 2167,
-      severity: Warning,
-      category: "analytics",
-      summary: "Parent loop variable is overridden by a nested loop.",
-    },
-    {
-      code: 2262,
-      severity: Warning,
-      category: "analytics",
-      summary: "Aliases defined in a parsing unit are not available later in that same parsing unit.",
-    },
-    {
-      code: 2263,
-      severity: Info,
-      category: "analytics",
-      summary: "This command does not see the alias defined earlier in the same parsing unit.",
-    },
-    {
-      code: 2302,
-      severity: Warning,
-      category: "analytics",
-      summary: "Looping over array values should not be combined with using those values as array keys.",
-    },
-    {
-      code: 2303,
-      severity: Warning,
-      category: "analytics",
-      summary: "Array values are not array keys.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_d_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -229,6 +88,7 @@ fn d_shebang_span(script : @parser.Script, shebang : String) -> @parser.Span {
       start.offset + shebang.length(),
       1,
       start.column + shebang.length(),
+      source_id=start.source_id,
     ),
   )
 }
@@ -2340,11 +2200,13 @@ fn d_span_offset(
       span.start.offset + offset,
       span.start.line,
       span.start.column + offset,
+      source_id=span.start.source_id,
     ),
     @parser.Position::new(
       span.start.offset + offset + width,
       span.start.line,
       span.start.column + offset + width,
+      source_id=span.start.source_id,
     ),
   )
 }

@@ -333,6 +333,7 @@ fn shellcheck_position_offset(
     position.offset + delta,
     position.line,
     position.column + delta,
+    source_id=position.source_id,
   )
 }
 
@@ -395,6 +396,7 @@ fn span_prefix(span : @parser.Span, width : Int32) -> @parser.Span {
       span.start.offset + width,
       span.start.line,
       span.start.column + width,
+      source_id=span.start.source_id,
     ),
   )
 }
@@ -406,6 +408,7 @@ fn span_suffix(span : @parser.Span, width : Int32) -> @parser.Span {
       span.end.offset - width,
       span.end.line,
       span.end.column - width,
+      source_id=span.end.source_id,
     ),
     span.end,
   )
@@ -477,6 +480,7 @@ fn array_assignment_value_span(assignment : @parser.Assignment) -> @parser.Span 
       assignment.span.start.offset + value_offset,
       assignment.span.start.line,
       assignment.span.start.column + value_offset,
+      source_id=assignment.span.start.source_id,
     ),
     assignment.span.end,
   )

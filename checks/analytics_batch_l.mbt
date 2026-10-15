@@ -1,43 +1,4 @@
 ///|
-fn append_analytics_batch_l_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_l_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_l_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2321,
-      severity: Style,
-      category: "analytics",
-      summary: "Array indices are already arithmetic contexts.",
-    },
-    {
-      code: 2322,
-      severity: Style,
-      category: "analytics",
-      summary: "In arithmetic contexts, prefer only one layer of parentheses.",
-    },
-    {
-      code: 2323,
-      severity: Style,
-      category: "analytics",
-      summary: "Prefer not wrapping arithmetic contexts in extra parentheses.",
-    },
-    {
-      code: 2324,
-      severity: Warning,
-      category: "analytics",
-      summary: "Append assignments with numeric values usually mean incrementing.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_l_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

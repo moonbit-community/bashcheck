@@ -1,31 +1,4 @@
 ///|
-fn append_analytics_batch_v_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_v_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_v_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2030,
-      severity: Info,
-      category: "analytics",
-      summary: "Assignments in subshells do not affect the parent shell later.",
-    },
-    {
-      code: 2031,
-      severity: Info,
-      category: "analytics",
-      summary: "Later reads may miss assignments that only happened in a subshell.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_v_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

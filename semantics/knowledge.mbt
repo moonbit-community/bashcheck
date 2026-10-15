@@ -41,15 +41,6 @@ let variables_without_spaces_table : Array[String] = [
 ]
 
 ///|
-let special_variable_table : Array[String] = ["-", "$", "?", "!", "#", "@", "*"]
-
-///|
-let unbraced_variable_table : Array[String] = [
-  "-", "$", "?", "!", "#", "@", "*", "0", "1", "2", "3", "4", "5", "6", "7", "8",
-  "9",
-]
-
-///|
 let array_variable_table : Array[String] = [
   "BASH_ALIASES", "BASH_ARGC", "BASH_ARGV", "BASH_CMDS", "BASH_LINENO", "BASH_REMATCH",
   "BASH_SOURCE", "BASH_VERSINFO", "COMP_WORDS", "COPROC", "DIRSTACK", "FUNCNAME",
@@ -76,15 +67,6 @@ let common_command_table : Array[String] = [
   "unget", "uniq", "unlink", "unset", "uucp", "uudecode", "uuencode", "uustat", "uux",
   "val", "vi", "wait", "wc", "what", "who", "write", "xargs", "xgettext", "yacc",
   "zcat",
-]
-
-///|
-let non_reading_command_table : Array[String] = [
-  "alias", "basename", "bg", "cal", "cd", "chgrp", "chmod", "chown", "cp", "du",
-  "echo", "export", "fg", "fuser", "getconf", "getopt", "getopts", "ipcrm", "ipcs",
-  "jobs", "kill", "ln", "ls", "locale", "mv", "printf", "ps", "pwd", "readlink",
-  "realpath", "renice", "rm", "rmdir", "set", "sleep", "touch", "trap", "ulimit",
-  "unalias", "uname",
 ]
 
 ///|
@@ -135,27 +117,9 @@ pub fn special_integer_variable_names() -> Array[String] {
 }
 
 ///|
-/// Returns special variables whose expansions are treated as space-free.
-pub fn special_variable_names_without_spaces() -> Array[String] {
-  copy_string_array(special_variables_without_spaces_table)
-}
-
-///|
 /// Returns all variable names whose expansions are treated as space-free.
 pub fn variable_names_without_spaces() -> Array[String] {
   copy_string_array(variables_without_spaces_table)
-}
-
-///|
-/// Returns special shell parameter names.
-pub fn special_variable_names() -> Array[String] {
-  copy_string_array(special_variable_table)
-}
-
-///|
-/// Returns variable names that can be referenced without braces.
-pub fn unbraced_variable_names() -> Array[String] {
-  copy_string_array(unbraced_variable_table)
 }
 
 ///|
@@ -168,12 +132,6 @@ pub fn array_variable_names() -> Array[String] {
 /// Returns a curated list of common command names used by heuristics.
 pub fn common_command_names() -> Array[String] {
   copy_string_array(common_command_table)
-}
-
-///|
-/// Returns command names treated as not reading standard input.
-pub fn non_reading_command_names() -> Array[String] {
-  copy_string_array(non_reading_command_table)
 }
 
 ///|
@@ -255,48 +213,6 @@ pub fn is_special_variable(name : String) -> Bool {
 }
 
 ///|
-/// Reports whether a name can appear in an unbraced parameter expansion.
-pub fn is_unbraced_variable(name : String) -> Bool {
-  contains_string(unbraced_variable_table, name)
-}
-
-///|
-/// Reports whether a name is treated as array-valued.
-pub fn is_array_variable(name : String) -> Bool {
-  contains_string(array_variable_table, name)
-}
-
-///|
-/// Reports whether a command name is in the common-command table.
-pub fn is_common_command(name : String) -> Bool {
-  contains_string(common_command_table, name)
-}
-
-///|
-/// Reports whether a command name is treated as not reading stdin.
-pub fn is_non_reading_command(name : String) -> Bool {
-  contains_string(non_reading_command_table, name)
-}
-
-///|
-/// Reports whether an operator is a recognized binary test operator.
-pub fn is_binary_test_operator(op : String) -> Bool {
-  contains_string(binary_test_operator_table, op)
-}
-
-///|
-/// Reports whether an operator is a recognized arithmetic binary operator.
-pub fn is_arithmetic_binary_test_operator(op : String) -> Bool {
-  contains_string(arithmetic_binary_test_operator_table, op)
-}
-
-///|
-/// Reports whether an operator is a recognized unary test operator.
-pub fn is_unary_test_operator(op : String) -> Bool {
-  contains_string(unary_test_operator_table, op)
-}
-
-///|
 /// Reports whether a command declares variables or attributes.
 pub fn is_declaring_command(name : String) -> Bool {
   contains_string(declaring_command_table, name)
@@ -306,12 +222,6 @@ pub fn is_declaring_command(name : String) -> Bool {
 /// Reports whether a short `read` flag consumes an argument.
 pub fn read_flag_takes_argument(flag : UInt16) -> Bool {
   short_flag_requires_value(read_option_spec_table, flag)
-}
-
-///|
-/// Reports whether a short `mapfile` flag consumes an argument.
-pub fn mapfile_flag_takes_argument(flag : UInt16) -> Bool {
-  short_flag_requires_value(mapfile_option_spec_table, flag)
 }
 
 ///|
@@ -349,3 +259,6 @@ fn short_flag_requires_value(spec : String, flag : UInt16) -> Bool {
   }
   false
 }
+
+///|
+let special_variable_table : Array[String] = ["-", "$", "?", "!", "#", "@", "*"]

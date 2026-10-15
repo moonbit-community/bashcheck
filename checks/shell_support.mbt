@@ -6,214 +6,8 @@ priv struct ShellSupportRule {
 }
 
 ///|
-fn shell_support_description(
-  code : Int32,
-  summary : String,
-) -> CheckDescription {
-  shell_support_description_with_severity(code, Warning, summary)
-}
-
-///|
-fn shell_support_description_with_severity(
-  code : Int32,
-  severity : CheckSeverity,
-  summary : String,
-) -> CheckDescription {
-  { code, severity, category: "shell-support", summary, }
-}
-
-///|
-fn shell_support_descriptions() -> Array[CheckDescription] {
-  [
-    shell_support_description_with_severity(
-      2001,
-      Style,
-      "Use ${var//search/replace} instead of echo | sed for simple substitutions.",
-    ),
-    shell_support_description_with_severity(
-      2025,
-      Info,
-      "Wrap PS1 escape sequences in \\[..\\] to preserve line wrapping.",
-    ),
-    shell_support_description(
-      2051, "Bash doesn't support variables in brace range expansions.",
-    ),
-    shell_support_description_with_severity(
-      2079,
-      Error,
-      "(( )) doesn't support decimals. Use bc or awk.",
-    ),
-    shell_support_description_with_severity(
-      2175,
-      Style,
-      "Quote invalid brace expansions passed literally to eval.",
-    ),
-    shell_support_description(
-      2180, "Bash does not support multidimensional arrays.",
-    ),
-    shell_support_description_with_severity(
-      2325,
-      Error,
-      "Multiple leading ! before pipelines are a bash/ksh extension.",
-    ),
-    shell_support_description_with_severity(
-      2326,
-      Error,
-      "! is not allowed in the middle of pipelines.",
-    ),
-    shell_support_description_with_severity(
-      2332,
-      Error,
-      "[ ! -a/-o ... ] is always true in single-bracket tests.",
-    ),
-    shell_support_description(
-      3001, "Process substitution is not portable to sh/dash.",
-    ),
-    shell_support_description(3002, "Extglob is not portable to sh/dash."),
-    shell_support_description(3004, "$\"..\" is not portable to sh/dash."),
-    shell_support_description(
-      3005, "Arithmetic for loops are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3006, "Standalone ((..)) is not portable to sh/dash.",
-    ),
-    shell_support_description(3007, "$[..] is not portable to sh/dash."),
-    shell_support_description(3008, "select loops are not portable to sh/dash."),
-    shell_support_description(
-      3009, "Brace expansion is not portable to sh/dash.",
-    ),
-    shell_support_description(3010, "[[ ]] is not portable to sh/dash."),
-    shell_support_description(3011, "Here-strings are not portable to sh/dash."),
-    shell_support_description(
-      3012, "Lexicographical test operators are not portable to plain sh.",
-    ),
-    shell_support_description(
-      3014, "'==' in test expressions is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3015, "Regex matching with '=~' is not portable to sh/dash.",
-    ),
-    shell_support_description(3016, "test -v is not portable to sh/dash."),
-    shell_support_description(3017, "Unary test -a is not portable to sh/dash."),
-    shell_support_description(
-      3018, "Arithmetic ++/-- is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3019, "Arithmetic ** exponentiation is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3020, "&> redirections are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3021, "`>& file` redirections are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3022, "Named file descriptors are not portable to sh/dash.",
-    ),
-    shell_support_description(3023, "FDs above 9 are not portable to sh/dash."),
-    shell_support_description(
-      3024, "+= assignments are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3025, "/dev/tcp and /dev/udp are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3026, "[^..] glob ranges are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3028, "Bash-specific variables are not portable to sh/dash.",
-    ),
-    shell_support_description(3029, "|& is not portable to sh/dash."),
-    shell_support_description(3030, "Arrays are not portable to sh/dash."),
-    shell_support_description(
-      3031, "Redirecting to or from globs is not portable to sh/dash.",
-    ),
-    shell_support_description(3032, "coproc is not portable to sh/dash."),
-    shell_support_description(
-      3033, "Non-POSIX function names are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3034, "$(<file) shortcuts are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3035, "`<file` shortcuts are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3036, "Non-portable echo flags are not portable to sh/dash.",
-    ),
-    shell_support_description(3037, "echo flags are not portable to plain sh."),
-    shell_support_description(3038, "exec flags are not portable to sh/dash."),
-    shell_support_description(3039, "'let' is not portable to sh/dash."),
-    shell_support_description(
-      3040, "Non-POSIX set -o options are not portable to sh.",
-    ),
-    shell_support_description(
-      3041, "Non-POSIX set flags are not portable to sh.",
-    ),
-    shell_support_description(
-      3042, "Double-dash set flags are not portable to sh.",
-    ),
-    shell_support_description(3043, "'local' is not portable to plain sh."),
-    shell_support_description(
-      3044, "This builtin or command is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3045, "This builtin flag is not portable to sh/dash.",
-    ),
-    shell_support_description(3046, "'source' should be replaced with '.'."),
-    shell_support_description(
-      3047, "ERR/DEBUG/RETURN traps are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3048, "SIG-prefixed trap names are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3049, "Lowercase trap names are not portable to plain sh.",
-    ),
-    shell_support_description(3050, "printf %q is not portable to sh/dash."),
-    shell_support_description(3051, "'source' should be replaced with '.'."),
-    shell_support_description(
-      3052, "Arithmetic base conversion is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3053, "Indirect expansion is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3054, "Array references are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3055, "Array key expansion is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3056, "Name matching prefixes are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3057, "String indexing is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3058, "String operations on $@/$* are not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3059, "Case modification is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3060, "String replacement is not portable to sh/dash.",
-    ),
-    shell_support_description(
-      3061, "read without a variable is not portable to sh/dash.",
-    ),
-    shell_support_description(3062, "test -o is not portable to sh/dash."),
-    shell_support_description(3063, "test -R is not portable to sh/dash."),
-    shell_support_description(3064, "test -N is not portable to sh/dash."),
-    shell_support_description(3065, "test -k is not portable to plain sh."),
-    shell_support_description(3066, "test -G is not portable to plain sh."),
-    shell_support_description(3067, "test -O is not portable to plain sh."),
-  ]
-}
-
-///|
 fn shell_support_suite() -> CheckSuiteRegistration {
-  { descriptions: shell_support_descriptions(), run: run_shell_support_checks, }
+  { run: run_shell_support_checks, }
 }
 
 ///|
@@ -304,6 +98,7 @@ fn pipe_operator_span(
       end_.offset - width,
       end_.line,
       end_.column - width,
+      source_id=end_.source_id,
     )
     @parser.Span::new(start, end_)
   } else {
@@ -2237,11 +2032,13 @@ fn span_offset(
       span.start.offset + offset,
       span.start.line,
       span.start.column + offset,
+      source_id=span.start.source_id,
     ),
     @parser.Position::new(
       span.start.offset + offset + width,
       span.start.line,
       span.start.column + offset + width,
+      source_id=span.start.source_id,
     ),
   )
 }
@@ -2298,11 +2095,13 @@ fn short_flag_span(word : @parser.Word, offset : Int32) -> @parser.Span {
       word.span.start.offset + offset,
       word.span.start.line,
       word.span.start.column + offset,
+      source_id=word.span.start.source_id,
     ),
     @parser.Position::new(
       word.span.start.offset + offset + 1,
       word.span.start.line,
       word.span.start.column + offset + 1,
+      source_id=word.span.start.source_id,
     ),
   )
 }

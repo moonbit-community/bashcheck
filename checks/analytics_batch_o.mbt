@@ -1,25 +1,4 @@
 ///|
-fn append_analytics_batch_o_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_o_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_o_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2264,
-      severity: Error,
-      category: "analytics",
-      summary: "This function unconditionally re-invokes itself.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_o_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

@@ -1,121 +1,4 @@
 ///|
-fn append_analytics_batch_a_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_a_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_a_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2016,
-      severity: Info,
-      category: "analytics",
-      summary: "Expressions don't expand in single quotes.",
-    },
-    {
-      code: 2026,
-      severity: Info,
-      category: "analytics",
-      summary: "A word fragment after single quotes is outside the quotes.",
-    },
-    {
-      code: 2027,
-      severity: Warning,
-      category: "analytics",
-      summary: "Adjacent quotes actually unquote the expansion between them.",
-    },
-    {
-      code: 2034,
-      severity: Warning,
-      category: "analytics",
-      summary: "Assigned variables should be used or exported intentionally.",
-    },
-    {
-      code: 2050,
-      severity: Warning,
-      category: "analytics",
-      summary: "This test expression is constant and may be missing $.",
-    },
-    {
-      code: 2086,
-      severity: Info,
-      category: "analytics",
-      summary: "Unquoted parameter expansions may split words or trigger globs.",
-    },
-    {
-      code: 2088,
-      severity: Warning,
-      category: "analytics",
-      summary: "Tilde does not expand inside quotes.",
-    },
-    {
-      code: 2140,
-      severity: Warning,
-      category: "analytics",
-      summary: "A quoted-literal-quoted word likely needs escaping or merging.",
-    },
-    {
-      code: 2296,
-      severity: Error,
-      category: "analytics",
-      summary: "Parameter expansions can't start with invalid syntax.",
-    },
-    {
-      code: 2297,
-      severity: Error,
-      category: "analytics",
-      summary: "Double quotes must be outside parameter expansions.",
-    },
-    {
-      code: 2298,
-      severity: Error,
-      category: "analytics",
-      summary: "Nested ${${x}}-style expansions are invalid.",
-    },
-    {
-      code: 2299,
-      severity: Error,
-      category: "analytics",
-      summary: "Parameter expansions can't start by nesting another expansion.",
-    },
-    {
-      code: 2300,
-      severity: Error,
-      category: "analytics",
-      summary: "Parameter expansion can't be applied to command substitutions.",
-    },
-    {
-      code: 2301,
-      severity: Error,
-      category: "analytics",
-      summary: "Parameter expansions can't start with unexpected syntax.",
-    },
-    {
-      code: 2153,
-      severity: Info,
-      category: "analytics",
-      summary: "Possible uppercase variable misspelling with a close assigned match.",
-    },
-    {
-      code: 2193,
-      severity: Warning,
-      category: "analytics",
-      summary: "This comparison's operands can never be equal.",
-    },
-    {
-      code: 2258,
-      severity: Warning,
-      category: "analytics",
-      summary: "A trailing comma in for-values is part of the word, not a separator.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_a_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -1666,11 +1549,13 @@ fn analytics_condition_operator_span(
     lhs.span.end.offset + 1,
     lhs.span.end.line,
     lhs.span.end.column + 1,
+    source_id=lhs.span.end.source_id,
   )
   let end_ = @parser.Position::new(
     rhs.span.start.offset - 1,
     rhs.span.start.line,
     rhs.span.start.column - 1,
+    source_id=rhs.span.start.source_id,
   )
   @parser.Span::new(start, end_)
 }
@@ -1853,6 +1738,7 @@ fn analytics_trailing_comma_fix(word : @parser.Word) -> @fixer.Fix {
     word.span.end.offset - 1,
     word.span.end.line,
     word.span.end.column - 1,
+    source_id=word.span.end.source_id,
   )
   @fixer.Fix::from_replacements([
     @fixer.Replacement::new(
@@ -1940,11 +1826,13 @@ fn analytics_span_offset(
       span.start.offset + offset,
       span.start.line,
       span.start.column + offset,
+      source_id=span.start.source_id,
     ),
     @parser.Position::new(
       span.start.offset + offset + width,
       span.start.line,
       span.start.column + offset + width,
+      source_id=span.start.source_id,
     ),
   )
 }

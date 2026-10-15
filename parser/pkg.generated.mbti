@@ -8,11 +8,11 @@ import {
 // Values
 pub fn merge_script_annotations(Script, Array[Annotation]) -> Script
 
+pub fn normalize_source_path(String) -> String
+
 pub fn parse_arithmetic_expr(String) -> ArithmeticExpr
 
 pub fn parse_config_report(String) -> ConfigParseReport
-
-pub fn parse_script(String) -> Result[Script, ParseError]
 
 pub fn parse_script_report(String) -> ParseReport
 
@@ -21,12 +21,6 @@ pub fn parse_script_with_options(String, ParseOptions) -> ParseReport
 pub fn parse_text_as_word(String) -> Word
 
 // Errors
-pub suberror ParseError {
-  UnexpectedEnd(pos~ : Position, context~ : String)
-  UnexpectedToken(pos~ : Position, found~ : String, expected~ : String)
-  Message(pos~ : Position, message~ : String)
-} derive(Eq)
-pub impl Show for ParseError
 
 // Types and methods
 pub struct AndOrList {
@@ -300,7 +294,7 @@ pub enum ParameterReplaceMode {
   Suffix
 } derive(Eq, @debug.Debug)
 
-pub struct ParseOptions {
+pub(all) struct ParseOptions {
   sourced : Bool
   allow_inline_external_sources : Bool
   external_sources : Bool
@@ -308,6 +302,14 @@ pub struct ParseOptions {
   current_path : String?
   source_paths : Array[String]
   source_files : Array[(String, String)]
+  failed_sources : Array[(String, String)]
+  source_aliases : Array[(String, String)]
+  allowed_files : Array[String]?
+  initial_annotations : Array[Annotation]
+  requests : Array[SourceRequest]
+  sources : Array[SourceFile]
+  parent : (Int, Span)?
+  source_depth : Int
 } derive(Eq, @debug.Debug)
 pub fn ParseOptions::default() -> Self
 pub fn ParseOptions::new(Bool, Bool, Bool, Bool, String?, Array[String], Array[(String, String)]) -> Self
@@ -315,6 +317,8 @@ pub fn ParseOptions::new(Bool, Bool, Bool, Bool, String?, Array[String], Array[(
 pub struct ParseReport {
   script : Script?
   diagnostics : Array[Diagnostic]
+  requests : Array[SourceRequest]
+  sources : Array[SourceFile]
 } derive(Eq, @debug.Debug)
 
 pub enum PipeOperator {
@@ -335,11 +339,12 @@ pub struct PipelineSegment {
 } derive(Eq, @debug.Debug)
 
 pub struct Position {
+  source_id : Int
   offset : Int
   line : Int
   column : Int
 } derive(Eq, @debug.Debug)
-pub fn Position::new(Int, Int, Int) -> Self
+pub fn Position::new(Int, Int, Int, source_id? : Int) -> Self
 
 pub struct Redirection {
   span : Span
@@ -379,7 +384,6 @@ pub struct Script {
   annotations : Array[Annotation]
   items : Array[ListItem]
 } derive(Eq, @debug.Debug)
-pub fn Script::dump(Self) -> String
 
 pub struct SelectClause {
   name : String
@@ -400,6 +404,17 @@ pub struct SourceCommand {
   args : Array[Word]
   resolved_path : String?
   included : Script?
+} derive(Eq, @debug.Debug)
+
+pub struct SourceFile {
+  filename : String
+  source : String
+  parent : (Int, Span)?
+} derive(Eq, @debug.Debug)
+
+pub struct SourceRequest {
+  path : String
+  external_sources : Bool
 } derive(Eq, @debug.Debug)
 
 pub struct Span {

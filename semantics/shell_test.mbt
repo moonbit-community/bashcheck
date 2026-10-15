@@ -6,7 +6,7 @@ fn[A] shell_fail(message : String) -> A {
 
 ///|
 fn parse_shell_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(error) => shell_fail(Show::to_string(error))
   }
@@ -35,11 +35,8 @@ test "shell dialect selection respects override annotation shebang and filename"
       #|
     ),
   )
-  @test.assert_eq(@semantics.determine_shell(annotated), Ksh)
-  @test.assert_eq(
-    @semantics.determine_shell(annotated, shell_override=Dash),
-    Dash,
-  )
+  @test.assert_eq(test_determine_shell(annotated), Ksh)
+  @test.assert_eq(test_determine_shell(annotated, shell_override=Dash), Dash)
 
   let plain = parse_shell_ok(
     (
@@ -48,10 +45,10 @@ test "shell dialect selection respects override annotation shebang and filename"
     ),
   )
   @test.assert_eq(
-    @semantics.determine_shell(plain, filename="hooks/pre-commit.envrc"),
+    test_determine_shell(plain, filename="hooks/pre-commit.envrc"),
     Bash,
   )
-  @test.assert_eq(@semantics.determine_shell(plain), Bash)
+  @test.assert_eq(test_determine_shell(plain), Bash)
 }
 
 ///|
@@ -70,42 +67,24 @@ test "unknown-shell warning suppression follows shellcheck entry semantics" {
     ),
   )
 
+  assert_true(!@semantics.suppresses_unknown_shell_warning(plain, None, None))
   assert_true(
-    !@semantics.suppresses_unknown_shell_warning(plain, None, None, None),
+    @semantics.suppresses_unknown_shell_warning(plain, Some(Ksh), None),
   )
   assert_true(
-    @semantics.suppresses_unknown_shell_warning(plain, Some(Ksh), None, None),
-  )
-  assert_true(
-    @semantics.suppresses_unknown_shell_warning(annotated, None, None, None),
+    @semantics.suppresses_unknown_shell_warning(annotated, None, None),
   )
   assert_true(
     @semantics.suppresses_unknown_shell_warning(
       plain,
       None,
       Some("script.bash"),
-      None,
     ),
   )
   assert_true(
-    !@semantics.suppresses_unknown_shell_warning(
-      plain,
-      None,
-      Some(".envrc"),
-      None,
-    ),
+    !@semantics.suppresses_unknown_shell_warning(plain, None, Some(".envrc")),
   )
-  @test.assert_eq(
-    @semantics.determine_shell_with_fallback(plain, None, Some(".envrc"), None),
-    Bash,
-  )
-  @test.assert_eq(
-    @semantics.determine_shell_with_fallback(plain, None, None, Some(Ksh)),
-    Ksh,
-  )
-  assert_true(
-    @semantics.suppresses_unknown_shell_warning(plain, None, None, Some(Ksh)),
-  )
+  @test.assert_eq(@semantics.determine_shell(plain, None, Some(".envrc")), Bash)
 }
 
 ///|
@@ -151,12 +130,6 @@ test "shell dialect helpers parse shebangs annotations and filenames" {
     @semantics.shell_from_annotation(annotated.annotations),
     Some(BusyboxSh),
   )
-
-  @test.assert_eq(@semantics.shell_from_filename("script.ksh"), Some(Ksh))
-  @test.assert_eq(@semantics.shell_from_filename("test.bash"), Some(Bash))
-  @test.assert_eq(@semantics.shell_from_filename("test.bats"), Some(Bash))
-  @test.assert_eq(@semantics.shell_from_filename("test.dash"), Some(Dash))
-  @test.assert_eq(@semantics.shell_from_filename("test.sh"), None)
 }
 
 ///|
@@ -409,14 +382,4 @@ test "shell option defaults follow shell dialect semantics" {
   assert_true(@semantics.has_inherit_errexit(script, BusyboxSh))
   assert_true(!@semantics.has_inherit_errexit(script, Ksh))
   assert_true(!@semantics.has_execfail(script, Dash))
-}
-
-///|
-test "execution mode defaults to executed and sourced when requested" {
-  @test.assert_eq(@semantics.effective_execution_mode(), Executed)
-  @test.assert_eq(@semantics.effective_execution_mode(sourced=true), Sourced)
-  @test.assert_eq(
-    @semantics.effective_execution_mode(mode_override=Executed, sourced=true),
-    Executed,
-  )
 }

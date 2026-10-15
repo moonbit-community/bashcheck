@@ -6,7 +6,7 @@ fn[A] batch_g_fail(message : String) -> A {
 
 ///|
 fn parse_batch_g_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(error) => batch_g_fail(Show::to_string(error))
   }

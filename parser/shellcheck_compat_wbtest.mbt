@@ -113,15 +113,12 @@ fn assert_config_ok(label : String, source : String) -> Unit {
     let line_diagnostics = try {
       let (_, diagnostics) = parse_annotation_line(
         "# shellcheck \{text}",
-        { offset: 0, line, column: 1, },
+        { source_id: 0, offset: 0, line, column: 1, },
         compat_config_options(),
       )
       diagnostics
     } catch {
-      err =>
-        abort(
-          "\{label}: config parse raised \{Show::to_string(err)} on line \{line}",
-        )
+      _ => abort("\{label}: config parse raised an exception on line \{line}")
     }
     for diagnostic in line_diagnostics {
       diagnostics.push(diagnostic)

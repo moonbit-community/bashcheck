@@ -2,7 +2,6 @@
 package "moonbit-community/bashcheck/checker"
 
 import {
-  "moonbit-community/bashcheck/checks",
   "moonbit-community/bashcheck/fixer",
   "moonbit-community/bashcheck/parser",
   "moonbit-community/bashcheck/semantics",
@@ -10,36 +9,31 @@ import {
 }
 
 // Values
-pub fn check_script(String, spec? : CheckSpec) -> CheckResult
-
-pub fn filter_diagnostics(Array[PositionedDiagnostic], CheckSpec) -> Array[PositionedDiagnostic]
+pub fn check_prepared_script(String, @parser.ParseReport, spec~ : CheckSpec) -> CheckResult
 
 pub fn list_optional_checks_text() -> String
 
 pub fn parse_diagnostic_severity(String) -> DiagnosticSeverity?
 
-pub fn sort_diagnostics(Array[PositionedDiagnostic]) -> Array[PositionedDiagnostic]
-
-pub fn supported_checks() -> Array[@checks.CheckDescription]
+pub fn prepare_script(String, spec~ : CheckSpec) -> @parser.ParseReport
 
 pub fn supported_optional_checks() -> Array[String]
 
 // Errors
 
 // Types and methods
-pub struct CheckResult {
+pub(all) struct CheckResult {
   filename : String
   source : String
+  sources : Array[@parser.SourceFile]
   diagnostics : Array[PositionedDiagnostic]
 } derive(Eq, @debug.Debug)
 
-pub struct CheckSpec {
+pub(all) struct CheckSpec {
   filename : String?
   check_sourced : Bool
   ignore_rc : Bool
   shell_override : @semantics.ShellDialect?
-  fallback_shell : @semantics.ShellDialect?
-  execution_mode : @semantics.ExecutionMode
   min_severity : DiagnosticSeverity
   include_codes : Array[Int]
   exclude_codes : Array[Int]
@@ -49,6 +43,9 @@ pub struct CheckSpec {
   external_sources : Bool
   source_paths : Array[String]
   source_files : Array[(String, String)]
+  failed_sources : Array[(String, String)]
+  source_aliases : Array[(String, String)]
+  allowed_files : Array[String]?
   config_path_override : String?
   config_files : Array[(String, String)]
 } derive(Eq, @debug.Debug)

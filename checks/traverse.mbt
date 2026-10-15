@@ -46,22 +46,7 @@ fn visit_pipeline_commands(
   visit : (@parser.Command) -> Unit,
 ) -> Unit {
   for segment in pipeline.segments {
-    visit_command_and_includes(segment.command, visit)
-  }
-}
-
-///|
-fn visit_command_and_includes(
-  command : @parser.Command,
-  visit : (@parser.Command) -> Unit,
-) -> Unit {
-  @semantics.walk_command(command, visit)
-  match command.kind {
-    Source(source) =>
-      if source.included is Some(script) {
-        visit_script_commands(script, visit)
-      }
-    _ => ()
+    @semantics.walk_command(segment.command, visit)
   }
 }
 
@@ -130,7 +115,11 @@ fn visit_nested_pipelines_in_command(
     Function(function_) =>
       visit_nested_pipelines_in_command(function_.body, visit)
     CoProc(clause) => visit_nested_pipelines_in_command(clause.body, visit)
-    Simple(_) | Source(_) | Condition(_) | Arithmetic(_) => ()
+    Source(source) =>
+      if source.included is Some(script) {
+        visit_script_pipelines(script, visit)
+      }
+    Simple(_) | Condition(_) | Arithmetic(_) => ()
   }
 }
 

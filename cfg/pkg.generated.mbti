@@ -27,11 +27,7 @@ pub fn build_cfg(@parser.Script, CfgParameters) -> CFG
 
 pub fn command_is_reachable(CfgAnalysis, CfgAstId) -> Bool
 
-pub fn compute_post_dominators(CFG) -> Array[Array[CfgNodeId]]
-
 pub fn does_post_dominate(CfgAnalysis, CfgAstId, CfgAstId) -> Bool
-
-pub fn edges(CFG) -> Array[CfgEdge]
 
 pub fn id_to_nodes(CFG, CfgAstId) -> Array[CfgNodeId]
 
@@ -41,13 +37,7 @@ pub fn incoming_state_of_ast(CfgAnalysis, CfgAstId) -> ProgramState?
 
 pub fn incoming_state_of_node(CfgAnalysis, CfgNodeId) -> ProgramState?
 
-pub fn node_kind_of(CFG, CfgAstId) -> @semantics.NodeKind?
-
 pub fn node_of(CFG, CfgNodeId) -> CfgNode?
-
-pub fn outgoing_state_of_ast(CfgAnalysis, CfgAstId) -> ProgramState?
-
-pub fn outgoing_state_of_node(CfgAnalysis, CfgNodeId) -> ProgramState?
 
 pub fn post_dominates(CFG, CfgAstId, CfgAstId) -> Bool
 

@@ -29,13 +29,11 @@ pub extend DiagnosticSeverity with Debug::{to_repr}
 ///
 /// `CheckSpec` controls filename context, shell selection, diagnostic filters,
 /// config loading, and whether optional or extended analyses are enabled.
-pub struct CheckSpec {
+pub(all) struct CheckSpec {
   filename : String?
   check_sourced : Bool
   ignore_rc : Bool
   shell_override : @semantics.ShellDialect?
-  fallback_shell : @semantics.ShellDialect?
-  execution_mode : @semantics.ExecutionMode
   min_severity : DiagnosticSeverity
   include_codes : Array[Int32]
   exclude_codes : Array[Int32]
@@ -45,6 +43,9 @@ pub struct CheckSpec {
   external_sources : Bool
   source_paths : Array[String]
   source_files : Array[(String, String)]
+  failed_sources : Array[(String, String)]
+  source_aliases : Array[(String, String)]
+  allowed_files : Array[String]?
   config_path_override : String?
   config_files : Array[(String, String)]
 } derive(Eq, Debug)
@@ -73,8 +74,6 @@ pub fn CheckSpec::default() -> CheckSpec {
     check_sourced: false,
     ignore_rc: false,
     shell_override: None,
-    fallback_shell: None,
-    execution_mode: Executed,
     min_severity: Style,
     include_codes: [],
     exclude_codes: [],
@@ -84,6 +83,9 @@ pub fn CheckSpec::default() -> CheckSpec {
     external_sources: false,
     source_paths: [],
     source_files: [],
+    failed_sources: [],
+    source_aliases: [],
+    allowed_files: None,
     config_path_override: None,
     config_files: [],
   }
@@ -230,9 +232,10 @@ pub extend PositionedDiagnostic with Debug::{to_repr}
 
 ///|
 /// The result of checking a single source file or input stream.
-pub struct CheckResult {
+pub(all) struct CheckResult {
   filename : String
   source : String
+  sources : Array[@parser.SourceFile]
   diagnostics : Array[PositionedDiagnostic]
 } derive(Eq, Debug)
 
