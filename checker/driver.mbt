@@ -181,9 +181,6 @@ fn parse_diagnostic_allowed_by_spec(
     // Upstream ShellCheck treats an explicit shell override as authoritative and
     // suppresses the shebang-shell mismatch/unknown-shell parse diagnostic.
     Some(1071) => spec.shell_override is None
-    // Recursive include diagnostics are internal parser bookkeeping. The
-    // public checker does not surface them.
-    Some(1093) => false
     _ => true
   }
 }
