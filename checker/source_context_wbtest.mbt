@@ -116,3 +116,26 @@ test "source depth stops before requesting another file and respects filters" {
   source_files[99] = ("f99.sh", "true\n")
   assert_true(test_check_script(source, spec~).diagnostics.is_empty())
 }
+
+///|
+test "SC2154 parameter spans preserve sourced file identity" {
+  let result = test_check_script("#!/bin/bash\nsource lib.sh\n", spec={
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    include_codes: [2154],
+    source_files: [("lib.sh", "echo \"first\n$foo ${bar}\"\n")],
+  })
+  assert_eq(result.diagnostics.length(), 2)
+  for diagnostic in result.diagnostics {
+    assert_eq(diagnostic.filename, "lib.sh")
+    assert_eq(diagnostic.span.start.source_id, 1)
+    assert_eq(diagnostic.span.end.source_id, 1)
+    assert_eq(diagnostic.span.start.line, 2)
+  }
+  assert_eq(result.diagnostics[0].span.start.column, 1)
+  assert_eq(result.diagnostics[0].span.end.column, 5)
+  assert_eq(result.diagnostics[1].span.start.column, 6)
+  assert_eq(result.diagnostics[1].span.end.column, 12)
+}

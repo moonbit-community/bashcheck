@@ -813,19 +813,37 @@ fn control_flow_unassigned_read_span(
   cfg : @cfg.CFG,
   id : @cfg.CfgAstId,
 ) -> @parser.Span {
-  match @cfg.ast_ref_of(cfg, id) {
-    Some(ParameterExpansion(expansion)) =>
-      if parent_word_of(cfg, id) is Some(word) {
-        if word_subspan(word, "${\{expansion.raw}}") is Some(span) {
-          span
-        } else {
-          control_flow_precise_ast_span(cfg, id)
+  // Word parts carry no individual span. Recover the lexical occurrence from
+  // the owning word, using AST order to distinguish repeated parameters.
+  let mut owner = @cfg.ast_parent_of(cfg, id)
+  while owner is Some(parent) {
+    match @cfg.ast_ref_of(cfg, parent) {
+      Some(Word(word)) => {
+        if control_flow_parameter_text(cfg, id) is Some(needle) {
+          let occurrences : Array[@cfg.CfgAstId] = []
+          control_flow_word_parameters(cfg, parent, needle, occurrences)
+          let mut ordinal = 0
+          for occurrence in occurrences {
+            if occurrence == id {
+              if control_flow_parameter_range(word.source, needle, ordinal)
+                is Some((start, end_)) {
+                return @parser.Span::new(
+                  control_flow_word_position(word, start),
+                  control_flow_word_position(word, end_),
+                )
+              }
+              break
+            }
+            ordinal += 1
+          }
         }
-      } else {
-        control_flow_precise_ast_span(cfg, id)
+        break
       }
-    _ => control_flow_precise_ast_span(cfg, id)
+      Some(WordPart(_)) => owner = @cfg.ast_parent_of(cfg, parent)
+      _ => break
+    }
   }
+  control_flow_precise_ast_span(cfg, id)
 }
 
 ///|
