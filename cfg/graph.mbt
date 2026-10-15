@@ -3891,14 +3891,18 @@ fn compute_post_dominators_inner(cfg : CFG) -> Array[Array[CfgNodeId]] {
       current.push(copy_node_ids(all_nodes))
     }
   }
+  let successors_by_node = all_nodes.map(node => postdom_successors(cfg, node))
   let mut changed = true
   while changed {
     changed = false
-    for node in all_nodes {
+    // Most flow edges point to later nodes. Work backwards so long source
+    // chains converge without one full pass per statement.
+    for index = all_nodes.length() - 1; index >= 0; index = index - 1 {
+      let node = all_nodes[index]
       if node == cfg.main_exit {
         continue
       }
-      let successors = postdom_successors(cfg, node)
+      let successors = successors_by_node[node.to_int()]
       let next = postdom_for_node(
         node,
         successors,
@@ -3929,15 +3933,20 @@ fn postdom_for_node(
   } else {
     successors
   }
-  for candidate in all_nodes {
-    let mut in_all = true
-    for successor in actual_successors {
-      if !contains_node_id(current[successor.to_int()], candidate) {
-        in_all = false
-        break
-      }
+  // Intersect membership arrays instead of scanning each successor's set for
+  // every candidate. This keeps deeply nested includes practical to analyze.
+  let common = Array::make(all_nodes.length(), true)
+  for successor in actual_successors {
+    let present = Array::make(all_nodes.length(), false)
+    for node_id in current[successor.to_int()] {
+      present[node_id.to_int()] = true
     }
-    if in_all && candidate != node {
+    for index in 0..<common.length() {
+      common[index] = common[index] && present[index]
+    }
+  }
+  for candidate in all_nodes {
+    if candidate != node && common[candidate.to_int()] {
       next.push(candidate)
     }
   }
