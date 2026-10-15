@@ -32,11 +32,11 @@ test "checker filters included and excluded codes" {
     #|echo `foo`
     #|rm $(ls)
     #|
-  let excluded = @checker.check_script(
+  let excluded = test_check_script(
     source,
     spec=@checker.CheckSpec::default().with_exclude_codes([2006]),
   )
-  let included = @checker.check_script(
+  let included = test_check_script(
     source,
     spec=@checker.CheckSpec::default().with_include_codes([2006]),
   )
@@ -54,7 +54,7 @@ test "checker honors severity thresholds and annotations" {
   } else {
     panic()
   }
-  let threshold = @checker.check_script(
+  let threshold = test_check_script(
     (
       #|#!/bin/dash
       #|((x += 1))
@@ -63,7 +63,7 @@ test "checker honors severity thresholds and annotations" {
     ),
     spec=@checker.CheckSpec::default().with_min_severity(error),
   )
-  let annotated = @checker.check_script(
+  let annotated = test_check_script(
     (
       #|# shellcheck disable=SC2006
       #|printf '%s' `foo`
@@ -78,13 +78,13 @@ test "checker honors severity thresholds and annotations" {
 
 ///|
 test "checker enables control-flow analysis by default but can disable it" {
-  let enabled = @checker.check_script(
+  let enabled = test_check_script(
     (
       #|echo $foo
       #|
     ),
   )
-  let disabled = @checker.check_script(
+  let disabled = test_check_script(
     (
       #|echo $foo
       #|
@@ -98,34 +98,34 @@ test "checker enables control-flow analysis by default but can disable it" {
 
 ///|
 test "checker emits SC2148 only when the entry shell stays unknown" {
-  let plain = @checker.check_script(
+  let plain = test_check_script(
     (
       #|echo hello
       #|
     ),
   )
-  let from_directive = @checker.check_script(
+  let from_directive = test_check_script(
     (
       #|# shellcheck shell=bash
       #|echo hello
       #|
     ),
   )
-  let from_extension = @checker.check_script(
+  let from_extension = test_check_script(
     (
       #|echo hello
       #|
     ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.bash")),
   )
-  let from_envrc = @checker.check_script(
+  let from_envrc = test_check_script(
     (
       #|echo hello
       #|
     ),
     spec=@checker.CheckSpec::default().with_filename(Some(".envrc")),
   )
-  let from_override = @checker.check_script(
+  let from_override = test_check_script(
     (
       #|echo hello
       #|
@@ -151,7 +151,7 @@ test "checker emits SC2148 only when the entry shell stays unknown" {
 
 ///|
 test "checker shell precedence keeps stronger entry signals above filename hints" {
-  let shebang_over_extension = @checker.check_script(
+  let shebang_over_extension = test_check_script(
     (
       #|#!/bin/sh
       #|[[ x ]]
@@ -159,7 +159,7 @@ test "checker shell precedence keeps stronger entry signals above filename hints
     ),
     spec=@checker.CheckSpec::default().with_filename(Some("script.bash")),
   )
-  let directive_over_shebang = @checker.check_script(
+  let directive_over_shebang = test_check_script(
     (
       #|#!/bin/sh
       #|# shellcheck shell=bash
@@ -174,21 +174,21 @@ test "checker shell precedence keeps stronger entry signals above filename hints
 
 ///|
 test "checker emits shebang entry diagnostics and respects shell overrides" {
-  let ash = @checker.check_script(
+  let ash = test_check_script(
     (
       #|#!bin/ash
       #|true
       #|
     ),
   )
-  let directory = @checker.check_script(
+  let directory = test_check_script(
     (
       #|#!/bin/sh/
       #|true
       #|
     ),
   )
-  let overridden = @checker.check_script(
+  let overridden = test_check_script(
     (
       #|#!bin/ash
       #|# shellcheck shell=dash
@@ -257,24 +257,11 @@ test "checker advertises shellcheck-compatible optional checks without exposing 
     @checker.supported_optional_checks().contains("check-extra-masked-returns"),
   )
   assert_true(@checker.supported_optional_checks().contains("deprecate-which"))
-  let descriptions = @checker.supported_checks()
-  let mut found = false
-  let mut found_optional = false
-  for description in descriptions {
-    if description.code == 2154 {
-      found = true
-    }
-    if description.code == 2002 {
-      found_optional = true
-    }
-  }
-  assert_true(found)
-  assert_true(found_optional)
 }
 
 ///|
 test "checker honors enable and extended-analysis directives" {
-  let enabled = @checker.check_script(
+  let enabled = test_check_script(
     (
       #|# shellcheck enable=control-flow
       #| echo $foo
@@ -282,7 +269,7 @@ test "checker honors enable and extended-analysis directives" {
     ),
     spec=@checker.CheckSpec::default().with_extended_analysis(false),
   )
-  let disabled = @checker.check_script(
+  let disabled = test_check_script(
     (
       #|# shellcheck extended-analysis=false
       #| echo $foo
@@ -296,7 +283,7 @@ test "checker honors enable and extended-analysis directives" {
 
 ///|
 test "checker honors optional checks from spec and directives" {
-  let from_spec = @checker.check_script(
+  let from_spec = test_check_script(
     (
       #|safe=hello
       #|echo $safe
@@ -306,14 +293,14 @@ test "checker honors optional checks from spec and directives" {
       "quote-safe-variables",
     ]),
   )
-  let from_directive = @checker.check_script(
+  let from_directive = test_check_script(
     (
       #|# shellcheck enable=require-double-brackets
       #|[ -x foo ]
       #|
     ),
   )
-  let default_result = @checker.check_script(
+  let default_result = test_check_script(
     (
       #|safe=hello
       #|echo $safe
@@ -330,7 +317,7 @@ test "checker honors optional checks from spec and directives" {
 
 ///|
 test "checker loads .shellcheckrc unless disabled" {
-  let with_rc = @checker.check_script(
+  let with_rc = test_check_script(
     (
       #|printf '%s' `foo`
       #|
@@ -341,7 +328,7 @@ test "checker loads .shellcheckrc unless disabled" {
         ("checker/testdata/rc/.shellcheckrc", "disable=SC2006"),
       ]),
   )
-  let without_rc = @checker.check_script(
+  let without_rc = test_check_script(
     (
       #|printf '%s' `foo`
       #|
@@ -360,7 +347,7 @@ test "checker loads .shellcheckrc unless disabled" {
 
 ///|
 test "checker honors explicit rcfile override paths" {
-  let result = @checker.check_script(
+  let result = test_check_script(
     (
       #|printf '%s' `foo`
       #|
@@ -375,7 +362,7 @@ test "checker honors explicit rcfile override paths" {
 
 ///|
 test "checker keeps explicit extended analysis overrides above directives and rc" {
-  let from_directive = @checker.check_script(
+  let from_directive = test_check_script(
     (
       #|# shellcheck extended-analysis=true
       #|echo $foo
@@ -383,7 +370,7 @@ test "checker keeps explicit extended analysis overrides above directives and rc
     ),
     spec=@checker.CheckSpec::default().with_extended_analysis(false),
   )
-  let from_rc = @checker.check_script(
+  let from_rc = test_check_script(
     (
       #|echo $foo
       #|
@@ -402,7 +389,7 @@ test "checker keeps explicit extended analysis overrides above directives and rc
 
 ///|
 test "checker localizes lint fixes to the reported filename" {
-  let result = @checker.check_script(
+  let result = test_check_script(
     (
       #|echo `foo`
       #|

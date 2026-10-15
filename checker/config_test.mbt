@@ -1,6 +1,6 @@
 ///|
 test "invalid rc config reports the complete SC1134 diagnostic" {
-  let result = @checker.check_script(
+  let result = test_check_script(
     "echo hi\n",
     spec=@checker.CheckSpec::default()
       .with_shell_override(Some(Bash))

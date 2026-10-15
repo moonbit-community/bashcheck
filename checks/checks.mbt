@@ -1,29 +1,4 @@
 ///|
-/// Runs the built-in lint suites for a parsed script.
-///
-/// The script's shell dialect is inferred from the options before individual
-/// checks are executed.
-pub fn check_script(
-  script : @parser.Script,
-  options~ : CheckOptions = CheckOptions::default(),
-) -> Array[CheckDiagnostic] {
-  let shell = match (options.shell_override, options.filename) {
-    (Some(shell_override), Some(filename)) =>
-      @semantics.determine_shell(script, shell_override~, filename~)
-    (Some(shell_override), None) =>
-      @semantics.determine_shell(script, shell_override~)
-    (None, Some(filename)) => @semantics.determine_shell(script, filename~)
-    (None, None) => @semantics.determine_shell(script)
-  }
-  run_checks_with_shell(
-    script,
-    shell,
-    options.extended_analysis,
-    options.optional_checks,
-  )
-}
-
-///|
 /// Runs the built-in lint suites using an explicit shell dialect.
 pub fn run_checks_with_shell(
   script : @parser.Script,
@@ -49,16 +24,6 @@ pub fn run_checks_with_shell(
     optional_checks,
   )
   sort_diagnostics(filter_disabled_diagnostics(script, diagnostics))
-}
-
-///|
-/// Returns metadata for every check currently implemented by this package.
-pub fn supported_checks() -> Array[CheckDescription] {
-  let descriptions : Array[CheckDescription] = []
-  append_suite_descriptions(descriptions, core_check_suites())
-  append_toggleable_suite_descriptions(descriptions, toggleable_check_suites())
-  append_optional_descriptions(descriptions, optional_check_registrations())
-  descriptions
 }
 
 ///|
@@ -144,40 +109,6 @@ fn run_optional_checks(
     if optional_checks.contains(registration.info.name) {
       (registration.run)(script, shell, diagnostics)
     }
-  }
-}
-
-///|
-fn append_suite_descriptions(
-  descriptions : Array[CheckDescription],
-  suites : Array[CheckSuiteRegistration],
-) -> Unit {
-  for suite in suites {
-    for description in suite.descriptions {
-      descriptions.push(description)
-    }
-  }
-}
-
-///|
-fn append_toggleable_suite_descriptions(
-  descriptions : Array[CheckDescription],
-  suites : Array[ToggleableCheckSuiteRegistration],
-) -> Unit {
-  for suite in suites {
-    for description in suite.descriptions {
-      descriptions.push(description)
-    }
-  }
-}
-
-///|
-fn append_optional_descriptions(
-  descriptions : Array[CheckDescription],
-  registrations : Array[OptionalCheckRegistration],
-) -> Unit {
-  for registration in registrations {
-    descriptions.push(registration.description)
   }
 }
 
@@ -350,7 +281,12 @@ fn span_contains_position(
   span : @parser.Span,
   position : @parser.Position,
 ) -> Bool {
-  span.start.offset <= position.offset && position.offset <= span.end.offset
+  span.start.source_id == position.source_id &&
+  span.start.offset <= position.offset &&
+  (
+    position.offset < span.end.offset ||
+    (span.start.offset == span.end.offset && position.offset == span.end.offset)
+  )
 }
 
 ///|

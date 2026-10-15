@@ -1,34 +1,31 @@
 ///|
-/// Returns the static descriptions for every built-in check known to the
-/// checker pipeline.
-pub fn supported_checks() -> Array[@checks.CheckDescription] {
-  @checks.supported_checks()
+/// Parses with rc directives and returns filesystem requests without linting.
+pub fn prepare_script(
+  source : String,
+  spec~ : CheckSpec,
+) -> @parser.ParseReport {
+  let config = load_config(spec)
+  let options = parse_options(apply_config_to_spec(spec, config.annotations))
+  @parser.parse_script_with_options(source, {
+    ..options,
+    initial_annotations: config.annotations,
+  })
 }
 
 ///|
-/// Parses, checks, filters, and sorts diagnostics for a shell source string.
-///
-/// This is the main entry point for library users who want a single
-/// `CheckResult` from raw source text.
-pub fn check_script(
+/// Runs lint once after the driver has satisfied every source request.
+pub fn check_prepared_script(
   source : String,
-  spec~ : CheckSpec = CheckSpec::default(),
+  report : @parser.ParseReport,
+  spec~ : CheckSpec,
 ) -> CheckResult {
   let filename = display_filename(spec.filename)
-  // Config loading happens before parsing the main script because rc files can
-  // inject annotations that affect parse-time sourced-file resolution.
   let config = load_config(spec)
   let effective_spec = apply_config_to_spec(spec, config.annotations)
-  let report = @parser.parse_script_with_options(
-    source,
-    parse_options(effective_spec),
-  )
-  // Parsing, config diagnostics, and lint diagnostics all use different
-  // internal representations. They are merged here into one public list.
   let diagnostics = merge_parse_and_lint_diagnostics(
     report, filename, effective_spec, config,
   )
-  { filename, source, diagnostics, }
+  { filename, source, sources: report.sources, diagnostics, }
 }
 
 ///|
@@ -38,15 +35,21 @@ pub fn check_script(
 /// settings, which keeps the rest of the checker independent from parser
 /// constructor details.
 fn parse_options(spec : CheckSpec) -> @parser.ParseOptions {
-  @parser.ParseOptions::new(
-    spec.execution_mode == Sourced,
+  let options = @parser.ParseOptions::new(
+    false,
     false,
     spec.external_sources,
-    spec.check_sourced,
+    true,
     current_path_for_parse(spec.filename),
     copy_strings(spec.source_paths),
     copy_string_pairs(spec.source_files),
   )
+  {
+    ..options,
+    failed_sources: spec.failed_sources,
+    source_aliases: spec.source_aliases,
+    allowed_files: spec.allowed_files,
+  }
 }
 
 ///|
@@ -91,14 +94,16 @@ fn merge_parse_and_lint_diagnostics(
     None
   }
   for diagnostic in report.diagnostics {
-    let positioned = positioned_parse_diagnostic(filename, diagnostic)
-    if parse_diagnostic_allowed_by_spec(spec, positioned) &&
+    let positioned = positioned_parse_diagnostic(
+      source_filename(report, diagnostic.span.start, filename),
+      diagnostic,
+    )
+    if (spec.check_sourced || positioned.span.start.source_id == 0) &&
+      include_context_allows(report, script, positioned) &&
+      parse_diagnostic_allowed_by_spec(spec, positioned) &&
       diagnostic_is_included(script, spec, positioned) {
       diagnostics.push(positioned)
     }
-  }
-  if script is Some(script) {
-    append_missing_source_diagnostics(diagnostics, filename, spec, script)
   }
   match (base_script, script) {
     (Some(base_script), Some(script)) => {
@@ -107,18 +112,16 @@ fn merge_parse_and_lint_diagnostics(
         return sort_diagnostics(diagnostics)
       }
       // Shell selection depends on the parsed script plus caller overrides.
-      let shell = @semantics.determine_shell_with_fallback(
+      let shell = @semantics.determine_shell(
         script,
         spec.shell_override,
         Some(filename),
-        spec.fallback_shell,
       )
       if script.shebang is None &&
         !@semantics.suppresses_unknown_shell_warning(
           script,
           spec.shell_override,
           Some(filename),
-          spec.fallback_shell,
         ) {
         // ShellCheck emits a dedicated diagnostic when analysis would be less
         // precise because the target shell is unknown.
@@ -142,8 +145,13 @@ fn merge_parse_and_lint_diagnostics(
         optional_checks,
       )
       for diagnostic in lint {
-        let positioned = positioned_lint_diagnostic(filename, diagnostic)
-        if diagnostic_is_included(Some(script), spec, positioned) {
+        let positioned = positioned_lint_diagnostic(
+          source_filename(report, diagnostic.span.start, filename),
+          diagnostic,
+        )
+        if (spec.check_sourced || positioned.span.start.source_id == 0) &&
+          diagnostic_is_included(Some(script), spec, positioned) &&
+          include_context_allows(report, Some(script), positioned) {
           diagnostics.push(positioned)
         }
       }
@@ -178,98 +186,6 @@ fn parse_diagnostic_allowed_by_spec(
     Some(1093) => false
     _ => true
   }
-}
-
-///|
-fn append_missing_source_diagnostics(
-  diagnostics : Array[PositionedDiagnostic],
-  filename : String,
-  spec : CheckSpec,
-  script : @parser.Script,
-) -> Unit {
-  if spec.check_sourced {
-    return
-  }
-  for command in top_level_commands(script) {
-    @semantics.walk_command(command, fn(current) {
-      match current.kind {
-        Source(source) =>
-          match @semantics.literal_text(source.path) {
-            Some(path) if !source_file_is_available(spec, path) => {
-              let diagnostic = {
-                filename,
-                span: source.path.span,
-                severity: Warning,
-                code: Some(1091),
-                message: "source file '\{path}' was not provided in parse options",
-                fix: None,
-              }
-              if diagnostic_is_included(Some(script), spec, diagnostic) {
-                diagnostics.push(diagnostic)
-              }
-            }
-            _ => ()
-          }
-        _ => ()
-      }
-    })
-  }
-}
-
-///|
-fn top_level_commands(script : @parser.Script) -> Array[@parser.Command] {
-  let commands : Array[@parser.Command] = []
-  for item in script.items {
-    for segment in item.and_or.head.segments {
-      commands.push(segment.command)
-    }
-    for pair in item.and_or.tail {
-      for segment in pair.1.segments {
-        commands.push(segment.command)
-      }
-    }
-  }
-  commands
-}
-
-///|
-fn source_file_is_available(spec : CheckSpec, path : String) -> Bool {
-  if path == "/dev/null" {
-    return true
-  }
-  if source_file_is_listed(spec.source_files, path) {
-    return true
-  }
-  if path.has_prefix("/") {
-    return false
-  }
-  if spec.filename is Some(filename) {
-    if source_file_is_listed(
-        spec.source_files,
-        path_join(path_dirname(filename), path),
-      ) {
-      return true
-    }
-  }
-  for source_path in spec.source_paths {
-    if source_file_is_listed(spec.source_files, path_join(source_path, path)) {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn source_file_is_listed(
-  source_files : Array[(String, String)],
-  path : String,
-) -> Bool {
-  for pair in source_files {
-    if pair.0 == path {
-      return true
-    }
-  }
-  false
 }
 
 ///|
@@ -518,6 +434,7 @@ fn checker_shebang_span(
     start.offset + shebang.length(),
     1,
     start.column + shebang.length(),
+    source_id=start.source_id,
   )
   @parser.Span::new(start, end_)
 }
@@ -771,22 +688,6 @@ fn checker_basename(text : String) -> String {
 }
 
 ///|
-/// Applies severity and code filters to an existing diagnostic list.
-pub fn filter_diagnostics(
-  diagnostics : Array[PositionedDiagnostic],
-  spec : CheckSpec,
-) -> Array[PositionedDiagnostic] {
-  let filtered : Array[PositionedDiagnostic] = []
-  for diagnostic in diagnostics {
-    if severity_included(spec.min_severity, diagnostic.severity) &&
-      code_is_included(spec, diagnostic.code) {
-      filtered.push(diagnostic)
-    }
-  }
-  filtered
-}
-
-///|
 /// Returns whether a diagnostic survives every active filter.
 ///
 /// Filtering happens in three layers:
@@ -853,7 +754,7 @@ fn severity_rank(severity : DiagnosticSeverity) -> Int32 {
 
 ///|
 /// Returns diagnostics sorted by filename, span, and severity.
-pub fn sort_diagnostics(
+fn sort_diagnostics(
   diagnostics : Array[PositionedDiagnostic],
 ) -> Array[PositionedDiagnostic] {
   let sorted = copy_positioned_diagnostics(diagnostics)
@@ -940,12 +841,17 @@ fn annotations_disable_code_at_position(
 }
 
 ///|
-/// Returns whether `position` lies inside `span`, inclusive of both endpoints.
+/// Tests a half-open span (or its sole position for an empty span).
 fn span_contains_position(
   span : @parser.Span,
   position : @parser.Position,
 ) -> Bool {
-  span.start.offset <= position.offset && position.offset <= span.end.offset
+  span.start.source_id == position.source_id &&
+  span.start.offset <= position.offset &&
+  (
+    position.offset < span.end.offset ||
+    (span.start.offset == span.end.offset && position.offset == span.end.offset)
+  )
 }
 
 ///|
@@ -1097,4 +1003,40 @@ fn copy_positioned_diagnostics(
     copied.push(diagnostic)
   }
   copied
+}
+
+///|
+fn source_filename(
+  report : @parser.ParseReport,
+  position : @parser.Position,
+  fallback : String,
+) -> String {
+  if position.source_id == 0 {
+    fallback
+  } else {
+    match report.sources.get(position.source_id) {
+      Some(file) => file.filename
+      None => fallback
+    }
+  }
+}
+
+///|
+fn include_context_allows(
+  report : @parser.ParseReport,
+  script : @parser.Script?,
+  diagnostic : PositionedDiagnostic,
+) -> Bool {
+  guard script is Some(script) && diagnostic.code is Some(code) else {
+    return true
+  }
+  let mut source_id = diagnostic.span.start.source_id
+  while report.sources.get(source_id) is Some(file) {
+    guard file.parent is Some((parent_id, span)) else { break }
+    if annotations_disable_code_at_position(script, span.start, code) {
+      return false
+    }
+    source_id = parent_id
+  }
+  true
 }

@@ -1,25 +1,4 @@
 ///|
-fn append_analytics_batch_k_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_k_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_k_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2095,
-      severity: Warning,
-      category: "analytics",
-      summary: "Commands in while read loops may swallow stdin.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_k_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

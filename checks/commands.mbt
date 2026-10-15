@@ -1,65 +1,6 @@
 ///|
-fn commands_descriptions() -> Array[CheckDescription] {
-  let descriptions = [
-    {
-      code: 2005,
-      severity: Style,
-      category: "commands",
-      summary: "Use the command directly instead of echoing its substitution.",
-    },
-    {
-      code: 2023,
-      severity: Info,
-      category: "commands",
-      summary: "Use command time if you need the external utility's flags.",
-    },
-    {
-      code: 2024,
-      severity: Warning,
-      category: "commands",
-      summary: "sudo doesn't affect redirects; use tee/cat patterns instead.",
-    },
-    {
-      code: 2185,
-      severity: Info,
-      category: "commands",
-      summary: "Some finds don't have a default path. Specify '.' explicitly.",
-    },
-    {
-      code: 2162,
-      severity: Info,
-      category: "commands",
-      summary: "read without -r will mangle backslashes.",
-    },
-    {
-      code: 2186,
-      severity: Warning,
-      category: "commands",
-      summary: "tempfile is deprecated. Use mktemp instead.",
-    },
-    {
-      code: 2196,
-      severity: Info,
-      category: "commands",
-      summary: "egrep is non-standard and deprecated. Use grep -E instead.",
-    },
-    {
-      code: 2197,
-      severity: Info,
-      category: "commands",
-      summary: "fgrep is non-standard and deprecated. Use grep -F instead.",
-    },
-  ]
-  append_commands_batch_a_descriptions(descriptions)
-  append_commands_batch_b_descriptions(descriptions)
-  append_commands_batch_c_descriptions(descriptions)
-  append_commands_batch_d_descriptions(descriptions)
-  descriptions
-}
-
-///|
 fn commands_suite() -> CheckSuiteRegistration {
-  { descriptions: commands_descriptions(), run: run_command_checks, }
+  { run: run_command_checks, }
 }
 
 ///|
@@ -72,12 +13,6 @@ fn commands_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Suggest 'command -v' instead of 'which'",
         example: "which javac",
         fix: "command -v javac",
-      },
-      description: {
-        code: 2230,
-        severity: Info,
-        category: "commands",
-        summary: "'which' is non-standard. Use builtin 'command -v' instead.",
       },
       run: run_deprecate_which_optional_check,
     },

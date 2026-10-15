@@ -96,7 +96,7 @@ fn Parser::new(
 
 ///|
 fn Parser::position(self : Parser) -> Position {
-  { offset: self.offset, line: self.line, column: self.column, }
+  { source_id: 0, offset: self.offset, line: self.line, column: self.column, }
 }
 
 ///|
@@ -112,6 +112,7 @@ fn span_at(pos : Position) -> Span {
 ///|
 fn translate_position(base : Position, relative : Position) -> Position {
   {
+    source_id: base.source_id,
     offset: base.offset + relative.offset,
     line: base.line + relative.line - 1,
     column: if relative.line == 1 {
@@ -1292,7 +1293,12 @@ fn Parser::peek_comment_after_inline_space(
     }
     if ch == '\\' && i + 1 < self.source.length() && self.source[i + 1] == '\n' {
       i += 2
-      pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1, }
+      pos = {
+        source_id: 0,
+        offset: pos.offset + 2,
+        line: pos.line + 1,
+        column: 1,
+      }
       continue
     }
     if ch == '\\' &&
@@ -1300,7 +1306,12 @@ fn Parser::peek_comment_after_inline_space(
       self.source[i + 1] == '\r' &&
       self.source[i + 2] == '\n' {
       i += 3
-      pos = { offset: pos.offset + 3, line: pos.line + 1, column: 1, }
+      pos = {
+        source_id: 0,
+        offset: pos.offset + 3,
+        line: pos.line + 1,
+        column: 1,
+      }
       continue
     }
     if ch != '#' {
@@ -1334,16 +1345,31 @@ fn Parser::peek_after_linebreak_gaps(self : Parser) -> (Position, Int32)? {
     }
     if ch == '\n' {
       i += 1
-      pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1, }
+      pos = {
+        source_id: 0,
+        offset: pos.offset + 1,
+        line: pos.line + 1,
+        column: 1,
+      }
       continue
     }
     if ch == '\r' {
       i += 1
       if i < self.source.length() && self.source[i] == '\n' {
         i += 1
-        pos = { offset: pos.offset + 2, line: pos.line + 1, column: 1, }
+        pos = {
+          source_id: 0,
+          offset: pos.offset + 2,
+          line: pos.line + 1,
+          column: 1,
+        }
       } else {
-        pos = { offset: pos.offset + 1, line: pos.line + 1, column: 1, }
+        pos = {
+          source_id: 0,
+          offset: pos.offset + 1,
+          line: pos.line + 1,
+          column: 1,
+        }
       }
       continue
     }
@@ -1582,6 +1608,7 @@ fn trim_ascii_space(text : String) -> String {
 ///|
 fn advance_position_columns(pos : Position, columns : Int32) -> Position {
   {
+    source_id: pos.source_id,
     offset: pos.offset + columns,
     line: pos.line,
     column: pos.column + columns,
@@ -1591,6 +1618,7 @@ fn advance_position_columns(pos : Position, columns : Int32) -> Position {
 ///|
 fn retreat_position_columns(pos : Position, columns : Int32) -> Position {
   {
+    source_id: pos.source_id,
     offset: pos.offset - columns,
     line: pos.line,
     column: if pos.column > columns {
@@ -2264,7 +2292,7 @@ fn classify_shebang_shell(shell : String) -> ShebangShellStatus {
 ///|
 // CHECK THIS: THUNK
 fn initial_position() -> Position {
-  { offset: 0, line: 1, column: 1, }
+  { source_id: 0, offset: 0, line: 1, column: 1, }
 }
 
 ///|
@@ -2281,6 +2309,7 @@ fn has_shell_annotation(annotations : Array[Annotation]) -> Bool {
 ///|
 fn shebang_position(has_bom : Bool) -> Position {
   {
+    source_id: 0,
     offset: if has_bom {
       1
     } else {
@@ -6623,7 +6652,7 @@ pub fn parse_text_as_word(text : String) -> Word {
     let parts = parser.parse_text_parts_until_eof()
     {
       span: {
-        start: { offset: 0, line: 1, column: 1, },
+        start: { source_id: 0, offset: 0, line: 1, column: 1, },
         end: parser.position(),
       },
       source: text,
@@ -6633,8 +6662,13 @@ pub fn parse_text_as_word(text : String) -> Word {
     _ =>
       {
         span: {
-          start: { offset: 0, line: 1, column: 1, },
-          end: { offset: text.length(), line: 1, column: text.length() + 1, },
+          start: { source_id: 0, offset: 0, line: 1, column: 1, },
+          end: {
+            source_id: 0,
+            offset: text.length(),
+            line: 1,
+            column: text.length() + 1,
+          },
         },
         source: text,
         parts: if text == "" {
@@ -6694,7 +6728,10 @@ fn make_fragment_word(
   parts : Array[WordPart],
 ) -> Word {
   {
-    span: { start: { offset: 0, line: 1, column: 1, }, end: end_, },
+    span: {
+      start: { source_id: 0, offset: 0, line: 1, column: 1, },
+      end: end_,
+    },
     source,
     parts,
   }
@@ -7571,7 +7608,10 @@ fn parse_nested_script_text(
     )
   }
   let root = {
-    span: { start: { offset: 0, line: 1, column: 1, }, end: script.span.end, },
+    span: {
+      start: { source_id: 0, offset: 0, line: 1, column: 1, },
+      end: script.span.end,
+    },
     has_bom: false,
     shebang: None,
     annotations: [],
@@ -9032,11 +9072,6 @@ fn parse_error_diagnostic(err : ParseError) -> Diagnostic {
 }
 
 ///|
-fn diagnostic_as_error(diagnostic : Diagnostic) -> ParseError {
-  Message(pos=diagnostic.span.start, message=diagnostic.message)
-}
-
-///|
 fn dirname(path : String) -> String {
   let view = path[:]
   let mut slash : Int32? = None
@@ -9124,6 +9159,57 @@ fn lookup_source_text(options : ParseOptions, path : String) -> String? {
 }
 
 ///|
+fn source_identity(options : ParseOptions, path : String) -> String {
+  for pair in options.source_aliases {
+    if pair.0 == path {
+      return pair.1
+    }
+  }
+  normalize_source_path(path)
+}
+
+///|
+/// Lexically normalizes POSIX paths; the driver adds canonical symlink aliases.
+pub fn normalize_source_path(path : String) -> String {
+  let parts : Array[String] = []
+  for part in path.split("/") {
+    match part.to_owned() {
+      "" | "." => ()
+      ".." =>
+        if parts.length() > 0 && parts[parts.length() - 1] != ".." {
+          ignore(parts.pop())
+        } else if !path.has_prefix("/") {
+          parts.push("..")
+        }
+      value => parts.push(value)
+    }
+  }
+  let joined = parts.join("/")
+  if path.has_prefix("/") {
+    "/" + joined
+  } else if joined == "" {
+    "."
+  } else {
+    joined
+  }
+}
+
+///|
+fn adjust_source_path(path : String, current : String?) -> String {
+  let dir = match current {
+    Some(file) => dirname(file)
+    None => "."
+  }
+  if path == "SCRIPTDIR" {
+    dir
+  } else if path.has_prefix("SCRIPTDIR/") {
+    join_path(dir, path.view(start_offset=10).to_owned())
+  } else {
+    path
+  }
+}
+
+///|
 fn resolve_source_input(
   path : String,
   options : ParseOptions,
@@ -9132,18 +9218,52 @@ fn resolve_source_input(
   if path == "/dev/null" {
     return Some((path, ""))
   }
-  let candidates : Array[String] = [path]
-  if !path.has_prefix("/") {
-    if options.current_path is Some(current) {
-      candidates.push(join_path(dirname(current), path))
-    }
-    for base in effective_source_paths(options, annotations) {
-      candidates.push(join_path(base, path))
-    }
+  let external_sources = effective_external_sources(options, annotations)
+  // ShellCheck searches the direct path first, then CLI paths and directives.
+  // Absolute source names are also searched relative to each search directory.
+  let relative = if path.has_prefix("/") {
+    path.view(start_offset=1).to_owned()
+  } else {
+    path
+  }
+  let candidates : Array[String] = [
+    adjust_source_path(relative, options.current_path),
+  ]
+  for base in effective_source_paths(options, annotations) {
+    candidates.push(
+      join_path(adjust_source_path(base, options.current_path), relative),
+    )
+  }
+  if path.has_prefix("/") {
+    candidates.push(path)
   }
   for candidate in candidates {
+    let identity = source_identity(options, candidate)
+    let known = options.allowed_files is None ||
+      options.source_aliases.any(pair => pair.0 == candidate)
+    if !known {
+      options.requests.push({ path: candidate, external_sources, })
+      return None
+    }
+    let allowed = external_sources ||
+      (match options.allowed_files {
+        None => true
+        Some(files) => files.contains(identity)
+      })
+    if !allowed {
+      continue
+    }
+    if lookup_source_text(options, identity) is Some(contents) {
+      return Some((candidate, contents))
+    }
+    // In-memory callers may supply non-normalized labels.
     if lookup_source_text(options, candidate) is Some(contents) {
       return Some((candidate, contents))
+    }
+    if options.allowed_files is Some(_) &&
+      !options.failed_sources.any(pair => pair.0 == identity) {
+      options.requests.push({ path: candidate, external_sources, })
+      return None
     }
   }
   None
@@ -9250,7 +9370,6 @@ fn source_command_resolution_span(source : SourceCommand) -> Span {
 ///|
 fn resolve_command_sources(
   command : Command,
-  file_annotations : Array[Annotation],
   active_annotations : Array[Annotation],
   options : ParseOptions,
   stack : Array[String],
@@ -9267,20 +9386,19 @@ fn resolve_command_sources(
           None => {
             diagnostics.push({
               span: source_command_resolution_span(source),
-              severity: if effective_external_sources(
-                  options, active_annotations,
-                ) {
+              severity: if options.allowed_files is Some(_) ||
+                effective_external_sources(options, active_annotations) {
                 Info
               } else {
                 Warning
               },
               code: Some(1091),
-              message: "source file '\{path}' was not provided in parse options",
+              message: source_failure_message(path, options, active_annotations),
             })
             Source(source)
           }
           Some((resolved_path, contents)) =>
-            if stack.contains(resolved_path) {
+            if stack.contains(source_identity(options, resolved_path)) {
               diagnostics.push({
                 span: source_command_resolution_span(source),
                 severity: Info,
@@ -9288,7 +9406,7 @@ fn resolve_command_sources(
                 message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
               })
               Source({ ..source, resolved_path: Some(resolved_path), })
-            } else if stack.length() >= 100 {
+            } else if options.source_depth >= 100 {
               diagnostics.push({
                 span: source_command_resolution_span(source),
                 severity: Error,
@@ -9300,6 +9418,9 @@ fn resolve_command_sources(
               let nested_options = {
                 ..options,
                 sourced: true,
+                source_depth: options.source_depth + 1,
+                initial_annotations: [],
+                parent: Some((command.span.start.source_id, command.span)),
                 current_path: Some(resolved_path),
                 source_paths: effective_source_paths(
                   options, active_annotations,
@@ -9312,7 +9433,7 @@ fn resolve_command_sources(
               for item in stack {
                 next_stack.push(item)
               }
-              next_stack.push(resolved_path)
+              next_stack.push(source_identity(options, resolved_path))
               let report = parse_script_with_options_internal(
                 contents, nested_options, next_stack,
               )
@@ -9358,7 +9479,6 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_pipeline_sources(
           clause.body,
-          file_annotations,
           active_annotations,
           options,
           stack,
@@ -9368,13 +9488,13 @@ fn resolve_command_sources(
     Subshell(script) =>
       Subshell(
         resolve_script_sources(
-          script, file_annotations, options, stack, diagnostics,
+          script, active_annotations, options, stack, diagnostics,
         ),
       )
     BraceGroup(script) =>
       BraceGroup(
         resolve_script_sources(
-          script, file_annotations, options, stack, diagnostics,
+          script, active_annotations, options, stack, diagnostics,
         ),
       )
     If(clause) => {
@@ -9383,14 +9503,14 @@ fn resolve_command_sources(
         arms.push({
           condition: resolve_script_sources(
             arm.condition,
-            file_annotations,
+            active_annotations,
             options,
             stack,
             diagnostics,
           ),
           body: resolve_script_sources(
             arm.body,
-            file_annotations,
+            active_annotations,
             options,
             stack,
             diagnostics,
@@ -9400,7 +9520,7 @@ fn resolve_command_sources(
       let else_body = if clause.else_body is Some(script) {
         Some(
           resolve_script_sources(
-            script, file_annotations, options, stack, diagnostics,
+            script, active_annotations, options, stack, diagnostics,
           ),
         )
       } else {
@@ -9412,14 +9532,14 @@ fn resolve_command_sources(
       While({
         condition: resolve_script_sources(
           loop_.condition,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
         ),
         body: resolve_script_sources(
           loop_.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9429,14 +9549,14 @@ fn resolve_command_sources(
       Until({
         condition: resolve_script_sources(
           loop_.condition,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
         ),
         body: resolve_script_sources(
           loop_.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9447,7 +9567,7 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_script_sources(
           clause.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9458,7 +9578,7 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_script_sources(
           clause.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9469,7 +9589,7 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_script_sources(
           clause.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9482,7 +9602,7 @@ fn resolve_command_sources(
           ..item,
           body: resolve_script_sources(
             item.body,
-            file_annotations,
+            active_annotations,
             options,
             stack,
             diagnostics,
@@ -9498,7 +9618,6 @@ fn resolve_command_sources(
         ..function_,
         body: resolve_command_sources(
           function_.body,
-          file_annotations,
           active_annotations,
           options,
           stack,
@@ -9510,7 +9629,6 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_command_sources(
           clause.body,
-          file_annotations,
           active_annotations,
           options,
           stack,
@@ -9522,7 +9640,7 @@ fn resolve_command_sources(
         ..clause,
         body: resolve_script_sources(
           clause.body,
-          file_annotations,
+          active_annotations,
           options,
           stack,
           diagnostics,
@@ -9535,7 +9653,6 @@ fn resolve_command_sources(
 ///|
 fn resolve_pipeline_sources(
   pipeline : Pipeline,
-  file_annotations : Array[Annotation],
   active_annotations : Array[Annotation],
   options : ParseOptions,
   stack : Array[String],
@@ -9547,7 +9664,6 @@ fn resolve_pipeline_sources(
       ..segment,
       command: resolve_command_sources(
         segment.command,
-        file_annotations,
         active_annotations,
         options,
         stack,
@@ -9575,7 +9691,6 @@ fn resolve_and_or_sources(
         pair.0,
         resolve_pipeline_sources(
           pair.1,
-          file_annotations,
           active_annotations,
           options,
           stack,
@@ -9588,7 +9703,6 @@ fn resolve_and_or_sources(
     ..and_or,
     head: resolve_pipeline_sources(
       and_or.head,
-      file_annotations,
       active_annotations,
       options,
       stack,
@@ -10503,6 +10617,13 @@ fn parse_script_with_options_internal(
   options : ParseOptions,
   stack : Array[String],
 ) -> ParseReport {
+  let source_id = options.sources.length()
+  options.sources.push({
+    filename: normalize_source_path(options.current_path.unwrap_or("<input>")),
+    source,
+    parent: options.parent,
+  })
+  let base = Position::new(0, 1, 1, source_id~)
   let parser = Parser::new(source.view(), options, stack)
   try {
     let (has_bom, shebang, annotations) = parser.parse_leading_metadata()
@@ -10518,14 +10639,33 @@ fn parse_script_with_options_internal(
         code: None,
         message: "unexpected trailing input",
       })
-      return { script: None, diagnostics: parser.diagnostics, }
+      return {
+        script: None,
+        diagnostics: parser.diagnostics,
+        requests: options.requests,
+        sources: options.sources,
+      }
     }
     let root = {
-      span: { start: { offset: 0, line: 1, column: 1, }, end: script.span.end, },
+      span: {
+        start: { source_id: 0, offset: 0, line: 1, column: 1, },
+        end: script.span.end,
+      },
       has_bom,
       shebang,
       annotations,
       items: script.items,
+    }
+    let root = translate_script(
+      base,
+      merge_script_annotations(root, options.initial_annotations),
+    )
+    for i = 0; i < parser.diagnostics.length(); i = i + 1 {
+      let diagnostic = parser.diagnostics[i]
+      parser.diagnostics[i] = {
+        ..diagnostic,
+        span: translate_span(base, diagnostic.span),
+      }
     }
     let resolved = resolve_script_sources(
       root,
@@ -10535,23 +10675,43 @@ fn parse_script_with_options_internal(
       parser.diagnostics,
     )
     {
-      script: Some(normalize_array_indices(resolved)),
+      script: Some({ ..resolved, annotations, }),
       diagnostics: parser.diagnostics,
+      requests: options.requests,
+      sources: options.sources,
     }
   } catch {
     err => {
+      for i = 0; i < parser.diagnostics.length(); i = i + 1 {
+        let diagnostic = parser.diagnostics[i]
+        parser.diagnostics[i] = {
+          ..diagnostic,
+          span: translate_span(base, diagnostic.span),
+        }
+      }
+      let err = translate_parse_error(base, err)
       match err {
         Message(pos~, message~) => {
           for diagnostic in parser.diagnostics {
             if diagnostic.span.start == pos && diagnostic.message == message {
-              return { script: None, diagnostics: parser.diagnostics, }
+              return {
+                script: None,
+                diagnostics: parser.diagnostics,
+                requests: options.requests,
+                sources: options.sources,
+              }
             }
           }
           parser.diagnostics.push(parse_error_diagnostic(err))
         }
         _ => parser.diagnostics.push(parse_error_diagnostic(err))
       }
-      { script: None, diagnostics: parser.diagnostics, }
+      {
+        script: None,
+        diagnostics: parser.diagnostics,
+        requests: options.requests,
+        sources: options.sources,
+      }
     }
   }
 }
@@ -10576,7 +10736,7 @@ pub fn merge_script_annotations(
   if annotations.length() == 0 {
     return script
   }
-  { ..script, annotations: merge_annotations(script.annotations, annotations), }
+  { ..script, annotations: merge_annotations(annotations, script.annotations), }
 }
 
 ///|
@@ -10587,11 +10747,17 @@ pub fn parse_script_with_options(
   source : String,
   options : ParseOptions,
 ) -> ParseReport {
+  let options = { ..options, requests: [], sources: [], }
   let stack : Array[String] = []
   if options.current_path is Some(path) {
-    stack.push(path)
+    stack.push(source_identity(options, path))
   }
-  parse_script_with_options_internal(source, options, stack)
+  let report = parse_script_with_options_internal(source, options, stack)
+  if report.requests.is_empty() {
+    { ..report, script: report.script.map(normalize_array_indices), }
+  } else {
+    report
+  }
 }
 
 ///|
@@ -10615,7 +10781,7 @@ pub fn parse_config_report(source : String) -> ConfigParseReport {
       line += 1
       continue
     }
-    let position : Position = { offset, line, column: 1, }
+    let position : Position = { source_id: 0, offset, line, column: 1, }
     let (annotations, diagnostics) = try {
       if is_shellcheck_annotation_comment(text) {
         parse_annotation_line(text, position, options)
@@ -10638,26 +10804,6 @@ pub fn parse_config_report(source : String) -> ConfigParseReport {
 }
 
 ///|
-/// Parses shell source and returns the first fatal parse error if any were
-/// produced.
-pub fn parse_script(source : String) -> Result[Script, ParseError] {
-  let report = parse_script_report(source)
-  for diagnostic in report.diagnostics {
-    match diagnostic.severity {
-      Error => return Err(diagnostic_as_error(diagnostic))
-      _ => ()
-    }
-  }
-  if report.script is Some(script) {
-    Ok(script)
-  } else if report.diagnostics.get(0) is Some(diagnostic) {
-    Err(diagnostic_as_error(diagnostic))
-  } else {
-    Err(Message(pos={ offset: 0, line: 1, column: 1, }, message="parse failed"))
-  }
-}
-
-///|
 fn config_line_is_ignorable(line : String) -> Bool {
   let view = line[:]
   let mut start = 0
@@ -10670,4 +10816,29 @@ fn config_line_is_ignorable(line : String) -> Bool {
   }
   view[start] == '#' &&
   !is_shellcheck_annotation_comment(line.view(start_offset=start).to_owned())
+}
+
+///|
+fn source_failure_message(
+  path : String,
+  options : ParseOptions,
+  annotations : Array[Annotation],
+) -> String {
+  if options.allowed_files is None {
+    return "source file '\{path}' was not provided in parse options"
+  }
+  let identity = source_identity(options, path)
+  if effective_external_sources(options, annotations) ||
+    options.allowed_files.unwrap().contains(identity) {
+    for pair in options.failed_sources {
+      if pair.0 == identity {
+        return "Not following: " + pair.1
+      }
+    }
+  }
+  if annotations.any(annotation => annotation is ExternalSources(false)) {
+    "Not following: \{path} was not specified as input, and external files were disabled via directive."
+  } else {
+    "Not following: \{path} was not specified as input (see shellcheck -x)."
+  }
 }

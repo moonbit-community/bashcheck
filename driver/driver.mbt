@@ -87,6 +87,24 @@ async fn collect_results(
   stop_after_first_issue : Bool,
 ) -> Result[Array[@checker.CheckResult], String] {
   let results : Array[@checker.CheckResult] = []
+  let allowed : Array[String] = []
+  let aliases = spec.source_aliases.copy()
+  for file in files {
+    if file != "-" {
+      let canonical = canonical_path(file)
+      allowed.push(canonical)
+      aliases.push((file, canonical))
+    }
+  }
+  let source_files = spec.source_files.copy()
+  let failed_sources = spec.failed_sources.copy()
+  let spec = {
+    ..spec,
+    allowed_files: Some(allowed),
+    source_aliases: aliases,
+    source_files,
+    failed_sources,
+  }
   for file in files {
     let result = check_cli_file(file, spec) catch {
       // Surface IO failures using the user-facing file label so stdin reads
@@ -114,9 +132,42 @@ async fn check_cli_file(
   // render the more conventional `<stdin>` filename.
   let actual_path = if file == "-" { "/dev/stdin" } else { file }
   let filename = if file == "-" { Some("<stdin>") } else { Some(file) }
-  let source = @fs.read_file(actual_path).text()
+  let canonical = canonical_path(actual_path)
+  let source = if lookup_config_file(spec.source_files, canonical) is Some(text) {
+    text
+  } else {
+    let text = @fs.read_file(actual_path).text()
+    spec.source_files.push((canonical, text))
+    text
+  }
   let loaded_spec = preload_config(spec.with_filename(filename))
-  @checker.check_script(source, spec=loaded_spec)
+  while true {
+    let report = @checker.prepare_script(source, spec=loaded_spec)
+    if report.requests.is_empty() {
+      return @checker.check_prepared_script(source, report, spec=loaded_spec)
+    }
+    for request in report.requests {
+      let identity = canonical_path(request.path)
+      if !loaded_spec.source_aliases.any(pair => pair.0 == request.path) {
+        loaded_spec.source_aliases.push((request.path, identity))
+      }
+      let allowed = request.external_sources ||
+        loaded_spec.allowed_files.unwrap().contains(identity)
+      if allowed &&
+        lookup_config_file(loaded_spec.source_files, identity) is None &&
+        lookup_config_file(loaded_spec.failed_sources, identity) is None {
+        let text = @fs.read_file(request.path).text() catch {
+          err => {
+            loaded_spec.failed_sources.push((identity, err.to_string()))
+            continue
+          }
+        }
+        loaded_spec.source_files.push((identity, text))
+      }
+    }
+  } nobreak {
+    abort("source loading loop terminated")
+  }
 }
 
 ///|
@@ -337,4 +388,11 @@ fn cli_usage_text() -> String {
     "  -x                  --external-sources         Allow 'source' outside of FILES",
     "                      --help                     Show this usage summary and exit",
   ].join("\n")
+}
+
+///|
+async fn canonical_path(path : String) -> String {
+  @fs.realpath(path) catch {
+    _ => @parser.normalize_source_path(path)
+  }
 }

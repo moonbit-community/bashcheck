@@ -6,7 +6,7 @@ fn[A] checks_fail(message : String) -> A {
 
 ///|
 fn parse_checks_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(error) => checks_fail(Show::to_string(error))
   }
@@ -14,7 +14,7 @@ fn parse_checks_ok(source : String) -> @parser.Script {
 
 ///|
 fn check_source(source : String) -> Array[@checks.CheckDiagnostic] {
-  @checks.check_script(parse_checks_ok(source))
+  test_check_parsed_script(parse_checks_ok(source))
 }
 
 ///|

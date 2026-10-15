@@ -1,47 +1,6 @@
 ///|
-// CHECK THIS: THUNK
-fn control_flow_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2154,
-      severity: Warning,
-      category: "control-flow",
-      summary: "Referenced variable may not be assigned on all paths.",
-    },
-    {
-      code: 2178,
-      severity: Warning,
-      category: "control-flow",
-      summary: "Variable was used as an array but is now assigned a string.",
-    },
-    {
-      code: 2179,
-      severity: Warning,
-      category: "control-flow",
-      summary: "Use array+=(\"item\") to append items to an array.",
-    },
-    {
-      code: 2317,
-      severity: Info,
-      category: "control-flow",
-      summary: "Command appears to be unreachable.",
-    },
-    {
-      code: 2329,
-      severity: Info,
-      category: "control-flow",
-      summary: "This function is never invoked.",
-    },
-  ]
-}
-
-///|
 fn control_flow_suite() -> ToggleableCheckSuiteRegistration {
-  {
-    name: "control-flow",
-    descriptions: control_flow_descriptions(),
-    run: run_control_flow_checks,
-  }
+  { name: "control-flow", run: run_control_flow_checks, }
 }
 
 ///|

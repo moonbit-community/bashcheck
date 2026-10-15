@@ -1,25 +1,4 @@
 ///|
-fn append_analytics_batch_s_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_s_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_s_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2336,
-      severity: Warning,
-      category: "analytics",
-      summary: "cp -r behavior is implementation-defined.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_s_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

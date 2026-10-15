@@ -1,68 +1,4 @@
 ///|
-fn append_analytics_batch_c_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_c_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-// CHECK THIS: THUNK
-fn analytics_batch_c_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2000,
-      severity: Style,
-      category: "analytics",
-      summary: "Prefer ${#var} over echo \"$var\" | wc -c.",
-    },
-    {
-      code: 2087,
-      severity: Warning,
-      category: "analytics",
-      summary: "Quote ssh heredoc delimiters when the body expands locally.",
-    },
-    {
-      code: 2181,
-      severity: Style,
-      category: "analytics",
-      summary: "Check command success directly instead of reading $?.",
-    },
-    {
-      code: 2128,
-      severity: Warning,
-      category: "analytics",
-      summary: "Expanding an array without an index only yields the first element.",
-    },
-    {
-      code: 2218,
-      severity: Error,
-      category: "analytics",
-      summary: "Functions should be defined before they are invoked.",
-    },
-    {
-      code: 2247,
-      severity: Warning,
-      category: "analytics",
-      summary: "Flip leading $ and \" if this should be a quoted substitution.",
-    },
-    {
-      code: 2319,
-      severity: Warning,
-      category: "analytics",
-      summary: "Using $? after a test can accidentally read the test status instead.",
-    },
-    {
-      code: 2320,
-      severity: Warning,
-      category: "analytics",
-      summary: "Using $? after echo/printf can accidentally read the print status instead.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_c_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -469,6 +405,7 @@ fn here_doc_delimiter_span(
     end_.offset - width,
     end_.line,
     end_.column - width,
+    source_id=end_.source_id,
   )
   @parser.Span::new(start, end_)
 }
@@ -710,11 +647,13 @@ fn word_subspan(word : @parser.Word, needle : String) -> @parser.Span? {
       word.span.start.offset + index,
       word.span.start.line,
       word.span.start.column + index,
+      source_id=word.span.start.source_id,
     )
     let end_ = @parser.Position::new(
       start.offset + needle.length(),
       start.line,
       start.column + needle.length(),
+      source_id=start.source_id,
     )
     Some(@parser.Span::new(start, end_))
   } else {

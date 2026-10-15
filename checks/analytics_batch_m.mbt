@@ -1,67 +1,4 @@
 ///|
-fn append_analytics_batch_m_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_m_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_m_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2054,
-      severity: Warning,
-      category: "analytics",
-      summary: "Use spaces, not commas, to separate array elements.",
-    },
-    {
-      code: 2190,
-      severity: Warning,
-      category: "analytics",
-      summary: "Elements in associative arrays need explicit [index]=value syntax.",
-    },
-    {
-      code: 2191,
-      severity: Warning,
-      category: "analytics",
-      summary: "This literal = looks like a mistaken array index assignment.",
-    },
-    {
-      code: 2192,
-      severity: Warning,
-      category: "analytics",
-      summary: "This indexed array element has no value.",
-    },
-    {
-      code: 2194,
-      severity: Warning,
-      category: "analytics",
-      summary: "This word is constant. Did you forget the $ on a variable?",
-    },
-    {
-      code: 2195,
-      severity: Warning,
-      category: "analytics",
-      summary: "This pattern will never match the case statement's word. Double check them.",
-    },
-    {
-      code: 2221,
-      severity: Warning,
-      category: "analytics",
-      summary: "This pattern always overrides a later one on line N.",
-    },
-    {
-      code: 2222,
-      severity: Warning,
-      category: "analytics",
-      summary: "This pattern never matches because of a previous pattern on line N.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_m_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,
@@ -605,6 +542,7 @@ fn m_position_offset(
     position.offset + offset,
     position.line,
     position.column + offset,
+    source_id=position.source_id,
   )
 }
 

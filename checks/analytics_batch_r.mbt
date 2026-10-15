@@ -1,25 +1,4 @@
 ///|
-fn append_analytics_batch_r_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_r_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_r_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2331,
-      severity: Style,
-      category: "analytics",
-      summary: "For file existence, prefer standard -e over legacy -a.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_r_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

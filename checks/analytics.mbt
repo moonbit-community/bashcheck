@@ -1,180 +1,6 @@
 ///|
-fn analytics_descriptions() -> Array[CheckDescription] {
-  let descriptions : Array[CheckDescription] = [
-    {
-      code: 2036,
-      severity: Warning,
-      category: "analytics",
-      summary: "Use $(...) if you meant to assign pipeline output.",
-    },
-    {
-      code: 2037,
-      severity: Error,
-      category: "analytics",
-      summary: "Use $(...) if you meant to assign command output.",
-    },
-    {
-      code: 2006,
-      severity: Style,
-      category: "analytics",
-      summary: "Use $(...) notation instead of legacy backticks `...`.",
-    },
-    {
-      code: 2041,
-      severity: Warning,
-      category: "analytics",
-      summary: "Single-quoted loop values are literal strings, not commands.",
-    },
-    {
-      code: 2042,
-      severity: Warning,
-      category: "analytics",
-      summary: "Use spaces, not commas, to separate loop elements.",
-    },
-    {
-      code: 2043,
-      severity: Warning,
-      category: "analytics",
-      summary: "A for-loop value that never expands will only run once.",
-    },
-    {
-      code: 2044,
-      severity: Warning,
-      category: "analytics",
-      summary: "For loops over find output are fragile.",
-    },
-    {
-      code: 2045,
-      severity: Error,
-      category: "analytics",
-      summary: "Iterating over ls output is fragile.",
-    },
-    {
-      code: 2046,
-      severity: Warning,
-      category: "analytics",
-      summary: "Quote command substitutions to prevent word splitting.",
-    },
-    {
-      code: 2048,
-      severity: Warning,
-      category: "analytics",
-      summary: "Prefer quoted $@ or ${array[@]} over unquoted star expansions.",
-    },
-    {
-      code: 2066,
-      severity: Error,
-      category: "analytics",
-      summary: "Quoted loop expansions will not split and only run once.",
-    },
-    {
-      code: 2068,
-      severity: Error,
-      category: "analytics",
-      summary: "Double quote array expansions to avoid re-splitting elements.",
-    },
-    {
-      code: 2076,
-      severity: Warning,
-      category: "analytics",
-      summary: "Unquote =~ regex operands so they behave as regexes.",
-    },
-    {
-      code: 2097,
-      severity: Warning,
-      category: "analytics",
-      summary: "Prefix assignments are only visible to the invoked command.",
-    },
-    {
-      code: 2098,
-      severity: Warning,
-      category: "analytics",
-      summary: "This expansion will not see a prefix assignment from the same command.",
-    },
-    {
-      code: 2166,
-      severity: Warning,
-      category: "analytics",
-      summary: "Prefer separate [ ] tests over -a / -o in single brackets.",
-    },
-    {
-      code: 2204,
-      severity: Error,
-      category: "analytics",
-      summary: "(..) is a subshell, not a test expression.",
-    },
-    {
-      code: 2205,
-      severity: Warning,
-      category: "analytics",
-      summary: "(..) is a subshell, not a binary test expression.",
-    },
-    {
-      code: 2206,
-      severity: Warning,
-      category: "analytics",
-      summary: "Quote array elements to avoid split/glob behavior.",
-    },
-    {
-      code: 2207,
-      severity: Warning,
-      category: "analytics",
-      summary: "Prefer mapfile/read -a over splitting command output into arrays.",
-    },
-    {
-      code: 2231,
-      severity: Info,
-      category: "analytics",
-      summary: "Quote expansions in for-loop globs.",
-    },
-    {
-      code: 2269,
-      severity: Info,
-      category: "analytics",
-      summary: "Self-assignments do nothing.",
-    },
-    {
-      code: 2074,
-      severity: Error,
-      category: "analytics",
-      summary: "Use [[ .. ]] rather than [ .. ] with =~.",
-    },
-    {
-      code: 2075,
-      severity: Error,
-      category: "analytics",
-      summary: "Escaped < and > are invalid in [[ .. ]].",
-    },
-  ]
-  append_analytics_batch_a_descriptions(descriptions)
-  append_analytics_batch_b_descriptions(descriptions)
-  append_analytics_batch_c_descriptions(descriptions)
-  append_analytics_batch_d_descriptions(descriptions)
-  append_analytics_batch_e_descriptions(descriptions)
-  append_analytics_batch_f_descriptions(descriptions)
-  append_analytics_batch_g_descriptions(descriptions)
-  append_analytics_batch_h_descriptions(descriptions)
-  append_analytics_batch_i_descriptions(descriptions)
-  append_analytics_batch_j_descriptions(descriptions)
-  append_analytics_batch_k_descriptions(descriptions)
-  append_analytics_batch_l_descriptions(descriptions)
-  append_analytics_batch_m_descriptions(descriptions)
-  append_analytics_batch_n_descriptions(descriptions)
-  append_analytics_batch_o_descriptions(descriptions)
-  append_analytics_batch_p_descriptions(descriptions)
-  append_analytics_batch_q_descriptions(descriptions)
-  append_analytics_batch_r_descriptions(descriptions)
-  append_analytics_batch_s_descriptions(descriptions)
-  append_analytics_batch_t_descriptions(descriptions)
-  append_analytics_batch_u_descriptions(descriptions)
-  append_analytics_batch_v_descriptions(descriptions)
-  append_analytics_batch_w_descriptions(descriptions)
-  descriptions
-}
-
-///|
 fn analytics_suite() -> CheckSuiteRegistration {
-  { descriptions: analytics_descriptions(), run: run_analytics_checks, }
+  { run: run_analytics_checks, }
 }
 
 ///|
@@ -188,12 +14,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         example: "cat foo | grep bar",
         fix: "grep bar foo",
       },
-      description: {
-        code: 2002,
-        severity: Style,
-        category: "analytics",
-        summary: "Useless cat. Consider redirecting or passing the file directly.",
-      },
       run: run_useless_use_of_cat_optional_check,
     },
     {
@@ -202,12 +22,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Suggest adding a default case in `case` statements",
         example: "case $? in 0) echo 'Success';; esac",
         fix: "case $? in 0) echo 'Success';; *) echo 'Fail' ;; esac",
-      },
-      description: {
-        code: 2249,
-        severity: Info,
-        category: "analytics",
-        summary: "Consider adding a default *) case.",
       },
       run: run_add_default_case_optional_check,
     },
@@ -218,12 +32,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         example: "var=hello; echo $var",
         fix: "var=hello; echo \"$var\"",
       },
-      description: {
-        code: 2248,
-        severity: Style,
-        category: "analytics",
-        summary: "Prefer double quoting even when variables look clean.",
-      },
       run: run_quote_safe_variables_optional_check,
     },
     {
@@ -232,12 +40,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Suggest explicitly using -n in `[ $var ]`",
         example: "[ \"$var\" ]",
         fix: "[ -n \"$var\" ]",
-      },
-      description: {
-        code: 2244,
-        severity: Style,
-        category: "analytics",
-        summary: "Prefer explicit -n checks for string-like conditions.",
       },
       run: run_avoid_nullary_conditions_optional_check,
     },
@@ -248,12 +50,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         example: "[ ! \"$var\" -eq 1 ]",
         fix: "[ \"$var\" -ne 1 ]",
       },
-      description: {
-        code: 2335,
-        severity: Style,
-        category: "analytics",
-        summary: "Prefer direct condition operators over extra negation.",
-      },
       run: run_avoid_negated_conditions_optional_check,
     },
     {
@@ -262,12 +58,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Suggest putting braces around all variable references",
         example: "var=hello; echo $var",
         fix: "var=hello; echo ${var}",
-      },
-      description: {
-        code: 2250,
-        severity: Style,
-        category: "analytics",
-        summary: "Prefer ${var} over bare $var references.",
       },
       run: run_require_variable_braces_optional_check,
     },
@@ -278,12 +68,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         example: "echo $VAR",
         fix: "VAR=hello; echo $VAR",
       },
-      description: {
-        code: 2154,
-        severity: Warning,
-        category: "control-flow",
-        summary: "Referenced uppercase variable may not be assigned.",
-      },
       run: run_unassigned_uppercase_optional_check,
     },
     {
@@ -292,12 +76,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Require [[ and warn about [ in Bash/Ksh",
         example: "[ -e /etc/issue ]",
         fix: "[[ -e /etc/issue ]]",
-      },
-      description: {
-        code: 2292,
-        severity: Style,
-        category: "analytics",
-        summary: "Prefer [[ .. ]] over [ .. ] in Bash/Ksh/Busybox.",
       },
       run: run_require_double_brackets_optional_check,
     },
@@ -308,12 +86,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         example: "set -e; func() { cp *.txt ~/backup; rm *.txt; }; func && echo ok",
         fix: "set -e; func() { cp *.txt ~/backup; rm *.txt; }; func; echo ok",
       },
-      description: {
-        code: 2310,
-        severity: Info,
-        category: "analytics",
-        summary: "Warn when set -e is suppressed for function invocations.",
-      },
       run: run_set_e_suppressed_optional_check,
     },
     {
@@ -322,12 +94,6 @@ fn analytics_optional_registrations() -> Array[OptionalCheckRegistration] {
         desc: "Check for additional cases where exit codes are masked",
         example: "rm -r \"$(get_chroot_dir)/home\"",
         fix: "set -e; dir=\"$(get_chroot_dir)\"; rm -r \"$dir/home\"",
-      },
-      description: {
-        code: 2312,
-        severity: Info,
-        category: "analytics",
-        summary: "Warn when command failures get masked by shell contexts.",
       },
       run: run_extra_masked_returns_optional_check,
     },
@@ -557,7 +323,7 @@ fn analytics_position_at_source_offset(
     }
     i += 1
   }
-  @parser.Position::new(offset, line, column)
+  @parser.Position::new(offset, line, column, source_id=start.source_id)
 }
 
 ///|

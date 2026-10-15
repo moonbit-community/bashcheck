@@ -1,31 +1,4 @@
 ///|
-fn append_analytics_batch_n_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_n_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_n_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2314,
-      severity: Error,
-      category: "analytics",
-      summary: "Bats ! commands do not fail the test unless they are wrapped with run.",
-    },
-    {
-      code: 2315,
-      severity: Style,
-      category: "analytics",
-      summary: "Bats ! conditions will stop failing once they are no longer the last command.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_n_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

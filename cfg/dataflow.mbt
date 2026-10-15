@@ -1646,18 +1646,6 @@ pub fn incoming_state_of_node(
 }
 
 ///|
-/// Returns the abstract state flowing out of one CFG node.
-pub fn outgoing_state_of_node(
-  analysis : CfgAnalysis,
-  node : CfgNodeId,
-) -> ProgramState? {
-  match node_state_at(analysis, node) {
-    Some((_, outgoing)) => Some(outgoing)
-    None => None
-  }
-}
-
-///|
 /// Returns the abstract state flowing into the CFG range for one AST id.
 pub fn incoming_state_of_ast(
   analysis : CfgAnalysis,
@@ -1665,18 +1653,6 @@ pub fn incoming_state_of_ast(
 ) -> ProgramState? {
   match id_to_range(analysis.cfg, id) {
     Some((start, _)) => incoming_state_of_node(analysis, start)
-    None => None
-  }
-}
-
-///|
-/// Returns the abstract state flowing out of the CFG range for one AST id.
-pub fn outgoing_state_of_ast(
-  analysis : CfgAnalysis,
-  id : CfgAstId,
-) -> ProgramState? {
-  match id_to_range(analysis.cfg, id) {
-    Some((_, end_)) => outgoing_state_of_node(analysis, end_)
     None => None
   }
 }

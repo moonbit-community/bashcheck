@@ -25,29 +25,6 @@ pub extend ShellDialect with Show::{to_string, output}
 pub extend ShellDialect with Debug::{to_repr}
 
 ///|
-/// Whether a script is analyzed as an executed file or as a sourced file.
-#warnings("-deprecated_syntax")
-pub(all) enum ExecutionMode {
-  Executed
-  Sourced
-} derive(Eq, Show, Debug)
-
-///|
-#deprecated
-#doc(hidden)
-pub extend ExecutionMode with Eq::{not_equal, equal}
-
-///|
-#deprecated
-#doc(hidden)
-pub extend ExecutionMode with Show::{to_string, output}
-
-///|
-#deprecated
-#doc(hidden)
-pub extend ExecutionMode with Debug::{to_repr}
-
-///|
 priv struct ShellResolution {
   dialect : ShellDialect
   suppresses_unknown_warning : Bool
@@ -60,25 +37,13 @@ priv struct FilenameShellHint {
 }
 
 ///|
-/// Determines the effective shell dialect from overrides, annotations,
-/// shebangs, and filename hints.
-pub fn determine_shell(
-  script : @parser.Script,
-  shell_override? : ShellDialect,
-  filename? : String,
-) -> ShellDialect {
-  determine_shell_with_fallback(script, shell_override, filename, None)
-}
-
-///|
 /// Determines the effective shell dialect with an optional explicit fallback.
-pub fn determine_shell_with_fallback(
+pub fn determine_shell(
   script : @parser.Script,
   shell_override : ShellDialect?,
   filename : String?,
-  fallback_shell : ShellDialect?,
 ) -> ShellDialect {
-  resolve_shell(script, shell_override, filename, fallback_shell).dialect
+  resolve_shell(script, shell_override, filename).dialect
 }
 
 ///|
@@ -88,9 +53,8 @@ pub fn suppresses_unknown_shell_warning(
   script : @parser.Script,
   shell_override : ShellDialect?,
   filename : String?,
-  fallback_shell : ShellDialect?,
 ) -> Bool {
-  resolve_shell(script, shell_override, filename, fallback_shell).suppresses_unknown_warning
+  resolve_shell(script, shell_override, filename).suppresses_unknown_warning
 }
 
 ///|
@@ -114,16 +78,6 @@ pub fn shell_from_annotation(
     }
   }
   None
-}
-
-///|
-/// Infers a shell dialect from a filename convention.
-pub fn shell_from_filename(filename : String) -> ShellDialect? {
-  if shell_hint_from_filename(filename) is Some(hint) {
-    Some(hint.dialect)
-  } else {
-    None
-  }
 }
 
 ///|
@@ -187,26 +141,10 @@ pub fn has_execfail(script : @parser.Script, dialect : ShellDialect) -> Bool {
 }
 
 ///|
-/// Chooses the effective execution mode from an override and a `sourced` flag.
-pub fn effective_execution_mode(
-  mode_override? : ExecutionMode,
-  sourced~ : Bool = false,
-) -> ExecutionMode {
-  if mode_override is Some(mode) {
-    mode
-  } else if sourced {
-    Sourced
-  } else {
-    Executed
-  }
-}
-
-///|
 fn resolve_shell(
   script : @parser.Script,
   shell_override : ShellDialect?,
   filename : String?,
-  fallback_shell : ShellDialect?,
 ) -> ShellResolution {
   if shell_override is Some(dialect) {
     { dialect, suppresses_unknown_warning: true, }
@@ -216,18 +154,15 @@ fn resolve_shell(
     if shell_from_shebang(shebang) is Some(dialect) {
       { dialect, suppresses_unknown_warning: true, }
     } else {
-      resolve_fallback_shell(filename, fallback_shell)
+      resolve_fallback_shell(filename)
     }
   } else {
-    resolve_fallback_shell(filename, fallback_shell)
+    resolve_fallback_shell(filename)
   }
 }
 
 ///|
-fn resolve_fallback_shell(
-  filename : String?,
-  fallback_shell : ShellDialect?,
-) -> ShellResolution {
+fn resolve_fallback_shell(filename : String?) -> ShellResolution {
   if filename is Some(filename) {
     if shell_hint_from_filename(filename) is Some(hint) {
       {
@@ -235,20 +170,16 @@ fn resolve_fallback_shell(
         suppresses_unknown_warning: hint.suppresses_unknown_warning,
       }
     } else {
-      default_shell_resolution(fallback_shell)
+      default_shell_resolution()
     }
   } else {
-    default_shell_resolution(fallback_shell)
+    default_shell_resolution()
   }
 }
 
 ///|
-fn default_shell_resolution(fallback_shell : ShellDialect?) -> ShellResolution {
-  if fallback_shell is Some(dialect) {
-    { dialect, suppresses_unknown_warning: true, }
-  } else {
-    { dialect: Bash, suppresses_unknown_warning: false, }
-  }
+fn default_shell_resolution() -> ShellResolution {
+  { dialect: Bash, suppresses_unknown_warning: false, }
 }
 
 ///|

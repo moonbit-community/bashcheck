@@ -7,8 +7,6 @@ import {
 }
 
 // Values
-pub fn all_redirections(@parser.Command) -> Array[@parser.Redirection]
-
 pub fn arithmetic_binary_test_operators() -> Array[String]
 
 pub fn array_variable_names() -> Array[String]
@@ -27,17 +25,13 @@ pub fn command_basename(@parser.Command) -> String?
 
 pub fn command_name(@parser.Command) -> String?
 
-pub fn command_of(IndexedScript, NodeId) -> @parser.Command?
-
 pub fn command_words(@parser.Command) -> Array[@parser.Word]
 
 pub fn common_command_names() -> Array[String]
 
 pub fn declaring_command_names() -> Array[String]
 
-pub fn determine_shell(@parser.Script, shell_override? : ShellDialect, filename? : String) -> ShellDialect
-
-pub fn determine_shell_with_fallback(@parser.Script, ShellDialect?, String?, ShellDialect?) -> ShellDialect
+pub fn determine_shell(@parser.Script, ShellDialect?, String?) -> ShellDialect
 
 pub fn effective_command_arguments(@parser.Command) -> Array[@parser.Word]
 
@@ -45,13 +39,7 @@ pub fn effective_command_name(@parser.Command) -> String?
 
 pub fn effective_command_words(@parser.Command) -> Array[@parser.Word]
 
-pub fn effective_execution_mode(mode_override? : ExecutionMode, sourced? : Bool) -> ExecutionMode
-
-pub fn effective_span_of(IndexedScript, NodeId) -> @parser.Span?
-
 pub fn enclosing_span_of(IndexedScript, NodeId) -> @parser.Span?
-
-pub fn extract_disable_directives(@parser.Script) -> Array[String]
 
 pub fn extract_enable_directives(@parser.Script) -> Array[String]
 
@@ -71,16 +59,6 @@ pub fn has_set_e(@parser.Script) -> Bool
 
 pub fn internal_variable_names() -> Array[String]
 
-pub fn is_arithmetic_binary_test_operator(String) -> Bool
-
-pub fn is_array_variable(String) -> Bool
-
-pub fn is_assignment_only(@parser.SimpleCommand) -> Bool
-
-pub fn is_binary_test_operator(String) -> Bool
-
-pub fn is_common_command(String) -> Bool
-
 pub fn is_constant_word(@parser.Word) -> Bool
 
 pub fn is_declaring_command(String) -> Bool
@@ -89,17 +67,11 @@ pub fn is_glob_word(@parser.Word) -> Bool
 
 pub fn is_internal_variable(String) -> Bool
 
-pub fn is_non_reading_command(String) -> Bool
-
 pub fn is_special_integer_variable(String) -> Bool
 
 pub fn is_special_variable(String) -> Bool
 
 pub fn is_special_variable_without_spaces(String) -> Bool
-
-pub fn is_unary_test_operator(String) -> Bool
-
-pub fn is_unbraced_variable(String) -> Bool
 
 pub fn is_unquoted_flag(@parser.Word) -> Bool
 
@@ -107,23 +79,11 @@ pub fn is_variable_without_spaces(String) -> Bool
 
 pub fn leading_unquoted_text(@parser.Word) -> String?
 
-pub fn list_item_disable_directives(@parser.ListItem) -> Array[String]
-
-pub fn list_item_enable_directives(@parser.ListItem) -> Array[String]
-
 pub fn literal_text(@parser.Word) -> String?
-
-pub fn mapfile_flag_takes_argument(UInt16) -> Bool
 
 pub fn mapfile_option_spec() -> String
 
-pub fn node_count(IndexedScript) -> Int
-
-pub fn node_kind_of(IndexedScript, NodeId) -> NodeKind?
-
 pub fn node_ref_of(IndexedScript, NodeId) -> NodeRef?
-
-pub fn non_reading_command_names() -> Array[String]
 
 pub fn oversimplify_command(@parser.Command) -> Array[String]
 
@@ -139,48 +99,27 @@ pub fn sample_words() -> Array[String]
 
 pub fn shell_from_annotation(Array[@parser.Annotation]) -> ShellDialect?
 
-pub fn shell_from_filename(String) -> ShellDialect?
-
 pub fn shell_from_shebang(String) -> ShellDialect?
 
 pub fn span_of(IndexedScript, NodeId) -> @parser.Span?
 
 pub fn special_integer_variable_names() -> Array[String]
 
-pub fn special_variable_names() -> Array[String]
-
-pub fn special_variable_names_without_spaces() -> Array[String]
-
-pub fn suppresses_unknown_shell_warning(@parser.Script, ShellDialect?, String?, ShellDialect?) -> Bool
+pub fn suppresses_unknown_shell_warning(@parser.Script, ShellDialect?, String?) -> Bool
 
 pub fn unary_test_operators() -> Array[String]
-
-pub fn unbraced_variable_names() -> Array[String]
 
 pub fn variable_names_without_spaces() -> Array[String]
 
 pub fn walk_command(@parser.Command, (@parser.Command) -> Unit) -> Unit
 
-pub fn walk_list_item(@parser.ListItem, (@parser.ListItem) -> Unit) -> Unit
-
-pub fn walk_redirection(@parser.Redirection, (@parser.Redirection) -> Unit) -> Unit
-
 pub fn walk_script(@parser.Script, (@parser.Script) -> Unit) -> Unit
 
-pub fn walk_word(@parser.Word, (@parser.Word) -> Unit) -> Unit
-
 pub fn walk_word_part(@parser.WordPart, (@parser.WordPart) -> Unit) -> Unit
-
-pub fn word_of(IndexedScript, NodeId) -> @parser.Word?
 
 // Errors
 
 // Types and methods
-pub(all) enum ExecutionMode {
-  Executed
-  Sourced
-} derive(Eq, Show, @debug.Debug)
-
 pub struct IndexedScript {
   // private fields
 } derive(Eq, @debug.Debug)
@@ -188,46 +127,6 @@ pub struct IndexedScript {
 pub struct NodeId {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
-pub fn NodeId::to_int(Self) -> Int
-
-pub enum NodeKind {
-  Script
-  Annotation
-  ListItem
-  AndOrList
-  Pipeline
-  PipelineSegment
-  Command
-  SimpleCommand
-  SourceCommand
-  ArithmeticExpr
-  ArithmeticToken
-  ArrayIndex
-  TimeClause
-  Assignment
-  ArrayElement
-  IfClause
-  IfArm
-  LoopClause
-  ForClause
-  ArithmeticForClause
-  SelectClause
-  CaseClause
-  CaseItem
-  ConditionCommand
-  ConditionExpr
-  ArithmeticCommand
-  CoProcClause
-  BatsTestClause
-  FunctionDef
-  Redirection
-  HereDoc
-  ExtGlobPattern
-  BraceExpansion
-  Word
-  WordPart
-  ParameterExpansion
-} derive(Eq, @debug.Debug)
 
 pub enum NodeRef {
   Script(@parser.Script)
@@ -267,7 +166,6 @@ pub enum NodeRef {
   WordPart(@parser.WordPart)
   ParameterExpansion(@parser.ParameterExpansion)
 } derive(Eq, @debug.Debug)
-pub fn NodeRef::kind(Self) -> NodeKind
 
 pub(all) enum ShellDialect {
   Sh

@@ -1,39 +1,4 @@
 ///|
-fn append_commands_batch_d_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for
-    description in [
-      {
-        code: 2028,
-        severity: Info,
-        category: "commands",
-        summary: "echo may not expand escape sequences. Use printf.",
-      },
-      {
-        code: 2155,
-        severity: Warning,
-        category: "commands",
-        summary: "Declare and assign separately to avoid masking return values.",
-      },
-      {
-        code: 2172,
-        severity: Warning,
-        category: "commands",
-        summary: "Prefer trap signal names over non-portable signal numbers.",
-      },
-      {
-        code: 2173,
-        severity: Error,
-        category: "commands",
-        summary: "SIGKILL and SIGSTOP can not be trapped.",
-      },
-    ] {
-    descriptions.push(description)
-  }
-}
-
-///|
 fn run_commands_batch_d_checks(
   script : @parser.Script,
   diagnostics : Array[CheckDiagnostic],

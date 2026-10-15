@@ -25,63 +25,6 @@ pub extend NodeId with Hash::{hash, hash_combine}
 pub extend NodeId with Debug::{to_repr}
 
 ///|
-/// Returns the raw integer value of a node id.
-pub fn NodeId::to_int(self : NodeId) -> Int32 {
-  self.value
-}
-
-///|
-/// The categories of parser nodes indexed by `IndexedScript`.
-pub enum NodeKind {
-  Script
-  Annotation
-  ListItem
-  AndOrList
-  Pipeline
-  PipelineSegment
-  Command
-  SimpleCommand
-  SourceCommand
-  ArithmeticExpr
-  ArithmeticToken
-  ArrayIndex
-  TimeClause
-  Assignment
-  ArrayElement
-  IfClause
-  IfArm
-  LoopClause
-  ForClause
-  ArithmeticForClause
-  SelectClause
-  CaseClause
-  CaseItem
-  ConditionCommand
-  ConditionExpr
-  ArithmeticCommand
-  CoProcClause
-  BatsTestClause
-  FunctionDef
-  Redirection
-  HereDoc
-  ExtGlobPattern
-  BraceExpansion
-  Word
-  WordPart
-  ParameterExpansion
-} derive(Eq, Debug)
-
-///|
-#deprecated
-#doc(hidden)
-pub extend NodeKind with Eq::{not_equal, equal}
-
-///|
-#deprecated
-#doc(hidden)
-pub extend NodeKind with Debug::{to_repr}
-
-///|
 /// A tagged reference to one concrete parser node.
 pub enum NodeRef {
   Script(@parser.Script)
@@ -133,52 +76,8 @@ pub extend NodeRef with Eq::{not_equal, equal}
 pub extend NodeRef with Debug::{to_repr}
 
 ///|
-/// Returns the `NodeKind` corresponding to a `NodeRef`.
-pub fn NodeRef::kind(self : NodeRef) -> NodeKind {
-  match self {
-    Script(_) => Script
-    Annotation(_) => Annotation
-    ListItem(_) => ListItem
-    AndOrList(_) => AndOrList
-    Pipeline(_) => Pipeline
-    PipelineSegment(_) => PipelineSegment
-    Command(_) => Command
-    SimpleCommand(_) => SimpleCommand
-    SourceCommand(_) => SourceCommand
-    ArithmeticExpr(_) => ArithmeticExpr
-    ArithmeticToken(_) => ArithmeticToken
-    ArrayIndex(_) => ArrayIndex
-    TimeClause(_) => TimeClause
-    Assignment(_) => Assignment
-    ArrayElement(_) => ArrayElement
-    IfClause(_) => IfClause
-    IfArm(_) => IfArm
-    LoopClause(_) => LoopClause
-    ForClause(_) => ForClause
-    ArithmeticForClause(_) => ArithmeticForClause
-    SelectClause(_) => SelectClause
-    CaseClause(_) => CaseClause
-    CaseItem(_) => CaseItem
-    ConditionCommand(_) => ConditionCommand
-    ConditionExpr(_) => ConditionExpr
-    ArithmeticCommand(_) => ArithmeticCommand
-    CoProcClause(_) => CoProcClause
-    BatsTestClause(_) => BatsTestClause
-    FunctionDef(_) => FunctionDef
-    Redirection(_) => Redirection
-    HereDoc(_) => HereDoc
-    ExtGlobPattern(_) => ExtGlobPattern
-    BraceExpansion(_) => BraceExpansion
-    Word(_) => Word
-    WordPart(_) => WordPart
-    ParameterExpansion(_) => ParameterExpansion
-  }
-}
-
-///|
 priv struct IndexedNode {
   id : NodeId
-  kind : NodeKind
   span : @parser.Span?
   enclosing_span : @parser.Span
   parent : NodeId?
@@ -215,22 +114,6 @@ fn IndexedScript::node_at(self : IndexedScript, id : NodeId) -> IndexedNode? {
 }
 
 ///|
-fn NodeRef::exact_command(self : NodeRef) -> @parser.Command? {
-  match self {
-    Command(command) => Some(command)
-    _ => None
-  }
-}
-
-///|
-fn NodeRef::exact_word(self : NodeRef) -> @parser.Word? {
-  match self {
-    Word(word) => Some(word)
-    _ => None
-  }
-}
-
-///|
 /// Builds an index over a parsed script for fast structural queries.
 pub fn build_index(script : @parser.Script) -> IndexedScript {
   let builder = IndexBuilder::new()
@@ -245,26 +128,10 @@ pub fn root_id(indexed : IndexedScript) -> NodeId {
 }
 
 ///|
-/// Returns the total number of indexed nodes.
-pub fn node_count(indexed : IndexedScript) -> Int32 {
-  indexed.nodes.length()
-}
-
-///|
 /// Returns the indexed parser node associated with an id.
 pub fn node_ref_of(indexed : IndexedScript, id : NodeId) -> NodeRef? {
   if indexed.node_at(id) is Some(node) {
     Some(node.node)
-  } else {
-    None
-  }
-}
-
-///|
-/// Returns the kind of node stored at an id.
-pub fn node_kind_of(indexed : IndexedScript, id : NodeId) -> NodeKind? {
-  if indexed.node_at(id) is Some(node) {
-    Some(node.kind)
   } else {
     None
   }
@@ -287,16 +154,6 @@ pub fn enclosing_span_of(indexed : IndexedScript, id : NodeId) -> @parser.Span? 
     Some(node.enclosing_span)
   } else {
     None
-  }
-}
-
-///|
-/// Returns `span_of` when available, otherwise the enclosing span.
-pub fn effective_span_of(indexed : IndexedScript, id : NodeId) -> @parser.Span? {
-  if span_of(indexed, id) is Some(span) {
-    Some(span)
-  } else {
-    enclosing_span_of(indexed, id)
   }
 }
 
@@ -370,52 +227,6 @@ fn copy_node_ids(ids : Array[NodeId]) -> Array[NodeId] {
 }
 
 ///|
-/// Walks up the index until it finds the enclosing command node.
-pub fn command_of(indexed : IndexedScript, id : NodeId) -> @parser.Command? {
-  find_command(indexed, Some(id))
-}
-
-///|
-fn find_command(indexed : IndexedScript, current : NodeId?) -> @parser.Command? {
-  if current is Some(current) {
-    if node_ref_of(indexed, current) is Some(node) {
-      if node.exact_command() is Some(command) {
-        Some(command)
-      } else {
-        find_command(indexed, parent_of(indexed, current))
-      }
-    } else {
-      None
-    }
-  } else {
-    None
-  }
-}
-
-///|
-/// Walks up the index until it finds the enclosing word node.
-pub fn word_of(indexed : IndexedScript, id : NodeId) -> @parser.Word? {
-  find_word(indexed, Some(id))
-}
-
-///|
-fn find_word(indexed : IndexedScript, current : NodeId?) -> @parser.Word? {
-  if current is Some(current) {
-    if node_ref_of(indexed, current) is Some(node) {
-      if node.exact_word() is Some(word) {
-        Some(word)
-      } else {
-        find_word(indexed, parent_of(indexed, current))
-      }
-    } else {
-      None
-    }
-  } else {
-    None
-  }
-}
-
-///|
 priv struct IndexBuilder {
   nodes : Array[IndexedNode]
   stack : Array[NodeId]
@@ -435,17 +246,8 @@ fn IndexBuilder::start_node(
   span : @parser.Span?,
 ) -> NodeId {
   let id = node_id(self.nodes.length())
-  let kind = node.kind()
   let parent = self.stack.last()
-  self.nodes.push({
-    id,
-    kind,
-    span,
-    enclosing_span,
-    parent,
-    children: [],
-    node,
-  })
+  self.nodes.push({ id, span, enclosing_span, parent, children: [], node, })
   if parent is Some(parent) {
     self.add_child(parent, id)
   }

@@ -1,43 +1,4 @@
 ///|
-fn append_analytics_batch_h_descriptions(
-  descriptions : Array[CheckDescription],
-) -> Unit {
-  for description in analytics_batch_h_descriptions() {
-    descriptions.push(description)
-  }
-}
-
-///|
-fn analytics_batch_h_descriptions() -> Array[CheckDescription] {
-  [
-    {
-      code: 2035,
-      severity: Info,
-      category: "analytics",
-      summary: "Globs that expand to names with dashes can become options.",
-    },
-    {
-      code: 2141,
-      severity: Warning,
-      category: "analytics",
-      summary: "Suspicious IFS values are usually meant to use escapes or literal whitespace.",
-    },
-    {
-      code: 2123,
-      severity: Warning,
-      category: "analytics",
-      summary: "PATH is the shell search path and should not be repurposed as a local variable.",
-    },
-    {
-      code: 2147,
-      severity: Warning,
-      category: "analytics",
-      summary: "Literal tilde in PATH works poorly across programs.",
-    },
-  ]
-}
-
-///|
 fn run_analytics_batch_h_checks(
   script : @parser.Script,
   shell : @semantics.ShellDialect,

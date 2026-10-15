@@ -1,6 +1,6 @@
 ///|
 fn parse_fixer_ok(source : String) -> @parser.Script {
-  match @parser.parse_script(source) {
+  match test_parse_script(source) {
     Ok(script) => script
     Err(_) => panic()
   }
@@ -99,7 +99,7 @@ test "fixer realigns tab-expanded columns" {
     ),
   ])
 
-  let realigned = @fixer.realign_columns_for_tabs(
+  let realigned = realign_columns_for_tabs(
     fix,
     (
       #|	foo
@@ -126,7 +126,7 @@ test "fixer leaves out-of-range tab realignment untouched" {
     ),
   ])
 
-  let realigned = @fixer.realign_columns_for_tabs(
+  let realigned = realign_columns_for_tabs(
     fix,
     (
       #|echo ok
