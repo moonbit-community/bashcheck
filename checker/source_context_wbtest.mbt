@@ -75,6 +75,95 @@ test "cached source read failures finish the request loop" {
 }
 
 ///|
+test "duplicate source diagnostics keep the first instance and its fix" {
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    source_files: [("lib.sh", "echo $1\n")],
+  }
+  let result = test_check_script(
+    "#!/bin/bash\nsource lib.sh\nsource ./lib.sh\n",
+    spec~,
+  )
+  assert_eq(result.diagnostics.length(), 1)
+  let diagnostic = result.diagnostics[0]
+  assert_eq(diagnostic.span.start.source_id, 1)
+  assert_true(
+    diagnostic.fix.unwrap().replacements.all(r => r.start.source_id == 1),
+  )
+}
+
+///|
+test "deduplication ignores parse ids but retains different diagnostic details" {
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("lib.sh"),
+    source_aliases: [("alias.sh", "lib.sh")],
+  }
+  let diagnostic = test_check_script("#!/bin/bash\necho $1\n", spec~).diagnostics[0]
+  let duplicate = {
+    ..diagnostic,
+    filename: "alias.sh",
+    span: @parser.Span::new(
+      @parser.Position::new(
+        999,
+        diagnostic.span.start.line,
+        diagnostic.span.start.column,
+        source_id=42,
+      ),
+      @parser.Position::new(
+        1001,
+        diagnostic.span.end.line,
+        diagnostic.span.end.column,
+        source_id=42,
+      ),
+    ),
+    fix: None,
+  }
+  let different_message = { ..diagnostic, message: "another message", }
+  let different_start = {
+    ..diagnostic,
+    span: @parser.Span::new(
+      @parser.Position::new(
+        diagnostic.span.start.offset,
+        diagnostic.span.start.line,
+        7,
+      ),
+      diagnostic.span.end,
+    ),
+  }
+  let different_end = {
+    ..diagnostic,
+    span: @parser.Span::new(
+      diagnostic.span.start,
+      @parser.Position::new(
+        diagnostic.span.end.offset,
+        diagnostic.span.end.line,
+        9,
+      ),
+    ),
+  }
+  let different_severity = { ..diagnostic, severity: Warning, }
+  let different_code = { ..diagnostic, code: Some(2154), }
+  let different_file = { ..diagnostic, filename: "other.sh", }
+  let unique = unique_diagnostics(
+    [
+      diagnostic, duplicate, different_message, different_start, different_end, different_severity,
+      different_code, different_file,
+    ],
+    spec,
+  )
+  assert_eq(unique, [
+    diagnostic, different_message, different_start, different_end, different_severity,
+    different_code, different_file,
+  ])
+  assert_true(unique[0].fix is Some(_))
+}
+
+///|
 test "source depth stops before requesting another file and respects filters" {
   let source_files : Array[(String, String)] = []
   for i in 0..<100 {
