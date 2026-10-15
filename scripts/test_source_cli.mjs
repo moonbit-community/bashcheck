@@ -2,7 +2,7 @@
 /**
  * Real-file CLI regressions with static ShellCheck 0.11.0 source baselines.
  * CI requires no oracle. --oracle compares against a locally installed 0.11.0,
- * with the compatibility exceptions recorded in TODO.md and e2etests/README.md.
+ * with intentional duplicate-policy differences recorded in e2etests/README.md.
  * Both targets run actual processes.
  */
 import assert from 'node:assert/strict';
@@ -22,7 +22,7 @@ function parseArguments(args) {
     if (arg === '-h' || arg === '--help') {
       console.log('Usage: node scripts/test_source_cli.mjs [--target wasm|native] [--oracle]\n' +
         'Run real-file source CLI regressions (default: native).\n' +
-        '--oracle also compares against local ShellCheck 0.11.0, with documented exceptions.');
+        '--oracle also compares against local ShellCheck 0.11.0, with documented duplicate-policy differences.');
       return undefined;
     }
     if (arg === '--oracle') options.oracle = true;
@@ -86,24 +86,35 @@ async function main(options) {
         diagnostic.code, diagnostic.file, diagnostic.line, diagnostic.column,
       ]));
     }
-    async function check(label, args, expected, { rc = false, oracle = true } = {}) {
+    async function check(label, args, expected, { rc = false, oracleExpected = expected } = {}) {
       const flags = [...(rc ? [] : ['--norc']), '-fjson', `-i${CODES}`, ...args];
       const result = await run(flags);
       assert.equal(result.stderr, '', `${label}: ${result.stderr}`);
       assert.deepEqual(positions(result.stdout), sortPositions(expected), `${label}: ${result.stdout}`);
       assert.equal(result.status, expected.length > 0 ? 1 : 0, label);
-      if (options.oracle && oracle) {
+      if (options.oracle) {
         const reference = await run(flags, ['shellcheck']);
-        // Preserve the existing comparison exceptions during this conversion:
-        // SC2154 ignores columns, and repeated diagnostics are deduplicated.
-        // TODO.md tracks removing these exceptions after fixing compatibility.
-        function oraclePositions(rows) {
-          const unique = new Set(rows.map(([code, file, line, column]) =>
-            JSON.stringify([code, file, line, code === 2154 ? 0 : column])));
-          return sortPositions([...unique].map(row => JSON.parse(row)));
-        }
-        assert.deepEqual(oraclePositions(positions(reference.stdout)), oraclePositions(expected),
+        assert.equal(reference.stderr, '', `${label}: ${reference.stderr}`);
+        assert.deepEqual(positions(reference.stdout), sortPositions(oracleExpected),
           `${label}: ${reference.stdout}`);
+        // Compare exact end positions and severity too, retaining every row.
+        // Intentional duplicate/alias cases spell out their oracle arrays above.
+        // OS error text and fix precedence are implementation-specific.
+        const signature = ({ file, line, column, endLine, endColumn, level, code }) =>
+          ({ file, line, column, endLine, endColumn, level, code });
+        const diagnostics = JSON.parse(result.stdout);
+        const expectedReference = oracleExpected.map(([code, file, line, column]) => {
+          const matches = diagnostic => diagnostic.code === code &&
+            diagnostic.line === line && diagnostic.column === column;
+          const diagnostic = diagnostics.find(d => d.file === file && matches(d)) ??
+            diagnostics.find(matches);
+          assert.ok(diagnostic, `${label}: missing oracle diagnostic ${code} ${file}:${line}:${column}`);
+          return signature({ ...diagnostic, file });
+        });
+        const sorted = rows => rows.toSorted((a, b) =>
+          JSON.stringify(a).localeCompare(JSON.stringify(b)));
+        assert.deepEqual(sorted(JSON.parse(reference.stdout).map(signature)),
+          sorted(expectedReference), label);
         assert.equal(reference.status, result.status, label);
       }
       cases++;
@@ -115,7 +126,7 @@ async function main(options) {
     await check("load without source diagnostics", ["-x", "main.sh"], []);
     await check("a+x source diagnostics", ["-ax", "main.sh"], [[2086, "lib.sh", 2, 6]]);
     await check("explicit input permits source", ["main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]]);
-    await check("explicit input with a", ["-a", "main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]]);
+    await check("explicit input with a", ["-a", "main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]], { oracleExpected: [[2086, "lib.sh", 2, 6], [2086, "lib.sh", 2, 6]] });
     write("functions.sh", "fill() { bar=\"hello world\"; }\n");
     write("call.sh", "#!/bin/bash\nsource functions.sh\nfill\necho \"$bar\"\n");
     await check("sourced function changes caller state", ["-x", "call.sh"], []);
@@ -124,7 +135,7 @@ async function main(options) {
     await check("no implicit script directory", ["-x", "sub/main.sh"], [[1091, "sub/main.sh", 2, 8], [2154, "sub/main.sh", 3, 7]]);
     await check("CLI SCRIPTDIR", ["-x", "-P", "SCRIPTDIR", "sub/main.sh"], []);
     write("other/sibling.sh", "echo $1\n");
-    await check("CLI path precedes script directory", ["-ax", "-P", "other:SCRIPTDIR", "sub/main.sh"], [[2086, "other/sibling.sh", 1, 6], [2154, "sub/main.sh", 3, 7]]);
+    await check("CLI path precedes script directory", ["-ax", "-P", "other:SCRIPTDIR", "sub/main.sh"], [[2086, "other/sibling.sh", 1, 6], [2154, "sub/main.sh", 3, 7]], { oracleExpected: [[2086, "other/sibling.sh", 1, 6], [2086, "other/sibling.sh", 1, 6], [2154, "sub/main.sh", 3, 7], [2154, "sub/main.sh", 3, 7]] });
     write("direct.sh", "bar=ok\n");
     write("other/direct.sh", "echo $1\n");
     write("direct-main.sh", "#!/bin/bash\nsource direct.sh\necho \"$bar\"\n");
@@ -149,7 +160,7 @@ async function main(options) {
     write("symlink-main.sh", "#!/bin/bash\nsource alias.sh\n");
     await check("symlink cycle", ["-x", "symlink-main.sh"], []);
     write("deny.sh", "#!/bin/bash\nsource lib.sh\n# shellcheck external-sources=false\nsource lib.sh\n");
-    await check("cached text does not bypass permissions", ["-ax", "deny.sh"], [[2086, "lib.sh", 2, 6], [1091, "deny.sh", 4, 8]]);
+    await check("cached text does not bypass permissions", ["-ax", "deny.sh"], [[2086, "lib.sh", 2, 6], [1091, "deny.sh", 4, 8]], { oracleExpected: [[2086, "lib.sh", 2, 6], [2086, "lib.sh", 2, 6], [1091, "deny.sh", 4, 8], [1091, "deny.sh", 4, 8]] });
     write("suppress.sh", "#!/bin/bash\ntrue\n# shellcheck disable=SC2086\nsource lib.sh\necho $1\n");
     await check("include suppression respects file identity", ["-ax", "suppress.sh"], [[2086, "suppress.sh", 5, 6]]);
     write("lib.sh", "bar=\"hello world\"\n# shellcheck disable=SC2086\necho $bar\necho $1\n");
@@ -176,8 +187,37 @@ async function main(options) {
     }
     write("depth.sh", "#!/bin/bash\nsource chain/0.sh\n");
     await check("depth limit", ["-ax", "depth.sh"], [[1093, "chain/99.sh", 1, 8]]);
+    await check("depth diagnostic hidden without a", ["-x", "depth.sh"], []);
+    await check("depth diagnostic severity filter", ["-ax", "-Swarning", "depth.sh"], []);
+    write("chain/99.sh", "# shellcheck disable=SC1093\nsource chain/100.sh\n");
+    await check("depth diagnostic local suppression", ["-ax", "depth.sh"], []);
+    write("depth.sh", "#!/bin/bash\n# shellcheck disable=SC1093\nsource chain/0.sh\n");
+    await check("depth diagnostic include suppression", ["-ax", "depth.sh"], []);
+    write("depth.sh", "#!/bin/bash\nsource chain/0.sh\n");
     write("chain/99.sh", "true\n");
     await check("depth before limit", ["-ax", "depth.sh"], []);
+    write("positions.sh", '#!/bin/bash\necho "$foo $foobar ${baz}"\necho \'$literal\'"\\$escaped $actual"\necho "first\n$multiline ${last}\n"\n');
+    await check("quoted escaped and multiline variable positions", ["positions.sh"], [
+      [2154, "positions.sh", 2, 7], [2154, "positions.sh", 2, 12], [2154, "positions.sh", 2, 20],
+      [2154, "positions.sh", 3, 27], [2154, "positions.sh", 5, 1], [2154, "positions.sh", 5, 12],
+    ]);
+    write("warnings.sh", 'echo $1\necho $2\n');
+    write("repeat.sh", '#!/bin/bash\nsource warnings.sh\nsource warnings.sh\n');
+    const once = [[2086, "warnings.sh", 1, 6], [2086, "warnings.sh", 2, 6]];
+    await check("repeated source deduplicates but preserves separate locations", ["-ax", "repeat.sh"], once);
+    write("another.sh", '#!/bin/bash\nsource warnings.sh\n');
+    await check("deduplication spans explicit inputs", ["-ax", "repeat.sh", "another.sh"], once, { oracleExpected: [...once, ...once] });
+    await check("repeated explicit input", ["warnings.sh", "warnings.sh"], once, { oracleExpected: [...once, ...once] });
+    symlinkSync("warnings.sh", join(work, "warning-alias.sh"));
+    const aliasRows = once.map(row => [row[0], "warning-alias.sh", row[2], row[3]]);
+    write("source-alias.sh", '#!/bin/bash\nsource warnings.sh\nsource warning-alias.sh\n');
+    await check("sourced symlink aliases", ["-ax", "source-alias.sh"], once, { oracleExpected: [
+      ...once, ...aliasRows, ...once, ...aliasRows,
+    ] });
+    await check("explicit path and symlink aliases", ["warnings.sh", "./warnings.sh", "warning-alias.sh"], once, { oracleExpected: [
+      ...once, ...once.map(row => [row[0], "./warnings.sh", row[2], row[3]]),
+      ...once.map(row => [row[0], "warning-alias.sh", row[2], row[3]]),
+    ] });
     write("lib.sh", "bar=\"hello world\"\n\techo $bar");
     const tty = await run(['--norc', '-ax', '-i2086', '-W0', '--color=never', 'main.sh']);
     assert.ok(tty.stdout.includes('In lib.sh line 2:') && tty.stdout.includes('\techo $bar'), tty.stdout);
@@ -185,14 +225,31 @@ async function main(options) {
     assert.ok(diff.stdout.includes('--- a/lib.sh') && diff.stdout.includes('+\techo "$bar"') &&
       diff.stdout.includes('\\ No newline at end of file'), diff.stdout);
     write('twice.sh', '#!/bin/bash\nsource lib.sh\nsource ./lib.sh\n');
-    const repeated = await run(['--norc', '-ax', '-i2086', '-fdiff', 'twice.sh']);
-    assert.ok(repeated.stdout.includes('+\techo "$bar"') &&
-      repeated.stdout.split('--- a/lib.sh').length - 1 === 1, repeated.stdout);
+    symlinkSync("lib.sh", join(work, "lib-alias.sh"));
+    for (const format of ['json', 'json1', 'tty', 'diff']) {
+      const repeated = await run(['--norc', '-ax', '-i2086', '-W0', '--color=never', `-f${format}`,
+        'twice.sh', 'lib.sh', './lib.sh', 'lib-alias.sh']);
+      assert.equal(repeated.status, 1, format);
+      assert.equal(repeated.stderr, '', format);
+      if (format === 'json' || format === 'json1') {
+        const parsed = JSON.parse(repeated.stdout);
+        const diagnostics = format === 'json' ? parsed : parsed.comments;
+        assert.equal(diagnostics.length, 1, repeated.stdout);
+        assert.equal(diagnostics[0].fix.replacements.length, 2, repeated.stdout);
+      } else if (format === 'tty') {
+        assert.equal(repeated.stdout.split('SC2086').length - 1, 1, repeated.stdout);
+        assert.equal(repeated.stdout.split('In lib.sh line 2:').length - 1, 1, repeated.stdout);
+      } else {
+        assert.equal(repeated.stdout.split('--- a/lib.sh').length - 1, 1, repeated.stdout);
+        assert.equal(repeated.stdout.split('+\techo "$bar"').length - 1, 1, repeated.stdout);
+        assert.ok(!repeated.stdout.includes('""$bar""'), repeated.stdout);
+      }
+    }
     const quiet = await run(['--norc', '-fquiet', 'lib.sh', 'missing-input.sh']);
     assert.equal(quiet.status, 1);
     assert.equal(quiet.stdout, '');
     assert.equal(quiet.stderr, '');
-    console.log(`${cases} source baselines and 4 formatter/quiet checks passed (${options.target})`);
+    console.log(`${cases} source baselines and 7 formatter/quiet checks passed (${options.target})`);
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
