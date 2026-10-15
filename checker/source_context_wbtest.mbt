@@ -73,3 +73,158 @@ test "cached source read failures finish the request loop" {
     "Not following: missing.sh: read denied",
   )
 }
+
+///|
+test "duplicate source diagnostics keep the first instance and its fix" {
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    source_files: [("lib.sh", "echo $1\n")],
+  }
+  let result = test_check_script(
+    "#!/bin/bash\nsource lib.sh\nsource ./lib.sh\n",
+    spec~,
+  )
+  assert_eq(result.diagnostics.length(), 1)
+  let diagnostic = result.diagnostics[0]
+  assert_eq(diagnostic.span.start.source_id, 1)
+  assert_true(
+    diagnostic.fix.unwrap().replacements.all(r => r.start.source_id == 1),
+  )
+}
+
+///|
+test "deduplication ignores parse ids but retains different diagnostic details" {
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("lib.sh"),
+    source_aliases: [("alias.sh", "lib.sh")],
+  }
+  let diagnostic = test_check_script("#!/bin/bash\necho $1\n", spec~).diagnostics[0]
+  let duplicate = {
+    ..diagnostic,
+    filename: "alias.sh",
+    span: @parser.Span::new(
+      @parser.Position::new(
+        999,
+        diagnostic.span.start.line,
+        diagnostic.span.start.column,
+        source_id=42,
+      ),
+      @parser.Position::new(
+        1001,
+        diagnostic.span.end.line,
+        diagnostic.span.end.column,
+        source_id=42,
+      ),
+    ),
+    fix: None,
+  }
+  let different_message = { ..diagnostic, message: "another message", }
+  let different_start = {
+    ..diagnostic,
+    span: @parser.Span::new(
+      @parser.Position::new(
+        diagnostic.span.start.offset,
+        diagnostic.span.start.line,
+        7,
+      ),
+      diagnostic.span.end,
+    ),
+  }
+  let different_end = {
+    ..diagnostic,
+    span: @parser.Span::new(
+      diagnostic.span.start,
+      @parser.Position::new(
+        diagnostic.span.end.offset,
+        diagnostic.span.end.line,
+        9,
+      ),
+    ),
+  }
+  let different_severity = { ..diagnostic, severity: Warning, }
+  let different_code = { ..diagnostic, code: Some(2154), }
+  let different_file = { ..diagnostic, filename: "other.sh", }
+  let unique = unique_diagnostics(
+    [
+      diagnostic, duplicate, different_message, different_start, different_end, different_severity,
+      different_code, different_file,
+    ],
+    spec,
+  )
+  assert_eq(unique, [
+    diagnostic, different_message, different_start, different_end, different_severity,
+    different_code, different_file,
+  ])
+  assert_true(unique[0].fix is Some(_))
+}
+
+///|
+test "source depth stops before requesting another file and respects filters" {
+  let source_files : Array[(String, String)] = []
+  for i in 0..<100 {
+    source_files.push(("f\{i}.sh", "source f\{i + 1}.sh\n"))
+  }
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    external_sources: true,
+    source_files,
+  }
+  let source = "#!/bin/bash\nsource f0.sh\n"
+  let report = prepare_script(source, spec~)
+  assert_true(report.requests.is_empty())
+  assert_eq(report.sources.length(), 101)
+  let result = check_prepared_script(source, report, spec~)
+  assert_eq(result.diagnostics.length(), 1)
+  let diagnostic = result.diagnostics[0]
+  assert_eq(diagnostic.code, Some(1093))
+  assert_eq(diagnostic.severity, Info)
+  assert_eq(
+    diagnostic.message,
+    "This file appears to be recursively sourced. Ignoring.",
+  )
+  assert_eq(diagnostic.filename, "f99.sh")
+  assert_eq(diagnostic.span.start.source_id, 100)
+  for
+    filtered in [
+      spec.with_check_sourced(false),
+      spec.with_min_severity(Warning),
+      spec.with_exclude_codes([1093]),
+    ] {
+    assert_true(test_check_script(source, spec=filtered).diagnostics.is_empty())
+  }
+  source_files[99] = ("f99.sh", "# shellcheck disable=SC1093\nsource f100.sh\n")
+  assert_true(test_check_script(source, spec~).diagnostics.is_empty())
+  source_files[99] = ("f99.sh", "true\n")
+  assert_true(test_check_script(source, spec~).diagnostics.is_empty())
+}
+
+///|
+test "SC2154 parameter spans preserve sourced file identity" {
+  let result = test_check_script("#!/bin/bash\nsource lib.sh\n", spec={
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    include_codes: [2154],
+    source_files: [("lib.sh", "echo \"first\n$foo ${bar}\"\n")],
+  })
+  assert_eq(result.diagnostics.length(), 2)
+  for diagnostic in result.diagnostics {
+    assert_eq(diagnostic.filename, "lib.sh")
+    assert_eq(diagnostic.span.start.source_id, 1)
+    assert_eq(diagnostic.span.end.source_id, 1)
+    assert_eq(diagnostic.span.start.line, 2)
+  }
+  assert_eq(result.diagnostics[0].span.start.column, 1)
+  assert_eq(result.diagnostics[0].span.end.column, 5)
+  assert_eq(result.diagnostics[1].span.start.column, 6)
+  assert_eq(result.diagnostics[1].span.end.column, 12)
+}

@@ -105,6 +105,11 @@ async fn collect_results(
     source_files,
     failed_sources,
   }
+  let seen : Map[
+    (String, (Int32, Int32, Int32, Int32), Int32, Int32?, String),
+    Bool,
+  ] = Map([])
+  let identities : Map[String, String] = Map([])
   for file in files {
     let result = check_cli_file(file, spec) catch {
       // Surface IO failures using the user-facing file label so stdin reads
@@ -113,6 +118,35 @@ async fn collect_results(
         return Err(display_cli_filename(file) + ": " + message)
       err => return Err(display_cli_filename(file) + ": " + err.to_string())
     }
+    let diagnostics : Array[@checker.PositionedDiagnostic] = []
+    for diagnostic in result.diagnostics {
+      let identity = match identities.get(diagnostic.filename) {
+        Some(identity) => identity
+        None => {
+          let identity = canonical_path(diagnostic.filename)
+          identities[diagnostic.filename] = identity
+          identity
+        }
+      }
+      let span = diagnostic.span
+      let key = (
+        identity,
+        (span.start.line, span.start.column, span.end.line, span.end.column),
+        match diagnostic.severity {
+          Error => 0
+          Warning => 1
+          Info => 2
+          Style => 3
+        },
+        diagnostic.code,
+        diagnostic.message,
+      )
+      if !seen.contains(key) {
+        seen[key] = true
+        diagnostics.push(diagnostic)
+      }
+    }
+    let result = { ..result, diagnostics, }
     results.push(result)
     if stop_after_first_issue && result.diagnostics.length() > 0 {
       break

@@ -109,7 +109,7 @@ fn merge_parse_and_lint_diagnostics(
     (Some(base_script), Some(script)) => {
       append_shebang_entry_diagnostics(diagnostics, filename, spec, script)
       if parse_report_has_code(report, 1071) {
-        return sort_diagnostics(diagnostics)
+        return sort_diagnostics(unique_diagnostics(diagnostics, spec))
       }
       // Shell selection depends on the parsed script plus caller overrides.
       let shell = @semantics.determine_shell(
@@ -158,7 +158,7 @@ fn merge_parse_and_lint_diagnostics(
     }
     _ => ()
   }
-  sort_diagnostics(diagnostics)
+  sort_diagnostics(unique_diagnostics(diagnostics, spec))
 }
 
 ///|
@@ -181,9 +181,6 @@ fn parse_diagnostic_allowed_by_spec(
     // Upstream ShellCheck treats an explicit shell override as authoritative and
     // suppresses the shebang-shell mismatch/unknown-shell parse diagnostic.
     Some(1071) => spec.shell_override is None
-    // Recursive include diagnostics are internal parser bookkeeping. The
-    // public checker does not surface them.
-    Some(1093) => false
     _ => true
   }
 }
@@ -1039,4 +1036,41 @@ fn include_context_allows(
     source_id = parent_id
   }
   true
+}
+
+///|
+/// Deduplicate only after include-local and caller filters have run. Parse
+/// instance ids and fixes do not participate; the first surviving fix wins.
+fn unique_diagnostics(
+  diagnostics : Array[PositionedDiagnostic],
+  spec : CheckSpec,
+) -> Array[PositionedDiagnostic] {
+  let seen : Map[
+    (String, (Int32, Int32, Int32, Int32), Int32, Int32?, String),
+    Bool,
+  ] = Map([])
+  let unique : Array[PositionedDiagnostic] = []
+  for diagnostic in diagnostics {
+    let mut identity = @parser.normalize_source_path(diagnostic.filename)
+    for (source_alias, canonical) in spec.source_aliases {
+      if source_alias == diagnostic.filename ||
+        @parser.normalize_source_path(source_alias) == identity {
+        identity = @parser.normalize_source_path(canonical)
+        break
+      }
+    }
+    let span = diagnostic.span
+    let key = (
+      identity,
+      (span.start.line, span.start.column, span.end.line, span.end.column),
+      severity_rank(diagnostic.severity),
+      diagnostic.code,
+      diagnostic.message,
+    )
+    if !seen.contains(key) {
+      seen[key] = true
+      unique.push(diagnostic)
+    }
+  }
+  unique
 }

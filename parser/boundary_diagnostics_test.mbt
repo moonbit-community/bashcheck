@@ -53,7 +53,7 @@ test "boundary diagnostics match ShellCheck for SC1084" {
 }
 
 ///|
-test "boundary diagnostics match ShellCheck for SC1092" {
+test "boundary diagnostics match ShellCheck for SC1093" {
   let source_depth_files : Array[(String, String)] = []
   for i in 0..<101 {
     source_depth_files.push(
@@ -76,12 +76,16 @@ test "boundary diagnostics match ShellCheck for SC1092" {
     ),
   )
   assert_parser_diagnostics_match_with_options(
-    "SC1092",
+    "SC1093",
     (
       #|source f1.sh
       #|
     ),
-    [parser_error(1092, 1, 8, "Stopping at 100 'source' frames :O")],
+    [
+      parser_info(
+        1093, 1, 8, "This file appears to be recursively sourced. Ignoring.",
+      ),
+    ],
     sourced_bash_parser_options("f0.sh", source_depth_files),
   )
 }

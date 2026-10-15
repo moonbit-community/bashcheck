@@ -123,8 +123,35 @@ runs the actual native executable or the wasm executable through `moonrun`.
 Static expectations cover permissions, cross-file assignments and functions,
 path precedence, include-local suppression, file positions, tabbed source
 excerpts, missing trailing newlines, repeated fixes and quiet short circuit.
-Use `--oracle` with a local ShellCheck 0.11.0 to verify source baselines. Existing
-SC2154 quote-span differences and duplicate oracle diagnostics are normalized
-for that comparison. The SC1092 boundary follows the upstream parser's frame
-limit and the existing parser baseline; the ShellCheck CLI reports SC1093 at
-that boundary, so the oracle comparison excludes that one case.
+The source limit allows 100 source frames, excluding the main input. The next
+include is skipped before loading and reports Info SC1093 with the ShellCheck
+message. Sourced-file, severity and annotation filters still apply. SC2154 spans
+start at `$` and cover the actual parameter expression through quotes, escapes
+and multiline words.
+
+bashcheck intentionally emits each diagnostic once per CLI invocation. The key
+contains canonical file identity, start/end line and column, severity, code and
+message. Include instance ids and fixes are excluded; the first surviving
+diagnostic retains its fix. Filtering precedes deduplication so a suppressed
+include cannot hide a later unsuppressed include. This policy covers repeated
+sources, symlink/path aliases and repeated explicit inputs, across JSON, JSON1,
+terminal and diff output. ShellCheck 0.11.0 sometimes emits duplicates, including
+across explicit inputs; bashcheck deliberately differs here.
+
+Use `--oracle` with a local ShellCheck 0.11.0 to verify the source baselines:
+
+```sh
+node scripts/test_source_cli.mjs --target wasm
+node scripts/test_source_cli.mjs --target wasm --oracle
+node scripts/test_source_cli.mjs --target native
+node scripts/test_source_cli.mjs --target native --oracle
+```
+
+The script parses the original JSON and compares sorted arrays item by item,
+retaining multiplicities and exact columns, including SC2154. It also compares
+end positions and severity. Intentional duplicate/alias cases explicitly specify
+separate bashcheck and ShellCheck arrays; the reference output is never
+deduplicated. SC1093 depth and suppression cases participate in the oracle
+comparison. OS-specific read-error text and implementation-specific fix
+precedence metadata are outside this comparison; formatter regressions verify
+that duplicate diagnostics cannot cause duplicate fixes.

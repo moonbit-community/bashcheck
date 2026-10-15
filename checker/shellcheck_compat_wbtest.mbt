@@ -880,7 +880,7 @@ test "shellcheck checker source and recursion compatibility props" {
     check_sourced: true,
     source_files: [("lib", "bar=1")],
   })
-  assert_compat_codes("prop_noInfiniteSourcing", "source lib", [], spec={
+  assert_compat_codes("prop_noInfiniteSourcing", "source lib", [1093], spec={
     ..compat_spec(),
     check_sourced: true,
     source_files: [("lib", "source lib")],
