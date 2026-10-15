@@ -115,7 +115,7 @@ async function main(options) {
     await check("load without source diagnostics", ["-x", "main.sh"], []);
     await check("a+x source diagnostics", ["-ax", "main.sh"], [[2086, "lib.sh", 2, 6]]);
     await check("explicit input permits source", ["main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]]);
-    await check("explicit input with a", ["-a", "main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6], [2086, "lib.sh", 2, 6]]);
+    await check("explicit input with a", ["-a", "main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]]);
     write("functions.sh", "fill() { bar=\"hello world\"; }\n");
     write("call.sh", "#!/bin/bash\nsource functions.sh\nfill\necho \"$bar\"\n");
     await check("sourced function changes caller state", ["-x", "call.sh"], []);
