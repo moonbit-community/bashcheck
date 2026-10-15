@@ -110,8 +110,8 @@ async function main(options) {
     }
     write("main.sh", "#!/bin/bash\nsource lib.sh\necho \"$bar\"\n");
     write("lib.sh", "bar=\"hello world\"\necho $bar\n");
-    await check("default permission", ["main.sh"], [[1091, "main.sh", 2, 8], [2154, "main.sh", 3, 6]]);
-    await check("a does not allow files", ["-a", "main.sh"], [[1091, "main.sh", 2, 8], [2154, "main.sh", 3, 6]]);
+    await check("default permission", ["main.sh"], [[1091, "main.sh", 2, 8], [2154, "main.sh", 3, 7]]);
+    await check("a does not allow files", ["-a", "main.sh"], [[1091, "main.sh", 2, 8], [2154, "main.sh", 3, 7]]);
     await check("load without source diagnostics", ["-x", "main.sh"], []);
     await check("a+x source diagnostics", ["-ax", "main.sh"], [[2086, "lib.sh", 2, 6]]);
     await check("explicit input permits source", ["main.sh", "lib.sh"], [[2086, "lib.sh", 2, 6]]);
@@ -121,10 +121,10 @@ async function main(options) {
     await check("sourced function changes caller state", ["-x", "call.sh"], []);
     write("sub/main.sh", "#!/bin/bash\nsource sibling.sh\necho \"$bar\"\n");
     write("sub/sibling.sh", "bar=ok\n");
-    await check("no implicit script directory", ["-x", "sub/main.sh"], [[1091, "sub/main.sh", 2, 8], [2154, "sub/main.sh", 3, 6]]);
+    await check("no implicit script directory", ["-x", "sub/main.sh"], [[1091, "sub/main.sh", 2, 8], [2154, "sub/main.sh", 3, 7]]);
     await check("CLI SCRIPTDIR", ["-x", "-P", "SCRIPTDIR", "sub/main.sh"], []);
     write("other/sibling.sh", "echo $1\n");
-    await check("CLI path precedes script directory", ["-ax", "-P", "other:SCRIPTDIR", "sub/main.sh"], [[2086, "other/sibling.sh", 1, 6], [2154, "sub/main.sh", 3, 6]]);
+    await check("CLI path precedes script directory", ["-ax", "-P", "other:SCRIPTDIR", "sub/main.sh"], [[2086, "other/sibling.sh", 1, 6], [2154, "sub/main.sh", 3, 7]]);
     write("direct.sh", "bar=ok\n");
     write("other/direct.sh", "echo $1\n");
     write("direct-main.sh", "#!/bin/bash\nsource direct.sh\necho \"$bar\"\n");
