@@ -20,8 +20,14 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: tool versions
-        run: moon version --all
+        run: |
+          moon version --all
+          node --version
 
       - name: moon check
         run: |
@@ -50,3 +56,12 @@ jobs:
 
       - name: e2e tests (native)
         run: moonx moonbit-community/mooncram@0.0.6 test e2etests --target native --color never
+
+      - name: source CLI regressions (wasm)
+        run: node scripts/test_source_cli.mjs --target wasm
+
+      - name: source CLI regressions (native)
+        run: node scripts/test_source_cli.mjs --target native
+
+      - name: production semantic reachability
+        run: node scripts/audit_reachability.mjs
