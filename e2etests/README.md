@@ -114,3 +114,17 @@ moonx moonbit-community/mooncram@0.0.6 test e2etests
 
 `update` records actual output and exit codes, so review both before accepting
 changes. CI runs `test` on wasm and native and does not update expectations.
+
+## Source loading regressions
+
+`scripts/test_source_cli.mjs` complements the Markdown suite with temporary real
+files, symlinks, missing files, rc settings and a 100-level source chain. It
+runs the actual native executable or the wasm executable through `moonrun`.
+Static expectations cover permissions, cross-file assignments and functions,
+path precedence, include-local suppression, file positions, tabbed source
+excerpts, missing trailing newlines, repeated fixes and quiet short circuit.
+Use `--oracle` with a local ShellCheck 0.11.0 to verify source baselines. Existing
+SC2154 quote-span differences and duplicate oracle diagnostics are normalized
+for that comparison. The SC1092 boundary follows the upstream parser's frame
+limit and the existing parser baseline; the ShellCheck CLI reports SC1093 at
+that boundary, so the oracle comparison excludes that one case.
