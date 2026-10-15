@@ -9382,88 +9382,92 @@ fn resolve_command_sources(
         Source(source)
       } else if resolve_source_command_path(source, active_annotations)
         is Some(path) {
-        match resolve_source_input(path, options, active_annotations) {
-          None => {
-            diagnostics.push({
-              span: source_command_resolution_span(source),
-              severity: if options.allowed_files is Some(_) ||
-                effective_external_sources(options, active_annotations) {
-                Info
-              } else {
-                Warning
-              },
-              code: Some(1091),
-              message: source_failure_message(path, options, active_annotations),
-            })
-            Source(source)
-          }
-          Some((resolved_path, contents)) =>
-            if stack.contains(source_identity(options, resolved_path)) {
+        if options.source_depth >= 100 {
+          diagnostics.push({
+            span: source_command_resolution_span(source),
+            severity: Info,
+            code: Some(1093),
+            message: "This file appears to be recursively sourced. Ignoring.",
+          })
+          Source(source)
+        } else {
+          match resolve_source_input(path, options, active_annotations) {
+            None => {
               diagnostics.push({
                 span: source_command_resolution_span(source),
-                severity: Info,
-                code: Some(1093),
-                message: "source file '\{resolved_path}' is already being parsed; skipping recursive include",
-              })
-              Source({ ..source, resolved_path: Some(resolved_path), })
-            } else if options.source_depth >= 100 {
-              diagnostics.push({
-                span: source_command_resolution_span(source),
-                severity: Error,
-                code: Some(1092),
-                message: "Stopping at 100 'source' frames :O",
-              })
-              Source({ ..source, resolved_path: Some(resolved_path), })
-            } else {
-              let nested_options = {
-                ..options,
-                sourced: true,
-                source_depth: options.source_depth + 1,
-                initial_annotations: [],
-                parent: Some((command.span.start.source_id, command.span)),
-                current_path: Some(resolved_path),
-                source_paths: effective_source_paths(
-                  options, active_annotations,
+                severity: if options.allowed_files is Some(_) ||
+                  effective_external_sources(options, active_annotations) {
+                  Info
+                } else {
+                  Warning
+                },
+                code: Some(1091),
+                message: source_failure_message(
+                  path, options, active_annotations,
                 ),
-                external_sources: effective_external_sources(
-                  options, active_annotations,
-                ),
-              }
-              let next_stack : Array[String] = []
-              for item in stack {
-                next_stack.push(item)
-              }
-              next_stack.push(source_identity(options, resolved_path))
-              let report = parse_script_with_options_internal(
-                contents, nested_options, next_stack,
-              )
-              if nested_parse_blocks_include(report.diagnostics) {
-                diagnostics.push({
-                  span: source_command_resolution_span(source),
-                  severity: Warning,
-                  code: Some(1094),
-                  message: "source file '\{resolved_path}' could not be parsed; include was skipped",
-                })
-                Source({ ..source, resolved_path: Some(resolved_path), })
-              } else if report.script is Some(script) {
-                for diagnostic in report.diagnostics {
-                  diagnostics.push(diagnostic)
-                }
-                Source({
-                  ..source,
-                  resolved_path: Some(resolved_path),
-                  included: Some(script),
-                })
-              } else {
-                diagnostics.push({
-                  span: source_command_resolution_span(source),
-                  severity: Warning,
-                  code: Some(1094),
-                  message: "source file '\{resolved_path}' could not be parsed; include was skipped",
-                })
-                Source({ ..source, resolved_path: Some(resolved_path), })
-              }
+              })
+              Source(source)
             }
+            Some((resolved_path, contents)) =>
+              if stack.contains(source_identity(options, resolved_path)) {
+                diagnostics.push({
+                  span: source_command_resolution_span(source),
+                  severity: Info,
+                  code: Some(1093),
+                  message: "This file appears to be recursively sourced. Ignoring.",
+                })
+                Source({ ..source, resolved_path: Some(resolved_path), })
+              } else {
+                let nested_options = {
+                  ..options,
+                  sourced: true,
+                  source_depth: options.source_depth + 1,
+                  initial_annotations: [],
+                  parent: Some((command.span.start.source_id, command.span)),
+                  current_path: Some(resolved_path),
+                  source_paths: effective_source_paths(
+                    options, active_annotations,
+                  ),
+                  external_sources: effective_external_sources(
+                    options, active_annotations,
+                  ),
+                }
+                let next_stack : Array[String] = []
+                for item in stack {
+                  next_stack.push(item)
+                }
+                next_stack.push(source_identity(options, resolved_path))
+                let report = parse_script_with_options_internal(
+                  contents, nested_options, next_stack,
+                )
+                if nested_parse_blocks_include(report.diagnostics) {
+                  diagnostics.push({
+                    span: source_command_resolution_span(source),
+                    severity: Warning,
+                    code: Some(1094),
+                    message: "source file '\{resolved_path}' could not be parsed; include was skipped",
+                  })
+                  Source({ ..source, resolved_path: Some(resolved_path), })
+                } else if report.script is Some(script) {
+                  for diagnostic in report.diagnostics {
+                    diagnostics.push(diagnostic)
+                  }
+                  Source({
+                    ..source,
+                    resolved_path: Some(resolved_path),
+                    included: Some(script),
+                  })
+                } else {
+                  diagnostics.push({
+                    span: source_command_resolution_span(source),
+                    severity: Warning,
+                    code: Some(1094),
+                    message: "source file '\{resolved_path}' could not be parsed; include was skipped",
+                  })
+                  Source({ ..source, resolved_path: Some(resolved_path), })
+                }
+              }
+          }
         }
       } else {
         diagnostics.push({
@@ -10749,7 +10753,9 @@ pub fn parse_script_with_options(
 ) -> ParseReport {
   let options = { ..options, requests: [], sources: [], }
   let stack : Array[String] = []
-  if options.current_path is Some(path) {
+  // Only source frames participate in recursion detection; the main input may
+  // itself be sourced once before its nested include is stopped.
+  if options.sourced && options.current_path is Some(path) {
     stack.push(source_identity(options, path))
   }
   let report = parse_script_with_options_internal(source, options, stack)

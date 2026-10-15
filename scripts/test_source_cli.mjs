@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CODES = '1090,1091,1092,1094,2086,2154';
+const CODES = '1090,1091,1092,1093,1094,2086,2154';
 
 function parseArguments(args) {
   const options = { target: 'native', oracle: false };
@@ -175,7 +175,7 @@ async function main(options) {
       write(`chain/${depth}.sh`, depth === 101 ? "true\n" : `source chain/${depth + 1}.sh\n`);
     }
     write("depth.sh", "#!/bin/bash\nsource chain/0.sh\n");
-    await check("depth limit", ["-ax", "depth.sh"], [[1092, "chain/99.sh", 1, 8]], { oracle: false });
+    await check("depth limit", ["-ax", "depth.sh"], [[1093, "chain/99.sh", 1, 8]]);
     write("chain/99.sh", "true\n");
     await check("depth before limit", ["-ax", "depth.sh"], []);
     write("lib.sh", "bar=\"hello world\"\n\techo $bar");

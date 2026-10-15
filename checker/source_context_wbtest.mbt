@@ -73,3 +73,46 @@ test "cached source read failures finish the request loop" {
     "Not following: missing.sh: read denied",
   )
 }
+
+///|
+test "source depth stops before requesting another file and respects filters" {
+  let source_files : Array[(String, String)] = []
+  for i in 0..<100 {
+    source_files.push(("f\{i}.sh", "source f\{i + 1}.sh\n"))
+  }
+  let spec = {
+    ..CheckSpec::default(),
+    ignore_rc: true,
+    filename: Some("main.sh"),
+    check_sourced: true,
+    external_sources: true,
+    source_files,
+  }
+  let source = "#!/bin/bash\nsource f0.sh\n"
+  let report = prepare_script(source, spec~)
+  assert_true(report.requests.is_empty())
+  assert_eq(report.sources.length(), 101)
+  let result = check_prepared_script(source, report, spec~)
+  assert_eq(result.diagnostics.length(), 1)
+  let diagnostic = result.diagnostics[0]
+  assert_eq(diagnostic.code, Some(1093))
+  assert_eq(diagnostic.severity, Info)
+  assert_eq(
+    diagnostic.message,
+    "This file appears to be recursively sourced. Ignoring.",
+  )
+  assert_eq(diagnostic.filename, "f99.sh")
+  assert_eq(diagnostic.span.start.source_id, 100)
+  for
+    filtered in [
+      spec.with_check_sourced(false),
+      spec.with_min_severity(Warning),
+      spec.with_exclude_codes([1093]),
+    ] {
+    assert_true(test_check_script(source, spec=filtered).diagnostics.is_empty())
+  }
+  source_files[99] = ("f99.sh", "# shellcheck disable=SC1093\nsource f100.sh\n")
+  assert_true(test_check_script(source, spec~).diagnostics.is_empty())
+  source_files[99] = ("f99.sh", "true\n")
+  assert_true(test_check_script(source, spec~).diagnostics.is_empty())
+}
