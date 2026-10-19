@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2272-SC2276
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2272-SC2276.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2272-SC2276.sh
 @STDOUT
 In fixtures/variables/SC2272-SC2276.sh line 3:
 $var==42
@@ -26,7 +26,7 @@ var${x}/=value
 ### SC2034
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2034.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2034.sh
 @STDOUT
 In fixtures/variables/SC2034.sh line 2:
 foo=bar
@@ -38,7 +38,7 @@ foo=bar
 ### SC2153
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2153.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2153.sh
 @STDOUT
 In fixtures/variables/SC2153.sh line 4:
 echo $HOMR_DIR
@@ -50,7 +50,7 @@ echo $HOMR_DIR
 ### SC2283-SC2285
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2283-SC2285.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2283-SC2285.sh
 @STDOUT
 In fixtures/variables/SC2283-SC2285.sh line 3:
 foo = $bar
@@ -74,7 +74,7 @@ var +=$(foo)
 ### SC2270-SC2282
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2270-SC2282.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2270-SC2282.sh
 @STDOUT
 In fixtures/variables/SC2270-SC2282.sh line 3:
 0='foo'
@@ -127,7 +127,7 @@ In fixtures/variables/SC2270-SC2282.sh line 12:
 ### SC2209
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2209.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2209.sh
 @STDOUT
 In fixtures/variables/SC2209.sh line 3:
 out=cat foo
@@ -145,7 +145,7 @@ here=pwd
 ### SC2123
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2123.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2123.sh
 @STDOUT
 In fixtures/variables/SC2123.sh line 3:
 PATH="$var/$foo"
@@ -165,7 +165,7 @@ PATH=/cow/foo
 ### SC2054
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2054.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2054.sh
 @STDOUT
 In fixtures/variables/SC2054.sh line 3:
 a=(1, 2)
@@ -185,7 +185,7 @@ a=([a]=b,[c]=d,[e]=f)
 ### SC2190-SC2192
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2190-SC2192.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2190-SC2192.sh
 @STDOUT
 In fixtures/variables/SC2190-SC2192.sh line 3:
 declare -A foo; foo=(bar)
@@ -235,7 +235,7 @@ arr=( [foo] "=" bar )
 ### SC2165-SC2167
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2165-SC2167.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2165-SC2167.sh
 @STDOUT
 In fixtures/variables/SC2165-SC2167.sh line 3:
 for i in a; do
@@ -251,7 +251,7 @@ In fixtures/variables/SC2165-SC2167.sh line 4:
 ### SC2030-SC2031-pipeline
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-pipeline.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-pipeline.sh
 @STDOUT
 In fixtures/variables/SC2030-SC2031-pipeline.sh line 2:
 cat foo | while read -r bar; do a=$bar; done
@@ -267,7 +267,7 @@ echo "${a:-}"
 ### SC2030-SC2031-background
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-background.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/variables/SC2030-SC2031-background.sh
 @STDOUT
 In fixtures/variables/SC2030-SC2031-background.sh line 2:
 read -r n & n=foo$n

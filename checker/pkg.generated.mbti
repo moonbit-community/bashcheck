@@ -35,8 +35,8 @@ pub(all) struct CheckSpec {
   ignore_rc : Bool
   shell_override : @semantics.ShellDialect?
   min_severity : DiagnosticSeverity
-  include_codes : Array[Int]
-  exclude_codes : Array[Int]
+  include_codes : Array[Int32]
+  exclude_codes : Array[Int32]
   optional_checks : Array[String]
   extended_analysis : Bool
   extended_analysis_forced : Bool
@@ -54,12 +54,12 @@ pub fn CheckSpec::default() -> Self
 pub fn CheckSpec::with_check_sourced(Self, Bool) -> Self
 pub fn CheckSpec::with_config_files(Self, Array[(String, String)]) -> Self
 pub fn CheckSpec::with_config_path_override(Self, String?) -> Self
-pub fn CheckSpec::with_exclude_codes(Self, Array[Int]) -> Self
+pub fn CheckSpec::with_exclude_codes(Self, Array[Int32]) -> Self
 pub fn CheckSpec::with_extended_analysis(Self, Bool) -> Self
 pub fn CheckSpec::with_external_sources(Self, Bool) -> Self
 pub fn CheckSpec::with_filename(Self, String?) -> Self
 pub fn CheckSpec::with_ignore_rc(Self, Bool) -> Self
-pub fn CheckSpec::with_include_codes(Self, Array[Int]) -> Self
+pub fn CheckSpec::with_include_codes(Self, Array[Int32]) -> Self
 pub fn CheckSpec::with_min_severity(Self, DiagnosticSeverity) -> Self
 pub fn CheckSpec::with_optional_checks(Self, Array[String]) -> Self
 pub fn CheckSpec::with_shell_override(Self, @semantics.ShellDialect?) -> Self
@@ -75,7 +75,7 @@ pub struct PositionedDiagnostic {
   filename : String
   span : @parser.Span
   severity : DiagnosticSeverity
-  code : Int?
+  code : Int32?
   message : String
   fix : @fixer.Fix?
 } derive(Eq, @debug.Debug)

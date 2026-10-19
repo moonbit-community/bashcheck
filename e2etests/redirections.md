@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2069
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2069.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2069.sh
 @STDOUT
 In fixtures/redirections/SC2069.sh line 2:
 printf x 2>&1 > cow
@@ -26,7 +26,7 @@ printf x | cat 2>&1 > /dev/null
 ### SC2129-SC2143
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2129-SC2143.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2129-SC2143.sh
 @STDOUT
 In fixtures/redirections/SC2129-SC2143.sh line 2:
 foo >> file; bar >> file; baz >> file;
@@ -46,7 +46,7 @@ In fixtures/redirections/SC2129-SC2143.sh line 4:
 ### SC2257
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2257.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2257.sh
 @STDOUT
 In fixtures/redirections/SC2257.sh line 2:
 printf %s x > $((i++))
@@ -62,7 +62,7 @@ printf %s x 2> $((i+=1))
 ### SC2188-SC2189-SC2216-SC2217-SC2259-SC2260-SC2261
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2188-SC2189-SC2216-SC2217-SC2259-SC2260-SC2261.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2188-SC2189-SC2216-SC2217-SC2259-SC2260-SC2261.sh
 @STDOUT
 In fixtures/redirections/SC2188-SC2189-SC2216-SC2217-SC2259-SC2260-SC2261.sh line 2:
 > file
@@ -103,7 +103,7 @@ ls > foo 2> bar > baz
 ### SC2094
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2094.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2094.sh
 @STDOUT
 In fixtures/redirections/SC2094.sh line 2:
 cat foo > foo
@@ -123,7 +123,7 @@ cat lol | sed -e 's/a/b/g' > lol
 ### SC2095-direct
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-direct.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-direct.sh
 @STDOUT
 In fixtures/redirections/SC2095-direct.sh line 2:
 while read -r foo; do ssh "$foo" uptime; done
@@ -163,7 +163,7 @@ while read -r foo; do HandBrakeCLI foo.mkv -o out.mkv < /dev/null; done
 ### SC2095-nested-assignment
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-nested-assignment.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-nested-assignment.sh
 @STDOUT
 In fixtures/redirections/SC2095-nested-assignment.sh line 3:
 while read -r foo; do x=$(ssh host cmd); done
@@ -179,7 +179,7 @@ while read -r foo; do x=$(ssh -n host cmd); done
 ### SC2095-nested-if-and-background
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-nested-if-and-background.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2095-nested-if-and-background.sh
 @STDOUT
 In fixtures/redirections/SC2095-nested-if-and-background.sh line 2:
 while read -r foo; do if true; then ssh "$foo" uptime; fi; done
@@ -205,7 +205,7 @@ while read -r foo; do ssh -n "$foo" uptime & done
 ### SC2216-nested-pipeline-in-command-substitution
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-nested-pipeline-in-command-substitution.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-nested-pipeline-in-command-substitution.sh
 @STDOUT
 In fixtures/redirections/SC2216-nested-pipeline-in-command-substitution.sh line 2:
 echo $(foo | echo bar)
@@ -219,7 +219,7 @@ echo $(foo | echo bar)
 ### SC2216-here-doc-nested-consumer
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-here-doc-nested-consumer.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-here-doc-nested-consumer.sh
 @STDOUT (empty)
 @STDERR (empty)
 ```
@@ -227,7 +227,7 @@ $ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-here-doc
 ### SC2259-quoted-here-doc
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2259-quoted-here-doc.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2259-quoted-here-doc.sh
 @STDOUT
 In fixtures/redirections/SC2259-quoted-here-doc.sh line 2:
 echo World | cat << 'EOF'
@@ -239,7 +239,7 @@ echo World | cat << 'EOF'
 ### SC2216-command-exceptions-and-fd-dup
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-command-exceptions-and-fd-dup.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/redirections/SC2216-command-exceptions-and-fd-dup.sh
 @STDOUT
 In fixtures/redirections/SC2216-command-exceptions-and-fd-dup.sh line 5:
 yes | rm --interactive *

@@ -15,12 +15,12 @@ pub fn render_results(Array[@checker.CheckResult], OutputFormat, options? : Form
 
 // Types and methods
 pub struct FormatOptions {
-  wiki_link_count : Int
+  wiki_link_count : Int32
   enable_color : Bool
 } derive(Eq, @debug.Debug)
 pub fn FormatOptions::default() -> Self
 pub fn FormatOptions::with_enable_color(Self, Bool) -> Self
-pub fn FormatOptions::with_wiki_link_count(Self, Int) -> Self
+pub fn FormatOptions::with_wiki_link_count(Self, Int32) -> Self
 
 pub enum OutputFormat {
   Tty

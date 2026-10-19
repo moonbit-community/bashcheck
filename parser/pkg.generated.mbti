@@ -188,7 +188,7 @@ pub struct ConfigParseReport {
 pub struct Diagnostic {
   span : Span
   severity : DiagnosticSeverity
-  code : Int?
+  code : Int32?
   message : String
 } derive(Eq, @debug.Debug)
 
@@ -308,8 +308,8 @@ pub(all) struct ParseOptions {
   initial_annotations : Array[Annotation]
   requests : Array[SourceRequest]
   sources : Array[SourceFile]
-  parent : (Int, Span)?
-  source_depth : Int
+  parent : (Int32, Span)?
+  source_depth : Int32
 } derive(Eq, @debug.Debug)
 pub fn ParseOptions::default() -> Self
 pub fn ParseOptions::new(Bool, Bool, Bool, Bool, String?, Array[String], Array[(String, String)]) -> Self
@@ -334,17 +334,17 @@ pub struct Pipeline {
 
 pub struct PipelineSegment {
   span : Span
-  bangs : Int
+  bangs : Int32
   command : Command
 } derive(Eq, @debug.Debug)
 
 pub struct Position {
-  source_id : Int
-  offset : Int
-  line : Int
-  column : Int
+  source_id : Int32
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, @debug.Debug)
-pub fn Position::new(Int, Int, Int, source_id? : Int) -> Self
+pub fn Position::new(Int32, Int32, Int32, source_id? : Int32) -> Self
 
 pub struct Redirection {
   span : Span
@@ -367,7 +367,7 @@ pub enum RedirectionOperator {
 } derive(Eq, @debug.Debug)
 
 pub enum RedirectionSource {
-  Fd(Int)
+  Fd(Int32)
   Named(String)
   All
 } derive(Eq, @debug.Debug)
@@ -409,7 +409,7 @@ pub struct SourceCommand {
 pub struct SourceFile {
   filename : String
   source : String
-  parent : (Int, Span)?
+  parent : (Int32, Span)?
 } derive(Eq, @debug.Debug)
 
 pub struct SourceRequest {

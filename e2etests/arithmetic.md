@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2004-SC2017
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2004-SC2017.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2004-SC2017.sh
 @STDOUT
 In fixtures/arithmetic/SC2004-SC2017.sh line 4:
 echo $(( $foo + 1 ))
@@ -26,7 +26,7 @@ echo $(( 3 / 2 * 100 ))
 ### SC2079
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2079.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2079.sh
 @STDOUT
 In fixtures/arithmetic/SC2079.sh line 2:
 ((3.14*1))
@@ -38,7 +38,7 @@ In fixtures/arithmetic/SC2079.sh line 2:
 ### SC2007
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2007.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2007.sh
 @STDOUT
 In fixtures/arithmetic/SC2007.sh line 2:
 echo $[1+2]
@@ -50,7 +50,7 @@ echo $[1+2]
 ### SC2084
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2084.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2084.sh
 @STDOUT
 In fixtures/arithmetic/SC2084.sh line 2:
 $((i++))
@@ -64,7 +64,7 @@ $((i++))
 ### SC2321-SC2324
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2321-SC2324.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/arithmetic/SC2321-SC2324.sh
 @STDOUT
 In fixtures/arithmetic/SC2321-SC2324.sh line 3:
 a[$((1+1))]=n
