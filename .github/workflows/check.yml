@@ -52,10 +52,10 @@ jobs:
         run: moon test --target native
 
       - name: e2e tests (wasm)
-        run: moonx moonbit-community/mooncram@0.0.6 test e2etests --color never
+        run: moonx moonbit-community/mooncram@0.0.7 test e2etests --color never
 
       - name: e2e tests (native)
-        run: moonx moonbit-community/mooncram@0.0.6 test e2etests --target native --color never
+        run: moonx moonbit-community/mooncram@0.0.7 test e2etests --target native --color never
 
       - name: source CLI regressions (wasm)
         run: node scripts/test_source_cli.mjs --target wasm

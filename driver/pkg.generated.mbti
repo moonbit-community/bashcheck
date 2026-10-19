@@ -22,9 +22,9 @@ pub(all) enum CliAction {
 
 pub struct CliOutcome {
   output : String
-  exit_code : Int
+  exit_code : Int32
 } derive(Eq, @debug.Debug)
-pub fn CliOutcome::new(String, Int) -> Self
+pub fn CliOutcome::new(String, Int32) -> Self
 
 // Type aliases
 

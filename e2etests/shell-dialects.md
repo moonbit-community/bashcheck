@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2096
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2096.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2096.sh
 @STDOUT
 In fixtures/shell-dialects/SC2096.sh line 1:
 #!/usr/bin/env bash -x
@@ -22,7 +22,7 @@ In fixtures/shell-dialects/SC2096.sh line 1:
 ### SC2187
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2187.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2187.sh
 @STDOUT
 In fixtures/shell-dialects/SC2187.sh line 1:
 #!bin/ash
@@ -35,7 +35,7 @@ In fixtures/shell-dialects/SC2187.sh line 1:
 ### SC2239
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2239.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2239.sh
 @STDOUT
 In fixtures/shell-dialects/SC2239.sh line 1:
 #!bin/sh
@@ -47,7 +47,7 @@ In fixtures/shell-dialects/SC2239.sh line 1:
 ### SC2246
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2246.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2246.sh
 @STDOUT
 In fixtures/shell-dialects/SC2246.sh line 1:
 #!/bin/sh/
@@ -61,7 +61,7 @@ In fixtures/shell-dialects/SC2246.sh line 1:
 ### SC2118
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2118.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2118.sh
 @STDOUT
 In fixtures/shell-dialects/SC2118.sh line 2:
 foo|&bar
@@ -73,7 +73,7 @@ foo|&bar
 ### SC2127-case-fallthrough
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-case-fallthrough.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-case-fallthrough.sh
 @STDOUT
 In fixtures/shell-dialects/SC2127-case-fallthrough.sh line 3:
 case "$x" in bar) baz ;& esac
@@ -85,7 +85,7 @@ case "$x" in bar) baz ;& esac
 ### SC2127-case-continue
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-case-continue.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-case-continue.sh
 @STDOUT
 In fixtures/shell-dialects/SC2127-case-continue.sh line 3:
 case "$x" in bar) baz ;;& esac
@@ -97,7 +97,7 @@ case "$x" in bar) baz ;;& esac
 ### SC2127-brace-command-expansion
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-brace-command-expansion.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2127-brace-command-expansion.sh
 @STDOUT
 In fixtures/shell-dialects/SC2127-brace-command-expansion.sh line 2:
 : "${ ls; }"
@@ -109,7 +109,7 @@ In fixtures/shell-dialects/SC2127-brace-command-expansion.sh line 2:
 ### SC2112-SC2113
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2112-SC2113.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2112-SC2113.sh
 @STDOUT
 In fixtures/shell-dialects/SC2112-SC2113.sh line 2:
 function foo() { true; }
@@ -125,7 +125,7 @@ function bar { true; }
 ### SC2111
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2111.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC2111.sh
 @STDOUT
 In fixtures/shell-dialects/SC2111.sh line 2:
 function foo() { true; }
@@ -139,7 +139,7 @@ function foo() { true; }
 ### SC3028-SC3029
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3028-SC3029.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3028-SC3029.sh
 @STDOUT
 In fixtures/shell-dialects/SC3028-SC3029.sh line 3:
 echo $RANDOM
@@ -155,7 +155,7 @@ echo foo|&cat
 ### SC3036-SC3039
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3036-SC3039.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3036-SC3039.sh
 @STDOUT
 In fixtures/shell-dialects/SC3036-SC3039.sh line 3:
 echo -ne foo
@@ -171,7 +171,7 @@ let x=1
 ### SC3041-SC3043-SC3044-SC3061
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3041-SC3043-SC3044-SC3061.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/shell-dialects/SC3041-SC3043-SC3044-SC3061.sh
 @STDOUT
 In fixtures/shell-dialects/SC3041-SC3043-SC3044-SC3061.sh line 2:
 set -B

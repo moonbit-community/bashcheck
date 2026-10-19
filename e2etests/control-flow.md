@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2104-SC2105-SC2106
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2104-SC2105-SC2106.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2104-SC2105-SC2106.sh
 @STDOUT
 In fixtures/control-flow/SC2104-SC2105-SC2106.sh line 3:
 continue 2
@@ -38,7 +38,7 @@ while true; do true | { break; }; done
 ### SC2103
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2103.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2103.sh
 @STDOUT
 In fixtures/control-flow/SC2103.sh line 3:
 for f in *; do cd "$f"; git pull; cd ..; done
@@ -50,7 +50,7 @@ for f in *; do cd "$f"; git pull; cd ..; done
 ### SC2233-SC2234-SC2235
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2233-SC2234-SC2235.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2233-SC2234-SC2235.sh
 @STDOUT
 In fixtures/control-flow/SC2233-SC2234-SC2235.sh line 3:
 ( [ a ] )
@@ -70,7 +70,7 @@ In fixtures/control-flow/SC2233-SC2234-SC2235.sh line 5:
 ### SC2258
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2258.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2258.sh
 @STDOUT
 In fixtures/control-flow/SC2258.sh line 3:
 for f in foo, bar,; do true; done
@@ -86,7 +86,7 @@ for f in foo bar; do true; done
 ### SC2194-SC2222
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2194-SC2222.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2194-SC2222.sh
 @STDOUT
 In fixtures/control-flow/SC2194-SC2222.sh line 3:
 case foo in bar) true; esac
@@ -109,7 +109,7 @@ case $f in cow) true;; bar|cow) false;; esac
 ### SC2251
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2251.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2251.sh
 @STDOUT
 In fixtures/control-flow/SC2251.sh line 3:
 while true; do ! true; done
@@ -145,7 +145,7 @@ Did you mean:
 ### SC2310
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2310.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2310.sh
 @STDOUT
 In fixtures/control-flow/SC2310.sh line 5:
 f && echo ok
@@ -169,7 +169,7 @@ In fixtures/control-flow/SC2310.sh line 8:
 ### SC2152-SC2241
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2152-SC2241.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2152-SC2241.sh
 @STDOUT
 In fixtures/control-flow/SC2152-SC2241.sh line 2:
 f(){ return -1; }
@@ -185,7 +185,7 @@ exit 1 2
 ### SC2155
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2155.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2155.sh
 @STDOUT
 In fixtures/control-flow/SC2155.sh line 3:
 f(){ local x=$(false); }
@@ -197,7 +197,7 @@ f(){ local x=$(false); }
 ### SC2181
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2181.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2181.sh
 @STDOUT
 In fixtures/control-flow/SC2181.sh line 3:
 [ $? == 0 ]
@@ -209,7 +209,7 @@ In fixtures/control-flow/SC2181.sh line 3:
 ### SC2325
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2325.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2325.sh
 @STDOUT
 In fixtures/control-flow/SC2325.sh line 2:
 ! ! true
@@ -221,7 +221,7 @@ In fixtures/control-flow/SC2325.sh line 2:
 ### SC2326
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2326.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2326.sh
 @STDOUT
 In fixtures/control-flow/SC2326.sh line 2:
 true | ! true
@@ -235,7 +235,7 @@ true | ! true
 ### SC2172-SC2173
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2172-SC2173.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2172-SC2173.sh
 @STDOUT
 In fixtures/control-flow/SC2172-SC2173.sh line 2:
 trap foo 16 KILL 9
@@ -249,7 +249,7 @@ trap foo 16 KILL 9
 ### SC2314-SC2315-SC2329
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2314-SC2315-SC2329.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2314-SC2315-SC2329.sh
 @STDOUT
 In fixtures/control-flow/SC2314-SC2315-SC2329.sh line 2:
 @test "negation" { ! true; false; }
@@ -272,7 +272,7 @@ f() { echo hidden; }
 ### SC2264
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2264.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2264.sh
 @STDOUT
 In fixtures/control-flow/SC2264.sh line 2:
 f() { f; }
@@ -294,7 +294,7 @@ cd() { command cd "$1" || exit; }
 ### SC2093
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2093.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/control-flow/SC2093.sh
 @STDOUT
 In fixtures/control-flow/SC2093.sh line 2:
 exec foo; true

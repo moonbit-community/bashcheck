@@ -7,43 +7,43 @@ Verify the message and process status emitted by the executable. Current CLI err
 Unknown options, missing values and malformed codes are usage errors.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --unknown
+$ moonx moonbit-community/bashcheck --unknown
 @STDOUT
 Unknown option: --unknown
 @STDERR (empty)
 [3]
 
-$ bashcheck --include wat
+$ moonx moonbit-community/bashcheck --include wat
 @STDOUT
 Invalid number: wat
 @STDERR (empty)
 [3]
 
-$ bashcheck -iSCwat
+$ moonx moonbit-community/bashcheck -iSCwat
 @STDOUT
 Invalid number: SCwat
 @STDERR (empty)
 [3]
 
-$ bashcheck --format
+$ moonx moonbit-community/bashcheck --format
 @STDOUT
 Missing value for --format
 @STDERR (empty)
 [3]
 
-$ bashcheck -s
+$ moonx moonbit-community/bashcheck -s
 @STDOUT
 Missing value for -s
 @STDERR (empty)
 [3]
 
-$ bashcheck --extended-analysis maybe
+$ moonx moonbit-community/bashcheck --extended-analysis maybe
 @STDOUT
 Invalid boolean, expected true/false: maybe
 @STDERR (empty)
 [3]
 
-$ bashcheck --wiki-link-count wat
+$ moonx moonbit-community/bashcheck --wiki-link-count wat
 @STDOUT
 Invalid number: wat
 @STDERR (empty)
@@ -55,25 +55,25 @@ Invalid number: wat
 Syntactically valid unsupported settings have a distinct exit code.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --severity bogus
+$ moonx moonbit-community/bashcheck --severity bogus
 @STDOUT
 Unknown value for --severity. Valid options are: error, warning, info, style
 @STDERR (empty)
 [4]
 
-$ bashcheck --shell bogus
+$ moonx moonbit-community/bashcheck --shell bogus
 @STDOUT
 Unknown shell: bogus
 @STDERR (empty)
 [4]
 
-$ bashcheck --color=bogus
+$ moonx moonbit-community/bashcheck --color=bogus
 @STDOUT
 Unknown value for --color. Valid options are: auto, always, never
 @STDERR (empty)
 [4]
 
-$ bashcheck --format bogus
+$ moonx moonbit-community/bashcheck --format bogus
 @STDOUT
 Unknown format bogus
 Supported formats:

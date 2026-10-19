@@ -23,7 +23,7 @@ pub fn supports_optional_check_name(String) -> Bool
 pub struct CheckDiagnostic {
   span : @parser.Span
   severity : CheckSeverity
-  code : Int
+  code : Int32
   message : String
   fix : @fixer.Fix?
 } derive(Eq, @debug.Debug)

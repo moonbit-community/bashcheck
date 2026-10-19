@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2107-SC2108-SC2109-SC2110
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2107-SC2108-SC2109-SC2110.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2107-SC2108-SC2109-SC2110.sh
 @STDOUT
 In fixtures/conditions/SC2107-SC2108-SC2109-SC2110.sh line 2:
 [ "$1" && "$2" ]
@@ -34,7 +34,7 @@ In fixtures/conditions/SC2107-SC2108-SC2109-SC2110.sh line 5:
 ### SC2265-SC2266
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2265-SC2266.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2265-SC2266.sh
 @STDOUT
 In fixtures/conditions/SC2265-SC2266.sh line 4:
 [ "$a" ] & [ "$a" ]
@@ -63,7 +63,7 @@ Did you mean:
 ### SC1033
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC1033.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC1033.sh
 @STDOUT
 In fixtures/conditions/SC1033.sh line 3:
 [[ "$foo" ]
@@ -75,7 +75,7 @@ In fixtures/conditions/SC1033.sh line 3:
 ### SC1034
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC1034.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC1034.sh
 @STDOUT
 In fixtures/conditions/SC1034.sh line 3:
 [ "$foo" ]]
@@ -89,7 +89,7 @@ In fixtures/conditions/SC1034.sh line 3:
 ### SC2070-SC2074-SC2075-SC2077
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2070-SC2074-SC2075-SC2077.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2070-SC2074-SC2075-SC2077.sh
 @STDOUT
 In fixtures/conditions/SC2070-SC2074-SC2075-SC2077.sh line 3:
 [ -n $foo ]
@@ -113,7 +113,7 @@ In fixtures/conditions/SC2070-SC2074-SC2075-SC2077.sh line 8:
 ### SC2144-SC2198-SC2208-SC2255-bash
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2144-SC2198-SC2208-SC2255-bash.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2144-SC2198-SC2208-SC2255-bash.sh
 @STDOUT
 In fixtures/conditions/SC2144-SC2198-SC2208-SC2255-bash.sh line 3:
 [ -f *.mp3 ]
@@ -158,7 +158,7 @@ In fixtures/conditions/SC2144-SC2198-SC2208-SC2255-bash.sh line 11:
 ### SC2245-ksh
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2245-ksh.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2245-ksh.sh
 @STDOUT
 In fixtures/conditions/SC2245-ksh.sh line 2:
 [ -f *.mp3 ]
@@ -170,7 +170,7 @@ In fixtures/conditions/SC2245-ksh.sh line 2:
 ### SC2050
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2050.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2050.sh
 @STDOUT
 In fixtures/conditions/SC2050.sh line 2:
 [[ x == y ]]
@@ -182,7 +182,7 @@ In fixtures/conditions/SC2050.sh line 2:
 ### SC2268
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2268.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2268.sh
 @STDOUT
 In fixtures/conditions/SC2268.sh line 3:
 [ x"$foo" = x'lol' ]
@@ -206,7 +206,7 @@ test $foo = bar
 ### SC2158-SC2159-SC2160-SC2161
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2158-SC2159-SC2160-SC2161.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2158-SC2159-SC2160-SC2161.sh
 @STDOUT
 In fixtures/conditions/SC2158-SC2159-SC2160-SC2161.sh line 2:
 [ false ]
@@ -230,7 +230,7 @@ In fixtures/conditions/SC2158-SC2159-SC2160-SC2161.sh line 5:
 ### SC2237-SC2243-SC2335
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2237-SC2243-SC2335.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2237-SC2243-SC2335.sh
 @STDOUT
 In fixtures/conditions/SC2237-SC2243-SC2335.sh line 4:
 ! [ -n "$var" ]
@@ -255,7 +255,7 @@ In fixtures/conditions/SC2237-SC2243-SC2335.sh line 6:
 ### SC2332
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2332.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2332.sh
 @STDOUT
 In fixtures/conditions/SC2332.sh line 3:
 [ ! -a file ]
@@ -267,7 +267,7 @@ In fixtures/conditions/SC2332.sh line 3:
 ### SC2331
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2331.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2331.sh
 @STDOUT
 In fixtures/conditions/SC2331.sh line 2:
 [ -a file ]
@@ -282,7 +282,7 @@ Did you mean:
 ### SC2331 (repeat regression)
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2331.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/conditions/SC2331.sh
 @STDOUT
 In fixtures/conditions/SC2331.sh line 2:
 [ -a file ]

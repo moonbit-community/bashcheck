@@ -7,7 +7,7 @@ These baselines include argv parsing, the executable entry point, stdout/stderr 
 Keep the complete ShellCheck-compatible option list.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --help
+$ moonx moonbit-community/bashcheck --help
 @STDOUT
 Usage: bashcheck [OPTIONS...] FILES...
   -a                  --check-sourced            Include warnings from sourced files
@@ -35,7 +35,7 @@ Usage: bashcheck [OPTIONS...] FILES...
 Keep the complete public list; the control-flow extension is not advertised.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --list-optional
+$ moonx moonbit-community/bashcheck --list-optional
 @STDOUT
 name:    add-default-case
 desc:    Suggest adding a default case in `case` statements
@@ -99,22 +99,22 @@ fix:     grep bar foo
 The first meta action wins, and actions do not try to open input files.
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --version
+$ moonx moonbit-community/bashcheck --version
 @STDOUT
 bashcheck 0.1.0
 @STDERR (empty)
 
-$ bashcheck -V missing.sh
+$ moonx moonbit-community/bashcheck -V missing.sh
 @STDOUT
 bashcheck 0.1.0
 @STDERR (empty)
 
-$ bashcheck --version --help
+$ moonx moonbit-community/bashcheck --version --help
 @STDOUT
 bashcheck 0.1.0
 @STDERR (empty)
 
-$ bashcheck --help --version
+$ moonx moonbit-community/bashcheck --help --version
 @STDOUT
 Usage: bashcheck [OPTIONS...] FILES...
   -a                  --check-sourced            Include warnings from sourced files

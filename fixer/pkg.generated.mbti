@@ -33,10 +33,10 @@ pub struct Replacement {
   start : @parser.Position
   end : @parser.Position
   text : String
-  precedence : Int
+  precedence : Int32
   insertion_point : InsertionPoint
 } derive(Eq, @debug.Debug)
-pub fn Replacement::new(String, @parser.Position, @parser.Position, String, Int, InsertionPoint) -> Self
+pub fn Replacement::new(String, @parser.Position, @parser.Position, String, Int32, InsertionPoint) -> Self
 
 // Type aliases
 

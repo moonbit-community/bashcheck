@@ -65,7 +65,7 @@ pub struct CfgAnalysis {
 pub struct CfgAstId {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
-pub fn CfgAstId::to_int(Self) -> Int
+pub fn CfgAstId::to_int(Self) -> Int32
 
 pub struct CfgEdge {
   from : CfgNodeId
@@ -104,7 +104,7 @@ pub struct CfgNode {
 pub struct CfgNodeId {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
-pub fn CfgNodeId::to_int(Self) -> Int
+pub fn CfgNodeId::to_int(Self) -> Int32
 
 pub enum CfgNodeKind {
   Structural

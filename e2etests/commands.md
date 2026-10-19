@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2059-SC2060-SC2063
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2059-SC2060-SC2063.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2059-SC2060-SC2063.sh
 @STDOUT
 In fixtures/commands/SC2059-SC2060-SC2063.sh line 3:
 printf "$fmt" foo
@@ -31,7 +31,7 @@ grep '*foo*' file
 ### SC2020-SC2021-SC2227
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2020-SC2021-SC2227.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2020-SC2021-SC2227.sh
 @STDOUT
 In fixtures/commands/SC2020-SC2021-SC2227.sh line 2:
 tr foo bar
@@ -52,7 +52,7 @@ find . -exec echo {} > file \;
 ### SC2305-SC2307-SC2308
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2305-SC2307-SC2308.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2305-SC2307-SC2308.sh
 @STDOUT
 In fixtures/commands/SC2305-SC2307-SC2308.sh line 3:
 expr match foo bar
@@ -72,7 +72,7 @@ expr 5 -3
 ### SC2306
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2306.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2306.sh
 @STDOUT
 In fixtures/commands/SC2306.sh line 3:
 expr 1 + 2 *
@@ -88,7 +88,7 @@ expr 1 + 2 *.txt
 ### SC2001
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2001.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2001.sh
 @STDOUT
 In fixtures/commands/SC2001.sh line 3:
 FOO=$(echo "$cow" | sed 's/foo/bar/g')
@@ -100,7 +100,7 @@ FOO=$(echo "$cow" | sed 's/foo/bar/g')
 ### SC2028
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2028.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2028.sh
 @STDOUT
 In fixtures/commands/SC2028.sh line 2:
 echo "\\n"
@@ -114,7 +114,7 @@ echo "\\n"
 ### SC2289
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2289.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2289.sh
 @STDOUT
 In fixtures/commands/SC2289.sh line 2:
 $'foo\tbar'
@@ -126,7 +126,7 @@ $'foo\tbar'
 ### SC2256
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2256.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2256.sh
 @STDOUT
 In fixtures/commands/SC2256.sh line 3:
 foo_bar2=val; $"foo_bar2"
@@ -141,7 +141,7 @@ foo_bar2=val; "$foo_bar2"
 ### SC2091
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2091.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2091.sh
 @STDOUT
 In fixtures/commands/SC2091.sh line 2:
 $(foo)
@@ -153,7 +153,7 @@ $(foo)
 ### SC2092
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2092.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2092.sh
 @STDOUT
 In fixtures/commands/SC2092.sh line 3:
 `foo`
@@ -165,7 +165,7 @@ In fixtures/commands/SC2092.sh line 3:
 ### SC2116
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2116.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2116.sh
 @STDOUT
 In fixtures/commands/SC2116.sh line 3:
 cmd $(echo foo)
@@ -179,7 +179,7 @@ cmd $(echo foo)
 ### SC2009-SC2013-SC2038-SC2126
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2009-SC2013-SC2038-SC2126.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2009-SC2013-SC2038-SC2126.sh
 @STDOUT
 In fixtures/commands/SC2009-SC2013-SC2038-SC2126.sh line 2:
 ps aux | grep foo
@@ -215,7 +215,7 @@ grep foo file | wc -l
 ### SC2014-SC2067
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2014-SC2067.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/commands/SC2014-SC2067.sh
 @STDOUT
 In fixtures/commands/SC2014-SC2067.sh line 2:
 find . -exec echo $(date) \;

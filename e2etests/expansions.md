@@ -10,7 +10,7 @@ using terminal output. Colors and wiki footers are disabled for exact snapshots.
 ### SC2086-mixed-word
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2086-mixed-word.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2086-mixed-word.sh
 @STDOUT
 In fixtures/expansions/SC2086-mixed-word.sh line 3:
 echo x$foo
@@ -25,7 +25,7 @@ echo x"$foo"
 ### SC2247
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2247.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2247.sh
 @STDOUT
 In fixtures/expansions/SC2247.sh line 2:
 $"(foo)"
@@ -41,7 +41,7 @@ Did you mean:
 ### SC2016
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2016.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2016.sh
 @STDOUT
 In fixtures/expansions/SC2016.sh line 2:
 echo '$foo'
@@ -53,7 +53,7 @@ echo '$foo'
 ### SC2086
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2086.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2086.sh
 @STDOUT
 In fixtures/expansions/SC2086.sh line 3:
 echo $foo
@@ -68,7 +68,7 @@ echo "$foo"
 ### SC2088
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2088.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2088.sh
 @STDOUT
 In fixtures/expansions/SC2088.sh line 3:
 var="~/out.txt"
@@ -80,7 +80,7 @@ var="~/out.txt"
 ### SC2140
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2140.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2140.sh
 @STDOUT
 In fixtures/expansions/SC2140.sh line 2:
 echo "VALUES ("id")"
@@ -92,7 +92,7 @@ echo "VALUES ("id")"
 ### SC2026
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2026.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2026.sh
 @STDOUT
 In fixtures/expansions/SC2026.sh line 3:
 echo 'foo'bar
@@ -104,7 +104,7 @@ echo 'foo'bar
 ### SC2027
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2027.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2027.sh
 @STDOUT
 In fixtures/expansions/SC2027.sh line 3:
 echo "a"$b"c"
@@ -116,7 +116,7 @@ echo "a"$b"c"
 ### SC2025
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2025.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2025.sh
 @STDOUT
 In fixtures/expansions/SC2025.sh line 2:
 PS1='\\033[1;35m\\$ '
@@ -128,7 +128,7 @@ PS1='\\033[1;35m\\$ '
 ### SC2089-SC2090-bash
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2089-SC2090-bash.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2089-SC2090-bash.sh
 @STDOUT
 In fixtures/expansions/SC2089-SC2090-bash.sh line 3:
 param='--foo="bar"'; app $param
@@ -146,7 +146,7 @@ other='my\ file'; cmd="rm $other"; $cmd
 ### SC2089-SC2090-sh
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2089-SC2090-sh.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2089-SC2090-sh.sh
 @STDOUT
 In fixtures/expansions/SC2089-SC2090-sh.sh line 3:
 param='--foo="bar"'; app $param
@@ -161,7 +161,7 @@ param='--foo="bar"'; app $param
 ### SC2082-SC2124-SC2125-SC2223
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2082-SC2124-SC2125-SC2223.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2082-SC2124-SC2125-SC2223.sh
 @STDOUT
 In fixtures/expansions/SC2082-SC2124-SC2125-SC2223.sh line 3:
 echo ${foo$n}
@@ -185,7 +185,7 @@ In fixtures/expansions/SC2082-SC2124-SC2125-SC2223.sh line 6:
 ### analytics bad parameter substitutions
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/analytics-bad-parameter-substitutions.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/analytics-bad-parameter-substitutions.sh
 @STDOUT
 In fixtures/expansions/analytics-bad-parameter-substitutions.sh line 3:
 echo ${"bar"}
@@ -217,7 +217,7 @@ echo ${${x}foo!}
 ### SC2145-SC2295
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2145-SC2295.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2145-SC2295.sh
 @STDOUT
 In fixtures/expansions/SC2145-SC2295.sh line 2:
 echo "foo$@"
@@ -246,7 +246,7 @@ echo "${name#"$y"}"
 ### SC2180
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2180.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2180.sh
 @STDOUT
 In fixtures/expansions/SC2180.sh line 3:
 echo ${foo[1][2]}
@@ -260,7 +260,7 @@ echo ${foo[1][2]}
 ### SC2101-SC2102-SC2171-SC2193
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2101-SC2102-SC2171-SC2193.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2101-SC2102-SC2171-SC2193.sh
 @STDOUT
 In fixtures/expansions/SC2101-SC2102-SC2171-SC2193.sh line 3:
 ls *[:digit:].jpg
@@ -284,7 +284,7 @@ In fixtures/expansions/SC2101-SC2102-SC2171-SC2193.sh line 6:
 ### SC2051
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2051.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2051.sh
 @STDOUT
 In fixtures/expansions/SC2051.sh line 3:
 echo {1..$n}
@@ -296,7 +296,7 @@ echo {1..$n}
 ### SC2175
 
 ```mooncram moonbit-community/bashcheck
-$ bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2175.sh
+$ moonx moonbit-community/bashcheck --norc --color=never -W0 -ftty fixtures/expansions/SC2175.sh
 @STDOUT
 In fixtures/expansions/SC2175.sh line 3:
 eval echo DSC{0001..$n}.jpg
