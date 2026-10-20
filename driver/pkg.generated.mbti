@@ -4,10 +4,15 @@ package "moonbit-community/bashcheck/driver"
 import {
   "moonbit-community/bashcheck/checker",
   "moonbit-community/bashcheck/formatter",
+  "moonbitlang/core/argparse",
   "moonbitlang/core/debug",
 }
 
 // Values
+pub fn cli_command() -> @argparse.Command
+
+pub fn cli_value_options() -> Array[(String, Char?, String)]
+
 pub async fn run_cli(CliAction, Array[String], @checker.CheckSpec, @formatter.OutputFormat, @formatter.FormatOptions) -> CliOutcome
 
 // Errors

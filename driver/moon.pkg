@@ -2,6 +2,7 @@ import {
   "moonbit-community/bashcheck/checker",
   "moonbit-community/bashcheck/parser",
   "moonbit-community/bashcheck/formatter",
+  "moonbitlang/core/argparse",
   "moonbitlang/async/fs",
   "moonbitlang/async/os_error",
 }

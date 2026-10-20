@@ -42,219 +42,102 @@ priv struct CliConfig {
 }
 
 ///|
-/// Parses raw CLI arguments into a typed configuration.
-///
-/// The implementation performs a single left-to-right scan over argv. Long
-/// options and short-option bundles share helpers so the resulting semantics
-/// stay consistent regardless of spellings such as `--format=json` or `-fjson`.
+/// Parses raw CLI arguments into a typed configuration using core argparse.
 fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
-  // Start from the library defaults so CLI flags only need to describe
-  // differences from the default checking behavior.
+  let options = @driver.cli_value_options()
+  let (argv, action) = normalize_cli_args(args, options)
+  let matches = @driver.cli_command().parse(argv~, env={}) catch {
+    error => return Err(argparse_error(error))
+  }
   let mut spec = @checker.CheckSpec::default()
   let mut format = @formatter.OutputFormat::default()
-  // Once the user picked a format explicitly, later aliases must not silently
-  // overwrite it.
-  let mut format_locked = false
   let mut color = CliColorOption::Auto
   let mut wiki_link_count = 3
-  let files : Array[String] = []
-  let mut action = @driver.CliAction::Run
-  let mut i = 0
-  while i < args.length() {
-    let arg = args[i]
-    if arg == "--" {
-      // `--` terminates option parsing. Everything after it is treated
-      // literally, even if it starts with `-`.
-      let mut j = i + 1
-      while j < args.length() {
-        files.push(args[j])
-        j += 1
-      }
-      break
+  for name, _ in matches.flags {
+    match name {
+      "check-sourced" => spec = spec.with_check_sourced(true)
+      "external-sources" => spec = spec.with_external_sources(true)
+      "norc" => spec = spec.with_ignore_rc(true)
+      _ => ()
     }
-    if arg == "-" || !arg.has_prefix("-") {
-      // A bare `-` means stdin, and any non-flag token is a positional file.
-      files.push(arg)
-      i += 1
-      continue
-    }
-    if arg.has_prefix("--") {
-      // Long options either carry `--flag=value` inline or consume the next
-      // argv element via `read_required_value`.
-      match split_flag_value(arg) {
-        ("--format", value) =>
-          match read_required_value(value, args, i, "--format") {
-            Ok((raw, next)) => {
-              i = next
-              if !format_locked {
-                if @formatter.parse_output_format(raw) is Some(parsed) {
-                  format = parsed
-                  format_locked = true
-                } else {
-                  return Err(unknown_format_error(raw))
-                }
-              }
+  }
+  for name, values in matches.values {
+    for index, raw in values {
+      match name {
+        "format" =>
+          if index == 0 {
+            if @formatter.parse_output_format(raw) is Some(parsed) {
+              format = parsed
+            } else {
+              return Err(unknown_format_error(raw))
             }
-            Err(error) => return Err(error)
           }
-        ("--shell", value) =>
-          match read_required_value(value, args, i, "--shell") {
-            Ok((shell, next)) => {
-              i = next
-              if parse_shell(shell) is Some(parsed) {
-                spec = spec.with_shell_override(Some(parsed))
-              } else {
-                return Err(support_error("Unknown shell: " + shell))
-              }
-            }
-            Err(error) => return Err(error)
+        "shell" =>
+          if parse_shell(raw) is Some(parsed) {
+            spec = spec.with_shell_override(Some(parsed))
+          } else {
+            return Err(support_error("Unknown shell: " + raw))
           }
-        ("--severity", value) =>
-          match read_required_value(value, args, i, "--severity") {
-            Ok((severity, next)) => {
-              i = next
-              if parse_severity(severity) is Some(parsed) {
-                spec = spec.with_min_severity(parsed)
-              } else {
-                return Err(unknown_severity_error())
-              }
-            }
-            Err(error) => return Err(error)
+        "severity" =>
+          if parse_severity(raw) is Some(parsed) {
+            spec = spec.with_min_severity(parsed)
+          } else {
+            return Err(unknown_severity_error())
           }
-        ("--include", value) =>
-          match read_required_value(value, args, i, "--include") {
-            Ok((codes, next)) => {
-              i = next
-              match parse_code_list(codes) {
-                Ok(parsed) =>
-                  spec = spec.with_include_codes(
-                    append_ints(spec.include_codes, parsed),
-                  )
-                Err(error) => return Err(error)
-              }
-            }
-            Err(error) => return Err(error)
-          }
-        ("--exclude", value) =>
-          match read_required_value(value, args, i, "--exclude") {
-            Ok((codes, next)) => {
-              i = next
-              match parse_code_list(codes) {
-                Ok(parsed) =>
-                  spec = spec.with_exclude_codes(
-                    append_ints(spec.exclude_codes, parsed),
-                  )
-                Err(error) => return Err(error)
-              }
-            }
-            Err(error) => return Err(error)
-          }
-        ("--enable", value) =>
-          match read_required_value(value, args, i, "--enable") {
-            Ok((names, next)) => {
-              i = next
-              spec = spec.with_optional_checks(
-                append_optional_checks(spec.optional_checks, split_csv(names)),
+        "include" =>
+          match parse_code_list(raw) {
+            Ok(parsed) =>
+              spec = spec.with_include_codes(
+                append_ints(spec.include_codes, parsed),
               )
-            }
             Err(error) => return Err(error)
           }
-        ("--source-path", value) =>
-          match read_required_value(value, args, i, "--source-path") {
-            Ok((path, next)) => {
-              i = next
-              for entry in split_source_paths(path) {
-                spec = spec.add_source_path(entry)
-              }
-            }
+        "exclude" =>
+          match parse_code_list(raw) {
+            Ok(parsed) =>
+              spec = spec.with_exclude_codes(
+                append_ints(spec.exclude_codes, parsed),
+              )
             Err(error) => return Err(error)
           }
-        ("--rcfile", value) =>
-          match read_required_value(value, args, i, "--rcfile") {
-            Ok((path, next)) => {
-              i = next
-              spec = spec.with_config_path_override(Some(path))
-            }
-            Err(error) => return Err(error)
+        "enable" =>
+          spec = spec.with_optional_checks(
+            append_optional_checks(spec.optional_checks, split_csv(raw)),
+          )
+        "source-path" =>
+          for entry in split_source_paths(raw) {
+            spec = spec.add_source_path(entry)
           }
-        ("--color", value) =>
-          match parse_color_option(value) {
+        "rcfile" => spec = spec.with_config_path_override(Some(raw))
+        "color" =>
+          match parse_color_option(raw) {
             Ok(parsed) => color = parsed
             Err(error) => return Err(error)
           }
-        ("--wiki-link-count", value) =>
-          match read_required_value(value, args, i, "--wiki-link-count") {
-            Ok((count, next)) => {
-              i = next
-              match parse_nonnegative_int(count) {
-                Ok(parsed) => wiki_link_count = parsed
-                Err(error) => return Err(error)
-              }
-            }
+        "wiki-link-count" =>
+          match parse_nonnegative_int(raw) {
+            Ok(parsed) => wiki_link_count = parsed
             Err(error) => return Err(error)
           }
-        ("--norc", _) => spec = spec.with_ignore_rc(true)
-        ("--check-sourced", _) => spec = spec.with_check_sourced(true)
-        ("--external-sources", _) => spec = spec.with_external_sources(true)
-        ("--extended-analysis", value) =>
-          match read_required_value(value, args, i, "--extended-analysis") {
-            Ok((enabled, next)) => {
-              i = next
-              if parse_bool_value(enabled) is Some(parsed) {
-                spec = spec.with_extended_analysis(parsed)
-              } else {
-                return Err(
-                  usage_error(
-                    "Invalid boolean, expected true/false: " + enabled,
-                  ),
-                )
-              }
-            }
-            Err(error) => return Err(error)
+        "extended-analysis" =>
+          if parse_bool_value(raw) is Some(parsed) {
+            spec = spec.with_extended_analysis(parsed)
+          } else {
+            return Err(
+              usage_error("Invalid boolean, expected true/false: " + raw),
+            )
           }
-        ("--list-optional", _) => action = choose_action(action, ListOptional)
-        ("--version", _) => action = choose_action(action, ShowVersion)
-        ("--help", _) => action = choose_action(action, ShowHelp)
-        (flag, _) => return Err(usage_error("Unknown option: " + flag))
+        _ => ()
       }
-      // Most long options consume at most one argv slot beyond the current one,
-      // so the outer loop can safely advance by one after updating `i`.
-      i += 1
-      continue
     }
-    // Single-dash options may be bundled (`-axV`) or may end with a value
-    // carrier (`-fjson`, `-W2`, `-s bash`).
-    match parse_short_options(arg, args, i, spec, format_locked) {
-      Ok((next, parsed)) => {
-        i = next
-        spec = parsed.0
-        if parsed.1 is Some(parsed_format) {
-          if !format_locked {
-            format = parsed_format
-            format_locked = true
-          }
-        }
-        if parsed.2 is Some(parsed_color) {
-          color = parsed_color
-        }
-        if parsed.3 is Some(count) {
-          wiki_link_count = count
-        }
-        action = choose_action(action, parsed.4)
-      }
-      Err(error) => return Err(error)
-    }
-    i += 1
   }
-  if files.length() == 0 && action is Run {
-    // Match ShellCheck's CLI behavior: a plain run with no files reads stdin.
+  let files = matches.values.get("files").unwrap_or([])
+  if files.is_empty() && action is Run {
     files.push("-")
   }
   Ok({
     spec,
     format,
-    // Color and wiki-link settings are formatter concerns, so they are
-    // packaged separately from the checker spec.
     format_options: @formatter.FormatOptions::default()
     .with_wiki_link_count(wiki_link_count)
     .with_enable_color(resolve_color(color)),
@@ -264,168 +147,91 @@ fn parse_cli_args(args : Array[String]) -> Result[CliConfig, CliError] {
 }
 
 ///|
-/// Parses a short-option cluster such as `-ax`, `-fjson`, or `-S error`.
-///
-/// Flags that require a value consume either the remainder of the current token
-/// or the next argv element and then return immediately, because any trailing
-/// characters belong to that value rather than to more flags.
-fn parse_short_options(
-  arg : String,
+/// Argparse options require a value, while ShellCheck's color flag accepts an
+/// attached value or defaults to "always" without consuming the next token.
+/// Leave option values and everything following `--` untouched. Record the
+/// first meta action here because Matches does not expose occurrence order.
+fn normalize_cli_args(
   args : Array[String],
-  index : Int32,
-  current_spec : @checker.CheckSpec,
-  ignore_format : Bool,
-) -> Result[
-  (
-    Int32,
-    (
-      @checker.CheckSpec,
-      @formatter.OutputFormat?,
-      CliColorOption?,
-      Int32?,
-      @driver.CliAction,
-    ),
-  ),
-  CliError,
-] {
-  let mut spec = current_spec
-  let mut format : @formatter.OutputFormat? = None
-  let mut color : CliColorOption? = None
-  let mut wiki_link_count : Int32? = None
+  options : Array[(String, Char?, String)],
+) -> (Array[String], @driver.CliAction) {
+  let normalized : Array[String] = []
   let mut action = @driver.CliAction::Run
-  let flags = arg.view(start_offset=1).to_owned()
-  guard flags != "" else { return Err(usage_error("Unknown option: " + arg)) }
-  let view = flags[:]
-  let mut j = 0
-  let mut next = index
-  while j < view.length() {
-    let flag = view[j]
-    let rest = flags.view(start_offset=j + 1).to_owned()
-    match flag {
-      'a' => spec = spec.with_check_sourced(true)
-      'x' => spec = spec.with_external_sources(true)
-      'V' => action = ShowVersion
-      'C' => {
-        // `-Cauto` and `-C auto` both funnel through the same parser. A bare
-        // `-C` means "force color on", which matches `--color` without value.
-        match parse_color_option(if rest == "" { None } else { Some(rest) }) {
-          Ok(parsed) => color = Some(parsed)
-          Err(error) => return Err(error)
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
+  for index = 0; index < args.length(); {
+    let arg = args[index]
+    if arg == "--" {
+      for rest in args[index:] {
+        normalized.push(rest)
       }
-      'f' => {
-        // Options with values stop bundle processing because the remaining text
-        // belongs to the value, not to another single-character flag.
-        let (raw, consumed) = match read_short_value(rest, args, index, "-f") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        if !ignore_format {
-          if @formatter.parse_output_format(raw) is Some(parsed) {
-            format = Some(parsed)
-          } else {
-            return Err(unknown_format_error(raw))
-          }
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      's' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-s") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        if parse_shell(raw) is Some(parsed) {
-          spec = spec.with_shell_override(Some(parsed))
-        } else {
-          return Err(support_error("Unknown shell: " + raw))
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'S' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-S") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        if parse_severity(raw) is Some(parsed) {
-          spec = spec.with_min_severity(parsed)
-        } else {
-          return Err(unknown_severity_error())
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'i' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-i") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        match parse_code_list(raw) {
-          Ok(parsed) =>
-            spec = spec.with_include_codes(
-              append_ints(spec.include_codes, parsed),
-            )
-          Err(error) => return Err(error)
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'e' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-e") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        match parse_code_list(raw) {
-          Ok(parsed) =>
-            spec = spec.with_exclude_codes(
-              append_ints(spec.exclude_codes, parsed),
-            )
-          Err(error) => return Err(error)
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'o' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-o") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        spec = spec.with_optional_checks(
-          append_optional_checks(spec.optional_checks, split_csv(raw)),
-        )
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'P' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-P") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        for entry in split_source_paths(raw) {
-          spec = spec.add_source_path(entry)
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      'W' => {
-        let (raw, consumed) = match read_short_value(rest, args, index, "-W") {
-          Ok(value) => value
-          Err(error) => return Err(error)
-        }
-        next = consumed
-        match parse_nonnegative_int(raw) {
-          Ok(parsed) => wiki_link_count = Some(parsed)
-          Err(error) => return Err(error)
-        }
-        return Ok((next, (spec, format, color, wiki_link_count, action)))
-      }
-      _ => return Err(usage_error("Unknown option: -" + flag.to_string()))
+      break
     }
-    j += 1
+    let mut token = arg
+    let mut takes_next = false
+    if arg.has_prefix("--") {
+      let (flag, inline) = split_flag_value(arg)
+      match flag {
+        "--color" if inline is None => token = "--color=always"
+        "--check-sourced" | "--external-sources" | "--norc" =>
+          // The existing CLI ignores inline values on switches.
+          token = flag
+        "--list-optional" => {
+          token = flag
+          action = choose_action(action, ListOptional)
+        }
+        "--version" => {
+          token = flag
+          action = choose_action(action, ShowVersion)
+        }
+        "--help" => {
+          token = flag
+          action = choose_action(action, ShowHelp)
+        }
+        _ =>
+          takes_next = inline is None &&
+            options.any(option => flag == "--" + option.0)
+      }
+    } else if arg.has_prefix("-") && arg != "-" {
+      let chars = arg.iter()
+      ignore(chars.next())
+      while chars.next() is Some(short) {
+        if short == 'V' {
+          action = choose_action(action, ShowVersion)
+        }
+        if options.any(option => option.1 == Some(short)) {
+          let rest = String::from_iter(chars)
+          if short == 'C' && rest == "" {
+            token = arg + "always"
+          } else {
+            takes_next = rest == ""
+          }
+          break
+        }
+      }
+    }
+    normalized.push(token)
+    if takes_next && index + 1 < args.length() {
+      normalized.push(args[index + 1])
+      continue index + 2
+    }
+    continue index + 1
   }
-  Ok((next, (spec, format, color, wiki_link_count, action)))
+  (normalized, action)
+}
+
+///|
+/// Argparse exposes display-ready errors. Adapt its syntax failures to the
+/// established ShellCheck-compatible messages and usage exit code.
+fn argparse_error(error : Error) -> CliError {
+  let message = error.to_string().split("\n").next().unwrap_or("").to_owned()
+  if message.strip_prefix("error: unexpected argument '") is Some(rest) &&
+    rest.strip_suffix("' found") is Some(flag) {
+    return usage_error("Unknown option: " + flag.to_owned())
+  }
+  if message.strip_prefix("error: a value is required for '") is Some(rest) &&
+    rest.strip_suffix("' but none was supplied") is Some(flag) {
+    return usage_error("Missing value for " + flag.to_owned())
+  }
+  usage_error(error.to_string())
 }
 
 ///|
@@ -462,53 +268,13 @@ fn split_flag_value(arg : String) -> (String, String?) {
 }
 
 ///|
-/// Reads the required value for a long option from either `--flag=value` or the
-/// next argv entry.
-fn read_required_value(
-  inline : String?,
-  args : Array[String],
-  index : Int32,
-  flag : String,
-) -> Result[(String, Int32), CliError] {
-  if inline is Some(value) {
-    Ok((value, index))
-  } else if index + 1 < args.length() {
-    Ok((args[index + 1], index + 1))
-  } else {
-    Err(usage_error("Missing value for " + flag))
-  }
-}
-
-///|
-/// Reads the value for a short option from the remainder of the current token
-/// or the next argv entry.
-fn read_short_value(
-  inline : String,
-  args : Array[String],
-  index : Int32,
-  flag : String,
-) -> Result[(String, Int32), CliError] {
-  if inline != "" {
-    return Ok((inline, index))
-  }
-  if index + 1 < args.length() {
-    return Ok((args[index + 1], index + 1))
-  }
-  Err(usage_error("Missing value for " + flag))
-}
-
-///|
-/// Parses `--color` / `-C` semantics.
-///
-/// The slightly unusual `None => Always` branch is intentional: a present
-/// flag without a value means "turn color on", not "auto-detect".
-fn parse_color_option(value : String?) -> Result[CliColorOption, CliError] {
+/// Parses color values after bare `--color` / `-C` have defaulted to "always".
+fn parse_color_option(value : String) -> Result[CliColorOption, CliError] {
   match value {
-    None => Ok(Always)
-    Some("auto") => Ok(Auto)
-    Some("always") => Ok(Always)
-    Some("never") => Ok(Never)
-    Some(_) =>
+    "auto" => Ok(Auto)
+    "always" => Ok(Always)
+    "never" => Ok(Never)
+    _ =>
       Err(
         support_error(
           "Unknown value for --color. Valid options are: auto, always, never",
