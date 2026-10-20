@@ -5,10 +5,14 @@ and turns it into rendered output plus a process exit code.
 
 ## Map High-Level CLI Actions To Output And Exit Codes
 
-`run_cli` is the single public entry point. It combines a `CliAction`, input
+`run_cli` combines a `CliAction`, input
 files, a `checker.CheckSpec`, a `formatter.OutputFormat`, and
 `formatter.FormatOptions`, then returns a `CliOutcome` with the rendered output
 and the exit code a CLI wrapper should expose.
+
+The executable parses arguments with `cli_command()` and uses
+`cli_value_options()` to normalize optional color values. Help output is
+generated from the same argparse command and option descriptions.
 
 ```mbt check
 ///|
