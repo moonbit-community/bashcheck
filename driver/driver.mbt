@@ -44,7 +44,7 @@ pub extend CliAction with Debug::{to_repr}
 /// Executes one CLI action over the provided files and formatter settings.
 ///
 /// This function is the boundary between argument parsing and real work. It
-/// decides whether to render static text (`--help`, `--version`, etc.) or to
+/// decides whether to render help/version information or to
 /// run the checker pipeline and convert the resulting diagnostics into both a
 /// textual report and the shell exit code expected by callers.
 pub async fn run_cli(
@@ -55,7 +55,11 @@ pub async fn run_cli(
   format_options : @formatter.FormatOptions,
 ) -> CliOutcome {
   match action {
-    ShowHelp => { output: cli_usage_text(), exit_code: 0, }
+    ShowHelp =>
+      {
+        output: cli_command().render_help().trim_end().to_owned(),
+        exit_code: 0,
+      }
     ShowVersion => { output: "bashcheck 0.1.0", exit_code: 0, }
     ListOptional =>
       { output: @checker.list_optional_checks_text(), exit_code: 0, }
@@ -395,33 +399,6 @@ fn display_cli_filename(file : String) -> String {
   } else {
     file
   }
-}
-
-///|
-/// Returns the static CLI help text.
-///
-/// Keeping the usage text here instead of in the parser lets both `--help` and
-/// parse failures share the same canonical option list.
-fn cli_usage_text() -> String {
-  [
-    "Usage: bashcheck [OPTIONS...] FILES...", "  -a                  --check-sourced            Include warnings from sourced files",
-    "  -C[WHEN]            --color[=WHEN]             Use color (auto, always, never)",
-    "  -i CODE1,CODE2..    --include=CODE1,CODE2..    Consider only given types of warnings",
-    "  -e CODE1,CODE2..    --exclude=CODE1,CODE2..    Exclude types of warnings",
-    "                      --extended-analysis=bool   Perform dataflow analysis (default true)",
-    "  -f FORMAT           --format=FORMAT            Output format (checkstyle, diff, gcc, json, json1, quiet, tty)",
-    "                      --list-optional            List checks disabled by default",
-    "                      --norc                     Don't look for .shellcheckrc files",
-    "                      --rcfile=RCFILE            Prefer the specified configuration file over searching for one",
-    "  -o check1,check2..  --enable=check1,check2..   List of optional checks to enable (or 'all')",
-    "  -P SOURCEPATHS      --source-path=SOURCEPATHS  Specify path when looking for sourced files (\"SCRIPTDIR\" for script's dir)",
-    "  -s SHELLNAME        --shell=SHELLNAME          Specify dialect (sh, bash, dash, ksh, busybox)",
-    "  -S SEVERITY         --severity=SEVERITY        Minimum severity of errors to consider (error, warning, info, style)",
-    "  -V                  --version                  Print version information",
-    "  -W NUM              --wiki-link-count=NUM      The number of wiki links to show, when applicable",
-    "  -x                  --external-sources         Allow 'source' outside of FILES",
-    "                      --help                     Show this usage summary and exit",
-  ].join("\n")
 }
 
 ///|

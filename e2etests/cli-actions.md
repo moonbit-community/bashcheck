@@ -4,29 +4,34 @@ These baselines include argv parsing, the executable entry point, stdout/stderr 
 
 ## Help
 
-Keep the complete ShellCheck-compatible option list.
+Render the complete option list from the argparse command used for parsing.
 
 ```mooncram moonbit-community/bashcheck
 $ moonx moonbit-community/bashcheck --help
 @STDOUT
-Usage: bashcheck [OPTIONS...] FILES...
-  -a                  --check-sourced            Include warnings from sourced files
-  -C[WHEN]            --color[=WHEN]             Use color (auto, always, never)
-  -i CODE1,CODE2..    --include=CODE1,CODE2..    Consider only given types of warnings
-  -e CODE1,CODE2..    --exclude=CODE1,CODE2..    Exclude types of warnings
-                      --extended-analysis=bool   Perform dataflow analysis (default true)
-  -f FORMAT           --format=FORMAT            Output format (checkstyle, diff, gcc, json, json1, quiet, tty)
-                      --list-optional            List checks disabled by default
-                      --norc                     Don't look for .shellcheckrc files
-                      --rcfile=RCFILE            Prefer the specified configuration file over searching for one
-  -o check1,check2..  --enable=check1,check2..   List of optional checks to enable (or 'all')
-  -P SOURCEPATHS      --source-path=SOURCEPATHS  Specify path when looking for sourced files ("SCRIPTDIR" for script's dir)
-  -s SHELLNAME        --shell=SHELLNAME          Specify dialect (sh, bash, dash, ksh, busybox)
-  -S SEVERITY         --severity=SEVERITY        Minimum severity of errors to consider (error, warning, info, style)
-  -V                  --version                  Print version information
-  -W NUM              --wiki-link-count=NUM      The number of wiki links to show, when applicable
-  -x                  --external-sources         Allow 'source' outside of FILES
-                      --help                     Show this usage summary and exit
+Usage: bashcheck [options] [files...]
+
+Arguments:
+  files...  Shell scripts to check ('-' for stdin; default: stdin)
+
+Options:
+  -a, --check-sourced                      Include warnings from sourced files
+  -x, --external-sources                   Allow 'source' outside of FILES
+  --norc                                   Don't look for .shellcheckrc files
+  --list-optional                          List checks disabled by default
+  -V, --version                            Print version information
+  --help                                   Show this usage summary and exit
+  -f, --format <format>                    Output format (checkstyle, diff, gcc, json, json1, quiet, tty)
+  -s, --shell <shell>                      Specify dialect (sh, bash, dash, ksh, busybox)
+  -S, --severity <severity>                Minimum severity of errors to consider (error, warning, info, style)
+  -i, --include <include>                  Consider only given types of warnings (comma-separated codes)
+  -e, --exclude <exclude>                  Exclude types of warnings (comma-separated codes)
+  -o, --enable <enable>                    List of optional checks to enable (or 'all')
+  -P, --source-path <source-path>          Specify path when looking for sourced files ("SCRIPTDIR" for script's dir)
+  --rcfile <rcfile>                        Prefer the specified configuration file over searching for one
+  -C, --color <color>                      Use color (auto, always, never); bare -C/--color means always
+  -W, --wiki-link-count <wiki-link-count>  The number of wiki links to show, when applicable (default 3)
+  --extended-analysis <extended-analysis>  Perform dataflow analysis (true/false, default true)
 @STDERR (empty)
 ```
 
@@ -116,23 +121,28 @@ bashcheck 0.1.0
 
 $ moonx moonbit-community/bashcheck --help --version
 @STDOUT
-Usage: bashcheck [OPTIONS...] FILES...
-  -a                  --check-sourced            Include warnings from sourced files
-  -C[WHEN]            --color[=WHEN]             Use color (auto, always, never)
-  -i CODE1,CODE2..    --include=CODE1,CODE2..    Consider only given types of warnings
-  -e CODE1,CODE2..    --exclude=CODE1,CODE2..    Exclude types of warnings
-                      --extended-analysis=bool   Perform dataflow analysis (default true)
-  -f FORMAT           --format=FORMAT            Output format (checkstyle, diff, gcc, json, json1, quiet, tty)
-                      --list-optional            List checks disabled by default
-                      --norc                     Don't look for .shellcheckrc files
-                      --rcfile=RCFILE            Prefer the specified configuration file over searching for one
-  -o check1,check2..  --enable=check1,check2..   List of optional checks to enable (or 'all')
-  -P SOURCEPATHS      --source-path=SOURCEPATHS  Specify path when looking for sourced files ("SCRIPTDIR" for script's dir)
-  -s SHELLNAME        --shell=SHELLNAME          Specify dialect (sh, bash, dash, ksh, busybox)
-  -S SEVERITY         --severity=SEVERITY        Minimum severity of errors to consider (error, warning, info, style)
-  -V                  --version                  Print version information
-  -W NUM              --wiki-link-count=NUM      The number of wiki links to show, when applicable
-  -x                  --external-sources         Allow 'source' outside of FILES
-                      --help                     Show this usage summary and exit
+Usage: bashcheck [options] [files...]
+
+Arguments:
+  files...  Shell scripts to check ('-' for stdin; default: stdin)
+
+Options:
+  -a, --check-sourced                      Include warnings from sourced files
+  -x, --external-sources                   Allow 'source' outside of FILES
+  --norc                                   Don't look for .shellcheckrc files
+  --list-optional                          List checks disabled by default
+  -V, --version                            Print version information
+  --help                                   Show this usage summary and exit
+  -f, --format <format>                    Output format (checkstyle, diff, gcc, json, json1, quiet, tty)
+  -s, --shell <shell>                      Specify dialect (sh, bash, dash, ksh, busybox)
+  -S, --severity <severity>                Minimum severity of errors to consider (error, warning, info, style)
+  -i, --include <include>                  Consider only given types of warnings (comma-separated codes)
+  -e, --exclude <exclude>                  Exclude types of warnings (comma-separated codes)
+  -o, --enable <enable>                    List of optional checks to enable (or 'all')
+  -P, --source-path <source-path>          Specify path when looking for sourced files ("SCRIPTDIR" for script's dir)
+  --rcfile <rcfile>                        Prefer the specified configuration file over searching for one
+  -C, --color <color>                      Use color (auto, always, never); bare -C/--color means always
+  -W, --wiki-link-count <wiki-link-count>  The number of wiki links to show, when applicable (default 3)
+  --extended-analysis <extended-analysis>  Perform dataflow analysis (true/false, default true)
 @STDERR (empty)
 ```
