@@ -96,3 +96,128 @@ test "cli still accepts explicit control-flow as a bashcheck extension" {
 
   assert_true(config.spec.optional_checks.contains("control-flow"))
 }
+
+///|
+test "cli accepts long inline values and short option bundles" {
+  let config = cli_parse_ok([
+    "--shell=bash", "--severity=info", "--include=SC2006,2046", "--exclude=SC2005",
+    "--enable=control-flow", "--source-path=foo;bar", "--rcfile=config.rc", "--extended-analysis=false",
+    "-axCnever", "-W0", "--format=json1", "script.sh",
+  ])
+
+  @test.assert_eq(config.spec.shell_override, Some(Bash))
+  assert_true(config.spec.min_severity is Info)
+  assert_eq(config.spec.include_codes, [2006, 2046])
+  assert_eq(config.spec.exclude_codes, [2005])
+  assert_eq(config.spec.optional_checks, ["control-flow"])
+  assert_eq(config.spec.source_paths, ["foo", "bar"])
+  @test.assert_eq(config.spec.config_path_override, Some("config.rc"))
+  assert_true(!config.spec.extended_analysis)
+  assert_true(config.spec.check_sourced)
+  assert_true(config.spec.external_sources)
+  assert_true(!config.format_options.enable_color)
+  assert_eq(config.format_options.wiki_link_count, 0)
+  assert_true(config.format is Json1)
+}
+
+///|
+test "cli preserves positionals and uses stdin by default" {
+  assert_eq(cli_parse_ok([]).files, ["-"])
+  assert_eq(cli_parse_ok(["--help"]).files, [])
+  let config = cli_parse_ok([
+    "first.sh", "-ax", "-", "--format=quiet", "second.sh", "--", "--color", "-C",
+    "--help", "--", "last.sh",
+  ])
+
+  assert_true(config.action is Run)
+  assert_true(config.format is Quiet)
+  assert_true(config.spec.check_sourced)
+  assert_true(config.spec.external_sources)
+  assert_eq(config.files, [
+    "first.sh", "-", "second.sh", "--color", "-C", "--help", "--", "last.sh",
+  ])
+}
+
+///|
+test "cli bare color flags do not consume filenames or other options" {
+  for flag in ["--color", "-C", "-axC"] {
+    let config = cli_parse_ok([flag, "never", "--format=quiet"])
+    assert_true(config.format_options.enable_color)
+    assert_eq(config.files, ["never"])
+    assert_true(config.format is Quiet)
+  }
+  let config = cli_parse_ok(["--color", "--color=never", "script.sh"])
+  assert_true(!config.format_options.enable_color)
+  assert_eq(config.files, ["script.sh"])
+}
+
+///|
+test "cli leaves hyphenated option values untouched during normalization" {
+  for
+    args in [
+      ["--rcfile", "--color"],
+      ["-P", "-C"],
+      ["--rcfile", "--", "-P", "--help"],
+    ] {
+    let config = cli_parse_ok(args)
+    assert_true(config.action is Run)
+    assert_eq(config.files, ["-"])
+  }
+  let config = cli_parse_ok(["--rcfile", "--color", "-P", "-C"])
+  @test.assert_eq(config.spec.config_path_override, Some("--color"))
+  assert_eq(config.spec.source_paths, ["-C"])
+}
+
+///|
+test "cli repeats value options across aliases" {
+  let config = cli_parse_ok([
+    "-fgcc", "--format=unsupported", "--include=2006", "-i2046", "-e2005", "--exclude=2086",
+    "-Pfoo:bar", "--source-path=baz", "-ssh", "--shell=bash", "--rcfile=first.rc",
+    "--rcfile=last.rc", "-W1", "--wiki-link-count=2", "--extended-analysis=false",
+    "--extended-analysis=true", "-oquote-safe-variables", "--enable=control-flow,quote-safe-variables",
+    "script.sh",
+  ])
+
+  assert_true(config.format is Gcc)
+  assert_eq(config.spec.include_codes, [2006, 2046])
+  assert_eq(config.spec.exclude_codes, [2005, 2086])
+  assert_eq(config.spec.source_paths, ["foo", "bar", "baz"])
+  @test.assert_eq(config.spec.shell_override, Some(Bash))
+  @test.assert_eq(config.spec.config_path_override, Some("last.rc"))
+  assert_eq(config.format_options.wiki_link_count, 2)
+  assert_true(config.spec.extended_analysis)
+  assert_eq(config.spec.optional_checks, [
+    "quote-safe-variables", "control-flow",
+  ])
+}
+
+///|
+test "cli adapts argparse syntax errors to usage errors" {
+  for
+    (args, message) in [
+      (["--unknown=value"], "Unknown option: --unknown"),
+      (["-axz"], "Unknown option: -z"),
+      (["--format"], "Missing value for --format"),
+      (["-axs"], "Missing value for -s"),
+      (["--include"], "Missing value for --include"),
+      (
+        ["--extended-analysis", "maybe"],
+        "Invalid boolean, expected true/false: maybe",
+      ),
+    ] {
+    let error = cli_parse_err(args)
+    assert_eq(cli_exit_code(error.kind), 3)
+    assert_eq(error.message, message)
+  }
+}
+
+///|
+test "cli validates all repeated values and retains first meta action" {
+  let color = cli_parse_err(["--color=bogus", "--color=never"])
+  let shell = cli_parse_err(["-sbogus", "--shell=bash"])
+  assert_eq(cli_exit_code(color.kind), 4)
+  assert_eq(shell.message, "Unknown shell: bogus")
+  assert_true(cli_parse_ok(["-axV", "--help", "-V"]).action is ShowVersion)
+  assert_true(cli_parse_ok(["--list-optional", "-V"]).action is ListOptional)
+  assert_true(cli_parse_ok(["--help", "-axV"]).action is ShowHelp)
+}
