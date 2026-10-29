@@ -19,6 +19,10 @@ jobs:
         with:
           version: nightly
 
+      # The archive installer does not create the moonx entry-point symlink.
+      - name: Enable moonx
+        run: ln -sfn moon "$(dirname "$(command -v moon)")/moonx"
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
