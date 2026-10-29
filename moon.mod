@@ -1,6 +1,6 @@
 name = "moonbit-community/bashcheck"
 
-version = "0.0.1"
+version = "0.0.2"
 
 import {
   "moonbitlang/async@0.22.4",

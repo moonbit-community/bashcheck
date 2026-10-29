@@ -15,10 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - uses: hustcer/setup-moonbit@develop
+        with:
+          version: nightly
 
       - uses: actions/setup-node@v4
         with:
@@ -47,6 +46,9 @@ jobs:
       # The CLI supports wasm and native.
       - name: moon test (wasm)
         run: moon test --target wasm
+
+      - name: moon test (wasm release)
+        run: moon test --target wasm --release
 
       - name: moon test (native)
         run: moon test --target native
