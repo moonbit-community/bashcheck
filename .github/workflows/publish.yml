@@ -1,0 +1,36 @@
+name: Publish
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mooncakes-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      MOON_WORK: "off"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: hustcer/setup-moonbit@develop
+        with:
+          version: nightly
+      - run: moon update
+      - run: moon check --target all --deny-warn
+      - run: moon test --target wasm
+      - run: moon test --target wasm --release
+      - run: moon test --target native
+      - name: Publish verified module
+        env:
+          MOONCAKES_TOKEN: ${{ secrets.MOONCAKES_MOONBIT_COMMUNITY_TOKEN }}
+        run: |
+          test -n "$MOONCAKES_TOKEN"
+          mkdir -p "$HOME/.moon"
+          trap 'rm -f "$HOME/.moon/credentials.json"' EXIT
+          printf '%s' "$MOONCAKES_TOKEN" > "$HOME/.moon/credentials.json"
+          moon publish --dry-run
+          moon publish

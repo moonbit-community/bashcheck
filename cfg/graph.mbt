@@ -578,6 +578,25 @@ fn AstCollector::copy_from_indexed(
 }
 
 ///|
+// Included files are expanded from a work list, so the source-depth limit does
+// not also become a host call-stack limit. Keep the enclosing control-flow
+// context: return exits the sourced file, while break/continue/exit retain
+// their enclosing loop, function and subshell semantics.
+priv struct PendingSource {
+  script : CfgAstId
+  command : Range
+  cleanup : Range?
+  end_ : Range
+  ast_stack : Array[CfgAstId]
+  loop_break_targets : Array[CfgNodeId]
+  loop_continue_targets : Array[CfgNodeId]
+  is_condition : Bool
+  is_function : Bool
+  exit_target : CfgNodeId?
+  return_target : CfgNodeId
+}
+
+///|
 priv struct GraphBuilder {
   root : CfgAstId
   ast_entries : Array[AstEntry]
@@ -585,7 +604,8 @@ priv struct GraphBuilder {
   ast_nodes : Array[Array[CfgNodeId]]
   nodes : Array[CfgNode]
   edges : Array[CfgEdge]
-  ast_stack : Array[CfgAstId]
+  mut ast_stack : Array[CfgAstId]
+  pending_sources : Array[PendingSource]
   mut loop_break_targets : Array[CfgNodeId]
   mut loop_continue_targets : Array[CfgNodeId]
   mut is_condition : Bool
@@ -609,6 +629,7 @@ fn GraphBuilder::new(
     nodes: [],
     edges: [],
     ast_stack: [],
+    pending_sources: [],
     loop_break_targets: [],
     loop_continue_targets: [],
     is_condition: false,
@@ -640,6 +661,23 @@ fn GraphBuilder::build_raw(self : GraphBuilder) -> CFG {
   ])
   self.record_range(self.root, range)
   let _ = self.ast_stack.pop()
+  while self.pending_sources.pop() is Some(pending) {
+    self.ast_stack = pending.ast_stack
+    self.loop_break_targets = pending.loop_break_targets
+    self.loop_continue_targets = pending.loop_continue_targets
+    self.is_condition = pending.is_condition
+    self.is_function = pending.is_function
+    self.exit_target = pending.exit_target
+    self.return_target = Some(pending.return_target)
+    let inlined = self.build_ast(pending.script)
+    let _ = self.link_range(pending.command, inlined)
+    if pending.cleanup is Some(cleanup) {
+      let _ = self.link_range(inlined, cleanup)
+      let _ = self.link_range(cleanup, pending.end_)
+    } else {
+      let _ = self.link_range(inlined, pending.end_)
+    }
+  }
   let cfg = {
     root: self.root,
     ast_entries: copy_ast_entries(self.ast_entries),
@@ -1238,17 +1276,19 @@ fn GraphBuilder::build_source_command(
       } else {
         end.start
       }
-      let old_return = self.return_target
-      self.return_target = Some(cleanup_target)
-      let inlined = self.build_ast(included_id)
-      self.return_target = old_return
-      let _ = self.link_range(command_range, inlined)
-      if cleanup is Some(cleanup) {
-        let _ = self.link_range(inlined, cleanup)
-        let _ = self.link_range(cleanup, end)
-      } else {
-        let _ = self.link_range(inlined, end)
-      }
+      self.pending_sources.push({
+        script: included_id,
+        command: command_range,
+        cleanup,
+        end_: end,
+        ast_stack: self.ast_stack.copy(),
+        loop_break_targets: copy_node_ids(self.loop_break_targets),
+        loop_continue_targets: copy_node_ids(self.loop_continue_targets),
+        is_condition: self.is_condition,
+        is_function: self.is_function,
+        exit_target: self.exit_target,
+        return_target: cleanup_target,
+      })
       self.span_range(command_range, end)
     } else {
       self.append_optional_cleanup(command_range, cleanup)

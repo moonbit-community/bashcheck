@@ -813,3 +813,73 @@ test "dataflow treats commands after continue in loops as unreachable" {
   assert_true(!command_is_reachable(analysis, hidden))
   assert_true(command_is_reachable(analysis, live))
 }
+
+///|
+test "deferred sources preserve return cleanup and enclosing loop targets" {
+  let returning = @parser.ParseOptions::new(
+    true,
+    false,
+    false,
+    true,
+    Some("main.sh"),
+    [],
+    [("lib.sh", "return\nprintf hidden\n")],
+  )
+  let (cfg, analysis) = build_analysis_with_options(
+    "x=outer\nx=inner . lib.sh\necho \"$x\"\n", returning,
+  )
+  assert_true(
+    !command_is_reachable(analysis, nth_command_ast_id(cfg, "printf", 0)),
+  )
+  let echo_ = nth_command_ast_id(cfg, "echo", 0)
+  assert_true(command_is_reachable(analysis, echo_))
+  expect_literal(incoming_ast_state(analysis, echo_), "x", "outer")
+  for control in ["break", "continue"] {
+    let options = @parser.ParseOptions::new(
+      true,
+      false,
+      false,
+      true,
+      Some("main.sh"),
+      [],
+      [("lib.sh", control + "\nprintf hidden\n")],
+    )
+    let (cfg, analysis) = build_analysis_with_options(
+      "for x in a; do . lib.sh; echo hidden; done\necho live\n", options,
+    )
+    assert_true(
+      !command_is_reachable(analysis, nth_command_ast_id(cfg, "printf", 0)),
+    )
+    assert_true(
+      !command_is_reachable(analysis, nth_command_ast_id(cfg, "echo", 0)),
+    )
+    assert_true(
+      command_is_reachable(analysis, nth_command_ast_id(cfg, "echo", 1)),
+    )
+  }
+}
+
+///|
+test "deferred source exit stays inside its subshell" {
+  let options = @parser.ParseOptions::new(
+    true,
+    false,
+    false,
+    true,
+    Some("main.sh"),
+    [],
+    [("lib.sh", "exit\nprintf hidden\n")],
+  )
+  let (cfg, analysis) = build_analysis_with_options(
+    "( . lib.sh; echo hidden )\necho live\n", options,
+  )
+  assert_true(
+    !command_is_reachable(analysis, nth_command_ast_id(cfg, "printf", 0)),
+  )
+  assert_true(
+    !command_is_reachable(analysis, nth_command_ast_id(cfg, "echo", 0)),
+  )
+  assert_true(
+    command_is_reachable(analysis, nth_command_ast_id(cfg, "echo", 1)),
+  )
+}
